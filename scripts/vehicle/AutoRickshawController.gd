@@ -106,6 +106,7 @@ func _physics_process(delta: float) -> void:
 	_solve_wheel(rear_left_wheel_ray, false, throttle_in, brake_in, handbrake_on, delta)
 	_solve_wheel(rear_right_wheel_ray, false, throttle_in, brake_in, handbrake_on, delta)
 	_apply_stabilizer()
+	_apply_aero_drag()
 	_update_fuel_and_odometer(delta)
 	_check_water_stall()
 	_emit_telemetry(delta)
@@ -142,7 +143,8 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	var long_f: float = -wheel_fwd_speed * 12.0
 	if not is_front and not is_engine_stalled:
 		if throttle_in > 0.01 and current_speed_kmh < stats.max_speed_kmh:
-			long_f += throttle_in * stats.engine_peak_force_n * 0.5
+			var torque_curve: float = 1.0 - stats.torque_falloff * clampf(current_speed_kmh / stats.max_speed_kmh, 0.0, 1.0)
+			long_f += throttle_in * stats.engine_peak_force_n * 0.5 * torque_curve
 		elif brake_in > 0.01 and forward_speed_mps < 0.5 and current_speed_kmh < stats.reverse_max_speed_kmh:
 			long_f -= brake_in * stats.engine_peak_force_n * 0.25 # reverse gear
 	if brake_in > 0.01 and forward_speed_mps > 0.5:
@@ -163,6 +165,12 @@ func _place_wheel_visual(visual_name: String, ray: RayCast3D, spring_len: float)
 	if visual_name == "FrontWheelMesh":
 		n.rotation.y = current_steer_rad
 
+func _apply_aero_drag() -> void:
+	var v: Vector3 = linear_velocity
+	var spd: float = v.length()
+	if spd > 0.5:
+		apply_central_force(-v.normalized() * stats.aero_drag_coeff * spd * spd)
+
 func _apply_stabilizer() -> void:
 	var roll_rad: float = global_transform.basis.get_euler().z
 	current_roll_deg = absf(rad_to_deg(roll_rad))
@@ -174,8 +182,9 @@ func _apply_stabilizer() -> void:
 		SignalBus.two_wheel_tilt_changed.emit(is_on_two_wheels)
 		if is_on_two_wheels and current_speed_kmh >= GETHU_MIN_SPEED_KMH:
 			SignalBus.gethu_stunt_bonus_earned.emit("Two-Wheel Side-Tilt Gethu", GETHU_BONUS_INR)
-	if current_roll_deg > 6.0:
-		var ratio: float = clampf((current_roll_deg - 6.0) / (stats.max_safe_roll_angle_deg - 6.0), 0.0, 2.5)
+	var start: float = stats.anti_roll_start_deg
+	if current_roll_deg > start:
+		var ratio: float = clampf((current_roll_deg - start) / maxf(stats.max_safe_roll_angle_deg - start, 1.0), 0.0, 2.5)
 		apply_torque(global_transform.basis.z * (-signf(roll_rad) * stats.anti_roll_torque_strength * ratio))
 		# Kill roll-rate so the trike does not oscillate.
 		var roll_rate: float = angular_velocity.dot(global_transform.basis.z)

@@ -42,7 +42,8 @@ res://
 ├── scripts/
 │   ├── vehicle/
 │   │   ├── AutoRickshawController.gd
-│   │   └── CameraRig.gd
+│   │   ├── CameraRig.gd
+│   │   └── VehicleAudio.gd          # Synth placeholder engine/horn (replace with CC0 .ogg in Phase 5)
 │   ├── traffic/
 │   │   ├── ChennaiTrafficManager.gd
 │   │   └── TrafficVehicleAI.gd
@@ -50,10 +51,12 @@ res://
 │   │   ├── WaterlogZone.gd          # Monsoon puddle → SignalBus.water_depth_changed
 │   │   └── GreyboxDressing.gd       # MultiMesh lane dashes & placeholder buildings
 │   └── ui/
-│       └── TouchHUD.gd
+│       ├── TouchHUD.gd
+│       └── DebugOverlay.gd          # FPS / draw calls, debug builds only
 └── tests/
     ├── run_phase1_tests.gd          # Headless verification suite (Node script)
-    └── run_phase1_tests.tscn        # Runner scene — run as a scene, NOT with `-s`
+    ├── run_phase1_tests.tscn        # Runner scene — run as a scene, NOT with `-s`
+    └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display)
 ```
 
 ---
@@ -84,6 +87,7 @@ res://
 ### Lessons recorded (do not regress)
 * Pooled `AnimatableBody3D` traffic must be teleported with its collision shape **disabled** and re-enabled the next tick. Teleporting with collision on made Jolt launch the player auto at ~260 m/s.
 * Apply longitudinal (drive/brake) wheel forces at **CoM height**; at contact height the trike wheelies.
+* Directional shadows use **orthogonal (1 split)**, ≤ 45 m; flat ground meshes don't cast. PSSM-4 cost ~66 draw calls on the greybox alone.
 * Wheel rays start **below** the chassis origin so the CoM offset sits ~0.55 m above the road; otherwise the auto can never lean.
 
 ---
@@ -98,13 +102,18 @@ res://
    ```bash
    godot --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn
    ```
+   After adding a new `class_name`, re-run `--import` first or the runner fails to parse. A parse error leaves the runner idling, so always wrap it in `timeout`.
    Do not use `-s` — autoload globals (`SignalBus`, `GameState`) don't resolve in `-s` scripts. Each new phase adds `tests/run_phaseN_tests.tscn` and a CI step.
-3. **CI:** the **Android Build** workflow (tests + APK export) must be green before a milestone is marked done.
-4. **MCP interactive playtest** (when Godot MCP is connected): throttle 4 s → ≥ 35 km/h; full steer at 30 km/h → roll < 22°; horn → AI within 18 m shift sub-lane.
+3. **Perf probe** (exit 0 = within budget):
+   ```bash
+   xvfb-run -a godot --path . --rendering-method gl_compatibility --fixed-fps 60 res://tests/run_perf_probe.tscn
+   ```
+4. **CI:** the **Android Build** workflow (tests + APK export) must be green before a milestone is marked done.
+5. **MCP interactive playtest** (when Godot MCP is connected): throttle 4 s → ≥ 35 km/h; full steer at 30 km/h → roll < 22°; horn → AI within 18 m shift sub-lane.
 
 ---
 
 ## 5. Phase Status
 Full roadmap with exit gates: `README.md` → Roadmap.
-* **Phase 1 — Core greybox & 3-wheel physics:** code complete, 38/38 headless tests, CI APK build. Remaining exit gate: on-device feel tuning and 60 FPS on a budget phone.
+* **Phase 1 — Core greybox & 3-wheel physics:** code complete, feel-tuned, placeholder audio, 46/46 tests, perf probe 99/150 draw calls, CI APK build. Remaining exit gate: on-device feel tuning and 60 FPS on a budget phone.
 * **Phase 2 — Chennai 3-zone world:** next.

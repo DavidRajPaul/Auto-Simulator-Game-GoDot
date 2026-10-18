@@ -55,11 +55,11 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres
 ├── data/passengers/  PassengerArchetype.gd
 ├── scenes/           main_phase1_greybox.tscn, vehicles/, traffic/, ui/
-├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd
+├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd
 ├── scripts/traffic/  ChennaiTrafficManager.gd, TrafficVehicleAI.gd
 ├── scripts/world/    WaterlogZone.gd, GreyboxDressing.gd
-├── scripts/ui/       TouchHUD.gd
-└── tests/            run_phase1_tests.gd + .tscn (38 checks)
+├── scripts/ui/       TouchHUD.gd, DebugOverlay.gd
+└── tests/            run_phase1_tests (46 checks), run_perf_probe (draw-call budget)
 ```
 
 ### Phase 1 controls (greybox)
@@ -93,7 +93,7 @@ Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard c
 
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
-1. **Headless tests:** import, boot the main scene, run the Phase 1 suite. The build stops if anything fails.
+1. **Tests + perf budget:** import, boot the main scene, run the Phase 1 suite, then drive the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
 2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
 4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
@@ -124,8 +124,12 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 | `ChennaiTrafficManager.gd` + `TrafficVehicleAI.gd`: 18-vehicle pool, 6 sub-lanes, gap-seeking, horn tiers (buses ignore twin horn) | ✅ |
 | `TouchHUD.gd`: multitouch handlebar, pedals, horn, kick, camera, wiper, speedo, fare meter, LPG bar | ✅ |
 | Greybox Anna Salai strip: speed breaker, monsoon puddle, MultiMesh buildings | ✅ |
-| `tests/run_phase1_tests.tscn`: 38 automated checks | ✅ |
-| GitHub Actions: tests → Android debug APK (+ signed release when secrets exist) | ✅ |
+| Feel tuning: torque curve + aero drag (0–35 km/h 2.8 s, 0–45 km/h 4.2 s, 58 km/h top), 2.1 m U-turn radius, brief Gethu tilt in hard turns | ✅ |
+| Placeholder audio (`VehicleAudio.gd`): synthesised 4-stroke putter pitched by speed, "pom-pom" bulb horn, kick-start clunk, no asset files | ✅ |
+| Debug overlay (`DebugOverlay.gd`): FPS, worst FPS, draw calls, physics ms, RAM; debug APK only, tap to cycle | ✅ |
+| `tests/run_phase1_tests.tscn`: 46 automated checks | ✅ |
+| `tests/run_perf_probe.tscn`: draw-call / traffic budget gate on every push (currently 99 / 150 draw calls) | ✅ |
+| GitHub Actions: tests → perf probe → Android debug APK (+ signed release when secrets exist) | ✅ |
 | On-device tuning & 60 FPS on Helio G85 / SD680 | ⬜ **needs you + a phone** |
 
 **Exit gate:** headless tests pass; throttle 4 s → ≥ 35 km/h; full steer at 30 km/h keeps roll < 22°; horn shifts AI within 18 m; steady 60 FPS on the budget test device.
@@ -165,7 +169,13 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 **Goal:** a build good enough to put in front of testers.
 - Day/night cycle (Agni Nakshatram noon, Marina sunset, neon night) with headlights.
 - Northeast Monsoon: rain shader, working wiper, waterlogged puddles, kick-start rhythm mini-game.
-- Pitch-shifted 2-/4-stroke engine loops, EV whine, 5 horns, Tamil street ambience, UI SFX.
+- **Audio** (GDD Phase 3 · Assets Catalog §6; Phase 1 shipped synthesised placeholders):
+  - Engine loops per vehicle, pitch-shifted by RPM: 2-stroke "Singara Classic" phat-phat, 4-stroke LPG "Madras King Deluxe", EV whine for "Namma Green EV" (CC0: Sonniss GDC archive / Kenney, mono `.ogg` 96 kbps).
+  - 5 horns matching the gameplay tiers: bulb pom-pom, twin electric, musical air-horn, plus 2 unlockable/cosmetic horns (64 kbps `.ogg`).
+  - Monsoon rain loop, wiper squeak, puddle splash, kick-start lever, stall sputter.
+  - Tamil street ambience by zone (Marina sea breeze & vendors, Mylapore temple bells, T. Nagar crowd/traffic), AI traffic horns honking back.
+  - UI SFX: meter tick, coin/rupee chime, haggle accept/reject, fare summary.
+  - Audio buses (Engine / SFX / Ambience / UI) with volume sliders in Settings; ≤ 5 MB total audio in the APK.
 - First-launch onboarding (no forced parking tutorial), main menu, pause, credits/attributions.
 - Performance pass on the budget device; size pass.
 
@@ -215,17 +225,40 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 ---
 
-## 🎯 Next priorities
+## 🎯 Remaining work to MVP
 
-In order. Each one should land as its own PR with green CI.
+Phase 1 is done in code; only the on-device check is left. Agent work is everything not marked **(you)**.
 
-1. **Install the CI APK on a budget phone (you).** Check FPS (add a Godot FPS overlay), steering feel, pedal reach and the handlebar drag range. Note any numbers that feel wrong; they live in `Bajaj_RE_4S.tres`. This closes Phase 1.
-2. **Physics feel pass.** Grip currently limits turns to ~0.65 g, roll peaks around 7° and the Gethu tilt window is rarely reached. Tune grip, anti-roll strength and steer-vs-speed in the `.tres`, add a slow-speed U-turn radius test (target ≈ 2.4 m), and make 0–40 km/h take ~5–6 s instead of ~2 s.
-3. **Engine & horn audio placeholders** (CC0 from Kenney/Sonniss): pitch-shifted engine loop by speed plus a horn sample. Cheap, and it makes device testing feel real.
-4. **Phase 2 kickoff: OSM pipeline spike.** A Python script that pulls one 250 m chunk of Anna Salai from Overpass and writes a `.tscn` road + building blocks, then `WorldChunkStreamer.gd` with 3×3 threaded loading. Prove it on one chunk before importing all three zones.
-5. **Performance harness.** A test scene that logs draw calls, physics time and memory to the CI summary so the 150-draw-call and 400 MB budgets are checked on every PR.
-6. **Phase 3 prep:** passenger archetype `.tres` files and the haggling-card UI as a standalone scene with unit tests for acceptance odds.
-7. **Play Store plumbing early (Phase 6/7 risk reducers):** switch CI to a Gradle build to produce an **AAB**, create the upload keystore and add it as secrets, and register the Play Console app so the 14-day closed-test clock can start as soon as the MVP is ready.
+**Phase 1 – close-out**
+1. **(you)** Install the latest CI APK on a Helio G85 / SD680-class phone. Tap the top-left readout for full stats, drive for 5 minutes and note FPS, worst FPS, and anything that feels wrong (steering drag range, pedal reach, acceleration, sounds).
+
+**Phase 2 – Chennai world** (largest chunk, ~40% of the remaining MVP effort)
+2. OSM pipeline spike: CI-run Python fetches one 250 m Anna Salai chunk from Overpass → `.tscn` roads + extruded building blocks; prove the draw-call budget with the perf probe.
+3. `WorldChunkStreamer.gd` (3×3 threaded loading) and a streaming test.
+4. Import all three zones (Marina, Mylapore, Anna Salai–T. Nagar) with hero landmarks as low-poly placeholders.
+5. Traffic on real road splines (`godot-road-generator`) instead of the straight test strip; cattle/jaywalkers in market zones.
+6. Texture atlases for shopfronts and signage.
+
+**Phase 3 – Core loop**
+7. Passenger archetype `.tres` files and roadside/Auto-Stand spawning with pickup/drop triggers.
+8. 5-second haggling card with acceptance odds from data, plus unit tests.
+9. GPS route line + mini-map, comfort tea-cup meter, Gap-la Gethu near-miss combo.
+10. Fare breakdown screen, Respect XP, star rating.
+
+**Phase 4 – Economy & garage**
+11. LPG bunk and EV kiosk refuelling; garage repairs and upgrades; horn-tier unlocks.
+12. `Madras_King_Deluxe.tres` and `Namma_Green_EV.tres` (+ EV audio).
+13. Encrypted save/load; Settings (3 control schemes incl. tilt, graphics presets, Tamil/English).
+
+**Phase 5 – Polish → MVP**
+14. Day/night cycle and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
+15. **Real audio** replacing the placeholders (full list in Phase 5 above).
+16. Real 3D models: auto ≤ 6.5k tris, traffic ≤ 1.2k tris (CC0 Kenney/Quaternius, Sketchfab CC-BY).
+17. Main menu, pause, onboarding, credits/attributions.
+18. **AAB via Gradle build in CI** (needed for Play; Phase 7 depends on it), size check < 85 MB.
+19. **(you)** 20-minute thermal soak on the budget phone.
+
+**Start early, in parallel (you):** create the Google Play developer account and app entry, an upload keystore (then add it as the `ANDROID_KEYSTORE_*` repo secrets), and recruit the 12+ closed testers so the 14-day test in Phase 8 isn't blocked.
 
 ---
 
@@ -233,8 +266,9 @@ In order. Each one should land as its own PR with green CI.
 
 1. `godot --headless --path . --import` then `--quit-after 120`: no `SCRIPT ERROR`.
 2. `godot --headless --path . --fixed-fps 60 res://tests/run_phaseN_tests.tscn`: exit code 0.
-3. **Android Build** workflow green on the PR.
-4. MCP playtest when Godot MCP is connected (see `AGENTS.md` §4).
+3. Perf probe (needs a display, e.g. `xvfb-run`): `godot --path . --rendering-method gl_compatibility --fixed-fps 60 res://tests/run_perf_probe.tscn`: exit code 0.
+4. **Android Build** workflow green on the PR.
+5. MCP playtest when Godot MCP is connected (see `AGENTS.md` §4).
 
 ## 📏 Rules for contributors and agents
 

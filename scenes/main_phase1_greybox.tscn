@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/touch_hud.tscn" id="5"]
 [ext_resource type="Script" path="res://scripts/world/GreyboxDressing.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/world/WaterlogZone.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/ui/DebugOverlay.gd" id="8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -72,7 +73,8 @@ environment = SubResource("Env")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 30, 0)
 shadow_enabled = true
-directional_shadow_max_distance = 60.0
+directional_shadow_mode = 0
+directional_shadow_max_distance = 45.0
 
 [node name="Ground" type="StaticBody3D" parent="."]
 collision_mask = 0
@@ -82,10 +84,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 shape = SubResource("Shape_ground")
 
 [node name="Pavement" type="MeshInstance3D" parent="Ground"]
+cast_shadow = 0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.51, 0)
 mesh = SubResource("Mesh_ground")
 
 [node name="AnnaSalaiRoad" type="MeshInstance3D" parent="Ground"]
+cast_shadow = 0
 mesh = SubResource("Mesh_road")
 
 [node name="SpeedBreaker" type="StaticBody3D" parent="."]
@@ -96,6 +100,7 @@ collision_mask = 0
 shape = SubResource("Shape_breaker")
 
 [node name="Mesh" type="MeshInstance3D" parent="SpeedBreaker"]
+cast_shadow = 0
 mesh = SubResource("Mesh_breaker")
 
 [node name="MonsoonPuddle" type="Area3D" parent="."]
@@ -109,6 +114,7 @@ depth_m = 0.35
 shape = SubResource("Shape_water")
 
 [node name="Surface" type="MeshInstance3D" parent="MonsoonPuddle"]
+cast_shadow = 0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.37, 0)
 mesh = SubResource("Mesh_water")
 
@@ -128,3 +134,6 @@ vehicle_scene = ExtResource("4")
 player_path = NodePath("../AutoRickshaw")
 
 [node name="TouchHUD" parent="." instance=ExtResource("5")]
+
+[node name="DebugOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("8")

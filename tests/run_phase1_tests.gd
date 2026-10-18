@@ -51,9 +51,12 @@ func _run() -> void:
 	await _test_acceleration(auto)
 	await _test_steering_roll(auto)
 	await _reset_auto(auto)
+	await _test_feel_targets(auto)
+	await _reset_auto(auto)
 	await _test_horn(traffic, auto)
 	await _test_water_stall_and_kick_start(auto)
 	_test_passenger_mass(auto)
+	await _test_audio(auto)
 	_check("No traffic instantiate/free during driving", traffic.get_child_count() == child_count_before,
 		"children %d -> %d" % [child_count_before, traffic.get_child_count()])
 
@@ -121,6 +124,54 @@ func _test_steering_roll(auto: AutoRickshawController) -> void:
 	_check("Full steer at ~30 km/h: roll < 22°", max_roll < 22.0, "start %.1f km/h, max roll %.1f°" % [start_speed, max_roll])
 	_check("Auto still upright after turn", auto.global_transform.basis.y.y > 0.8)
 
+## GDD/tech-spec feel targets: 0–45 km/h within 6 s, ~2.4 m U-turn radius,
+## hard turn at 45 km/h stays upright.
+func _test_feel_targets(auto: AutoRickshawController) -> void:
+	var t45: float = -1.0
+	Input.action_press("accelerate")
+	for i: int in 420:
+		await get_tree().physics_frame
+		if auto.current_speed_kmh >= 45.0:
+			t45 = i / 60.0
+			break
+	Input.action_release("accelerate")
+	_check("0–45 km/h within 6 s", t45 > 0.0 and t45 <= 6.0, "%.2f s" % t45)
+	_check("0–45 km/h not arcade-instant (≥ 3 s)", t45 >= 3.0, "%.2f s" % t45)
+
+	# Hard turn at 45 km/h: stays upright, roll < 22°.
+	Input.action_press("steer_left", 1.0)
+	var max_roll: float = 0.0
+	for i: int in 180:
+		await get_tree().physics_frame
+		max_roll = maxf(max_roll, auto.current_roll_deg)
+	Input.action_release("steer_left")
+	_check("Hard turn at 45 km/h: roll < 22° and upright", max_roll < 22.0 and auto.global_transform.basis.y.y > 0.8, "max roll %.1f°" % max_roll)
+
+	# Low-speed U-turn radius.
+	await _reset_auto(auto)
+	while auto.current_speed_kmh < 10.0:
+		Input.action_press("accelerate", 1.0)
+		await get_tree().physics_frame
+	Input.action_release("accelerate")
+	Input.action_press("steer_right", 1.0)
+	var pts: Array[Vector3] = []
+	for i: int in 240:
+		Input.action_press("accelerate", 0.4) if auto.current_speed_kmh < 10.0 else Input.action_release("accelerate")
+		await get_tree().physics_frame
+		if i > 60:
+			pts.append(auto.global_position)
+	Input.action_release("steer_right")
+	Input.action_release("accelerate")
+	var centre: Vector3 = Vector3.ZERO
+	for p: Vector3 in pts:
+		centre += p
+	centre /= float(pts.size())
+	var radius: float = 0.0
+	for p: Vector3 in pts:
+		radius += Vector2(p.x - centre.x, p.z - centre.z).length()
+	radius /= float(pts.size())
+	_check("U-turn radius at 10 km/h ≈ 2.4 m (1.5–3.2)", radius >= 1.5 and radius <= 3.2, "%.2f m" % radius)
+
 func _test_horn(traffic: ChennaiTrafficManager, auto: AutoRickshawController) -> void:
 	_park_all(traffic)
 	var lane: int = traffic.sub_lane_of_x(auto.global_position.x)
@@ -162,6 +213,22 @@ func _test_passenger_mass(auto: AutoRickshawController) -> void:
 	_check("Load shifts CoM rearward", auto.center_of_mass.z > auto.stats.center_of_mass_offset.z)
 	bus.emit_signal("passenger_alighted")
 	_check("Alighting restores base mass", is_equal_approx(auto.mass, auto.stats.base_mass_kg))
+
+func _test_audio(auto: AutoRickshawController) -> void:
+	var audio: VehicleAudio = auto.get_node_or_null("VehicleAudio") as VehicleAudio
+	_check("VehicleAudio present on auto prefab", audio != null)
+	if audio == null:
+		return
+	var engine: AudioStreamPlayer3D = audio.get_node("Engine") as AudioStreamPlayer3D
+	var horn: AudioStreamPlayer3D = audio.get_node("Horn") as AudioStreamPlayer3D
+	var engine_wav: AudioStreamWAV = engine.stream as AudioStreamWAV
+	_check("Engine loop generated & looping", engine_wav != null and engine_wav.data.size() > 10000 and engine_wav.loop_mode == AudioStreamWAV.LOOP_FORWARD)
+	_check("Horn sample generated", horn.stream != null and (horn.stream as AudioStreamWAV).data.size() > 5000)
+	var idle_pitch: float = engine.pitch_scale
+	Input.action_press("accelerate")
+	await _physics(150)
+	Input.action_release("accelerate")
+	_check("Engine pitch rises with speed", engine.pitch_scale > idle_pitch + 0.3, "pitch %.2f -> %.2f at %.0f km/h" % [idle_pitch, engine.pitch_scale, auto.current_speed_kmh])
 
 # --- Helpers ---------------------------------------------------------------
 

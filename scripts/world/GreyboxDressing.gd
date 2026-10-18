@@ -71,4 +71,6 @@ func _add_mmi(node_name: String, mm: MultiMesh) -> void:
 	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	mmi.name = node_name
 	mmi.multimesh = mm
+	if node_name == "LaneDashes":
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)

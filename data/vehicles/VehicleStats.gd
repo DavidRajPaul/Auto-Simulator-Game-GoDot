@@ -15,6 +15,10 @@ extends Resource
 @export var max_speed_kmh: float = 58.0
 @export var reverse_max_speed_kmh: float = 16.0
 @export var engine_peak_force_n: float = 4200.0
+## Fraction of peak force lost at top speed (0 = flat torque, 0.7 = strong low-end bias).
+@export var torque_falloff: float = 0.55
+## Air drag force = coeff × v² (N, v in m/s).
+@export var aero_drag_coeff: float = 0.9
 @export var service_brake_force_n: float = 5400.0
 @export var handbrake_force_n: float = 7500.0
 
@@ -34,6 +38,8 @@ extends Resource
 
 @export_group("Stability")
 @export var anti_roll_torque_strength: float = 8200.0
+## Roll angle (deg) where the stabiliser starts working; lower = stiffer, less Gethu.
+@export var anti_roll_start_deg: float = 6.0
 @export var two_wheel_tilt_min_deg: float = 12.0
 @export var max_safe_roll_angle_deg: float = 18.0
 

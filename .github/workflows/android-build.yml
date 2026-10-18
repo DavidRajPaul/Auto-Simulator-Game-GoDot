@@ -22,11 +22,11 @@ env:
 
 jobs:
   test:
-    name: Headless tests
+    name: Tests + perf budget
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache Godot editor
         id: cache-godot
@@ -51,7 +51,25 @@ jobs:
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
 
       - name: Run Phase 1 test suite
-        run: ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn
+        run: |
+          # timeout: a script parse error leaves the runner idling instead of quitting.
+          set -o pipefail
+          timeout 300 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn 2>&1 | tee tests.log
+          if grep -E "SCRIPT ERROR|Parse Error" tests.log; then exit 1; fi
+          grep -E "passed, .* failed" tests.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install virtual display + Mesa (for the perf probe)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+
+      - name: Performance budget probe (draw calls, traffic pool)
+        env:
+          PERF_REPORT: perf.md
+        run: |
+          set -o pipefail
+          timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" ${GODOT_BIN} --path . \
+            --rendering-method gl_compatibility --audio-driver Dummy --fixed-fps 60 \
+            res://tests/run_perf_probe.tscn 2>&1 | tee perf.log
+          cat perf.md >> "$GITHUB_STEP_SUMMARY"
 
   android:
     name: Export Android APK
@@ -61,9 +79,9 @@ jobs:
     env:
       HAS_RELEASE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -143,7 +161,7 @@ jobs:
           SIZE=$(stat -c %s build/android/NammaAuto-debug.apk)
           echo "Debug APK: $((SIZE / 1024 / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: NammaAuto-android-${{ github.run_number }}
           path: build/android/*.apk
