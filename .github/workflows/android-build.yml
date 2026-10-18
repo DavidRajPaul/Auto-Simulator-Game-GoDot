@@ -178,23 +178,23 @@ jobs:
           test -f build/android/NammaAuto-release.apk
           rm -f "$RUNNER_TEMP/release.keystore"
 
-      - name: Install Android build template (Gradle, for the Play Store AAB)
-        run: ${GODOT_BIN} --headless --path . --install-android-build-template
-
-      - name: Export Android App Bundle (.aab)
+      - name: Export Android App Bundle (.aab, Gradle build)
+        timeout-minutes: 25
         env:
           GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEY_ALIAS }}
           GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -o pipefail
+          # --install-android-build-template only works together with an --export-* flag
+          # (on its own it opens the editor and never exits).
           if [ "$HAS_RELEASE_KEY" = "true" ]; then
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
-            ${GODOT_BIN} --headless --path . --export-release "Android AAB" build/android/NammaAuto-release.aab 2>&1 | tee aab.log
+            ${GODOT_BIN} --headless --path . --install-android-build-template --export-release "Android AAB" build/android/NammaAuto-release.aab 2>&1 | tee aab.log
             rm -f "$RUNNER_TEMP/release.keystore"
           else
             # No upload key yet: a debug-signed bundle still proves the Play Store pipeline works.
-            ${GODOT_BIN} --headless --path . --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
+            ${GODOT_BIN} --headless --path . --install-android-build-template --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
           fi
           ls -lh build/android/*.aab || { echo "::error::AAB was not produced"; tail -50 aab.log; exit 1; }
 
