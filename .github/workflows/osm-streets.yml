@@ -1,0 +1,52 @@
+name: OSM Streets (osm2streets)
+
+# Builds A/B Street's osm2streets (Apache-2.0) and turns our OSM extract into real road
+# geometry: lane polygons, lane markings, junction polygons (left-hand traffic).
+# Output is committed to data/osm/streets/ and consumed by tools/osm/build_world.py.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  streets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OSM2STREETS_REF: main
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Clone osm2streets
+        run: |
+          git clone --depth 1 --branch "$OSM2STREETS_REF" https://github.com/a-b-street/osm2streets /tmp/osm2streets
+          echo "O2S_SHA=$(git -C /tmp/osm2streets rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            /tmp/osm2streets/target
+          key: osm2streets-${{ env.O2S_SHA }}
+      - name: Build Python bindings
+        run: |
+          pip install maturin
+          cd /tmp/osm2streets/osm2streets-py
+          maturin build --release
+          pip install /tmp/osm2streets/target/wheels/*.whl
+      - name: Generate street geometry
+        run: python3 tools/osm/run_osm2streets.py
+      - name: Commit results
+        run: |
+          git config user.name "osm-streets[bot]"
+          git config user.email "osm-streets@users.noreply.github.com"
+          git add -A data/osm/streets
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "data(osm): osm2streets road geometry (© OpenStreetMap contributors, ODbL)"
+          git pull --rebase
+          git push
