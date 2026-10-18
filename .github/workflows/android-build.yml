@@ -1,0 +1,156 @@
+name: Android Build
+
+# Runs the headless test suite, then exports an Android APK (arm64-v8a + armeabi-v7a).
+# Debug APK on every push/PR. A signed release APK is also built when the
+# ANDROID_KEYSTORE_* secrets are configured. Tag `v*` to publish a GitHub Release.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.4.1"
+  GODOT_BIN: /home/runner/godot/godot
+
+jobs:
+  test:
+    name: Headless tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot editor
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/godot
+          key: godot-editor-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/godot && cd /home/runner/godot
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
+
+      - name: Import project
+        run: ${GODOT_BIN} --headless --path . --import
+
+      - name: Boot main scene (script/scene load check)
+        run: |
+          ${GODOT_BIN} --headless --path . --quit-after 120 2>&1 | tee boot.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
+
+      - name: Run Phase 1 test suite
+        run: ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn
+
+  android:
+    name: Export Android APK
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HAS_RELEASE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot editor + export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/godot
+            ~/.local/share/godot/export_templates
+          key: godot-android-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot + export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/godot && cd /home/runner/godot
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
+          curl -fsSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          TPL_DIR=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p "$TPL_DIR"
+          unzip -q templates.tpz -d /tmp/tpl
+          # Keep only what Android needs to stay well inside the cache limit.
+          cp /tmp/tpl/templates/android_* /tmp/tpl/templates/version.txt "$TPL_DIR"/
+          rm -rf /tmp/tpl templates.tpz
+
+      - name: Configure Android SDK + debug keystore for Godot
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "Using Android SDK at $SDK, Java at $JAVA_HOME"
+          ls "$SDK/build-tools" | tail -3
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.4.tres editor_settings-4.tres; do
+            cat > ~/.config/godot/$f <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$SDK"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+          done
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+
+      - name: Stamp version code
+        run: sed -i "s/^version\/code=.*/version\/code=${{ github.run_number }}/" export_presets.cfg
+
+      - name: Import project
+        run: ${GODOT_BIN} --headless --path . --import
+
+      - name: Export debug APK
+        run: |
+          mkdir -p build/android
+          ${GODOT_BIN} --headless --path . --export-debug "Android" build/android/NammaAuto-debug.apk 2>&1 | tee export.log
+          test -f build/android/NammaAuto-debug.apk || { echo "::error::Debug APK was not produced"; exit 1; }
+          ls -lh build/android/
+
+      - name: Export signed release APK
+        if: env.HAS_RELEASE_KEY == 'true'
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+          ${GODOT_BIN} --headless --path . --export-release "Android" build/android/NammaAuto-release.apk
+          test -f build/android/NammaAuto-release.apk
+          rm -f "$RUNNER_TEMP/release.keystore"
+
+      - name: Report APK size (budget < 85 MB)
+        run: |
+          SIZE=$(stat -c %s build/android/NammaAuto-debug.apk)
+          echo "Debug APK: $((SIZE / 1024 / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NammaAuto-android-${{ github.run_number }}
+          path: build/android/*.apk
+          retention-days: 30
+
+      - name: Publish GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/android/*.apk

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="VehicleStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/vehicles/VehicleStats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Singara Classic"
+fuel_type = 0
+passenger_capacity = 3
+base_mass_kg = 365.0
+center_of_mass_offset = Vector3(0, -0.25, 0.35)
+max_speed_kmh = 58.0
+max_steer_angle_deg = 45.0
+horn_tier = 1

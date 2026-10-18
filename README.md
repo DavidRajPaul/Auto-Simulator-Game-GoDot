@@ -1,5 +1,7 @@
 # 🛺 Namma Auto: Chennai Rickshaw Simulator 3D
 
+[![Android Build](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml/badge.svg)](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml)
+
 A culturally authentic auto-rickshaw driving and economy simulator set in Chennai, built in **Godot 4.x** for budget Android phones. The project is developed mostly by AI coding agents (Claude Code, Codex, Cursor) working under the rules in [`AGENTS.md`](AGENTS.md).
 
 > **Pitch:** Drive a yellow-and-black Bajaj RE through Marina Beach, Mylapore and Anna Salai. Haggle fares in Tanglish ("Meter Podu vs. Bargain"), squeeze through gaps between MTC buses, survive the Northeast Monsoon, and build your Auto Stand reputation. Free Roam and Savari (passenger) mode are open from minute one, with no parking-gate grind.
@@ -11,8 +13,8 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 | | |
 |---|---|
 | **Genre** | Open-zone driving + economy sim (hybrid-casual / mid-core) |
-| **Platform** | Android (Google Play), ARM64 + ARMv7 |
-| **Engine** | Godot 4.4+ / 4.6, Mobile or GL Compatibility renderer, Jolt Physics 3D |
+| **Platform** | **Android only** (Google Play), arm64-v8a + armeabi-v7a |
+| **Engine** | Godot 4.4.1 (pinned), Mobile renderer + GLES3 fallback, Jolt Physics 3D |
 | **Language** | Fully statically typed GDScript 2.0 |
 | **Target device** | Helio G85 / Snapdragon 680, 3–4 GB RAM, 60 FPS |
 | **Size budget** | < 85 MB initial `.aab` |
@@ -43,20 +45,35 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 
 ## 📂 Repository layout
 
-The full target structure is defined in [`AGENTS.md` §2](AGENTS.md). Current contents:
-
 ```text
 .
 ├── AGENTS.md                         # Agent constitution – read before every task
-├── project.godot                     # Project config, InputMap, autoloads, Jolt
-├── autoloads/
-│   ├── SignalBus.gd                  # Global typed event bus
-│   └── GameState.gd                  # Wallet (INR), Respect XP, shift state
-├── scripts/vehicle/
-│   └── AutoRickshawController.gd     # 3-wheel raycast suspension & anti-roll
-├── deploy-phase1.yml
-└── .github/workflows/deploy-phase1.yml
+├── project.godot                     # Config, InputMap, autoloads, Jolt, 60 Hz physics
+├── export_presets.cfg                # Android preset (arm64 + armv7)
+├── .github/workflows/android-build.yml   # CI: tests → Android APK
+├── autoloads/        SignalBus.gd, GameState.gd
+├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres
+├── data/passengers/  PassengerArchetype.gd
+├── scenes/           main_phase1_greybox.tscn, vehicles/, traffic/, ui/
+├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd
+├── scripts/traffic/  ChennaiTrafficManager.gd, TrafficVehicleAI.gd
+├── scripts/world/    WaterlogZone.gd, GreyboxDressing.gd
+├── scripts/ui/       TouchHUD.gd
+└── tests/            run_phase1_tests.gd + .tscn (38 checks)
 ```
+
+### Phase 1 controls (greybox)
+| Action | Touch | Keyboard (editor testing) |
+|---|---|---|
+| Accelerate / Brake–reverse | right pedals | W/↑ · S/↓ |
+| Steer | drag the handlebar zone (bottom-left) | A/← · D/→ |
+| Handbrake | H-BRK | Space |
+| Horn ("Pom-Pom") | POM POM | H |
+| Kick-start after flooding | KICK | K |
+| Camera (Chase → Cockpit → Top-down) | CAM | C |
+| Wiper | WIPER | V |
+
+The greybox strip has a speed breaker at 180 m and a monsoon puddle (right side) at 320 m. Stop in it and the engine floods; tap KICK three times to restart.
 
 ---
 
@@ -66,14 +83,23 @@ The full target structure is defined in [`AGENTS.md` §2](AGENTS.md). Current co
 git clone https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot.git
 cd Auto-Simulator-Game-GoDot
 
-# Import project & check for script/scene errors
-godot --headless --path . --quit
-
-# Run the phase test suite (once tests/ exists)
-godot --headless --path . -s res://tests/run_phase1_tests.gd
+godot --headless --path . --import                                          # import assets
+godot --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn  # run tests (exit 0 = pass)
 ```
 
-Open in the Godot 4.4+ editor for interactive work. Android export needs the official export templates, Android SDK, and a debug keystore.
+Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard controls above).
+
+## 📦 Android builds (GitHub Actions)
+
+Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
+
+1. **Headless tests:** import, boot the main scene, run the Phase 1 suite. The build stops if anything fails.
+2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
+3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
+4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
+5. **Tags:** pushing a tag like `v0.1.0` attaches the APKs to a GitHub Release.
+
+> Play Store uploads need an **AAB** built through Godot's Gradle build. That is scheduled for Phase 6 (see priorities).
 
 ---
 
@@ -81,25 +107,26 @@ Open in the Godot 4.4+ editor for interactive work. Android export needs the off
 
 The work is split into **MVP phases (1–5)**, which end in a feature-complete, closed-testable build, and **launch phases (6–10)**, which take that build through Google Play and into LiveOps. Every phase has an exit gate; an agent cannot start the next phase until the gate passes in CI.
 
-Legend: ✅ done · 🟡 partly done · ⬜ not started
+Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no iOS, desktop or web targets.
 
 ## Part A — MVP
 
-### Phase 1 · Core greybox & 3-wheel physics 🟡 *(Weeks 1–2)*
+### Phase 1 · Core greybox & 3-wheel physics 🟡 code ✅, device gate pending *(Weeks 1–2)*
 **Goal:** the auto feels right to drive on a test strip, on a real budget phone.
 
 | Item | Status |
 |---|---|
-| `AGENTS.md`, `project.godot` (InputMap, autoloads, Jolt, 60 Hz physics) | ✅ |
-| `SignalBus.gd`, `GameState.gd` | ✅ |
-| `AutoRickshawController.gd` – 3-point raycast suspension, anti-roll (> 18°), two-wheel "Gethu" tilt (12–18°), water stall + kick-start, passenger mass offset | ✅ (needs scene + tests to verify) |
-| `data/vehicles/VehicleStats.gd` + `Bajaj_RE_4S.tres` | ⬜ |
-| `CameraRig.gd` – Chase, Cockpit, Top-down | ⬜ |
-| `ChennaiTrafficManager.gd` + `TrafficVehicleAI.gd` – pooled (≤ 18 within 120 m), 3 sub-lanes, horn lane-shift | ⬜ |
-| `TouchHUD.gd` + `touch_hud.tscn` – virtual handlebar, pedals, horn, meter, wiper | ⬜ |
-| `scenes/vehicles/auto_rickshaw.tscn`, `scenes/main_phase1_greybox.tscn` (Anna Salai strip) | ⬜ |
-| `tests/run_phase1_tests.gd` + CI running it headless | ⬜ |
-| First debug APK on a test phone | ⬜ |
+| `AGENTS.md`, `project.godot` (InputMap, autoloads, Jolt, 60 Hz physics, strict typing) | ✅ |
+| `SignalBus.gd`, `GameState.gd` (meter fare ₹35 + ₹18/km, night 1.5×) | ✅ |
+| `VehicleStats.gd` + `Bajaj_RE_4S.tres`, `PassengerArchetype.gd` | ✅ |
+| `AutoRickshawController.gd`: 3-ray suspension, anti-roll, two-wheel Gethu, water stall + kick-start, passenger mass/CoM, LPG burn, odometer | ✅ |
+| `CameraRig.gd`: Chase, Cockpit, Top-down | ✅ |
+| `ChennaiTrafficManager.gd` + `TrafficVehicleAI.gd`: 18-vehicle pool, 6 sub-lanes, gap-seeking, horn tiers (buses ignore twin horn) | ✅ |
+| `TouchHUD.gd`: multitouch handlebar, pedals, horn, kick, camera, wiper, speedo, fare meter, LPG bar | ✅ |
+| Greybox Anna Salai strip: speed breaker, monsoon puddle, MultiMesh buildings | ✅ |
+| `tests/run_phase1_tests.tscn`: 38 automated checks | ✅ |
+| GitHub Actions: tests → Android debug APK (+ signed release when secrets exist) | ✅ |
+| On-device tuning & 60 FPS on Helio G85 / SD680 | ⬜ **needs you + a phone** |
 
 **Exit gate:** headless tests pass; throttle 4 s → ≥ 35 km/h; full steer at 30 km/h keeps roll < 22°; horn shifts AI within 18 m; steady 60 FPS on the budget test device.
 
@@ -188,11 +215,26 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started
 
 ---
 
+## 🎯 Next priorities
+
+In order. Each one should land as its own PR with green CI.
+
+1. **Install the CI APK on a budget phone (you).** Check FPS (add a Godot FPS overlay), steering feel, pedal reach and the handlebar drag range. Note any numbers that feel wrong; they live in `Bajaj_RE_4S.tres`. This closes Phase 1.
+2. **Physics feel pass.** Grip currently limits turns to ~0.65 g, roll peaks around 7° and the Gethu tilt window is rarely reached. Tune grip, anti-roll strength and steer-vs-speed in the `.tres`, add a slow-speed U-turn radius test (target ≈ 2.4 m), and make 0–40 km/h take ~5–6 s instead of ~2 s.
+3. **Engine & horn audio placeholders** (CC0 from Kenney/Sonniss): pitch-shifted engine loop by speed plus a horn sample. Cheap, and it makes device testing feel real.
+4. **Phase 2 kickoff: OSM pipeline spike.** A Python script that pulls one 250 m chunk of Anna Salai from Overpass and writes a `.tscn` road + building blocks, then `WorldChunkStreamer.gd` with 3×3 threaded loading. Prove it on one chunk before importing all three zones.
+5. **Performance harness.** A test scene that logs draw calls, physics time and memory to the CI summary so the 150-draw-call and 400 MB budgets are checked on every PR.
+6. **Phase 3 prep:** passenger archetype `.tres` files and the haggling-card UI as a standalone scene with unit tests for acceptance odds.
+7. **Play Store plumbing early (Phase 6/7 risk reducers):** switch CI to a Gradle build to produce an **AAB**, create the upload keystore and add it as secrets, and register the Play Console app so the 14-day closed-test clock can start as soon as the MVP is ready.
+
+---
+
 ## ✅ Verification loop (every task)
 
-1. `godot --headless --path . --quit` – no script or scene load errors.
-2. `godot --headless --path . -s res://tests/run_phaseN_tests.gd` – current phase suite passes.
-3. MCP playtest when Godot MCP is connected (see `AGENTS.md` §4).
+1. `godot --headless --path . --import` then `--quit-after 120`: no `SCRIPT ERROR`.
+2. `godot --headless --path . --fixed-fps 60 res://tests/run_phaseN_tests.tscn`: exit code 0.
+3. **Android Build** workflow green on the PR.
+4. MCP playtest when Godot MCP is connected (see `AGENTS.md` §4).
 
 ## 📏 Rules for contributors and agents
 
