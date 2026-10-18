@@ -19,6 +19,8 @@ def query() -> str:
   way["natural"="water"]({b});
   way["natural"="beach"]({b});
   way["leisure"="park"]({b});
+  way["building"]({b});
+  way["railway"~"^(rail|subway|light_rail)$"]({b});
 );
 out geom;"""
 
