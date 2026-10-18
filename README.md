@@ -33,8 +33,8 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 | Layer | Choice |
 |---|---|
 | Engine / physics | Godot 4.x + Jolt, custom 3-point raycast delta-trike (based on `DAShoe1/Godot-Easy-Vehicle-Physics`) |
-| Roads & traffic lanes | `TheDuckCow/godot-road-generator` |
-| Map pipeline | OpenStreetMap → Blosm (Blender) / Python → chunked `.tscn` (250 m × 250 m, 3×3 streaming) |
+| Roads & traffic lanes | [`a-b-street/osm2streets`](https://github.com/a-b-street/osm2streets) (Apache-2.0): real lane, sidewalk, junction and marking polygons from OSM, left-hand driving |
+| Map pipeline | OpenStreetMap (Overpass) → osm2streets + `tools/osm/build_world.py` → pre-triangulated JSON chunks (250 m × 250 m, 3×3 streaming), **real size (1 : 1)** with 21.6k real building footprints |
 | Agent tooling | `satelliteoflove/godot-mcp`, `Coding-Solo/godot-mcp` |
 | Ads | AppLovin MAX or CAS.AI mediation + AdMob (`godot-sdk-integrations/godot-admob`) |
 | IAP | Google Play Billing v7/v8 (`godot-google-play-billing`) – UPI via Play checkout |
@@ -49,27 +49,30 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 .
 ├── AGENTS.md                         # Agent constitution – read before every task
 ├── project.godot                     # Config, InputMap, autoloads, Jolt, 60 Hz physics
-├── export_presets.cfg                # Android preset (arm64 + armv7)
-├── .github/workflows/android-build.yml   # CI: tests → Android APK
+├── export_presets.cfg                # Android presets: APK + Gradle App Bundle (arm64 + armv7)
+├── .github/workflows/android-build.yml   # CI: tests → perf → Android APK + AAB
+├── .github/workflows/osm-import.yml      # Overpass fetch → rebuild data/world
+├── .github/workflows/osm-streets.yml     # builds osm2streets (Rust) → lane geometry → rebuild data/world
 ├── autoloads/        SignalBus.gd, GameState.gd
 ├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres, Madras_King_Deluxe.tres, Namma_Green_EV.tres
 ├── data/passengers/  PassengerArchetype.gd
-├── scenes/           main_chennai.tscn (game), main_phase1_greybox.tscn (physics test arena), vehicles/, traffic/, ui/
-├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd, AutoRickshawModel.gd, WheelModel.gd, MeshKit.gd
+├── scenes/           main_menu.tscn (start), main_chennai.tscn (game), main_phase1_greybox.tscn (physics test arena), vehicles/, traffic/, ui/
+├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd, AutoRickshawModel.gd, WheelModel.gd, MeshKit.gd, ComfortAssist.gd
 ├── scripts/traffic/  ChennaiTrafficManager.gd, TrafficVehicleAI.gd
-├── scripts/world/    WorldChunkStreamer.gd, RoadGraph.gd, ServicePoints.gd, WaterlogZone.gd, GreyboxDressing.gd
-├── data/world/       OSM-built Chennai map: manifest, road graph, areas, 95 chunk files
-├── data/osm/         raw Overpass extract (gz), © OpenStreetMap contributors
-├── tools/osm/        fetch_osm.py, build_world.py, preview_map.py, config.py (zones, landmarks, stands)
-├── scripts/ui/       TouchHUD.gd, PassengerHUD.gd, MiniMap.gd, GarageUI.gd, DebugOverlay.gd
+├── scripts/world/    WorldChunkStreamer.gd, RoadGraph.gd, ServicePoints.gd, Atmosphere.gd, MonsoonFX.gd, WaterlogZone.gd, GreyboxDressing.gd
+├── shaders/          rain_overlay.gdshader (rain streaks, windscreen drops, wiper)
+├── data/world/       OSM-built Chennai map (1 : 1): manifest, road graph, areas, 513 chunk files (~20 MB, ~6 MB zipped)
+├── data/osm/         raw Overpass extract + osm2streets output (gz), © OpenStreetMap contributors
+├── tools/osm/        fetch_osm.py, run_osm2streets.py, build_world.py, streets.py, preview_map.py, config.py (zones, landmarks, stands, services, flood spots)
+├── scripts/ui/       MainMenu.gd, TouchHUD.gd, PassengerHUD.gd, MiniMap.gd, GarageUI.gd, DebugOverlay.gd
 ├── scripts/passengers/ SavariManager.gd (ride loop), FareCalculator.gd, RouteLine.gd
 ├── assets/fonts/     Noto Sans Tamil (OFL)
 ├── translations/     ui.csv (English / Tamil)
 ├── data/passengers/  5 rider archetypes (.tres)
-└── tests/            run_phase1_tests (50), phase2 (30), phase3 (41), phase4 (51), run_perf_probe
+└── tests/            run_phase1_tests (50), phase2 (32), phase3 (41), phase4 (51), phase5 (35), run_perf_probe
 ```
 
-### Phase 1 controls (greybox)
+### Controls
 | Action | Touch | Keyboard (editor testing) |
 |---|---|---|
 | Accelerate / Brake–reverse | right pedals | W/↑ · S/↓ |
@@ -80,9 +83,11 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 | Camera (Chase → Cockpit → Top-down) | CAM | C |
 | Wiper | WIPER | V |
 
-The game starts at the **Mylapore Tank auto stand** in the OSM-built city. Yellow beams are riders waving you down: stop beside one, pick an offer within 5 seconds, then follow the green route.
+The game opens on the **main menu** (Continue / New career / Settings / Credits), then drops you at the **Mylapore Tank auto stand** in real-size Chennai. A first-run hint line walks you through one ride: drive off, stop beside a yellow beam (a rider waving you down), pick an offer within 5 seconds, then follow the green route and the green arrow above your auto. The Android back button pauses; back again resumes.
 
-![In-game: Kamarajar Salai by Marina beach](docs/ingame_marina_kamarajar_salai.png)
+| Main menu | Mylapore at 1 : 1 (real OSM buildings, osm2streets lanes) | Monsoon night |
+|---|---|---|
+| ![Main menu](docs/ingame_main_menu.png) | ![Mylapore, real size](docs/ingame_mylapore_real_size.png) | ![Monsoon night with headlight](docs/ingame_monsoon_night.png) |
 
 The Phase 1 greybox strip (`scenes/main_phase1_greybox.tscn`) is kept as the physics test arena. It has a speed breaker at 180 m and a monsoon puddle (right side) at 320 m: stop in the puddle and the engine floods; tap KICK three times to restart.
 
@@ -104,13 +109,11 @@ Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard c
 
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
-1. **Tests + perf budget:** import, boot the main scene, run the Phase 1–4 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
-2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
+1. **Tests + perf budget:** import, boot the main scene, run the Phase 1–5 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
+2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a), plus a **Gradle-built App Bundle** (`NammaAuto-debug.aab`, or `-release.aab` with the signing secrets) for Google Play. The version code is the CI run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
-4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
-5. **Tags:** pushing a tag like `v0.1.0` attaches the APKs to a GitHub Release.
-
-> Play Store uploads need an **AAB** built through Godot's Gradle build. That is scheduled for Phase 6 (see priorities).
+4. **Release builds (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk` and `NammaAuto-release.aab` (the one you upload to Play).
+5. **Tags:** pushing a tag like `v0.5.0` attaches the APK and AAB to a GitHub Release.
 
 ---
 
@@ -173,6 +176,8 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 - Buildings are generated along road frontage rather than taken from OSM footprints. Chennai's OSM building coverage is patchy, and footprints overlap after the 1 : 2.5 compression.
 - Map is 1 : 2.5 scale (tech spec says "compressed"), so Marina → T. Nagar is ~2.2 km of driving instead of ~5.5 km.
 
+**Superseded in Phase 5:** the map is now **real size (1 : 1, 7.0 × 5.9 km)** with real lane geometry from osm2streets and 21,610 real OSM building footprints (plus procedural fill only where OSM has gaps). See Phase 5.
+
 **Exit gate:** drive all three zones without hitches; ≤ 150 draw calls; RAM < 400 MB; 60 FPS on device.
 
 ### Phase 3 · Core loop: Savari & "Meter vs. Bargain" ✅ code complete *(Weeks 4–5)*
@@ -216,33 +221,44 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 | Item | Status |
 |---|---|
 | **Procedural Bajaj RE model** (tapered snout & headlamp, canvas hood, windscreen, chrome bumper/rails, maroon bench, handlebar, mirrors, meter box, mudguards): 2.4k tris incl. wheels, 6 draw calls; paint follows the garage | ✅ |
-| 3 autos as `.tres`: Singara Classic (starter, bulb horn), Madras King Deluxe (₹1,500, 72 km/h, half pothole discomfort, twin air-horn), Namma Green EV (₹4,500, instant torque, silent, +25% green tip) | ✅ |
+| 3 autos as `.tres`: Singara Classic (starter, bulb horn), Madras King Deluxe (₹1,000, 72 km/h, half pothole discomfort, twin air-horn), Namma Green EV (₹3,000, instant torque, silent, +25% green tip) | ✅ |
 | Garage at each auto stand ("Puncture & Tinkering"): Repair (₹3/%), Upgrades (engine/suspension/tyres ×3 levels), Horns (bulb → twin → musical air-horn, changes which traffic gives way), Paint/Alangaram (better Meter Mela odds), Autos (buy/switch, live swap) | ✅ |
 | LPG drain per km, 4 LPG bunks (₹62/L) and 3 EV kiosks (₹12/kWh) on the map, wrong-fuel warning, ₹150 tow when you run dry | ✅ |
 | Condition: crashes wear the auto; below 40% it loses speed | ✅ |
-| Shift clock 6 AM → 10 PM in 12 real minutes, end-of-day summary, next day | ✅ |
+| Shift clock 6 AM → 10 PM in 18 real minutes (was 12 on the compressed map), end-of-day summary, next day | ✅ |
 | Encrypted save (`user://savegame.dat`, device-bound key + checksum; tampered saves rejected), autosave after rides/purchases/every 60 s/app pause | ✅ |
 | Settings: controls (handlebar drag / arrow buttons / tilt), graphics Low/Medium/High (shadows, 3D resolution), **English / தமிழ்** with bundled Noto Sans Tamil, volume | ✅ |
 | `tests/run_phase4_tests.tscn`: 51 checks incl. economy simulation | ✅ |
 | Tilt steering on a real phone (sensor axis) | ⬜ **needs you + a phone** |
 
-**Economy note:** the GDD prices the King Deluxe at ₹15,000 but also wants it unlockable in ~30 minutes. Realistic Chennai meter fares earn ~₹70–150 per ride, so the price is ₹1,500 in `Madras_King_Deluxe.tres`. The test simulates ~14 rides (≈30 min) to afford it. Raise the price if the 8-rewarded-videos route (Phase 6) should be the main path.
+**Economy note:** the GDD prices the King Deluxe at ₹15,000 but also wants it unlockable in ~30 minutes. On the real-size map a ride is 0.6–2.4 km straight-line (~2–5 minutes), and GDD meter rates (₹35 for 1.8 km + ₹18/km) earn ~₹50–110 with tips, so the price is ₹1,000 (EV ₹3,000). The test simulates ~8 rides (≈30 min) to afford it. Raise the price if the 8-rewarded-videos route (Phase 6) should be the main path.
 
 **Exit gate:** a new player can earn and unlock Madras King Deluxe in ~30 min ✅ (simulated); save/load survives app kill ✅ (autosave on pause/close; **(you)** confirm on device).
 
-### Phase 5 · Polish: weather, audio, UX → **MVP complete** *(Week 6)*
+### Phase 5 · Polish → **MVP** 🟡 code ✅ (audio/art + device gate pending) *(Week 6)*
 **Goal:** a build good enough to put in front of testers.
-- Day/night cycle (Agni Nakshatram noon, Marina sunset, neon night) with headlights.
-- Northeast Monsoon: rain shader, working wiper, waterlogged puddles, kick-start rhythm mini-game.
-- **Audio** (GDD Phase 3 · Assets Catalog §6; Phase 1 shipped synthesised placeholders):
-  - Engine loops per vehicle, pitch-shifted by RPM: 2-stroke "Singara Classic" phat-phat, 4-stroke LPG "Madras King Deluxe", EV whine for "Namma Green EV" (CC0: Sonniss GDC archive / Kenney, mono `.ogg` 96 kbps).
-  - 5 horns matching the gameplay tiers: bulb pom-pom, twin electric, musical air-horn, plus 2 unlockable/cosmetic horns (64 kbps `.ogg`).
-  - Monsoon rain loop, wiper squeak, puddle splash, kick-start lever, stall sputter.
-  - Tamil street ambience by zone (Marina sea breeze & vendors, Mylapore temple bells, T. Nagar crowd/traffic), AI traffic horns honking back.
-  - UI SFX: meter tick, coin/rupee chime, haggle accept/reject, fare summary.
-  - Audio buses (Engine / SFX / Ambience / UI) with volume sliders in Settings; ≤ 5 MB total audio in the APK.
-- First-launch onboarding (no forced parking tutorial), main menu, pause, credits/attributions.
-- Performance pass on the budget device; size pass.
+
+| Map: Mylapore at 1 : 1 (osm2streets lanes, real footprints) | Whole map |
+|---|---|
+| ![Mylapore osm2streets](docs/chennai_map_osm2streets_mylapore.png) | ![Map preview](docs/chennai_map_preview.png) |
+
+| Item | Status |
+|---|---|
+| **Real Chennai roads:** A/B Street's [osm2streets](https://github.com/a-b-street/osm2streets) built in CI (`osm-streets.yml`) turns OSM into lane, sidewalk, junction and marking polygons (left-hand driving). `build_world.py` triangulates them per chunk (13k lanes, 5.5k junctions, 21k sidewalk pieces, centre lines, lane separators) | ✅ |
+| **Real size (1 : 1)** — 7.0 × 5.9 km, every residential street drivable; AI traffic uses osm2streets lane counts and widths so it follows the painted lanes | ✅ |
+| **21,610 real OSM building footprints** extruded (levels/height tags, else inferred from footprint size and zone), shop-front bands on busy streets, flat roofs, one wall collider per chunk; 8.9k procedural boxes only where OSM has gaps | ✅ |
+| **Comfort pack:** auto-recover when flipped, "Reset auto" when stuck, green guidance arrow (route or nearest rider), first-run hints, haptics, gentler steering curve, speed-based FOV, pause on app switch | ✅ |
+| Day/night on the shift clock (noon glare → golden Marina evening → readable night), auto headlight at dusk and in rain | ✅ |
+| Northeast Monsoon: rain streaks, windscreen drops + working wiper (cockpit), wet glossy roads, 5 real flood-prone spots (Usman Road, Luz, Royapettah, Santhome, Gemini) that fill only in rain and can stall you | ✅ |
+| Kick-start rhythm: after a flood, kicks only count in a steady rhythm (mashing floods it) | ✅ |
+| Main menu (Continue / New career / Settings / Credits with OSM ODbL, osm2streets, Godot, Jolt, Noto credits); pause → Main menu; Android back button | ✅ |
+| CI: Gradle-built **App Bundle (.aab)** next to the APK | ✅ |
+| `tests/run_phase5_tests.tscn`: 35 checks; perf probe 120 / 150 draw calls in the city | ✅ |
+| **Audio** replacing the synth placeholders (engine loops per auto, 5 horns, rain/wiper/splash/kick, zone ambience, UI SFX, audio buses; ≤ 5 MB) | ⬜ needs the assets you download |
+| Art pass: traffic/cattle/landmark models, shopfront & signboard atlases, building facades, lane-arrow decals | ⬜ UX phase |
+| 60 FPS 20-minute thermal soak on the budget phone; AAB < 85 MB | ⬜ **needs you + a phone** (CI reports AAB size) |
+
+**Lessons:** Jolt clips `WorldBoundaryShape3D` to 2 km by default, so on the 7 km map the auto fell through the ground away from the origin; `project.godot` now sets it to 20 km. osm2streets' 540k lane-arrow polygons were too heavy as geometry and are left for decals.
 
 **MVP exit gate:** feature-complete loop; `.aab` < 85 MB; 60 FPS sustained 20 min without thermal drop below 45 FPS; zero known crashers.
 
@@ -292,24 +308,15 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 ## 🎯 Remaining work to MVP
 
-Agent work is everything not marked **(you)**.
+The MVP is **feature-complete in code**. What's left is real assets, the UX/art pass and on-device checks. Agent work is everything not marked **(you)**.
 
-**Phase 1–2 close-out**
-1. **(you)** Install the latest CI APK (`NammaAuto-android-<run>`) on a Helio G85 / SD680-class phone. It now starts at the Mylapore auto stand. Tap the top-left readout for full stats and drive Mylapore → Marina → Anna Salai for ~10 minutes. Report FPS / worst FPS, RAM, any hitches when new areas load, and anything that feels wrong.
-2. Jaywalkers in market zones, reusing the cattle spawning path.
-3. Gemini Flyover and Napier Bridge as real elevated ramps (needs ramp collision; the rest of the map is flat).
-
-**Phase 3–4 – Core loop, economy & garage** ✅ done in code
-4. **(you)** Play a full in-game day (12 real minutes) on the phone. Check: haggle readability, fares/tips, comfort fairness, fuel lasting ~15–20 rides, whether ₹1,500 for the King Deluxe feels right, and **tilt steering** (sensor axis/sign).
-5. Balance pass from your notes (numbers live in `data/passengers/*.tres`, `data/vehicles/*.tres`, `FareCalculator.gd`, `GameState.UPGRADES/HORNS/PAINTS`).
-
-**Phase 5 – Polish → MVP** (next)
-6. Day/night tied to the shift clock (noon glare → Marina sunset → neon night) and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
-7. Real audio replacing the placeholders (full list under Phase 5).
-8. Traffic/cattle/landmark models (the player auto is now modelled) and shopfront/signage texture atlases.
-9. Main menu, onboarding, credits incl. OpenStreetMap (ODbL) attribution.
-10. AAB via Gradle build in CI, size check < 85 MB.
-11. **(you)** 20-minute thermal soak on the budget phone.
+1. **(you)** Install the latest CI APK (`NammaAuto-android-<run>`) on a Helio G85 / SD680-class phone and play one full shift (18 minutes). Tap the top-left readout for full stats. Report FPS / worst FPS, RAM, hitches when chunks load, and anything uncomfortable: steering, night or rain visibility, ride length, fares, tilt steering axis.
+2. **(you)** Drop the downloaded assets into `assets_src/incoming/<category>/` with a `SOURCES.md` (links + licences): engine/horn/rain/ambience WAVs, CC0 vehicle/cattle/prop `.glb` models, 1K textures, fonts, icons.
+3. Audio integration from those files (buses, per-vehicle engine loops, horns, monsoon, ambience, UI SFX).
+4. UX/art pass: traffic, cattle and landmark models; building facades and Tamil/English signboards; lane-arrow decals; HUD and menu visual design.
+5. Jaywalkers in market zones; Gemini Flyover / Napier Bridge as real elevated ramps (osm2streets already marks their `layer`).
+6. Balance pass from your play notes (`data/passengers/*.tres`, `data/vehicles/*.tres`, `FareCalculator.gd`, `GameState` tables).
+7. **(you)** 20-minute thermal soak; confirm the CI-reported AAB size stays < 85 MB.
 
 **Start early, in parallel (you):** Google Play developer account and app entry, upload keystore (→ `ANDROID_KEYSTORE_*` repo secrets), 12+ closed testers.
 
@@ -330,7 +337,7 @@ See [`AGENTS.md`](AGENTS.md). In short: communicate only through `SignalBus`, ty
 
 ## 🗺️ Map data
 
-Roads, coastline, water and parks come from **OpenStreetMap** (© OpenStreetMap contributors, ODbL) via `tools/osm`. Zones, landmarks and auto stands are configured in `tools/osm/config.py`. Change them, run **Actions → OSM Import**, then pull.
+Roads, buildings, coastline, water and parks come from **OpenStreetMap** (© OpenStreetMap contributors, ODbL) via `tools/osm`. Lane-level road geometry comes from **osm2streets** (A/B Street, Apache-2.0), built and run by **Actions → OSM Streets**. Zones, landmarks, auto stands, services and flood spots are configured in `tools/osm/config.py`. Change them, run **Actions → OSM Import** (new OSM data) or **OSM Streets** (new lane geometry), then pull. To rebuild locally: `pip install mapbox-earcut numpy && python3 tools/osm/build_world.py`; preview with `python3 tools/osm/preview_map.py out.png 2.0 x0 z0 x1 z1`.
 
 ## 📜 Licence & credits
 

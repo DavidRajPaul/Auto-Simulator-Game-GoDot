@@ -61,8 +61,8 @@ func apply(minute: float, rain: float) -> void:
 	if _env != null:
 		var amb_day: Color = Color(0.42, 0.42, 0.47).lerp(Color(0.5, 0.42, 0.38), golden)
 		# Night stays readable: sodium-lit Chennai streets, never pitch black.
-		var amb: Color = Color(0.17, 0.17, 0.24).lerp(amb_day, day)
-		_env.ambient_light_color = amb.lerp(Color(0.38, 0.4, 0.44) * lerpf(0.4, 1.0, day), rain * 0.7)
+		var amb: Color = Color(0.27, 0.26, 0.33).lerp(amb_day, day)
+		_env.ambient_light_color = amb.lerp(Color(0.38, 0.4, 0.44) * lerpf(0.75, 1.0, day), rain * 0.7)
 		var horizon: Color = Color(0.2, 0.19, 0.24).lerp(Color(0.86, 0.82, 0.72).lerp(Color(1.0, 0.6, 0.35), golden), day)
 		horizon = horizon.lerp(Color(0.5, 0.52, 0.55) * lerpf(0.35, 1.0, day), rain)
 		_env.fog_light_color = horizon * 0.8

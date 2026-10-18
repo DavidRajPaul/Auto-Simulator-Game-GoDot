@@ -102,7 +102,7 @@ func _update_wetness(delta: float) -> void:
 	if is_equal_approx(wetness, target):
 		return
 	wetness = move_toward(wetness, target, delta * (0.2 if target > wetness else 0.05))
-	_road_mat.albedo_color = Color.WHITE.lerp(Color(0.68, 0.7, 0.74), wetness)
+	_road_mat.albedo_color = Color.WHITE.lerp(Color(0.8, 0.82, 0.86), wetness)
 	_road_mat.roughness = lerpf(0.95, 0.3, wetness)
 	_road_mat.metallic_specular = lerpf(0.5, 0.9, wetness)
 
