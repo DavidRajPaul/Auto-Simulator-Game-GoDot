@@ -1,6 +1,57 @@
 config_version=5
 
 [application]
+config_version=5
+
+[application]
+
+config/name="Namma Auto: Chennai Rickshaw Simulator 3D"
+config/description="Culturally authentic Chennai Auto Rickshaw 3D driving and economic simulator built with Godot 4."
+config/version="0.1.0-phase1"
+run/main_scene="res://scenes/main_phase1_greybox.tscn"
+config/features=PackedStringArray("4.4", "Mobile")
+config/icon="res://icon.svg"
+
+[autoload]
+
+SignalBus="*res://autoloads/SignalBus.gd"
+GameState="*res://autoloads/GameState.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=3
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[layer_names]
+
+3d_physics/layer_1="Environment_Roads"
+3d_physics/layer_2="Player_Auto"
+3d_physics/layer_3="AI_Traffic"
+3d_physics/layer_4="Pedestrians_Props"
+3d_physics/layer_5="Waterlogging_Zones"
+3d_physics/layer_6="Pickup_Dropoff_Triggers"
+
+[physics]
+
+common/physics_ticks_per_second=60
+3d/default_gravity=9.8
+3d/default_linear_damp=0.05
+3d/default_angular_damp=0.1
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=1
 
 config/name="Namma Auto: Chennai Rickshaw Simulator 3D"
 config/description="Culturally authentic Chennai Auto Rickshaw 3D driving and economic simulator built with Godot 4."
