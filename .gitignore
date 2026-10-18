@@ -5,3 +5,4 @@ build/
 *.keystore
 export_credentials.cfg
 .DS_Store
+__pycache__/
