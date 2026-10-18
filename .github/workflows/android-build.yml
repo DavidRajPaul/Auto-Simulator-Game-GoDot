@@ -150,6 +150,19 @@ jobs:
           test -f build/android/NammaAuto-debug.apk || { echo "::error::Debug APK was not produced"; exit 1; }
           ls -lh build/android/
 
+      - name: Verify APK contains the Chennai map data
+        run: |
+          python3 - <<'PY'
+          import zipfile, json, sys
+          z = zipfile.ZipFile("build/android/NammaAuto-debug.apk")
+          blob = b"".join(z.read(n) for n in z.namelist() if n.endswith(".pck"))
+          expected = len(json.load(open("data/world/manifest.json"))["chunks"])
+          found = blob.count(b"data/world/chunks/c_")
+          ok = b"data/world/manifest.json" in blob and b"data/world/road_graph.json" in blob and found >= expected
+          print(f"manifest/graph present: {ok}, chunk files {found}/{expected}")
+          sys.exit(0 if ok else 1)
+          PY
+
       - name: Export signed release APK
         if: env.HAS_RELEASE_KEY == 'true'
         env:
