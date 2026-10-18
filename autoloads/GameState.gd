@@ -45,7 +45,9 @@ const REPAIR_COST_PER_POINT: int = 3
 ## Shift: 06:00 → 22:00 in 12 real minutes (GDD "Madras day" session length).
 const SHIFT_START_MIN: float = 360.0
 const SHIFT_END_MIN: float = 1320.0
-const GAME_MIN_PER_SECOND: float = (SHIFT_END_MIN - SHIFT_START_MIN) / 720.0
+## One shift (6 AM – 10 PM) lasts 18 real minutes — room for ~5 real-size rides.
+const SHIFT_REAL_SECONDS: float = 1080.0
+const GAME_MIN_PER_SECOND: float = (SHIFT_END_MIN - SHIFT_START_MIN) / SHIFT_REAL_SECONDS
 
 var wallet_inr: int = 500
 var stand_respect_xp: int = 100

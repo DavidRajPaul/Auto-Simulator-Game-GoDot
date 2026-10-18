@@ -87,7 +87,7 @@ func _test_purchases() -> void:
 	_check("Equipping an owned paint is free", GameState.buy_paint(0) and GameState.buy_paint(2))
 	GameState.reset_profile()
 
-## Exit gate: a new driver can unlock the 2nd auto in ~30 minutes (~15 rides at ~2 min each).
+## Exit gate: a new driver can unlock the 2nd auto in ~30 minutes (~8 real-size rides at ~3.5 min each).
 func _test_economy_exit_gate() -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 30
@@ -97,14 +97,14 @@ func _test_economy_exit_gate() -> void:
 	var rides: int = 0
 	while wallet < float(GameState.base_stats("madras_king_deluxe").price_inr) and rides < 40:
 		var rider: PassengerArchetype = load("res://data/passengers/%s.tres" % ids[rng.randi() % ids.size()]) as PassengerArchetype
-		var km: float = rng.randf_range(0.5, 1.8) * 1.3 # route ≈ 1.3× straight-line
+		var km: float = rng.randf_range(0.6, 2.4) * 1.3 # route ≈ 1.3× straight-line (1 : 1 map)
 		var offer: FareCalculator.Offer = FareCalculator.Offer.METER if rng.randf() < 0.6 else FareCalculator.Offer.METER_MELA
 		var fare: int = FareCalculator.quote(offer, km, rider)
 		var b: Dictionary = FareCalculator.settle(fare, rider, rng.randf_range(0.55, 0.95), rng.randf() < 0.85, rng.randi_range(0, 2))
-		var pickup_km: float = rng.randf_range(0.2, 0.6)
+		var pickup_km: float = rng.randf_range(0.1, 0.4)
 		wallet += float(int(b["total"])) - (km + pickup_km) * stats.fuel_burn_per_km * stats.fuel_price_inr
 		rides += 1
-	_check("2nd auto affordable within ~15 rides (≈30 min)", rides <= 16, "%d rides" % rides)
+	_check("2nd auto affordable within ~9 rides (≈30 min)", rides >= 6 and rides <= 9, "%d rides" % rides)
 
 func _test_save_load() -> void:
 	GameState.reset_profile()
@@ -206,7 +206,7 @@ func _test_shift_clock() -> void:
 	_check("10 PM ends the shift with a summary", _events.has("shift_ended") and not GameState.shift_running and int((_events["shift_ended"] as Dictionary)["day"]) == day)
 	GameState.start_next_day()
 	_check("Next day resets the clock", GameState.day == day + 1 and GameState.shift_running and is_equal_approx(GameState.shift_minute, GameState.SHIFT_START_MIN))
-	_check("12 real minutes per shift", is_equal_approx((GameState.SHIFT_END_MIN - GameState.SHIFT_START_MIN) / GameState.GAME_MIN_PER_SECOND, 720.0))
+	_check("18 real minutes per shift", is_equal_approx((GameState.SHIFT_END_MIN - GameState.SHIFT_START_MIN) / GameState.GAME_MIN_PER_SECOND, 1080.0))
 
 func _test_settings(main: Node, hud: TouchHUD) -> void:
 	var sun: DirectionalLight3D = main.get_node("Sun") as DirectionalLight3D

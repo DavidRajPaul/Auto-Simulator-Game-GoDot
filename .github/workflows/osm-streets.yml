@@ -41,11 +41,15 @@ jobs:
           pip install /tmp/osm2streets/target/wheels/*.whl
       - name: Generate street geometry
         run: python3 tools/osm/run_osm2streets.py
+      - name: Rebuild world chunks with the new geometry
+        run: |
+          pip install mapbox-earcut numpy
+          python3 tools/osm/build_world.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"
           git config user.email "osm-streets@users.noreply.github.com"
-          git add -A data/osm/streets
+          git add -A data/osm/streets data/world
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "data(osm): osm2streets road geometry (© OpenStreetMap contributors, ODbL)"
           git pull --rebase

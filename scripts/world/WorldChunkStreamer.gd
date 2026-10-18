@@ -3,8 +3,9 @@ extends Node3D
 ## Streams the OSM-built Chennai map (data/world, made by tools/osm/build_world.py).
 ## Always loaded: ground collision, sea/water/beach/park areas, landmarks.
 ## Streamed: 250 m chunks (roads + buildings) in a (2r+1)² grid around the player,
-## built on WorkerThreadPool and attached on the main thread. Per chunk ≈ 2 draw calls
-## (one road/sidewalk mesh, one building MultiMesh) + building colliders.
+## built on WorkerThreadPool and attached on the main thread. Per chunk = 2 draw calls:
+## one road mesh (real osm2streets lanes, junctions, sidewalks, markings — or centre-line
+## ribbons as a fallback) and one building mesh (real OSM footprints extruded) + a trimesh collider.
 
 ## Visual layering (ground plane sits at -0.15 so far-away flat layers never z-fight).
 const GROUND_VISUAL_Y: float = -0.15
@@ -14,6 +15,27 @@ const SIDEWALK_W: float = 2.5
 const CHECK_INTERVAL_S: float = 0.25
 const CLASS_LAYER: Dictionary = {"trunk": 6, "motorway": 6, "primary": 5, "secondary": 4, "tertiary": 3,
 	"unclassified": 2, "residential": 1, "living_street": 0}
+## osm2streets surface kinds → [colour, layer height]. "_up" (flyover decks) sit a hair higher.
+const SURF_STYLE: Dictionary = {
+	"walk": [Color(0.64, 0.6, 0.55), 0.08],
+	"junction": [Color(0.28, 0.28, 0.29), 0.05],
+	"road": [Color(0.31, 0.31, 0.32), 0.06],
+	"lane": [Color(0.88, 0.88, 0.86), 0.07],
+	"centre": [Color(0.92, 0.82, 0.42), 0.07],
+}
+const UP_LAYER_Y: float = 0.012
+const GROUND_FLOOR_M: float = 3.2
+const COLLIDER_MAX_H: float = 8.0
+const KIND_PALETTES: Dictionary = {
+	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
+	"office": [Color(0.6, 0.68, 0.74), Color(0.75, 0.78, 0.8), Color(0.55, 0.6, 0.62)],
+	"civic": [Color(0.93, 0.88, 0.76), Color(0.85, 0.5, 0.4), Color(0.95, 0.95, 0.92)],
+	"shed": [Color(0.55, 0.58, 0.62), Color(0.45, 0.5, 0.6), Color(0.62, 0.55, 0.48)],
+}
+## Shop-front / signboard colours for ground floors on busy streets.
+const SHOPFRONT: Array[Color] = [Color(0.85, 0.2, 0.15), Color(0.15, 0.4, 0.75), Color(0.95, 0.75, 0.1),
+	Color(0.2, 0.6, 0.3), Color(0.35, 0.3, 0.28), Color(0.9, 0.45, 0.1)]
+const ROOF_COLOUR: Color = Color(0.7, 0.68, 0.64)
 const ZONE_PALETTES: Dictionary = {
 	"marina": [Color(0.93, 0.9, 0.82), Color(0.85, 0.82, 0.7), Color(0.75, 0.82, 0.86)],
 	"mylapore": [Color(0.95, 0.85, 0.6), Color(0.9, 0.72, 0.55), Color(0.8, 0.85, 0.7), Color(0.95, 0.93, 0.85)],
@@ -37,7 +59,6 @@ var _player: Node3D
 var _timer: float = 0.0
 var _road_mat: StandardMaterial3D
 var _bld_mat: StandardMaterial3D
-var _bld_mesh: BoxMesh
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 
@@ -60,8 +81,6 @@ func _ready() -> void:
 	_bld_mat.vertex_color_use_as_albedo = true
 	_bld_mat.vertex_color_is_srgb = true
 	_bld_mat.roughness = 0.9
-	_bld_mesh = BoxMesh.new()
-	_bld_mesh.material = _bld_mat
 	_build_ground()
 	_build_areas()
 	_build_landmarks()
@@ -161,17 +180,57 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var data: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
 	var root: Node3D = Node3D.new()
 	root.name = "Chunk_%d_%d" % [k.x, k.y]
-	var roads: Array = data.get("roads", [])
-	if not roads.is_empty():
+	var mesh: ArrayMesh = null
+	if data.has("surf"):
+		mesh = _surface_mesh(data["surf"] as Dictionary)
+	elif data.has("roads"):
+		mesh = _road_mesh(data["roads"] as Array)
+	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Roads"
-		mi.mesh = _road_mesh(roads)
+		mi.mesh = mesh
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(mi)
-	var blds: Array = data.get("buildings", [])
+	var blds: Array = data.get("blds", [])
 	if not blds.is_empty():
-		root.add_child(_buildings(blds, k))
+		root.add_child(_buildings(blds))
 	return root
+
+## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
+func _surface_mesh(surf: Dictionary) -> ArrayMesh:
+	var verts: PackedVector3Array = PackedVector3Array()
+	var cols: PackedColorArray = PackedColorArray()
+	var idx: PackedInt32Array = PackedInt32Array()
+	for kind: String in surf:
+		var base_kind: String = kind.trim_suffix("_up")
+		if not SURF_STYLE.has(base_kind):
+			continue
+		var style: Array = SURF_STYLE[base_kind]
+		var colour: Color = style[0]
+		var y: float = float(style[1]) + (UP_LAYER_Y if kind.ends_with("_up") else 0.0)
+		var part: Dictionary = surf[kind]
+		var v: Array = part["v"]
+		var offset: int = verts.size()
+		for i: int in range(0, v.size(), 2):
+			verts.append(Vector3(float(v[i]), y, float(v[i + 1])))
+			cols.append(colour)
+		for t: Variant in part["i"]:
+			idx.append(int(t) + offset)
+	if idx.is_empty():
+		return null
+	var normals: PackedVector3Array = PackedVector3Array()
+	normals.resize(verts.size())
+	normals.fill(Vector3.UP)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _road_mat)
+	return mesh
 
 func _road_mesh(roads: Array) -> ArrayMesh:
 	var st: SurfaceTool = SurfaceTool.new()
@@ -221,37 +280,108 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 		st.add_vertex(right[i - 1])
 		st.add_vertex(right[i])
 
-func _buildings(blds: Array, k: Vector2i) -> Node3D:
+## Real footprints (and procedural fill) extruded to their heights: walls + flat roofs in one
+## vertex-coloured mesh, shop-front bands on busy streets, one trimesh collider for the walls.
+func _buildings(blds: Array) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
 	holder.collision_mask = 0
-	var mm: MultiMesh = MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = _bld_mesh
-	mm.instance_count = blds.size()
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = hash(k)
-	for i: int in blds.size():
-		var b: Dictionary = blds[i]
-		var size: Vector3 = Vector3(float(b["d"]), float(b["h"]), float(b["w"]))
-		var basis: Basis = Basis(Vector3.UP, float(b["yaw"]))
-		var pos: Vector3 = Vector3(float(b["x"]), size.y * 0.5, float(b["z"]))
-		mm.set_instance_transform(i, Transform3D(basis * Basis.from_scale(size), pos))
-		var palette: Array = ZONE_PALETTES.get(str(b.get("zone", "")), ZONE_PALETTES[""])
-		mm.set_instance_color(i, (palette[rng.randi() % palette.size()] as Color).darkened(rng.randf_range(0.0, 0.15)))
-		var shape: BoxShape3D = BoxShape3D.new()
-		shape.size = size
-		var cs: CollisionShape3D = CollisionShape3D.new()
-		cs.shape = shape
-		cs.transform = Transform3D(basis, pos)
-		holder.add_child(cs)
-	var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
-	mmi.name = "BuildingMeshes"
-	mmi.multimesh = mm
-	holder.add_child(mmi)
+	var verts: PackedVector3Array = PackedVector3Array()
+	var norms: PackedVector3Array = PackedVector3Array()
+	var cols: PackedColorArray = PackedColorArray()
+	var faces: PackedVector3Array = PackedVector3Array()
+	for b: Dictionary in blds:
+		var flat: Array = b["p"]
+		var pts: PackedVector2Array = PackedVector2Array()
+		for i: int in range(0, flat.size(), 2):
+			pts.append(Vector2(float(flat[i]), float(flat[i + 1])))
+		if pts.size() < 3:
+			continue
+		var h: float = float(b["h"])
+		var seed_f: float = float(b.get("s", 0))
+		var colour: Color = building_colour(str(b.get("k", "")), str(b.get("z", "")), seed_f)
+		var shopfront: bool = h > 6.0 and (str(b.get("k", "")) == "shop" or (str(b.get("z", "")) in ["t_nagar", "anna_salai"] and fposmod(seed_f * 0.37, 1.0) < 0.7))
+		var band: Color = SHOPFRONT[int(seed_f) % SHOPFRONT.size()]
+		# Signed area tells us the winding, so walls always face outwards.
+		var area2: float = 0.0
+		for i: int in pts.size():
+			area2 += pts[i - 1].cross(pts[i])
+		var outward_sign: float = 1.0 if area2 > 0.0 else -1.0
+		for i: int in pts.size():
+			var a: Vector2 = pts[i - 1]
+			var c: Vector2 = pts[i]
+			var e: Vector2 = c - a
+			if e.length_squared() < 0.0001:
+				continue
+			var n2: Vector2 = Vector2(e.y, -e.x).normalized() * outward_sign
+			var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+			# Cheap fake AO/sun: walls facing the sea-breeze east/south a touch brighter.
+			var tint: Color = colour.darkened(0.08 * (1.0 - absf(n2.x)))
+			if shopfront:
+				_quad(verts, norms, cols, a, c, 0.0, GROUND_FLOOR_M, n, band)
+				_quad(verts, norms, cols, a, c, GROUND_FLOOR_M, h, n, tint)
+			else:
+				_quad(verts, norms, cols, a, c, 0.0, h, n, tint)
+			var top: float = minf(h, COLLIDER_MAX_H)
+			faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
+				Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
+		var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
+		var roof: Color = ROOF_COLOUR.lerp(colour, 0.35).darkened(fposmod(seed_f * 0.13, 0.12))
+		for t: int in range(0, tri.size(), 3):
+			var p0: Vector2 = pts[tri[t]]
+			var p1: Vector2 = pts[tri[t + 1]]
+			var p2: Vector2 = pts[tri[t + 2]]
+			if (p1 - p0).cross(p2 - p0) < 0.0: # clockwise seen from above = faces up
+				var tmp: Vector2 = p1
+				p1 = p2
+				p2 = tmp
+			for p: Vector2 in [p0, p1, p2]:
+				verts.append(Vector3(p.x, h, p.y))
+				norms.append(Vector3.UP)
+				cols.append(roof)
+	if verts.is_empty():
+		return holder
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = norms
+	arrays[Mesh.ARRAY_COLOR] = cols
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _bld_mat)
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "BuildingMeshes"
+	mi.mesh = mesh
+	holder.add_child(mi)
+	var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+	shape.backface_collision = true
+	shape.set_faces(faces)
+	var cs: CollisionShape3D = CollisionShape3D.new()
+	cs.shape = shape
+	holder.add_child(cs)
 	return holder
+
+static func building_colour(kind: String, zone: String, seed_f: float) -> Color:
+	var palette: Array = KIND_PALETTES.get(kind, ZONE_PALETTES.get(zone, ZONE_PALETTES[""]))
+	var pick: Color = palette[int(seed_f) % palette.size()]
+	return pick.darkened(fposmod(seed_f * 0.618, 1.0) * 0.15)
+
+## One wall quad from a→c between heights y0 and y1, facing n (wound for front faces).
+func _quad(verts: PackedVector3Array, norms: PackedVector3Array, cols: PackedColorArray, a: Vector2, c: Vector2,
+		y0: float, y1: float, n: Vector3, colour: Color) -> void:
+	var v0: Vector3 = Vector3(a.x, y0, a.y)
+	var v1: Vector3 = Vector3(c.x, y0, c.y)
+	var v2: Vector3 = Vector3(c.x, y1, c.y)
+	var v3: Vector3 = Vector3(a.x, y1, a.y)
+	# Godot front faces are clockwise when viewed from the front.
+	var tri: PackedVector3Array = PackedVector3Array([v0, v2, v1, v0, v3, v2])
+	if (v1 - v0).cross(v3 - v0).dot(n) <= 0.0:
+		tri = PackedVector3Array([v0, v1, v2, v0, v2, v3])
+	for v: Vector3 in tri:
+		verts.append(v)
+		norms.append(n)
+		cols.append(colour)
 
 # --- Always-loaded layers ----------------------------------------------------
 

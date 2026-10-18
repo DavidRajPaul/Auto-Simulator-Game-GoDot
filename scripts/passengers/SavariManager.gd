@@ -22,8 +22,9 @@ const STOPPED_KMH: float = 6.0
 const HAGGLE_SECONDS: float = 5.0
 const REJECT_COOLDOWN_S: float = 10.0
 const PAYOUT_SECONDS: float = 3.0
-const MIN_TRIP_M: float = 350.0
-const MAX_TRIP_M: float = 1800.0
+## Straight-line trip length (real metres, the map is 1 : 1): ~0.8–3 km by road, 2–5 min.
+const MIN_TRIP_M: float = 600.0
+const MAX_TRIP_M: float = 2400.0
 const REROUTE_OFF_ROUTE_M: float = 30.0
 const RIDE_UPDATE_INTERVAL_S: float = 0.2
 
@@ -266,7 +267,7 @@ func _choose_destination(a: PassengerArchetype) -> Dictionary:
 				options.append(d) # tourists love landmarks
 	if options.is_empty():
 		# Fallback: any road point at a sensible distance.
-		var cands: Array[Dictionary] = graph.spawn_candidates(_player_pos, Vector3.ZERO, MIN_TRIP_M, 900.0)
+		var cands: Array[Dictionary] = graph.spawn_candidates(_player_pos, Vector3.ZERO, MIN_TRIP_M, 1500.0)
 		if not cands.is_empty():
 			var c: Dictionary = cands[rng.randi() % cands.size()]
 			var p: Vector3 = graph.sample(int(c["edge"]), float(c["s"]), 1)[0]

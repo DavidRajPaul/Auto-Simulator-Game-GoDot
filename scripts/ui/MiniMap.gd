@@ -4,7 +4,7 @@ extends Control
 ## RoadGraph via a segment grid; everything else via SignalBus. Roads draw with one
 ## draw_multiline call, redrawn at ~15 Hz.
 
-const RANGE_M: float = 220.0
+const RANGE_M: float = 300.0
 const CELL_M: float = 100.0
 const REDRAW_INTERVAL_S: float = 1.0 / 15.0
 

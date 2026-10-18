@@ -4,9 +4,9 @@
 BBOX = (13.028, 80.230, 13.070, 80.288)
 ORIGIN = ((BBOX[0] + BBOX[2]) / 2.0, (BBOX[1] + BBOX[3]) / 2.0)
 
-# Game world is a compressed 1:2.5 representation (tech spec: stylised, compressed city).
-# Road *widths* stay real-size so the auto and traffic still fit.
-MAP_SCALE = 0.4
+# 1.0 = real size. Real lane geometry (osm2streets) and real building outlines only line up at 1:1.
+# (Phases 2–4 used a 1 : 2.5 compressed map; fares then counted "real-equivalent" km.)
+MAP_SCALE = 1.0
 CHUNK_SIZE_M = 250.0
 
 # Zone cores (real lat/lon, radius in real metres). Residential streets are only kept inside these.
@@ -42,11 +42,11 @@ AUTO_STANDS = [
     {"id": "stand_tnagar", "name": "Panagal Park Auto Stand", "lat": 13.0412, "lon": 80.2362},
 ]
 
-# highway class → (default total width m, default lanes per direction, keep everywhere?)
+# highway class → (default total width m, default lanes per direction, keep everywhere? else zones only)
 ROAD_CLASSES = {
     "motorway": (20.0, 3, True), "trunk": (18.0, 3, True), "primary": (14.0, 2, True),
     "secondary": (11.0, 2, True), "tertiary": (9.0, 1, True),
-    "unclassified": (7.0, 1, False), "residential": (6.5, 1, False), "living_street": (5.5, 1, False),
+    "unclassified": (7.0, 1, True), "residential": (6.5, 1, True), "living_street": (5.5, 1, True),
 }
 LANE_WIDTH_M = 3.3
 

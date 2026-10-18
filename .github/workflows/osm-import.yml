@@ -27,6 +27,8 @@ jobs:
       - name: Fetch OSM (Overpass)
         if: inputs.refetch || hashFiles('data/osm/chennai_mvp.osm.json.gz') == ''
         run: python3 tools/osm/fetch_osm.py
+      - name: Install pipeline deps
+        run: pip install mapbox-earcut numpy
       - name: Build world chunks
         run: |
           if [ -f tools/osm/build_world.py ]; then python3 tools/osm/build_world.py; else echo "build_world.py not present yet"; fi

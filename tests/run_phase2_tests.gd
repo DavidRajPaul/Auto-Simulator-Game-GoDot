@@ -46,7 +46,10 @@ func _test_manifest() -> Dictionary:
 	var m: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
 	var b: Array = m["bounds"]
 	var span: Vector2 = Vector2(float(b[2]) - float(b[0]), float(b[3]) - float(b[1]))
-	_check("Map spans ≈ 2.5 km (2–3.5 km each axis)", span.x > 2000.0 and span.x < 3500.0 and span.y > 2000.0 and span.y < 3500.0, "%.0f × %.0f m" % [span.x, span.y])
+	_check("Real-size map: 1 : 1 scale, 5–8 km each axis", is_equal_approx(float(m.get("map_scale", 0.0)), 1.0) and span.x > 5000.0 and span.x < 8000.0 and span.y > 5000.0 and span.y < 8000.0, "%.0f × %.0f m" % [span.x, span.y])
+	_check("Real road geometry from osm2streets", str(m.get("road_source", "")) == "osm2streets")
+	var st: Dictionary = m.get("stats", {})
+	_check("≥ 15k real OSM building footprints", int(st.get("real_buildings", 0)) >= 15000, "%d" % int(st.get("real_buildings", 0)))
 	_check("≥ 50 chunks of 250 m", (m["chunks"] as Array).size() >= 50 and is_equal_approx(float(m["chunk_size"]), 250.0), "%d chunks" % (m["chunks"] as Array).size())
 	var zone_ids: Array = (m["zones"] as Array).map(func(z: Dictionary) -> String: return str(z["id"]))
 	_check("3 MVP zones present (Marina, Mylapore, Anna Salai/T. Nagar)", zone_ids.has("marina") and zone_ids.has("mylapore") and zone_ids.has("anna_salai") and zone_ids.has("t_nagar"))
@@ -96,9 +99,11 @@ func _test_chunk_content(world: WorldChunkStreamer) -> void:
 			roads += 1
 		var b: Node = ch.get_node_or_null("Buildings")
 		if b != null:
-			colliders += b.get_child_count() - 1
+			for c: Node in b.get_children():
+				if c is CollisionShape3D and (c as CollisionShape3D).shape is ConcavePolygonShape3D:
+					colliders += ((c as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces().size() / 6 # walls
 	_check("Loaded chunks have road meshes", roads >= 4, "%d chunks with roads" % roads)
-	_check("Buildings have colliders", colliders > 20, "%d building colliders" % colliders)
+	_check("Building walls have colliders", colliders > 200, "%d wall colliders" % colliders)
 
 func _test_landmarks(world: WorldChunkStreamer, manifest: Dictionary) -> void:
 	var holder: Node = world.get_node_or_null("Landmarks")

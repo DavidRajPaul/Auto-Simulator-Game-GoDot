@@ -2,12 +2,17 @@
 """Build Namma Auto's streamed world from raw OSM data (pure stdlib, deterministic).
 
 Input : data/osm/chennai_mvp.osm.json.gz   (from fetch_osm.py, © OpenStreetMap contributors, ODbL)
+        data/osm/streets/*.geojson.gz       (optional, from run_osm2streets.py: real lane geometry)
 Output: data/world/manifest.json            map bounds, chunk list, zones, landmarks, auto stands
         data/world/road_graph.json          drivable graph for AI traffic + GPS (Phase 3)
         data/world/areas.json               sea, water, beach, park polygons (always loaded)
-        data/world/chunks/c_<i>_<j>.json    road ribbons + building boxes per 250 m chunk
+        data/world/chunks/c_<i>_<j>.json    per 250 m chunk:
+            "surf"  pre-triangulated osm2streets lanes / junctions / sidewalks / markings
+                    (falls back to "roads" centre-line ribbons when osm2streets data is missing)
+            "blds"  building footprints (real OSM outlines + procedural fill) with heights
 
-Coordinates: x = east, z = south (Godot -Z is north), metres, already scaled by MAP_SCALE.
+Coordinates: x = east, z = south (Godot -Z is north), metres, scaled by MAP_SCALE (1.0 = real size).
+Needs: pip install mapbox-earcut numpy (only for the osm2streets surfaces).
 """
 from __future__ import annotations
 
@@ -19,6 +24,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import streets
 from config import (AUTO_STANDS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
                     MAP_SCALE, ORIGIN, ROAD_CLASSES, ZONES)
 
@@ -130,7 +136,7 @@ def load_raw() -> list[dict]:
         return json.load(f)["elements"]
 
 
-def build_roads(elements: list[dict]) -> tuple[list[dict], dict]:
+def build_roads(elements: list[dict], lane_info: dict[int, dict]) -> tuple[list[dict], dict]:
     ways = []
     for e in elements:
         if e.get("type") != "way" or "highway" not in e.get("tags", {}):
@@ -165,8 +171,18 @@ def build_roads(elements: list[dict]) -> tuple[list[dict], dict]:
         width = max(width, 5.5 if is_oneway else 6.0)
         if is_link:
             width, lanes_total = max(5.0, width * 0.6), max(1, lanes_total // 2)
+        lanes_fwd = lanes_back = None
+        info = lane_info.get(e["id"])
+        if info and info["fwd"] + info["back"] > 0:
+            # Match the lanes osm2streets actually draws (Forward = OSM way direction).
+            f, b = (info["back"], info["fwd"]) if oneway == "-1" else (info["fwd"], info["back"])
+            if is_oneway or (f > 0 and b > 0):
+                width = max(4.5, info["width"])
+                lanes_fwd, lanes_back = max(1, f + (b if is_oneway else 0)), (0 if is_oneway else b)
+                lanes_total = lanes_fwd + lanes_back
         ways.append({"id": e["id"], "cls": cls, "name": tags.get("name", ""), "nodes": nodes, "latlon": latlon,
-                     "oneway": is_oneway, "lanes_total": lanes_total, "width": min(width, 24.0)})
+                     "oneway": is_oneway, "lanes_total": lanes_total, "width": min(width, 24.0),
+                     "lf": lanes_fwd, "lb": lanes_back})
 
     # Split ways into graph edges at shared nodes.
     use = defaultdict(int)
@@ -186,10 +202,14 @@ def build_roads(elements: list[dict]) -> tuple[list[dict], dict]:
                 pts = simplify(pts, 0.6)
                 length = sum(math.dist(pts[m], pts[m + 1]) for m in range(len(pts) - 1))
                 if length > 0.5 and ids[0] != ids[-1]:
-                    lanes_fwd = w["lanes_total"] if w["oneway"] else max(1, w["lanes_total"] // 2)
+                    if w["lf"] is not None:
+                        lanes_fwd, lanes_back = w["lf"], w["lb"]
+                    else:
+                        lanes_fwd = w["lanes_total"] if w["oneway"] else max(1, w["lanes_total"] // 2)
+                        lanes_back = 0 if w["oneway"] else lanes_fwd
                     edges.append({"a": ids[0], "b": ids[-1], "pts": pts, "len": length, "cls": w["cls"],
                                   "name": w["name"], "oneway": w["oneway"], "width": w["width"],
-                                  "lanes_fwd": lanes_fwd, "lanes_back": 0 if w["oneway"] else lanes_fwd})
+                                  "lanes_fwd": lanes_fwd, "lanes_back": lanes_back})
                 start = k
 
     # Keep the largest connected component (undirected).
@@ -306,6 +326,107 @@ def build_areas(elements: list[dict]) -> dict:
     return out
 
 
+# Raster occupancy values (higher wins).
+R_WALK, R_PARK, R_BUILDING, R_ROAD, R_WATER = 1, 2, 3, 4, 5
+LEVEL_M = 3.2
+# OSM building=* → kind used for colour/shape in the game.
+BUILDING_KIND = {"temple": "temple", "shrine": "temple", "church": "temple", "mosque": "temple",
+                 "commercial": "shop", "retail": "shop", "office": "office", "hotel": "office",
+                 "hospital": "office", "school": "civic", "college": "civic", "public": "civic",
+                 "civic": "civic", "train_station": "civic", "transportation": "civic", "palace": "civic",
+                 "roof": "shed", "garage": "shed", "pavilion": "shed", "greenhouse": "shed", "construction": "shed"}
+
+
+def make_raster(edges: list[dict], areas: dict, footprints: list) -> streets.Raster:
+    xs = [p[0] for e in edges for p in e["pts"]]
+    zs = [p[1] for e in edges for p in e["pts"]]
+    r = streets.Raster((min(xs), min(zs), max(xs), max(zs)))
+    for kind, poly in footprints:
+        r.fill_polygon(poly, R_WALK if kind == "walk" else R_ROAD)
+    for e in edges:  # graph carriageways too (and the only roads when osm2streets is missing)
+        for a, b in zip(e["pts"], e["pts"][1:]):
+            r.fill_segment(a, b, e["width"] / 2.0, R_ROAD)
+            if not footprints:
+                r.fill_segment(a, b, e["width"] / 2.0 + SIDEWALK_M, R_WALK)
+    for poly in areas["water"]:
+        r.fill_polygon([tuple(p) for p in poly], R_WATER)
+    for poly in areas["beach"] + areas["park"]:
+        r.fill_polygon([tuple(p) for p in poly], R_PARK)
+    return r
+
+
+def _height_for(tags: dict, area: float, zone: str | None, rng: random.Random) -> float:
+    for key in ("height", "building:height"):
+        try:
+            return max(2.5, min(150.0, float(str(tags[key]).split()[0])))
+        except (KeyError, ValueError):
+            pass
+    try:
+        levels = float(str(tags["building:levels"]).split(";")[0])
+        return max(1.0, min(40.0, levels)) * LEVEL_M + 0.6
+    except (KeyError, ValueError):
+        pass
+    kind = BUILDING_KIND.get(tags.get("building", ""), "")
+    if kind == "shed":
+        return rng.uniform(3.0, 4.5)
+    lo, hi = (ZONES[zone] if zone else DEFAULT_ZONE_STYLE)["bld_height"]
+    # Chennai rule of thumb: tiny plots are 1–2 floor houses, big footprints are blocks.
+    if area < 60.0:
+        floors = rng.choice((1, 1, 2, 2, 3))
+    elif area < 250.0:
+        floors = rng.choice((2, 2, 3, 3, 4))
+    elif area < 1200.0:
+        floors = rng.randint(3, 6)
+    else:
+        floors = rng.randint(3, 10)
+    return max(3.2, min(hi * 1.3, max(lo * 0.6, floors * LEVEL_M + 0.6)))
+
+
+def build_real_buildings(elements: list[dict], raster: streets.Raster, clear_pts: list[tuple[float, float, float]]) -> list[dict]:
+    """Real OSM footprints, extruded. Dropped if they sit on a carriageway or in water."""
+    rng = random.Random(600004)
+    inv_lat = 1.0 / (M_PER_DEG_LAT * MAP_SCALE)
+    inv_lon = 1.0 / (M_PER_DEG_LON * MAP_SCALE)
+    out, dropped = [], 0
+    for e in elements:
+        tags = e.get("tags", {})
+        geom = e.get("geometry") or []
+        if e.get("type") != "way" or "building" not in tags or len(geom) < 4:
+            continue
+        if tags.get("building") in ("no", "ruins") or str(tags.get("layer", "0")).startswith("-"):
+            continue
+        pts = [project(g["lat"], g["lon"]) for g in geom]
+        if pts[0] == pts[-1]:
+            pts = pts[:-1]
+        if len(pts) >= 4:
+            pts = simplify(pts + [pts[0]], 0.3)[:-1]
+        if len(pts) < 3:
+            continue
+        area = poly_area(pts)
+        if area < 12.0:
+            continue
+        cx, cz = sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+        on_road = sum(1 for x, z in pts if raster.get(x, z) == R_ROAD)
+        if raster.get(cx, cz) in (R_ROAD, R_WATER) or on_road * 2 > len(pts):
+            dropped += 1
+            continue
+        if any(math.hypot(cx - x, cz - z) < r for x, z, r in clear_pts):
+            dropped += 1
+            continue
+        zid = zone_of(ORIGIN[0] - cz * inv_lat, ORIGIN[1] + cx * inv_lon)
+        h = _height_for(tags, area, zid, rng)
+        # Wind counter-clockwise seen from above (+y) so walls face outwards.
+        signed = sum(pts[i][0] * pts[i - 1][1] - pts[i - 1][0] * pts[i][1] for i in range(len(pts)))
+        if signed < 0:
+            pts.reverse()
+        raster.fill_polygon(pts, R_BUILDING, grow=0.5)
+        out.append({"p": [v for x, z in pts for v in (r2(x), r2(z))], "h": r2(h),
+                    "k": BUILDING_KIND.get(tags.get("building", ""), "shop" if "shop" in tags else ""),
+                    "z": zid or "", "s": e["id"] % 9973, "cx": cx, "cz": cz})
+    print(f"  real buildings: {len(out)} kept, {dropped} dropped (on roads / landmarks)")
+    return out
+
+
 def coast_x_at(sea_polys: list, z: float) -> float:
     """x of the coastline at a given z (inf if there is no sea)."""
     if not sea_polys:
@@ -317,26 +438,11 @@ def coast_x_at(sea_polys: list, z: float) -> float:
     return coast[0][0] if z < coast[0][1] else coast[-1][0]
 
 
-def build_buildings(edges: list[dict], areas: dict, landmarks: list[dict]) -> list[dict]:
+def build_fill_buildings(edges: list[dict], areas: dict, raster: streets.Raster, clear_pts: list) -> list[dict]:
+    """Procedural boxes along graph roads where OSM has no mapped buildings yet."""
     rng = random.Random(600004)  # Mylapore PIN — deterministic city
-    grid = SegmentGrid()
-    for e in edges:
-        for a, b in zip(e["pts"], e["pts"][1:]):
-            grid.add(a, b, e["width"] / 2.0)
-    occupied: dict[tuple[int, int], list[tuple[float, float, float]]] = defaultdict(list)
-    blocked_polys = areas["water"] + areas["beach"] + areas["park"]
-    inv_scale_lat = 1.0 / (M_PER_DEG_LAT * MAP_SCALE)
-    inv_scale_lon = 1.0 / (M_PER_DEG_LON * MAP_SCALE)
-
-    def free(x: float, z: float, r: float) -> bool:
-        ci, cj = int(x // 30), int(z // 30)
-        for di in (-1, 0, 1):
-            for dj in (-1, 0, 1):
-                for ox, oz, orad in occupied.get((ci + di, cj + dj), ()):
-                    if math.hypot(x - ox, z - oz) < r + orad:
-                        return False
-        return True
-
+    inv_lat = 1.0 / (M_PER_DEG_LAT * MAP_SCALE)
+    inv_lon = 1.0 / (M_PER_DEG_LON * MAP_SCALE)
     out = []
     for e in edges:
         hw = e["width"] / 2.0
@@ -350,31 +456,31 @@ def build_buildings(edges: list[dict], areas: dict, landmarks: list[dict]) -> li
                 t = rng.uniform(2.0, 6.0)
                 while t < seg_len - 4.0:
                     px, pz = a[0] + dx * t, a[1] + dz * t
-                    lat, lon = ORIGIN[0] - pz * inv_scale_lat, ORIGIN[1] + px * inv_scale_lon
-                    zid = zone_of(lat, lon)
+                    zid = zone_of(ORIGIN[0] - pz * inv_lat, ORIGIN[1] + px * inv_lon)
                     style = ZONES[zid] if zid else DEFAULT_ZONE_STYLE
-                    w = rng.uniform(9.0, 17.0)
+                    w = rng.uniform(8.0, 15.0)
                     if rng.random() > style["bld_density"]:
                         t += w
                         continue
-                    d = rng.uniform(8.0, 15.0)
+                    d = rng.uniform(8.0, 14.0)
                     h = rng.uniform(*style["bld_height"])
-                    off = hw + SIDEWALK_M + d / 2.0
+                    off = hw + SIDEWALK_M + 0.5 + d / 2.0
                     cx, cz = px + dx * (w / 2.0) + nx * off, pz + dz * (w / 2.0) + nz * off
-                    radius = math.hypot(w, d) / 2.0
                     corners = [(cx + dx * sx * w / 2 + nx * sz * d / 2, cz + dz * sx * w / 2 + nz * sz * d / 2)
-                               for sx in (-1, 1) for sz in (-1, 1)]
-                    ok = all(grid.clear(x, z, 1.0) for x, z in corners + [(cx, cz)])
-                    ok = ok and free(cx, cz, radius * 0.8)
+                               for sx, sz in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+                    probe = corners + [(cx, cz)] + [((p[0] + q[0]) / 2, (p[1] + q[1]) / 2) for p, q in zip(corners, corners[1:] + corners[:1])]
+                    ok = all(raster.get(x, z) == 0 for x, z in probe)
                     ok = ok and cx < coast_x_at(areas["sea"], cz) - SEA_CLEAR_M
-                    ok = ok and not any(point_in_poly(cx, cz, p) for p in blocked_polys)
-                    ok = ok and all(math.hypot(cx - l["x"], cz - l["z"]) > LANDMARK_CLEAR_M + radius for l in landmarks)
+                    ok = ok and all(math.hypot(cx - x, cz - z) > r + math.hypot(w, d) / 2 for x, z, r in clear_pts)
                     if ok:
-                        occupied[(int(cx // 30), int(cz // 30))].append((cx, cz, radius * 0.8))
-                        yaw = math.atan2(-dx, -dz)  # building faces along the road
-                        out.append({"x": r2(cx), "z": r2(cz), "w": r2(w), "d": r2(d), "h": r2(h),
-                                    "yaw": round(yaw, 3), "zone": zid or ""})
+                        signed = sum(corners[i][0] * corners[i - 1][1] - corners[i - 1][0] * corners[i][1] for i in range(4))
+                        if signed < 0:
+                            corners.reverse()
+                        raster.fill_polygon(corners, R_BUILDING, grow=1.0)
+                        out.append({"p": [v for x, z in corners for v in (r2(x), r2(z))], "h": r2(h), "k": "",
+                                    "z": zid or "", "s": rng.randrange(9973), "cx": cx, "cz": cz, "f": 1})
                     t += w + rng.uniform(0.5, 3.0)
+    print(f"  fill buildings: {len(out)}")
     return out
 
 
@@ -400,8 +506,13 @@ def nearest_road_point(edges: list[dict], x: float, z: float, side: float = 0.25
 
 def main() -> int:
     elements = load_raw()
-    edges, nodes = build_roads(elements)
+    use_streets = streets.available()
+    if not use_streets:
+        print("  osm2streets data or mapbox-earcut missing → centre-line road ribbons only")
+    edges, nodes = build_roads(elements, streets.way_lanes() if use_streets else {})
     areas = build_areas(elements)
+    key = lambda x, z: (int(math.floor(x / CHUNK_SIZE_M)), int(math.floor(z / CHUNK_SIZE_M)))  # noqa: E731
+    surfaces, footprints = streets.build_surfaces(project, key) if use_streets else ({}, [])
     landmarks = []
     for l in LANDMARKS:
         x, z = project(l["lat"], l["lon"])
@@ -429,26 +540,32 @@ def main() -> int:
         services.append({"id": sv["id"], "name": sv["name"], "kind": sv["kind"],
                          "x": r2(rx + nx * side * off), "z": r2(rz + nz * side * off),
                          "road_x": r2(rx), "road_z": r2(rz), "yaw": round(math.atan2(-dx, -dz), 3)})
-    # Keep buildings off service points like landmarks.
-    buildings = build_buildings(edges, areas, landmarks + [{"x": s_["x"], "z": s_["z"]} for s_ in services])
+    # Keep buildings off landmark placeholders and service bays.
+    clear_r = {"lighthouse": 14.0, "gopuram": 22.0, "tower": 16.0, "heritage": 22.0}
+    clear_pts = [(l["x"], l["z"], clear_r[l["kind"]]) for l in landmarks if l["kind"] in clear_r]
+    clear_pts += [(s_["x"], s_["z"], 9.0) for s_ in services]
+    raster = make_raster(edges, areas, footprints)
+    buildings = build_real_buildings(elements, raster, clear_pts)
+    buildings += build_fill_buildings(edges, areas, raster, clear_pts)
 
-    # Chunk road ribbons and buildings.
-    chunks: dict[tuple[int, int], dict] = defaultdict(lambda: {"roads": [], "buildings": []})
-    key = lambda x, z: (int(math.floor(x / CHUNK_SIZE_M)), int(math.floor(z / CHUNK_SIZE_M)))  # noqa: E731
-    for e in edges:
+    # Chunk road surfaces and buildings.
+    chunks: dict[tuple[int, int], dict] = defaultdict(dict)
+    for k, surf in surfaces.items():
+        chunks[k]["surf"] = surf
+    for e in edges if not use_streets else ():  # centre-line ribbons only without osm2streets
         piece: list[tuple[float, float]] = [e["pts"][0]]
         cur = None
         for a, b in zip(e["pts"], e["pts"][1:]):
             k = key((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
             if cur is not None and k != cur:
-                chunks[cur]["roads"].append({"pts": [[r2(x), r2(z)] for x, z in piece], "w": r2(e["width"]), "c": e["cls"]})
+                chunks[cur].setdefault("roads", []).append({"pts": [[r2(x), r2(z)] for x, z in piece], "w": r2(e["width"]), "c": e["cls"]})
                 piece = [a]
             cur = k
             piece.append(b)
         if cur is not None:
-            chunks[cur]["roads"].append({"pts": [[r2(x), r2(z)] for x, z in piece], "w": r2(e["width"]), "c": e["cls"]})
+            chunks[cur].setdefault("roads", []).append({"pts": [[r2(x), r2(z)] for x, z in piece], "w": r2(e["width"]), "c": e["cls"]})
     for b in buildings:
-        chunks[key(b["x"], b["z"])]["buildings"].append(b)
+        chunks[key(b.pop("cx"), b.pop("cz"))].setdefault("blds", []).append(b)
 
     # Road graph (node ids renumbered compactly).
     ids = {nid: i for i, nid in enumerate(sorted(nodes))}
@@ -473,11 +590,13 @@ def main() -> int:
         zones.append({"id": zid, "name": zc["name"], "x": r2(x), "z": r2(z), "r": r2(zc["radius"] * MAP_SCALE)})
     manifest = {
         "version": 1, "attribution": "Map data © OpenStreetMap contributors (ODbL)",
+        "version_world": 2, "road_source": "osm2streets" if use_streets else "centreline",
         "map_scale": MAP_SCALE, "chunk_size": CHUNK_SIZE_M, "origin_latlon": list(ORIGIN),
         "bounds": [r2(min(xs)), r2(min(zs)), r2(max(xs)), r2(max(zs))],
         "chunks": sorted([list(k) for k in chunks]),
         "zones": zones, "landmarks": landmarks, "auto_stands": stands, "services": services,
         "stats": {"edges": len(graph["edges"]), "nodes": len(graph["nodes"]), "buildings": len(buildings),
+                  "real_buildings": sum(1 for b in buildings if not b.get("f")),
                   "chunks": len(chunks)},
     }
 

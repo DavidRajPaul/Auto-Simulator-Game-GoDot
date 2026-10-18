@@ -30,8 +30,8 @@ res://
 │   ├── vehicles/
 │   │   ├── VehicleStats.gd          # Custom Resource class_name VehicleStats
 │   │   ├── Bajaj_RE_4S.tres         # Starter "Singara Classic"
-│   │   ├── Madras_King_Deluxe.tres  # Mid-tier auto (₹1,500)
-│   │   └── Namma_Green_EV.tres      # Electric auto (₹4,500)
+│   │   ├── Madras_King_Deluxe.tres  # Mid-tier auto (₹1,000)
+│   │   └── Namma_Green_EV.tres      # Electric auto (₹3,000)
 │   ├── passengers/
 │   │   ├── PassengerArchetype.gd    # Haggling odds, comfort, tips, Tanglish lines
 │   │   └── *.tres                   # it_commuter, tnagar_shopper, tourist, monsoon_rider, college_student

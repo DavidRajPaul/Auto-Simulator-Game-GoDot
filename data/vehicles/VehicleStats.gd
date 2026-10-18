@@ -46,8 +46,8 @@ extends Resource
 
 @export_group("Fuel & Environment")
 @export var fuel_capacity: float = 8.0
-## Units burnt per game-km (the map is 1 : 2.5, so this is tuned for ~15–20 rides a tank).
-@export var fuel_burn_per_km: float = 0.25
+## Units burnt per km (map is 1 : 1). Game-ified (~4x a real RE) so a tank lasts ~25–30 rides.
+@export var fuel_burn_per_km: float = 0.1
 @export var water_stall_depth_m: float = 0.28
 @export var kick_start_pulls_needed: int = 3
 

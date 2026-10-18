@@ -8,8 +8,9 @@ enum Offer { METER, METER_MELA, FIXED }
 const OFFER_NAMES: PackedStringArray = ["Correct Meter", "Meter Mela +₹30", "Fixed ₹200 — Return Empty!"]
 const METER_MELA_EXTRA_INR: int = 30
 const FIXED_RATE_INR: int = 200
-## The map is a 1 : 2.5 compression of Chennai, so fares use real-world-equivalent km.
-const REAL_KM_PER_GAME_KM: float = 2.5
+## Real km per game km. The world is built 1 : 1 from OSM since the MVP polish pass
+## (Phases 2–4 used a 1 : 2.5 compressed map, where this was 2.5).
+const REAL_KM_PER_GAME_KM: float = 1.0
 ## Respect XP per accepted offer, and for a rejection.
 const RESPECT_XP: Array[int] = [10, 2, -3]
 const RESPECT_XP_REJECTED: int = -1

@@ -60,11 +60,11 @@ func _test_archetypes() -> void:
 
 func _test_fares() -> void:
 	var it: PassengerArchetype = _rider("it_commuter")
-	_check("Meter: 0.4 game km (1 real km) = ₹35", FareCalculator.meter_fare(0.4) == 35)
-	_check("Meter: 2 game km (5 real km) = ₹95", FareCalculator.meter_fare(2.0) == 95)
-	_check("Meter Mela = meter + ₹30", FareCalculator.quote(FareCalculator.Offer.METER_MELA, 2.0, it) == 125)
+	_check("Meter: 1 km (inside the 1.8 km base) = ₹35", FareCalculator.meter_fare(1.0) == 35)
+	_check("Meter: 5 km = ₹95", FareCalculator.meter_fare(5.0) == 95)
+	_check("Meter Mela = meter + ₹30", FareCalculator.quote(FareCalculator.Offer.METER_MELA, 5.0, it) == 125)
 	_check("Fixed rate ≥ ₹200", FareCalculator.quote(FareCalculator.Offer.FIXED, 0.5, it) == 200)
-	_check("Monsoon surge raises the meter", FareCalculator.quote(FareCalculator.Offer.METER, 2.0, _rider("monsoon_rider")) == 140)
+	_check("Monsoon surge raises the meter", FareCalculator.quote(FareCalculator.Offer.METER, 5.0, _rider("monsoon_rider")) == 140)
 
 func _test_odds() -> void:
 	var shopper: PassengerArchetype = _rider("tnagar_shopper")
