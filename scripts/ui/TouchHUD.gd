@@ -52,6 +52,9 @@ func _ready() -> void:
 	SignalBus.telemetry_updated.connect(_on_telemetry)
 	SignalBus.engine_stalled_in_water.connect(_on_stalled)
 	SignalBus.kick_start_attempt.connect(_on_kick_attempt)
+	SignalBus.kick_timed.connect(func(good: bool) -> void:
+		if not good:
+			_flash("Too fast/slow — kick... kick... kick", 1.2))
 	SignalBus.engine_restarted.connect(func() -> void: _flash("Engine started — vaanga po!", 2.0))
 	SignalBus.gethu_stunt_bonus_earned.connect(func(stunt: String, inr: int) -> void: _flash("%s! +₹%d" % [stunt, inr], 2.0))
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void: _flash("Camera: " + mode_name, 1.2))
@@ -260,7 +263,7 @@ func _on_telemetry(data: Dictionary) -> void:
 		_status_label.text = "Engine flooded! Tap KICK"
 
 func _on_stalled(_pos: Vector3) -> void:
-	_flash("Engine flooded! Tap KICK", 3.0)
+	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0)
 
 func _on_kick_attempt(ratio: float) -> void:
 	_flash("Kick… %d%%" % roundi(ratio * 100.0), 1.0)

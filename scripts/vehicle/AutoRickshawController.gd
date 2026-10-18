@@ -12,6 +12,8 @@ const GETHU_BONUS_INR: int = 15
 @export var stats: VehicleStats
 ## Use the player's garage loadout from GameState (off = use `stats` as-is, e.g. demos).
 @export var use_player_profile: bool = true
+## Kick-start needs a steady rhythm (main game). Off in the greybox/test arena.
+@export var kick_rhythm_enabled: bool = false
 
 ## Wheel ray origins sit below the chassis origin so the origin (and the CoM offset from
 ## VehicleStats) ends up ~0.55 m above the road, like a real loaded auto.
@@ -37,6 +39,11 @@ var passenger_count: int = 0
 var luggage_kg: float = 0.0
 var wheels_grounded: int = 0
 
+const KICK_RHYTHM_MIN_S: float = 0.3
+const KICK_RHYTHM_MAX_S: float = 1.4
+
+var _last_kick_s: float = -10.0
+var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
@@ -107,6 +114,7 @@ func _apply_mass() -> void:
 	center_of_mass = stats.center_of_mass_offset + shift
 
 func _physics_process(delta: float) -> void:
+	_clock_s += delta
 	var throttle_in: float = Input.get_action_strength("accelerate")
 	var brake_in: float = Input.get_action_strength("brake")
 	var steer_in: float = Input.get_action_strength("steer_left") - Input.get_action_strength("steer_right")
@@ -269,10 +277,21 @@ func blow_horn() -> void:
 	SignalBus.horn_blasted.emit(global_position, -global_transform.basis.z, stats.horn_radius_m, stats.horn_tier)
 
 ## Returns true once the engine is running again.
+## With kick_rhythm_enabled, pulls only count when they keep a steady rhythm
+## (KICK_RHYTHM_MIN_S–KICK_RHYTHM_MAX_S apart) — mashing the button floods the engine.
 func pull_hand_kick_starter() -> bool:
 	if not is_engine_stalled:
 		return true
-	# In deep water the engine only stays alive if the player keeps it revved (full throttle).
+	var now: float = _clock_s
+	if kick_rhythm_enabled and kick_start_pulls > 0:
+		var gap: float = now - _last_kick_s
+		var good: bool = gap >= KICK_RHYTHM_MIN_S and gap <= KICK_RHYTHM_MAX_S
+		SignalBus.kick_timed.emit(good)
+		_last_kick_s = now
+		if not good:
+			kick_start_pulls = 1 if gap > KICK_RHYTHM_MAX_S else kick_start_pulls # too slow restarts, too fast doesn't count
+			return false
+	_last_kick_s = now
 	kick_start_pulls += 1
 	SignalBus.kick_start_attempt.emit(float(kick_start_pulls) / float(stats.kick_start_pulls_needed))
 	if kick_start_pulls >= stats.kick_start_pulls_needed:

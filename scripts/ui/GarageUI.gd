@@ -7,6 +7,8 @@ extends CanvasLayer
 const AMBER: Color = Color(1.0, 0.72, 0.1)
 const BG: Color = Color(0.06, 0.06, 0.07, 0.94)
 
+const MAIN_MENU_SCENE: String = "res://scenes/main_menu.tscn"
+var _shift_title: String = "-"
 var _root: Control
 var _clock: Label
 var _service_bar: HBoxContainer
@@ -52,6 +54,11 @@ func _ready() -> void:
 		if open and not is_open():
 			open_pause())
 	SignalBus.recover_available.connect(_on_recover_available)
+	SignalBus.back_requested.connect(func() -> void:
+		if not is_open():
+			open_pause()
+		elif _modal_title.text != _shift_title:
+			close_modal())
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	SignalBus.wallet_balance_changed.connect(func(_b: int, _d: int) -> void:
 		if _modal.visible and _modal_title.text == tr("GARAGE"):
@@ -246,6 +253,10 @@ func open_pause() -> void:
 	_open_modal(tr("PAUSE"))
 	_row("₹%d   ★%.1f   %s %d · %s" % [GameState.wallet_inr, GameState.star_rating, tr("DAY"), GameState.day, GameState.clock_text()], tr("RESUME"), true, close_modal)
 	_render_settings()
+	_row(tr("SAVED_AUTOMATICALLY"), tr("MAIN_MENU"), true, func() -> void:
+		GameState.save_game()
+		close_modal()
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE), Color(0.35, 0.25, 0.4))
 
 func _render_settings() -> void:
 	var s: Dictionary = GameState.settings
@@ -373,7 +384,8 @@ func _inr(v: int) -> String:
 # --- Shift summary -------------------------------------------------------------------------
 
 func _on_shift_ended(summary: Dictionary) -> void:
-	_open_modal("%s %d — %s" % [tr("DAY"), int(summary["day"]), tr("SHIFT_OVER")])
+	_shift_title = "%s %d — %s" % [tr("DAY"), int(summary["day"]), tr("SHIFT_OVER")]
+	_open_modal(_shift_title)
 	_row("%s:  ₹%d\n%s:  %d\n%s:  ₹%d\n%s:  ₹%d\n%s:  ₹%d    %s:  ★%.1f" % [
 		tr("EARNED"), int(summary["earned"]), tr("RIDES"), int(summary["rides"]), tr("FUEL_SPENT"), int(summary["fuel_spent"]),
 		tr("REPAIRS"), int(summary["repairs"]), tr("WALLET"), int(summary["wallet"]), tr("RATING"), float(summary["rating"])], "", false, Callable())

@@ -7,3 +7,4 @@ export_credentials.cfg
 .DS_Store
 __pycache__/
 tests/tmp/
+android/

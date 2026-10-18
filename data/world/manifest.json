@@ -2290,6 +2290,48 @@
    "yaw": 1.474
   }
  ],
+ "flood_spots": [
+  {
+   "id": "flood_usman_road",
+   "name": "Usman Road",
+   "x": -2763.74,
+   "z": 935.9,
+   "depth": 0.34,
+   "r": 10.0
+  },
+  {
+   "id": "flood_luz",
+   "name": "Luz Corner",
+   "x": 756.62,
+   "z": 1504.39,
+   "depth": 0.22,
+   "r": 9.0
+  },
+  {
+   "id": "flood_royapettah",
+   "name": "Royapettah High Road",
+   "x": 379.97,
+   "z": 102.23,
+   "depth": 0.22,
+   "r": 9.0
+  },
+  {
+   "id": "flood_santhome",
+   "name": "Santhome High Road",
+   "x": 2007.6,
+   "z": 1768.64,
+   "depth": 0.3,
+   "r": 10.0
+  },
+  {
+   "id": "flood_gemini",
+   "name": "Anna Salai, Gemini",
+   "x": -826.76,
+   "z": -571.32,
+   "depth": 0.24,
+   "r": 11.0
+  }
+ ],
  "stats": {
   "edges": 7038,
   "nodes": 5336,

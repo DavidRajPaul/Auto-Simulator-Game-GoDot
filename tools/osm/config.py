@@ -64,3 +64,13 @@ SERVICES = [
     {"id": "garage_marina", "name": "Marina Puncture & Tinkering", "kind": "garage", "lat": 13.0420, "lon": 80.2786},
     {"id": "garage_tnagar", "name": "T. Nagar Puncture & Tinkering", "kind": "garage", "lat": 13.0420, "lon": 80.2370},
 ]
+
+# Monsoon waterlogging spots (only flooded while it rains). Approximate, near roads known to flood;
+# depth ≥ 0.28 m stalls a petrol/LPG auto, shallower ones just splash and slow you down.
+FLOOD_SPOTS = [
+    {"id": "flood_usman_road", "name": "Usman Road", "lat": 13.0405, "lon": 80.2335, "depth": 0.34, "r": 10.0},
+    {"id": "flood_luz", "name": "Luz Corner", "lat": 13.0355, "lon": 80.2660, "depth": 0.22, "r": 9.0},
+    {"id": "flood_royapettah", "name": "Royapettah High Road", "lat": 13.0480, "lon": 80.2625, "depth": 0.22, "r": 9.0},
+    {"id": "flood_santhome", "name": "Santhome High Road", "lat": 13.0330, "lon": 80.2775, "depth": 0.3, "r": 10.0},
+    {"id": "flood_gemini", "name": "Anna Salai, Gemini", "lat": 13.0545, "lon": 80.2520, "depth": 0.24, "r": 11.0},
+]

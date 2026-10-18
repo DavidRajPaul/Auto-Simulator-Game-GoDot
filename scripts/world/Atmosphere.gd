@@ -56,13 +56,14 @@ func apply(minute: float, rain: float) -> void:
 		_sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
 		var sun_col: Color = Color(1.0, 0.97, 0.9).lerp(Color(1.0, 0.62, 0.35), golden)
 		_sun.light_color = sun_col.lerp(Color(0.55, 0.62, 0.85), 1.0 - day)
-		_sun.light_energy = lerpf(0.12, 0.8, day) * lerpf(1.0, 0.35, rain)
+		_sun.light_energy = lerpf(0.28, 0.8, day) * lerpf(1.0, 0.35, rain)
 
 	if _env != null:
 		var amb_day: Color = Color(0.42, 0.42, 0.47).lerp(Color(0.5, 0.42, 0.38), golden)
-		var amb: Color = Color(0.07, 0.08, 0.14).lerp(amb_day, day)
+		# Night stays readable: sodium-lit Chennai streets, never pitch black.
+		var amb: Color = Color(0.17, 0.17, 0.24).lerp(amb_day, day)
 		_env.ambient_light_color = amb.lerp(Color(0.38, 0.4, 0.44) * lerpf(0.4, 1.0, day), rain * 0.7)
-		var horizon: Color = Color(0.1, 0.12, 0.2).lerp(Color(0.86, 0.82, 0.72).lerp(Color(1.0, 0.6, 0.35), golden), day)
+		var horizon: Color = Color(0.2, 0.19, 0.24).lerp(Color(0.86, 0.82, 0.72).lerp(Color(1.0, 0.6, 0.35), golden), day)
 		horizon = horizon.lerp(Color(0.5, 0.52, 0.55) * lerpf(0.35, 1.0, day), rain)
 		_env.fog_light_color = horizon * 0.8
 		_env.fog_density = lerpf(_base_fog_density, _base_fog_density * 2.6, rain) * lerpf(1.3, 1.0, day)

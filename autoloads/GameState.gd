@@ -118,6 +118,8 @@ func _process(delta: float) -> void:
 		save_game()
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		SignalBus.back_requested.emit()
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		save_game()
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
@@ -453,6 +455,22 @@ func load_game() -> bool:
 	return true
 
 ## Back to a brand-new driver (tests and a future "reset progress" button).
+func has_save() -> bool:
+	return persistence_enabled and FileAccess.file_exists(save_path)
+
+## Main menu "New game": fresh career, but keep the player's settings (language, controls…).
+func new_career() -> void:
+	var keep: Dictionary = settings.duplicate()
+	reset_profile()
+	keep["tutorial_step"] = 0
+	settings = keep
+	day = 1
+	shift_minute = SHIFT_START_MIN
+	roll_weather()
+	_update_weather()
+	_apply_settings()
+	save_game()
+
 func reset_profile() -> void:
 	from_dict({})
 	wallet_inr = 500

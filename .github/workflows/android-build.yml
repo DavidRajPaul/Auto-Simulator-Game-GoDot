@@ -1,8 +1,9 @@
 name: Android Build
 
-# Runs the headless test suite, then exports an Android APK (arm64-v8a + armeabi-v7a).
-# Debug APK on every push/PR. A signed release APK is also built when the
-# ANDROID_KEYSTORE_* secrets are configured. Tag `v*` to publish a GitHub Release.
+# Runs the headless test suite, then exports Android builds (arm64-v8a + armeabi-v7a):
+# a debug APK and a Gradle-built App Bundle (.aab, for Google Play) on every push/PR.
+# With the ANDROID_KEYSTORE_* secrets configured, the APK and AAB are release-signed.
+# Tag `v*` to publish a GitHub Release.
 
 on:
   push:
@@ -50,11 +51,11 @@ jobs:
           ${GODOT_BIN} --headless --path . --quit-after 120 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
 
-      - name: Run test suites (phases 1–4)
+      - name: Run test suites (phases 1–5)
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          for suite in run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests; do
+          for suite in run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests; do
             echo "::group::$suite"
             timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
             echo "::endgroup::"
@@ -78,10 +79,10 @@ jobs:
           done
 
   android:
-    name: Export Android APK
+    name: Export Android APK + AAB
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       HAS_RELEASE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
@@ -177,19 +178,44 @@ jobs:
           test -f build/android/NammaAuto-release.apk
           rm -f "$RUNNER_TEMP/release.keystore"
 
+      - name: Install Android build template (Gradle, for the Play Store AAB)
+        run: ${GODOT_BIN} --headless --path . --install-android-build-template
+
+      - name: Export Android App Bundle (.aab)
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -o pipefail
+          if [ "$HAS_RELEASE_KEY" = "true" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+            ${GODOT_BIN} --headless --path . --export-release "Android AAB" build/android/NammaAuto-release.aab 2>&1 | tee aab.log
+            rm -f "$RUNNER_TEMP/release.keystore"
+          else
+            # No upload key yet: a debug-signed bundle still proves the Play Store pipeline works.
+            ${GODOT_BIN} --headless --path . --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
+          fi
+          ls -lh build/android/*.aab || { echo "::error::AAB was not produced"; tail -50 aab.log; exit 1; }
+
       - name: Report APK size (budget < 85 MB)
         run: |
           SIZE=$(stat -c %s build/android/NammaAuto-debug.apk)
           echo "Debug APK: $((SIZE / 1024 / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
+          for f in build/android/*.aab; do echo "$(basename $f): $(( $(stat -c %s $f) / 1024 / 1024 )) MB" | tee -a "$GITHUB_STEP_SUMMARY"; done
 
       - uses: actions/upload-artifact@v5
         with:
           name: NammaAuto-android-${{ github.run_number }}
-          path: build/android/*.apk
+          path: |
+            build/android/*.apk
+            build/android/*.aab
           retention-days: 30
 
       - name: Publish GitHub Release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/android/*.apk
+          files: |
+            build/android/*.apk
+            build/android/*.aab

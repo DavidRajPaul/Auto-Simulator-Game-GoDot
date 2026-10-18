@@ -77,5 +77,7 @@ signal recover_available(available: bool)
 signal recover_requested()
 signal hint_requested(text: String, seconds: float)
 signal weather_changed(raining: bool)
-## Kick-start mini-game: one timed kick (good = landed in the green zone).
+## Kick-start rhythm: one kick (good = kept the steady rhythm).
 signal kick_timed(good: bool)
+## Android back button / Esc (GameState turns NOTIFICATION_WM_GO_BACK_REQUEST into this).
+signal back_requested()

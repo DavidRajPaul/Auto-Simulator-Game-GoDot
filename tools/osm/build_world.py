@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import streets
-from config import (AUTO_STANDS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
+from config import (AUTO_STANDS, FLOOD_SPOTS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
                     MAP_SCALE, ORIGIN, ROAD_CLASSES, ZONES)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -540,6 +540,10 @@ def main() -> int:
         services.append({"id": sv["id"], "name": sv["name"], "kind": sv["kind"],
                          "x": r2(rx + nx * side * off), "z": r2(rz + nz * side * off),
                          "road_x": r2(rx), "road_z": r2(rz), "yaw": round(math.atan2(-dx, -dz), 3)})
+    floods = []
+    for fl in FLOOD_SPOTS:
+        x, z, _dx, _dz = nearest_road_point(edges, *project(fl["lat"], fl["lon"]), side=0.0)
+        floods.append({"id": fl["id"], "name": fl["name"], "x": r2(x), "z": r2(z), "depth": fl["depth"], "r": fl["r"]})
     # Keep buildings off landmark placeholders and service bays.
     clear_r = {"lighthouse": 14.0, "gopuram": 22.0, "tower": 16.0, "heritage": 22.0}
     clear_pts = [(l["x"], l["z"], clear_r[l["kind"]]) for l in landmarks if l["kind"] in clear_r]
@@ -594,7 +598,7 @@ def main() -> int:
         "map_scale": MAP_SCALE, "chunk_size": CHUNK_SIZE_M, "origin_latlon": list(ORIGIN),
         "bounds": [r2(min(xs)), r2(min(zs)), r2(max(xs)), r2(max(zs))],
         "chunks": sorted([list(k) for k in chunks]),
-        "zones": zones, "landmarks": landmarks, "auto_stands": stands, "services": services,
+        "zones": zones, "landmarks": landmarks, "auto_stands": stands, "services": services, "flood_spots": floods,
         "stats": {"edges": len(graph["edges"]), "nodes": len(graph["nodes"]), "buildings": len(buildings),
                   "real_buildings": sum(1 for b in buildings if not b.get("f")),
                   "chunks": len(chunks)},

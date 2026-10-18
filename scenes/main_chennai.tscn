@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/ui/GarageUI.gd" id="12"]
 [ext_resource type="Script" path="res://scripts/vehicle/ComfortAssist.gd" id="13"]
 [ext_resource type="Script" path="res://scripts/world/Atmosphere.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/world/MonsoonFX.gd" id="15"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -59,6 +60,7 @@ spawn_stand_id = "stand_mylapore"
 
 [node name="AutoRickshaw" parent="." instance=ExtResource("1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+kick_rhythm_enabled = true
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("2")
@@ -72,6 +74,9 @@ graph_path = "res://data/world/road_graph.json"
 
 [node name="ServicePoints" type="Node3D" parent="."]
 script = ExtResource("11")
+
+[node name="MonsoonFX" type="Node3D" parent="."]
+script = ExtResource("15")
 
 [node name="ComfortAssist" type="Node3D" parent="."]
 script = ExtResource("13")

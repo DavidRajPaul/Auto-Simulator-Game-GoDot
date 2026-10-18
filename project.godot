@@ -7,8 +7,9 @@ config_version=5
 
 config/name="Namma Auto: Chennai Rickshaw Simulator 3D"
 config/description="Culturally authentic Chennai auto rickshaw 3D driving and economy simulator."
-config/version="0.2.0-phase2"
-run/main_scene="res://scenes/main_chennai.tscn"
+config/version="0.5.0-mvp"
+config/quit_on_go_back=false
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 

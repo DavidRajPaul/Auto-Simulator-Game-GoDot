@@ -57,6 +57,7 @@ var _pending: Dictionary = {} # Vector2i -> task id
 var _available: Dictionary = {} # Vector2i -> true (chunks that exist in data)
 var _player: Node3D
 var _timer: float = 0.0
+var wetness: float = 0.0
 var _road_mat: StandardMaterial3D
 var _bld_mat: StandardMaterial3D
 var _mutex: Mutex = Mutex.new()
@@ -89,10 +90,21 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_attach_finished()
+	_update_wetness(delta)
 	_timer += delta
 	if _timer >= CHECK_INTERVAL_S:
 		_timer = 0.0
 		update_streaming(false)
+
+## Monsoon: roads darken and turn glossy while it rains, then dry off slowly.
+func _update_wetness(delta: float) -> void:
+	var target: float = 1.0 if GameState.is_raining else 0.0
+	if is_equal_approx(wetness, target):
+		return
+	wetness = move_toward(wetness, target, delta * (0.2 if target > wetness else 0.05))
+	_road_mat.albedo_color = Color.WHITE.lerp(Color(0.68, 0.7, 0.74), wetness)
+	_road_mat.roughness = lerpf(0.95, 0.3, wetness)
+	_road_mat.metallic_specular = lerpf(0.5, 0.9, wetness)
 
 ## Request/unload chunks around the player. `blocking` builds synchronously (first frame / tests).
 func update_streaming(blocking: bool) -> void:

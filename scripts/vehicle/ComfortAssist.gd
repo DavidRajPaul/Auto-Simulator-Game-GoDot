@@ -169,14 +169,13 @@ func _update_arrow() -> void:
 func _tick_hints(delta: float) -> void:
 	_hint_cooldown -= delta
 	var step: int = int(GameState.settings.get("tutorial_step", 0))
-	if step >= HINTS.size() or _hint_cooldown > 0.0:
+	if step >= HINTS.size():
 		return
 	var id: String = str(HINTS[step]["id"])
-	if id == "drive":
-		_show_hint(step)
-		if _speed_kmh > 15.0:
-			_advance_hint("drive")
-	elif id in ["hail", "dropoff"]:
+	if id == "drive" and _speed_kmh > 15.0:
+		_advance_hint("drive") # as soon as they get going, not when the hint next repeats
+		return
+	if _hint_cooldown <= 0.0 and id in ["drive", "hail", "dropoff"]:
 		_show_hint(step)
 
 func _show_hint(step: int) -> void:
