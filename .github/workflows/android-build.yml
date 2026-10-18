@@ -153,11 +153,13 @@ jobs:
       - name: Verify APK contains the Chennai map data
         run: |
           python3 - <<'PY'
-          import zipfile, json, sys
+          import zipfile, json, re, sys
           z = zipfile.ZipFile("build/android/NammaAuto-debug.apk")
-          blob = b"".join(z.read(n) for n in z.namelist() if n.endswith(".pck"))
+          names = z.namelist()
+          # Godot's Android export stores project files under assets/ (or inside a .pck).
+          blob = "\n".join(names).encode() + b"".join(z.read(n) for n in names if n.endswith(".pck"))
           expected = len(json.load(open("data/world/manifest.json"))["chunks"])
-          found = blob.count(b"data/world/chunks/c_")
+          found = len(set(re.findall(rb"data/world/chunks/c_-?\d+_-?\d+\.json", blob)))
           ok = b"data/world/manifest.json" in blob and b"data/world/road_graph.json" in blob and found >= expected
           print(f"manifest/graph present: {ok}, chunk files {found}/{expected}")
           sys.exit(0 if ok else 1)
