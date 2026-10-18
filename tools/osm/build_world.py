@@ -161,6 +161,8 @@ def build_roads(elements: list[dict]) -> tuple[list[dict], dict]:
             lanes_total = default_lanes * (1 if is_oneway else 2)
         lanes_total = max(1, min(lanes_total, 8))
         width = lanes_total * LANE_WIDTH_M if "lanes" in tags else default_w
+        # Chennai carriageways are rarely narrower than this, whatever the lane tag says.
+        width = max(width, 5.5 if is_oneway else 6.0)
         if is_link:
             width, lanes_total = max(5.0, width * 0.6), max(1, lanes_total // 2)
         ways.append({"id": e["id"], "cls": cls, "name": tags.get("name", ""), "nodes": nodes, "latlon": latlon,
@@ -315,7 +317,7 @@ def build_buildings(edges: list[dict], areas: dict, landmarks: list[dict]) -> li
     return out
 
 
-def nearest_road_point(edges: list[dict], x: float, z: float) -> tuple[float, float, float, float]:
+def nearest_road_point(edges: list[dict], x: float, z: float, side: float = 0.25) -> tuple[float, float, float, float]:
     """Closest point on the road network, plus the road direction there."""
     best = (math.inf, x, z, 0.0, -1.0)
     for e in edges:
@@ -330,7 +332,8 @@ def nearest_road_point(edges: list[dict], x: float, z: float) -> tuple[float, fl
             if d < best[0]:
                 ln = math.sqrt(l2)
                 # Spawn on the left carriageway (India drives on the left).
-                best = (d, qx - (dz / ln) * e["width"] * 0.25, qz + (dx / ln) * e["width"] * 0.25, dx / ln, dz / ln)
+                # Left of heading (dx, dz) is (dz, -dx): India drives on the left.
+                best = (d, qx + (dz / ln) * e["width"] * side, qz - (dx / ln) * e["width"] * side, dx / ln, dz / ln)
     return best[1], best[2], best[3], best[4]
 
 
@@ -341,7 +344,18 @@ def main() -> int:
     landmarks = []
     for l in LANDMARKS:
         x, z = project(l["lat"], l["lon"])
-        landmarks.append({"id": l["id"], "name": l["name"], "kind": l["kind"], "x": r2(x), "z": r2(z)})
+        yaw = 0.0
+        if l["kind"] in ("flyover", "bridge"):
+            # Sits on the road it carries.
+            x, z, dx, dz = nearest_road_point(edges, x, z, side=0.0)
+            yaw = math.atan2(-dx, -dz)
+        elif l["kind"] == "tower":
+            # Roadside: snap to the nearest road, then step back off the carriageway.
+            rx, rz, dx, dz = nearest_road_point(edges, x, z, side=0.0)
+            ox, oz = x - rx, z - rz
+            n = math.hypot(ox, oz) or 1.0
+            x, z = rx + ox / n * 26.0, rz + oz / n * 26.0
+        landmarks.append({"id": l["id"], "name": l["name"], "kind": l["kind"], "x": r2(x), "z": r2(z), "yaw": round(yaw, 3)})
     buildings = build_buildings(edges, areas, landmarks)
 
     # Chunk road ribbons and buildings.

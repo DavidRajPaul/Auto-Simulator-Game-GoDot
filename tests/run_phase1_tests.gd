@@ -174,13 +174,16 @@ func _test_feel_targets(auto: AutoRickshawController) -> void:
 
 func _test_horn(traffic: ChennaiTrafficManager, auto: AutoRickshawController) -> void:
 	_park_all(traffic)
-	var lane: int = traffic.sub_lane_of_x(auto.global_position.x)
+	# Greybox graph: edge 0 runs +Z → -Z, one-way, 6 sub-lanes. s = distance from z=+1500.
+	var player_s: float = ChennaiTrafficManager.GREYBOX_LENGTH_M * 0.5 - auto.global_position.z
+	var lane: int = traffic.sub_lane_at(0, 1, auto.global_position)
 	var bike: TrafficVehicleAI = _first_of(traffic, TrafficVehicleAI.Archetype.TWO_WHEELER)
 	var bus: TrafficVehicleAI = _first_of(traffic, TrafficVehicleAI.Archetype.MTC_BUS)
-	bike.activate(Vector3(traffic.sub_lane_x(lane), 0.0, auto.global_position.z - 10.0), lane)
+	traffic.place_vehicle(bike, 0, player_s + 10.0, 1, lane)
 	bike.cruise_speed_mps = 0.0
 	bike.current_speed_mps = 0.0
-	bus.activate(Vector3(traffic.sub_lane_x(0), 0.0, auto.global_position.z - 14.0), 0)
+	var bus_lane: int = 0 if lane >= 3 else 5
+	traffic.place_vehicle(bus, 0, player_s + 14.0, 1, bus_lane)
 	bus.cruise_speed_mps = 0.0
 	bus.current_speed_mps = 0.0
 	await _physics(2)
@@ -189,7 +192,8 @@ func _test_horn(traffic: ChennaiTrafficManager, auto: AutoRickshawController) ->
 	Input.action_release("horn")
 	await _physics(60)
 	_check("Horn (tier 1): two-wheeler within 18 m shifts sub-lane", bike.sub_lane != lane, "lane %d -> %d" % [lane, bike.sub_lane])
-	_check("Horn (tier 1): MTC bus ignores twin horn", bus.sub_lane == 0)
+	_check("Horn (tier 1): MTC bus ignores twin horn", bus.sub_lane == bus_lane)
+	_check("AI faces its direction of travel", (-bike.global_transform.basis.z).dot(Vector3.FORWARD) > 0.99)
 	_park_all(traffic)
 
 func _test_water_stall_and_kick_start(auto: AutoRickshawController) -> void:

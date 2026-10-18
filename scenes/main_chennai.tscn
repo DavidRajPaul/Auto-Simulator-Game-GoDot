@@ -1,0 +1,64 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/vehicles/auto_rickshaw.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/vehicle/CameraRig.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/traffic/ChennaiTrafficManager.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/traffic/ai_traffic_vehicle.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/touch_hud.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/world/WorldChunkStreamer.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/DebugOverlay.gd" id="7"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.35, 0.55, 0.85, 1)
+sky_horizon_color = Color(0.86, 0.82, 0.72, 1)
+ground_horizon_color = Color(0.86, 0.82, 0.72, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.42, 0.42, 0.47, 1)
+reflected_light_source = 1
+tonemap_mode = 3
+fog_enabled = true
+fog_light_color = Color(0.64, 0.64, 0.62, 1)
+fog_density = 0.0028
+fog_sky_affect = 0.3
+
+[node name="MainChennai" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 30, 0)
+light_energy = 0.75
+shadow_enabled = true
+directional_shadow_mode = 0
+directional_shadow_max_distance = 45.0
+
+[node name="World" type="Node3D" parent="."]
+script = ExtResource("6")
+player_path = NodePath("../AutoRickshaw")
+spawn_stand_id = "stand_mylapore"
+
+[node name="AutoRickshaw" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("2")
+target_path = NodePath("../AutoRickshaw")
+
+[node name="ChennaiTrafficManager" type="Node3D" parent="."]
+script = ExtResource("3")
+vehicle_scene = ExtResource("4")
+player_path = NodePath("../AutoRickshaw")
+graph_path = "res://data/world/road_graph.json"
+
+[node name="TouchHUD" parent="." instance=ExtResource("5")]
+
+[node name="DebugOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("7")

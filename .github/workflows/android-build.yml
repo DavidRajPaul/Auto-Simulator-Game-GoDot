@@ -50,13 +50,17 @@ jobs:
           ${GODOT_BIN} --headless --path . --quit-after 120 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
 
-      - name: Run Phase 1 test suite
+      - name: Run test suites (Phase 1 physics/traffic, Phase 2 Chennai world)
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          timeout 300 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn 2>&1 | tee tests.log
-          if grep -E "SCRIPT ERROR|Parse Error" tests.log; then exit 1; fi
-          grep -E "passed, .* failed" tests.log >> "$GITHUB_STEP_SUMMARY"
+          for suite in run_phase1_tests run_phase2_tests; do
+            echo "::group::$suite"
+            timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
+            echo "::endgroup::"
+            if grep -E "SCRIPT ERROR|Parse Error" $suite.log; then exit 1; fi
+            echo "**$suite:** $(grep -E 'passed, .* failed' $suite.log)" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Install virtual display + Mesa (for the perf probe)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
@@ -66,10 +70,12 @@ jobs:
           PERF_REPORT: perf.md
         run: |
           set -o pipefail
-          timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" ${GODOT_BIN} --path . \
-            --rendering-method gl_compatibility --audio-driver Dummy --fixed-fps 60 \
-            res://tests/run_perf_probe.tscn 2>&1 | tee perf.log
-          cat perf.md >> "$GITHUB_STEP_SUMMARY"
+          for scene in main_chennai main_phase1_greybox; do
+            PROBE_SCENE=res://scenes/$scene.tscn timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" ${GODOT_BIN} --path . \
+              --rendering-method gl_compatibility --audio-driver Dummy --fixed-fps 60 \
+              res://tests/run_perf_probe.tscn 2>&1 | tee perf-$scene.log
+            cat perf.md >> "$GITHUB_STEP_SUMMARY"
+          done
 
   android:
     name: Export Android APK

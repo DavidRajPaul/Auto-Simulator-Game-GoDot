@@ -431,85 +431,93 @@
    "name": "Marina Lighthouse",
    "kind": "lighthouse",
    "x": 897.93,
-   "z": 406.79
+   "z": 406.79,
+   "yaw": 0.0
   },
   {
    "id": "napier_bridge",
    "name": "Napier Bridge",
    "kind": "bridge",
-   "x": 984.68,
-   "z": -822.42
+   "x": 984.7,
+   "z": -832.01,
+   "yaw": 1.569
   },
   {
    "id": "vivekananda_house",
    "name": "Vivekananda House",
    "kind": "heritage",
    "x": 945.64,
-   "z": -4.42
+   "z": -4.42,
+   "yaw": 0.0
   },
   {
    "id": "kapaleeshwarar",
    "name": "Kapaleeshwarar Temple",
    "kind": "gopuram",
    "x": 459.81,
-   "z": 676.5
+   "z": 676.5,
+   "yaw": 0.0
   },
   {
    "id": "chitrakulam_tank",
    "name": "Mylapore Temple Tank",
    "kind": "tank",
    "x": 503.19,
-   "z": 707.46
+   "z": 707.46,
+   "yaw": 0.0
   },
   {
    "id": "lic_building",
    "name": "LIC Building",
    "kind": "tower",
-   "x": 117.12,
-   "z": -605.76
+   "x": 114.32,
+   "z": -603.47,
+   "yaw": 0.0
   },
   {
    "id": "gemini_flyover",
    "name": "Gemini Flyover",
    "kind": "flyover",
-   "x": -377.39,
-   "z": -300.67
+   "x": -377.21,
+   "z": -299.87,
+   "yaw": -1.355
   },
   {
    "id": "panagal_park",
    "name": "Panagal Park",
    "kind": "park",
    "x": -1023.72,
-   "z": 375.84
+   "z": 375.84,
+   "yaw": 0.0
   }
  ],
  "auto_stands": [
   {
    "id": "stand_mylapore",
    "name": "Mylapore Tank Auto Stand",
-   "x": 426.79,
-   "z": 644.65,
+   "x": 427.35,
+   "z": 641.4,
    "yaw": -1.742
   },
   {
    "id": "stand_marina",
    "name": "Marina Lighthouse Auto Stand",
-   "x": 883.19,
-   "z": 355.96,
+   "x": 876.26,
+   "z": 354.97,
    "yaw": -0.142
   },
   {
    "id": "stand_tnagar",
    "name": "Panagal Park Auto Stand",
-   "x": -989.73,
-   "z": 344.79,
+   "x": -992.95,
+   "z": 344.39,
    "yaw": -0.126
   }
  ],
  "stats": {
   "edges": 3105,
   "nodes": 2360,
-  "buildings": 3517,
+  "buildings": 3515,
   "chunks": 95
  }
 }

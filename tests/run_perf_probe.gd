@@ -13,7 +13,10 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	var main: Node = (load("res://scenes/main_phase1_greybox.tscn") as PackedScene).instantiate()
+	var scene_path: String = OS.get_environment("PROBE_SCENE")
+	if scene_path == "":
+		scene_path = "res://scenes/main_chennai.tscn"
+	var main: Node = (load(scene_path) as PackedScene).instantiate()
 	add_child(main)
 	var auto: AutoRickshawController = main.get_node("AutoRickshaw") as AutoRickshawController
 	var traffic: ChennaiTrafficManager = main.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
@@ -29,7 +32,7 @@ func _run() -> void:
 	Input.action_press("accelerate", 0.8)
 	for i: int in SAMPLE_FRAMES:
 		# Weave a little so the camera sees both sides of the road.
-		var s: float = sin(float(i) / 50.0) * 0.35
+		var s: float = sin(float(i) / 50.0) * 0.12
 		Input.action_press("steer_left" if s > 0.0 else "steer_right", absf(s))
 		Input.action_release("steer_right" if s > 0.0 else "steer_left")
 		await get_tree().process_frame
@@ -62,7 +65,7 @@ func _run() -> void:
 	if traffic.get_child_count() != children_start:
 		failures.append("traffic nodes instantiated/freed while driving")
 
-	var report: String = """### Performance probe (Phase 1 greybox)
+	var report: String = """### Performance probe — %s
 | Metric | Value | Budget |
 |---|---|---|
 | Draw calls (max / p95) | %d / %d | ≤ %d |
@@ -75,7 +78,7 @@ func _run() -> void:
 | Renderer | %s | — |
 
 **Result:** %s
-""" % [draw_max, draw_p95, MAX_DRAW_CALLS, objects_max, prims_max, traffic_max, MAX_ACTIVE_TRAFFIC,
+""" % [scene_path.get_file(), draw_max, draw_p95, MAX_DRAW_CALLS, objects_max, prims_max, traffic_max, MAX_ACTIVE_TRAFFIC,
 		phys_avg, mem_mb, auto.odometer_km * 1000.0, renderer,
 		"✅ within budget" if failures.is_empty() else "❌ " + ", ".join(failures)]
 	print(report)

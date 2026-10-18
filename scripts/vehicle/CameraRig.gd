@@ -6,7 +6,8 @@ enum Mode { CHASE, COCKPIT, TOP_DOWN }
 
 const MODE_NAMES: PackedStringArray = ["Chase", "Cockpit", "Top-Down"]
 const CHASE_OFFSET: Vector3 = Vector3(0.0, 2.4, 5.6)
-const COCKPIT_OFFSET: Vector3 = Vector3(0.0, 0.8, -0.05)
+## Driver eye ≈ 1.35 m above the road (chassis origin rides ~0.8 m up), behind the cowl.
+const COCKPIT_OFFSET: Vector3 = Vector3(0.0, 0.58, -0.25)
 const TOP_DOWN_OFFSET: Vector3 = Vector3(0.0, 24.0, 6.0)
 
 @export var target_path: NodePath
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_camera = Camera3D.new()
 	_camera.name = "Camera"
 	_camera.far = 400.0
+	_camera.near = 0.1 # better depth precision for flat road layers
 	add_child(_camera)
 	_camera.make_current()
 	top_level = true

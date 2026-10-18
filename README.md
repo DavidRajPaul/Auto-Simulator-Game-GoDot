@@ -54,12 +54,15 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── autoloads/        SignalBus.gd, GameState.gd
 ├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres
 ├── data/passengers/  PassengerArchetype.gd
-├── scenes/           main_phase1_greybox.tscn, vehicles/, traffic/, ui/
+├── scenes/           main_chennai.tscn (game), main_phase1_greybox.tscn (physics test arena), vehicles/, traffic/, ui/
 ├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd
 ├── scripts/traffic/  ChennaiTrafficManager.gd, TrafficVehicleAI.gd
-├── scripts/world/    WaterlogZone.gd, GreyboxDressing.gd
+├── scripts/world/    WorldChunkStreamer.gd, RoadGraph.gd, WaterlogZone.gd, GreyboxDressing.gd
+├── data/world/       OSM-built Chennai map: manifest, road graph, areas, 95 chunk files
+├── data/osm/         raw Overpass extract (gz), © OpenStreetMap contributors
+├── tools/osm/        fetch_osm.py, build_world.py, preview_map.py, config.py (zones, landmarks, stands)
 ├── scripts/ui/       TouchHUD.gd, DebugOverlay.gd
-└── tests/            run_phase1_tests (46 checks), run_perf_probe (draw-call budget)
+└── tests/            run_phase1_tests (47), run_phase2_tests (30), run_perf_probe (draw-call budget)
 ```
 
 ### Phase 1 controls (greybox)
@@ -73,7 +76,11 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 | Camera (Chase → Cockpit → Top-down) | CAM | C |
 | Wiper | WIPER | V |
 
-The greybox strip has a speed breaker at 180 m and a monsoon puddle (right side) at 320 m. Stop in it and the engine floods; tap KICK three times to restart.
+The game starts at the **Mylapore Tank auto stand** in the OSM-built city:
+
+![In-game: Kamarajar Salai by Marina beach](docs/ingame_marina_kamarajar_salai.png)
+
+The Phase 1 greybox strip (`scenes/main_phase1_greybox.tscn`) is kept as the physics test arena. It has a speed breaker at 180 m and a monsoon puddle (right side) at 320 m: stop in the puddle and the engine floods; tap KICK three times to restart.
 
 ---
 
@@ -93,7 +100,7 @@ Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard c
 
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
-1. **Tests + perf budget:** import, boot the main scene, run the Phase 1 suite, then drive the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
+1. **Tests + perf budget:** import, boot the main scene, run the Phase 1 and Phase 2 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
 2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
 4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
@@ -134,14 +141,33 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 **Exit gate:** headless tests pass; throttle 4 s → ≥ 35 km/h; full steer at 30 km/h keeps roll < 22°; horn shifts AI within 18 m; steady 60 FPS on the budget test device.
 
-### Phase 2 · Chennai world: 3 zones *(Weeks 3–4)*
-**Goal:** a dense 2.5 km × 2.5 km connected loop that is recognisably Chennai.
-- OSM → Blosm/Python pipeline producing 250 m chunks and `WorldChunkStreamer.gd` (3×3 threaded loading).
-- **Zone 1 – Marina / Kamarajar Salai:** lighthouse, Napier Bridge, 6-lane coastal road.
-- **Zone 2 – Mylapore Tank:** Kapaleeshwarar gopuram, narrow 2-lane tank streets, stray cattle.
-- **Zone 3 – Anna Salai → T. Nagar:** LIC Building, Gemini Flyover, Panagal Park, heavy congestion.
-- Road network via `godot-road-generator`; traffic lanes baked from it.
-- Shared 2048² ETC2/ASTC texture atlases; `MultiMeshInstance3D` props; full traffic archetypes (MTC buses, two-wheelers, share autos, cattle/jaywalkers).
+### Phase 2 · Chennai world: 3 zones 🟡 code ✅, device gate pending *(Weeks 3–4)*
+**Goal:** a dense ~2.5 km connected map that is recognisably Chennai.
+
+![Chennai MVP map built from OpenStreetMap](docs/chennai_map_preview.png)
+
+| Item | Status |
+|---|---|
+| OSM pipeline: `tools/osm/fetch_osm.py` (Overpass, run by the **OSM Import** workflow) → `build_world.py` → `data/world/` (1.2 MB) | ✅ |
+| Real roads for Marina, Mylapore, Anna Salai → T. Nagar: 3,105 road segments, 2,360 junctions, fully connected, at 1 : 2.5 scale (2.7 × 2.4 km) with real road widths | ✅ |
+| 3,515 procedural frontage buildings styled per zone (heritage Mylapore, commercial T. Nagar, taller Anna Salai), with colliders | ✅ |
+| Sea, beach, temple tank, Buckingham Canal/Adyar water, parks from OSM polygons | ✅ |
+| Landmark placeholders at real positions: Marina Lighthouse, Napier Bridge, Vivekananda House, Kapaleeshwarar gopuram, temple tank, LIC Building, Gemini Flyover, Panagal Park | ✅ |
+| `WorldChunkStreamer.gd`: 250 m chunks, 3×3 around the player, built on worker threads (~2 draw calls per chunk) | ✅ |
+| `RoadGraph.gd` + traffic rewrite: AI drives on the **left**, 3 sub-lanes per lane, turns at junctions, faces travel direction | ✅ |
+| Stray cattle in Mylapore / T. Nagar market zones (ignore the twin horn) | ✅ |
+| 3 auto stands (Mylapore Tank, Marina Lighthouse, Panagal Park); game now starts at Mylapore | ✅ |
+| `tests/run_phase2_tests.tscn` (30 checks) + perf probe on the city: 112 / 150 draw calls, 80 MB | ✅ |
+| Jaywalking pedestrians in market zones | ⬜ |
+| Gemini Flyover / Napier Bridge as real elevated ramps (currently decks over the road) | ⬜ |
+| Shopfront & signage texture atlases (Tamil/English boards) | ⬜ → with Phase 5 art |
+| 60 FPS / RAM check driving all three zones on the budget phone | ⬜ **needs you + a phone** |
+
+**Changes from the original plan** (each simplifies the AI-agent workflow):
+- Our own ribbon road builder instead of `godot-road-generator`: chunk data stays plain JSON that agents can diff and regenerate, with no editor plugin.
+- Chunks are JSON built into meshes at runtime on worker threads, not baked `.tscn` files. That keeps the repo small (1.2 MB for the whole map) and rebuilds are deterministic.
+- Buildings are generated along road frontage rather than taken from OSM footprints. Chennai's OSM building coverage is patchy, and footprints overlap after the 1 : 2.5 compression.
+- Map is 1 : 2.5 scale (tech spec says "compressed"), so Marina → T. Nagar is ~2.2 km of driving instead of ~5.5 km.
 
 **Exit gate:** drive all three zones without hitches; ≤ 150 draw calls; RAM < 400 MB; 60 FPS on device.
 
@@ -227,44 +253,40 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 ## 🎯 Remaining work to MVP
 
-Phase 1 is done in code; only the on-device check is left. Agent work is everything not marked **(you)**.
+Agent work is everything not marked **(you)**.
 
-**Phase 1 – close-out**
-1. **(you)** Install the latest CI APK on a Helio G85 / SD680-class phone. Tap the top-left readout for full stats, drive for 5 minutes and note FPS, worst FPS, and anything that feels wrong (steering drag range, pedal reach, acceleration, sounds).
+**Phase 1–2 close-out**
+1. **(you)** Install the latest CI APK (`NammaAuto-android-<run>`) on a Helio G85 / SD680-class phone. It now starts at the Mylapore auto stand. Tap the top-left readout for full stats and drive Mylapore → Marina → Anna Salai for ~10 minutes. Report FPS / worst FPS, RAM, any hitches when new areas load, and anything that feels wrong.
+2. Jaywalkers in market zones, reusing the cattle spawning path.
+3. Gemini Flyover and Napier Bridge as real elevated ramps (needs ramp collision; the rest of the map is flat).
 
-**Phase 2 – Chennai world** (largest chunk, ~40% of the remaining MVP effort)
-2. OSM pipeline spike: CI-run Python fetches one 250 m Anna Salai chunk from Overpass → `.tscn` roads + extruded building blocks; prove the draw-call budget with the perf probe.
-3. `WorldChunkStreamer.gd` (3×3 threaded loading) and a streaming test.
-4. Import all three zones (Marina, Mylapore, Anna Salai–T. Nagar) with hero landmarks as low-poly placeholders.
-5. Traffic on real road splines (`godot-road-generator`) instead of the straight test strip; cattle/jaywalkers in market zones.
-6. Texture atlases for shopfronts and signage.
-
-**Phase 3 – Core loop**
-7. Passenger archetype `.tres` files and roadside/Auto-Stand spawning with pickup/drop triggers.
-8. 5-second haggling card with acceptance odds from data, plus unit tests.
-9. GPS route line + mini-map, comfort tea-cup meter, Gap-la Gethu near-miss combo.
-10. Fare breakdown screen, Respect XP, star rating.
+**Phase 3 – Core loop** (next big block)
+4. Passenger archetype `.tres` files; hailing passengers at the three auto stands and the roadside; pickup/drop triggers.
+5. 5-second haggling card with acceptance odds from data, plus unit tests.
+6. GPS route over `RoadGraph` (A* already possible on the graph) with a route line and mini-map; comfort tea-cup meter; Gap-la Gethu near-miss combo.
+7. Fare breakdown screen, Respect XP, star rating.
 
 **Phase 4 – Economy & garage**
-11. LPG bunk and EV kiosk refuelling; garage repairs and upgrades; horn-tier unlocks.
-12. `Madras_King_Deluxe.tres` and `Namma_Green_EV.tres` (+ EV audio).
-13. Encrypted save/load; Settings (3 control schemes incl. tilt, graphics presets, Tamil/English).
+8. LPG bunks / EV kiosks on the map; garage repairs, upgrades and horn tiers.
+9. `Madras_King_Deluxe.tres`, `Namma_Green_EV.tres` (+ EV audio).
+10. Encrypted save/load; Settings (3 control schemes incl. tilt, graphics presets, Tamil/English).
 
 **Phase 5 – Polish → MVP**
-14. Day/night cycle and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
-15. **Real audio** replacing the placeholders (full list in Phase 5 above).
-16. Real 3D models: auto ≤ 6.5k tris, traffic ≤ 1.2k tris (CC0 Kenney/Quaternius, Sketchfab CC-BY).
-17. Main menu, pause, onboarding, credits/attributions.
-18. **AAB via Gradle build in CI** (needed for Play; Phase 7 depends on it), size check < 85 MB.
-19. **(you)** 20-minute thermal soak on the budget phone.
+11. Day/night and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
+12. Real audio replacing the placeholders (full list under Phase 5).
+13. Real 3D models (auto, traffic, cattle, landmarks) and shopfront/signage texture atlases.
+14. Main menu, pause, onboarding, credits incl. OpenStreetMap (ODbL) attribution.
+15. AAB via Gradle build in CI, size check < 85 MB.
+16. **(you)** 20-minute thermal soak on the budget phone.
 
-**Start early, in parallel (you):** create the Google Play developer account and app entry, an upload keystore (then add it as the `ANDROID_KEYSTORE_*` repo secrets), and recruit the 12+ closed testers so the 14-day test in Phase 8 isn't blocked.
+**Start early, in parallel (you):** Google Play developer account and app entry, upload keystore (→ `ANDROID_KEYSTORE_*` repo secrets), 12+ closed testers.
 
 ---
 
 ## ✅ Verification loop (every task)
 
 1. `godot --headless --path . --import` then `--quit-after 120`: no `SCRIPT ERROR`.
+   Map data changed? Re-run **Actions → OSM Import** (or `python3 tools/osm/build_world.py` if only the converter changed) and commit `data/world/`.
 2. `godot --headless --path . --fixed-fps 60 res://tests/run_phaseN_tests.tscn`: exit code 0.
 3. Perf probe (needs a display, e.g. `xvfb-run`): `godot --path . --rendering-method gl_compatibility --fixed-fps 60 res://tests/run_perf_probe.tscn`: exit code 0.
 4. **Android Build** workflow green on the PR.
@@ -273,6 +295,10 @@ Phase 1 is done in code; only the on-device check is left. Agent work is everyth
 ## 📏 Rules for contributors and agents
 
 See [`AGENTS.md`](AGENTS.md). In short: communicate only through `SignalBus`, type everything, keep tunables in `.tres`, never fake 4-wheel physics, never `instantiate()`/`queue_free()` while driving, respect the 150-draw-call and 18-vehicle budgets, and don't hand-write `uid://` values.
+
+## 🗺️ Map data
+
+Roads, coastline, water and parks come from **OpenStreetMap** (© OpenStreetMap contributors, ODbL) via `tools/osm`. Zones, landmarks and auto stands are configured in `tools/osm/config.py`. Change them, run **Actions → OSM Import**, then pull.
 
 ## 📜 Licence & credits
 
