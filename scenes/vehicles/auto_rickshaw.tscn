@@ -3,42 +3,11 @@
 [ext_resource type="Script" path="res://scripts/vehicle/AutoRickshawController.gd" id="1"]
 [ext_resource type="Resource" path="res://data/vehicles/Bajaj_RE_4S.tres" id="2"]
 [ext_resource type="Script" path="res://scripts/vehicle/VehicleAudio.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/vehicle/AutoRickshawModel.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/vehicle/WheelModel.gd" id="5"]
 
 [sub_resource type="BoxShape3D" id="Shape_chassis"]
-size = Vector3(1.3, 0.8, 2.6)
-
-[sub_resource type="StandardMaterial3D" id="Mat_yellow"]
-albedo_color = Color(0.98, 0.78, 0.0, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_black"]
-albedo_color = Color(0.06, 0.06, 0.06, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_tyre"]
-albedo_color = Color(0.12, 0.12, 0.12, 1)
-
-[sub_resource type="BoxMesh" id="Mesh_body"]
-material = SubResource("Mat_yellow")
-size = Vector3(1.3, 0.6, 2.3)
-
-[sub_resource type="BoxMesh" id="Mesh_cowl"]
-material = SubResource("Mat_yellow")
-size = Vector3(1.1, 0.55, 0.35)
-
-[sub_resource type="BoxMesh" id="Mesh_canopy"]
-material = SubResource("Mat_black")
-size = Vector3(1.36, 0.12, 2.1)
-
-[sub_resource type="BoxMesh" id="Mesh_post"]
-material = SubResource("Mat_black")
-size = Vector3(0.05, 0.85, 0.05)
-
-[sub_resource type="CylinderMesh" id="Mesh_wheel"]
-material = SubResource("Mat_tyre")
-top_radius = 0.2
-bottom_radius = 0.2
-height = 0.13
-radial_segments = 12
-rings = 1
+size = Vector3(1.3, 1.3, 2.62)
 
 [node name="AutoRickshaw" type="RigidBody3D"]
 collision_layer = 2
@@ -48,50 +17,27 @@ script = ExtResource("1")
 stats = ExtResource("2")
 
 [node name="ChassisCollision" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, -0.05)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.03)
 shape = SubResource("Shape_chassis")
-
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0.05)
-mesh = SubResource("Mesh_body")
-
-[node name="FrontCowl" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -1.0)
-mesh = SubResource("Mesh_cowl")
-
-[node name="Canopy" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0.0)
-mesh = SubResource("Mesh_canopy")
-
-[node name="PostLeft" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0.75, 0.9)
-mesh = SubResource("Mesh_post")
-
-[node name="PostRight" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 0.75, 0.9)
-mesh = SubResource("Mesh_post")
 
 [node name="FrontWheelMesh" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.64, -1.05)
-
-[node name="Tyre" type="MeshInstance3D" parent="FrontWheelMesh"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("Mesh_wheel")
+script = ExtResource("5")
+is_front = true
 
 [node name="RearLeftWheelMesh" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, -0.64, 0.88)
-
-[node name="Tyre" type="MeshInstance3D" parent="RearLeftWheelMesh"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("Mesh_wheel")
+script = ExtResource("5")
+is_front = false
 
 [node name="RearRightWheelMesh" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.58, -0.64, 0.88)
-
-[node name="Tyre" type="MeshInstance3D" parent="RearRightWheelMesh"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("Mesh_wheel")
+script = ExtResource("5")
+is_front = false
 
 [node name="VehicleAudio" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.9)
 script = ExtResource("3")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("4")

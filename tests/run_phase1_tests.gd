@@ -57,6 +57,7 @@ func _run() -> void:
 	await _test_water_stall_and_kick_start(auto)
 	_test_passenger_mass(auto)
 	await _test_audio(auto)
+	_test_model(auto)
 	_check("No traffic instantiate/free during driving", traffic.get_child_count() == child_count_before,
 		"children %d -> %d" % [child_count_before, traffic.get_child_count()])
 
@@ -233,6 +234,19 @@ func _test_audio(auto: AutoRickshawController) -> void:
 	await _physics(150)
 	Input.action_release("accelerate")
 	_check("Engine pitch rises with speed", engine.pitch_scale > idle_pitch + 0.3, "pitch %.2f -> %.2f at %.0f km/h" % [idle_pitch, engine.pitch_scale, auto.current_speed_kmh])
+
+func _test_model(auto: AutoRickshawController) -> void:
+	var model: AutoRickshawModel = auto.get_node_or_null("Model") as AutoRickshawModel
+	_check("Procedural Bajaj RE body present", model != null and model.body_mesh != null)
+	if model == null:
+		return
+	var tris: int = model.triangle_count()
+	for w: String in ["FrontWheelMesh", "RearLeftWheelMesh", "RearRightWheelMesh"]:
+		var wm: MeshInstance3D = auto.get_node(w).get_node_or_null("WheelMesh") as MeshInstance3D
+		if wm != null:
+			tris += (wm.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
+	_check("Player auto ≤ 6,500 triangles (assets budget)", tris > 500 and tris <= 6500, "%d tris" % tris)
+	_check("Body is ≤ 3 surfaces (draw calls)", model.body_mesh.mesh.get_surface_count() <= 3)
 
 # --- Helpers ---------------------------------------------------------------
 

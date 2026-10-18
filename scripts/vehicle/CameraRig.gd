@@ -38,7 +38,7 @@ func _process(delta: float) -> void:
 	match mode:
 		Mode.COCKPIT:
 			# Cockpit is rigid to the chassis so the handlebar view never lags.
-			_camera.global_transform = _target.global_transform.translated_local(COCKPIT_OFFSET)
+			_camera.global_transform = _target.global_transform.translated_local(COCKPIT_OFFSET).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout
 			_camera.fov = 78.0
 			return
 		Mode.TOP_DOWN:
