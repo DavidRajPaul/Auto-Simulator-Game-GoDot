@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PassengerArchetype" format=3]
+
+[ext_resource type="Script" path="res://data/passengers/PassengerArchetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "monsoon_rider"
+archetype_name = "Late-Night / Monsoon Rider"
+colour = Color(0.3, 0.75, 0.75, 1)
+luggage_kg = 0.0
+party_size = 1
+accept_meter_chance = 1.0
+accept_meter_mela_chance = 0.85
+accept_fixed_rate_chance = 0.4
+surge_multiplier = 1.5
+comfort_tolerance_g = 0.5
+max_tip_inr = 25
+likes_fast_driving = false
+near_miss_tip_inr = 0
+timer_slack_s = 40.0
+home_zones = PackedStringArray()
+spawn_weight = 0.7
+line_hail = "Anna, mazhai! Double meter-naalum paravaillai, vaanga!"
+line_accept = "Thank god, polaam!"
+line_reject = "Inniku romba over, vera auto paakuren."
+line_happy = "Saved my night, anna!"
+line_upset = "Mazhai-la idhu romba risk!"

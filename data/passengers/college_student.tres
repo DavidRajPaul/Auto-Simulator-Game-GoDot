@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PassengerArchetype" format=3]
+
+[ext_resource type="Script" path="res://data/passengers/PassengerArchetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "college_student"
+archetype_name = "College Student"
+colour = Color(0.55, 0.85, 0.3, 1)
+luggage_kg = 5.0
+party_size = 2
+accept_meter_chance = 1.0
+accept_meter_mela_chance = 0.7
+accept_fixed_rate_chance = 0.25
+surge_multiplier = 1.0
+comfort_tolerance_g = 0.8
+max_tip_inr = 15
+likes_fast_driving = true
+near_miss_tip_inr = 5
+timer_slack_s = 35.0
+home_zones = PackedStringArray("anna_salai", "t_nagar")
+spawn_weight = 1.0
+line_hail = "Machan, auto! Class-ku late, gethu-aa po!"
+line_accept = "Semma, kelambu!"
+line_reject = "Machan pocket money illa da!"
+line_happy = "Vera level driving machan!"
+line_upset = "Bore-aa poguthu machan, speed-aa po!"

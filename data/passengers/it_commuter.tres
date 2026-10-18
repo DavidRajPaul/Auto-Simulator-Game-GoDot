@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PassengerArchetype" format=3]
+
+[ext_resource type="Script" path="res://data/passengers/PassengerArchetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "it_commuter"
+archetype_name = "IT Corridor Commuter"
+colour = Color(0.25, 0.45, 0.9, 1)
+luggage_kg = 0.0
+party_size = 1
+accept_meter_chance = 1.0
+accept_meter_mela_chance = 0.85
+accept_fixed_rate_chance = 0.4
+surge_multiplier = 1.0
+comfort_tolerance_g = 0.4
+max_tip_inr = 30
+likes_fast_driving = false
+near_miss_tip_inr = 0
+timer_slack_s = 30.0
+home_zones = PackedStringArray("anna_salai")
+spawn_weight = 1.2
+line_hail = "Anna, Tidel Park side poganum, seekiram!"
+line_accept = "Okay okay, fast-aa polaam."
+line_reject = "Bro, app-la cheap-aa irukku. Pass."
+line_happy = "Perfect timing, thanks anna!"
+line_upset = "Anna, laptop irukku, slow-aa!"

@@ -36,6 +36,7 @@ var luggage_kg: float = 0.0
 var wheels_grounded: int = 0
 
 var _telemetry_timer: float = 0.0
+var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
 
 func _ready() -> void:
@@ -210,6 +211,18 @@ func _check_water_stall() -> void:
 
 func _emit_telemetry(delta: float) -> void:
 	SignalBus.speed_updated.emit(current_speed_kmh)
+	var fwd: Vector3 = -global_transform.basis.z
+	SignalBus.player_pose_updated.emit(global_position, fwd)
+	# Ride dynamics for the passenger comfort meter.
+	var dv: Vector3 = linear_velocity - _prev_velocity
+	_prev_velocity = linear_velocity
+	var accel: Vector3 = dv / maxf(delta, 0.001)
+	var right: Vector3 = global_transform.basis.x
+	SignalBus.vehicle_dynamics.emit(accel.dot(right) / 9.8, accel.dot(fwd) / 9.8, absf(dv.y))
+	# A sudden horizontal speed change far beyond braking ability = we hit something.
+	var horizontal_dv: float = Vector2(dv.x, dv.z).length()
+	if horizontal_dv > 2.5:
+		SignalBus.player_collision.emit(horizontal_dv)
 	_telemetry_timer += delta
 	if _telemetry_timer < TELEMETRY_INTERVAL_S:
 		return

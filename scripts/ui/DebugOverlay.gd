@@ -18,7 +18,7 @@ func _ready() -> void:
 		queue_free()
 		return
 	_label = Label.new()
-	_label.position = Vector2(12.0, 8.0)
+	_label.position = Vector2(16.0, 214.0) # below the mini-map
 	_label.add_theme_font_size_override("font_size", 18)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 5)

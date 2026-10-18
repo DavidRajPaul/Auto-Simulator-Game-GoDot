@@ -61,8 +61,10 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── data/world/       OSM-built Chennai map: manifest, road graph, areas, 95 chunk files
 ├── data/osm/         raw Overpass extract (gz), © OpenStreetMap contributors
 ├── tools/osm/        fetch_osm.py, build_world.py, preview_map.py, config.py (zones, landmarks, stands)
-├── scripts/ui/       TouchHUD.gd, DebugOverlay.gd
-└── tests/            run_phase1_tests (47), run_phase2_tests (30), run_perf_probe (draw-call budget)
+├── scripts/ui/       TouchHUD.gd, PassengerHUD.gd, MiniMap.gd, DebugOverlay.gd
+├── scripts/passengers/ SavariManager.gd (ride loop), FareCalculator.gd, RouteLine.gd
+├── data/passengers/  5 rider archetypes (.tres)
+└── tests/            run_phase1_tests (47), run_phase2_tests (30), run_phase3_tests (41), run_perf_probe
 ```
 
 ### Phase 1 controls (greybox)
@@ -76,7 +78,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 | Camera (Chase → Cockpit → Top-down) | CAM | C |
 | Wiper | WIPER | V |
 
-The game starts at the **Mylapore Tank auto stand** in the OSM-built city:
+The game starts at the **Mylapore Tank auto stand** in the OSM-built city. Yellow beams are riders waving you down: stop beside one, pick an offer within 5 seconds, then follow the green route.
 
 ![In-game: Kamarajar Salai by Marina beach](docs/ingame_marina_kamarajar_salai.png)
 
@@ -100,7 +102,7 @@ Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard c
 
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
-1. **Tests + perf budget:** import, boot the main scene, run the Phase 1 and Phase 2 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
+1. **Tests + perf budget:** import, boot the main scene, run the Phase 1, 2 and 3 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
 2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
 4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
@@ -171,15 +173,32 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 **Exit gate:** drive all three zones without hitches; ≤ 150 draw calls; RAM < 400 MB; 60 FPS on device.
 
-### Phase 3 · Core loop: Savari & "Meter vs. Bargain" *(Weeks 4–5)*
+### Phase 3 · Core loop: Savari & "Meter vs. Bargain" ✅ code complete *(Weeks 4–5)*
 **Goal:** the money-making loop works end to end.
-- `PassengerArchetype.gd` resources: IT commuter, T. Nagar shopper (+45 kg), tourist, monsoon rider.
-- Roadside hailing, Auto Stand spawns, pickup/drop zones, GPS route line and mini-map.
-- 5-second Tanglish haggling card (Correct Meter / Meter Mela +₹30 / Fixed ₹200) with the acceptance matrix in data.
-- Comfort tea-cup meter (lateral G, potholes, speed breakers), "Gap-la Gethu" near-miss combo.
-- Fare breakdown screen; Respect XP; star rating.
 
-**Exit gate:** 30-minute session of continuous rides with no crash; fare maths covered by tests.
+| Haggle card | Ride with GPS |
+|---|---|
+| ![Haggle card](docs/ingame_haggle_card.png) | ![Ride with GPS route](docs/ingame_ride_gps.png) |
+
+| Item | Status |
+|---|---|
+| 5 passenger archetypes as `.tres`: IT commuter, T. Nagar silk shopper (+45 kg bags), Marina tourist, monsoon rider (1.5× surge), college student (pays for near misses) — each with Tanglish lines | ✅ |
+| Hails at the 3 auto stands and roadside kerbs, weighted by home zone; pooled hail markers | ✅ |
+| 5-second haggle card: Correct Meter (100%) / Meter Mela +₹30 (65–85%) / Fixed ₹200 (25–40%); no answer = rider walks off; rejection = −Respect + 10 s lost | ✅ |
+| `FareCalculator`: Chennai meter (₹35 + ₹18/km on real-equivalent km), quotes, odds (rain & Alangaram modifiers), tips, stars | ✅ |
+| GPS: A* on the road graph respecting one-ways, auto re-route when you go off-route, green route painted on the road | ✅ |
+| Heading-up circular mini-map with roads, route, hails, destination | ✅ |
+| Comfort tea-cup: lateral g vs rider tolerance, hard braking, speed-breaker jolts, crashes | ✅ |
+| Gap-la Gethu near-miss detection (< 0.6 m at > 35 km/h) + bonus from college students | ✅ |
+| Ride timer, fare breakdown (fare + comfort tip + Gethu bonus), Respect XP, rolling star rating, wallet | ✅ |
+| Meter flag shows FOR HIRE / hired fare | ✅ |
+| `tests/run_phase3_tests.tscn`: 41 checks incl. full rides end-to-end | ✅ |
+| Namma-Yatri-style dashboard app dispatch | ⬜ → Phase 10 (GDD: unlocks at Level 3) |
+| 2× fare rewarded video on the fare screen | ⬜ → Phase 6 |
+
+**Map fix found here:** one-way streets clipped at the map edge created trap junctions you could enter but not leave (108 junctions). The converter now opens those one-ways both ways, so every road is reachable.
+
+**Exit gate:** 30-minute session of continuous rides with no crash **(you, on device)**; fare maths covered by tests ✅.
 
 ### Phase 4 · Economy, garage & vehicles *(Week 5)*
 **Goal:** progression from starter auto to the second auto.
@@ -260,13 +279,12 @@ Agent work is everything not marked **(you)**.
 2. Jaywalkers in market zones, reusing the cattle spawning path.
 3. Gemini Flyover and Napier Bridge as real elevated ramps (needs ramp collision; the rest of the map is flat).
 
-**Phase 3 – Core loop** (next big block)
-4. Passenger archetype `.tres` files; hailing passengers at the three auto stands and the roadside; pickup/drop triggers.
-5. 5-second haggling card with acceptance odds from data, plus unit tests.
-6. GPS route over `RoadGraph` (A* already possible on the graph) with a route line and mini-map; comfort tea-cup meter; Gap-la Gethu near-miss combo.
-7. Fare breakdown screen, Respect XP, star rating.
+**Phase 3 – Core loop** ✅ done in code
+4. **(you)** Play 30 minutes of rides on the phone: is the 5 s haggle card readable while stopped? Are fares and tips satisfying? Does the comfort meter feel fair?
+5. Balance pass from your notes (all numbers are in `data/passengers/*.tres` and `FareCalculator.gd`).
 
-**Phase 4 – Economy & garage**
+**Phase 4 – Economy & garage** (next)
+6. Shift clock (day length) so "10 s lost" and timers matter; LPG drain tuned to ~3–4 rides per tank.
 8. LPG bunks / EV kiosks on the map; garage repairs, upgrades and horn tiers.
 9. `Madras_King_Deluxe.tres`, `Namma_Green_EV.tres` (+ EV audio).
 10. Encrypted save/load; Settings (3 control schemes incl. tilt, graphics presets, Tamil/English).

@@ -26,9 +26,33 @@ signal traffic_vehicle_shifted(sub_lane: int)
 signal wiper_toggled(is_on: bool)
 signal camera_mode_changed(mode_name: String)
 
-# --- Passengers & economy (Phase 3+) -------------------------------------
+# --- Navigation ------------------------------------------------------------
+## Latest published road graph, for listeners that start after road_graph_ready fired.
+var current_road_graph: RoadGraph = null
+signal road_graph_ready(graph: RoadGraph)
+## Player pose for the mini-map / ride logic (every physics frame).
+signal player_pose_updated(position: Vector3, heading: Vector3)
+## Active GPS route polyline (empty = no route).
+signal route_updated(points: PackedVector3Array)
+## Gap-la Gethu: passed a moving vehicle with < 0.6 m clearance above 35 km/h.
+signal near_miss(clearance_m: float)
+signal player_collision(impulse: float)
+## Per-physics-frame ride dynamics for the comfort meter (g units; jolt = vertical speed change).
+signal vehicle_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)
+
+# --- Passengers & economy (Phase 3) --------------------------------------
+## Hails visible to the HUD / mini-map: Array of {id, position, archetype}.
+signal hails_updated(hails: Array)
+## Haggle card. info: {archetype, name, line, destination, distance_km, quotes: [int, int, int], odds: [f, f, f]}.
+signal haggle_started(info: Dictionary, seconds: float)
+signal haggle_choice_made(offer: int)
+## result: {accepted, offer, fare, line}
+signal haggle_resolved(result: Dictionary)
 signal passenger_boarded(passenger_count: int, luggage_weight_kg: float)
+## Ride HUD tick. info: {destination, remaining_m, time_left_s, comfort, fare, near_misses}
+signal ride_updated(info: Dictionary)
 signal passenger_alighted()
-signal ride_completed(base_fare_inr: int, comfort_tip_inr: int, stunt_bonus_inr: int)
+## breakdown from FareCalculator.settle() plus {destination, archetype_name, line}
+signal ride_completed(breakdown: Dictionary)
 signal wallet_balance_changed(new_balance_inr: int, delta_inr: int)
 signal stand_respect_changed(new_xp: int, star_rating: float)

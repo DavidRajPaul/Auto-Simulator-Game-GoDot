@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PassengerArchetype" format=3]
+
+[ext_resource type="Script" path="res://data/passengers/PassengerArchetype.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "tourist"
+archetype_name = "Marina Tourist"
+colour = Color(0.95, 0.6, 0.1, 1)
+luggage_kg = 10.0
+party_size = 1
+accept_meter_chance = 1.0
+accept_meter_mela_chance = 0.8
+accept_fixed_rate_chance = 0.35
+surge_multiplier = 1.0
+comfort_tolerance_g = 0.3
+max_tip_inr = 40
+likes_fast_driving = false
+near_miss_tip_inr = 0
+timer_slack_s = 45.0
+home_zones = PackedStringArray("marina")
+spawn_weight = 1.0
+line_hail = "Excuse me, Kapaleeshwarar temple please?"
+line_accept = "Sure, let's go — scenic route!"
+line_reject = "That's way too much, sorry."
+line_happy = "Amazing city, thank you!"
+line_upset = "Whoa — careful please!"

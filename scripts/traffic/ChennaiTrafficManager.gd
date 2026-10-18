@@ -31,12 +31,18 @@ var _player: Node3D
 var _respawn_queue: Array[TrafficVehicleAI] = []
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
+var _near_miss_cooldown: Dictionary = {} # vehicle -> seconds left
+const NEAR_MISS_CLEARANCE_M: float = 0.6
+const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
+const PLAYER_HALF_WIDTH_M: float = 0.65
 
 func _ready() -> void:
 	rng.seed = 600028
 	_player = get_node_or_null(player_path) as Node3D
 	graph = RoadGraph.from_json_file(graph_path) if graph_path != "" else _build_greybox_graph()
 	_load_market_zones()
+	SignalBus.current_road_graph = graph
+	SignalBus.road_graph_ready.emit.call_deferred(graph)
 	var materials: Array[StandardMaterial3D] = []
 	for c: Color in ARCHETYPE_COLOURS:
 		var m: StandardMaterial3D = StandardMaterial3D.new()
@@ -91,6 +97,7 @@ func _physics_process(delta: float) -> void:
 		v.tick(delta)
 		if v.active and v.global_position.distance_to(_player.global_position) > RECYCLE_RADIUS_M:
 			_respawn_queue.append(v)
+	_detect_near_misses(delta)
 	# Parked cattle retry every few seconds (they only appear in market zones).
 	_cow_retry_timer += delta
 	if _cow_retry_timer > 3.0 and not _market_zones.is_empty():
@@ -103,6 +110,30 @@ func _physics_process(delta: float) -> void:
 	while not _respawn_queue.is_empty() and n < 2:
 		_respawn(_respawn_queue.pop_front())
 		n += 1
+
+## "Gap-la Gethu": the player squeezes past a moving vehicle with < 0.6 m to spare
+## above 35 km/h without touching it. One event per vehicle per pass.
+func _detect_near_misses(delta: float) -> void:
+	for v: Variant in _near_miss_cooldown.keys():
+		_near_miss_cooldown[v] = float(_near_miss_cooldown[v]) - delta
+		if float(_near_miss_cooldown[v]) <= 0.0:
+			_near_miss_cooldown.erase(v)
+	var body: RigidBody3D = _player as RigidBody3D
+	if body == null or body.linear_velocity.length() * 3.6 < NEAR_MISS_MIN_SPEED_KMH:
+		return
+	for v: TrafficVehicleAI in pool:
+		if not v.active or v.current_speed_mps < 1.0 or _near_miss_cooldown.has(v):
+			continue
+		var rel: Vector3 = _player.global_position - v.global_position
+		if rel.length() > 8.0:
+			continue
+		var fwd: Vector3 = -v.global_transform.basis.z
+		var along: float = absf(rel.dot(fwd))
+		var lateral: float = absf(rel.dot(Vector3(fwd.z, 0.0, -fwd.x)))
+		var clearance: float = lateral - v.half_width() - PLAYER_HALF_WIDTH_M
+		if along < v.half_length() + 1.4 and clearance > 0.05 and clearance < NEAR_MISS_CLEARANCE_M:
+			_near_miss_cooldown[v] = 2.0
+			SignalBus.near_miss.emit(clearance)
 
 func request_respawn(v: TrafficVehicleAI) -> void:
 	if not _respawn_queue.has(v):

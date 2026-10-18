@@ -213,7 +213,68 @@ def build_roads(elements: list[dict]) -> tuple[list[dict], dict]:
         if len(comp) > len(best):
             best = comp
     edges = [e for e in edges if e["a"] in best]
+    _make_strongly_connected(edges)
     return edges, {n: node_pos[n] for n in best if n in node_pos}
+
+
+def _strong_components(edges: list[dict]) -> dict[int, int]:
+    """Kosaraju (iterative) over the directed drivable graph → node → component id."""
+    adj, radj = defaultdict(list), defaultdict(list)
+    nodes: set[int] = set()
+    for e in edges:
+        nodes.update((e["a"], e["b"]))
+        if e["lanes_fwd"] > 0:
+            adj[e["a"]].append(e["b"])
+            radj[e["b"]].append(e["a"])
+        if e["lanes_back"] > 0:
+            adj[e["b"]].append(e["a"])
+            radj[e["a"]].append(e["b"])
+    order, seen = [], set()
+    for s in nodes:
+        if s in seen:
+            continue
+        seen.add(s)
+        stack = [(s, 0)]
+        while stack:
+            v, i = stack.pop()
+            if i < len(adj[v]):
+                stack.append((v, i + 1))
+                w = adj[v][i]
+                if w not in seen:
+                    seen.add(w)
+                    stack.append((w, 0))
+            else:
+                order.append(v)
+    comp: dict[int, int] = {}
+    for c, s in enumerate(reversed(order)):
+        if s in comp:
+            continue
+        comp[s] = c
+        stack = [s]
+        while stack:
+            v = stack.pop()
+            for w in radj[v]:
+                if w not in comp:
+                    comp[w] = c
+                    stack.append(w)
+    return comp
+
+
+def _make_strongly_connected(edges: list[dict]) -> None:
+    """One-way streets clipped at the map edge create traps you can enter but never leave.
+    Open those one-ways in both directions until every junction can reach every other."""
+    for _ in range(6):
+        comp = _strong_components(edges)
+        main = max(set(comp.values()), key=list(comp.values()).count)
+        changed = 0
+        for e in edges:
+            if (comp[e["a"]] != main or comp[e["b"]] != main) and e["lanes_back"] == 0:
+                e["lanes_back"] = e["lanes_fwd"]
+                e["oneway"] = False
+                changed += 1
+        if changed == 0:
+            return
+        print(f"  opened {changed} boundary one-ways both ways")
 
 
 def build_areas(elements: list[dict]) -> dict:

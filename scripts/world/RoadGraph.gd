@@ -194,3 +194,143 @@ func spawn_candidates(origin: Vector3, heading: Vector3, min_d: float, max_d: fl
 					if lanes_in_dir(int(item[0]), dir) > 0:
 						(out if ahead else behind).append({"edge": int(item[0]), "s": float(item[1]), "dir": dir})
 	return out if not out.is_empty() else behind
+
+# --- GPS routing (Phase 3) ------------------------------------------------------
+
+## Edges you may leave `node` by, as [edge, dir, to_node].
+func _out_moves(node: int) -> Array[Array]:
+	var out: Array[Array] = []
+	for ei: int in node_edges[node]:
+		var e: Edge = edges[ei]
+		if e.a == node and e.lanes_fwd > 0:
+			out.append([ei, 1, e.b])
+		if e.b == node and e.lanes_back > 0:
+			out.append([ei, -1, e.a])
+	return out
+
+## Shortest legal route (respects one-ways) between two world positions.
+## Returns {ok, length, points: PackedVector3Array, steps: Array[[edge, dir]]}.
+func find_route(from_pos: Vector3, to_pos: Vector3) -> Dictionary:
+	var start: Dictionary = closest_point(from_pos)
+	var goal: Dictionary = closest_point(to_pos)
+	if int(start["edge"]) < 0 or int(goal["edge"]) < 0:
+		return {"ok": false}
+	var se: Edge = edges[int(start["edge"])]
+	var ge: Edge = edges[int(goal["edge"])]
+	var s0: float = float(start["s"])
+	var g0: float = float(goal["s"])
+	# Same edge and the travel direction is legal: no graph search needed.
+	if int(start["edge"]) == int(goal["edge"]):
+		var d: int = 1 if g0 >= s0 else -1
+		if (d > 0 and se.lanes_fwd > 0) or (d < 0 and se.lanes_back > 0):
+			return {"ok": true, "length": absf(g0 - s0), "steps": [[int(start["edge"]), d]],
+				"points": _slice(int(start["edge"]), s0, g0)}
+	# Seed: leave the start edge toward whichever endpoint(s) are legal.
+	var dist: Dictionary = {}
+	var prev: Dictionary = {} # node -> [prev_node, edge, dir]
+	var heap: Array[Array] = []
+	if se.lanes_fwd > 0:
+		_relax(se.b, se.length - s0, -1, int(start["edge"]), 1, dist, prev, heap, to_pos)
+	if se.lanes_back > 0:
+		_relax(se.a, s0, -1, int(start["edge"]), -1, dist, prev, heap, to_pos)
+	# Goal: arriving at an endpoint from which the goal edge can be driven to g0.
+	var goal_entry: Dictionary = {} # node -> [cost to finish, dir]
+	if ge.lanes_fwd > 0:
+		goal_entry[ge.a] = [g0, 1]
+	if ge.lanes_back > 0:
+		goal_entry[ge.b] = [ge.length - g0, -1]
+	var best_total: float = INF
+	var best_node: int = -1
+	while not heap.is_empty():
+		var top: Array = _heap_pop(heap)
+		var node: int = int(top[1])
+		var cost: float = float(dist[node])
+		if float(top[0]) - nodes[node].distance_to(to_pos) > cost + 0.001:
+			continue # stale entry
+		if cost >= best_total:
+			break
+		if goal_entry.has(node):
+			var total: float = cost + float(goal_entry[node][0])
+			if total < best_total:
+				best_total = total
+				best_node = node
+		for mv: Array in _out_moves(node):
+			_relax(int(mv[2]), cost + edges[int(mv[0])].length, node, int(mv[0]), int(mv[1]), dist, prev, heap, to_pos)
+	if best_node < 0:
+		return {"ok": false}
+	# Rebuild steps.
+	var steps: Array = [[int(goal["edge"]), int(goal_entry[best_node][1])]]
+	var n: int = best_node
+	while prev.has(n):
+		var p: Array = prev[n]
+		steps.push_front([int(p[1]), int(p[2])])
+		n = int(p[0])
+		if n < 0:
+			break
+	# Polyline.
+	var pts: PackedVector3Array = PackedVector3Array()
+	for i: int in steps.size():
+		var ei: int = int(steps[i][0])
+		var d: int = int(steps[i][1])
+		var e: Edge = edges[ei]
+		var from_s: float = (s0 if i == 0 else (0.0 if d > 0 else e.length))
+		var to_s: float = (g0 if i == steps.size() - 1 else (e.length if d > 0 else 0.0))
+		pts.append_array(_slice(ei, from_s, to_s))
+	return {"ok": true, "length": best_total, "steps": steps, "points": pts}
+
+func _relax(node: int, cost: float, from_node: int, edge_idx: int, dir: int, dist: Dictionary, prev: Dictionary, heap: Array[Array], target: Vector3) -> void:
+	if dist.has(node) and float(dist[node]) <= cost:
+		return
+	dist[node] = cost
+	prev[node] = [from_node, edge_idx, dir]
+	_heap_push(heap, [cost + nodes[node].distance_to(target), node])
+
+## Points along an edge between two s values (either order).
+func _slice(edge_idx: int, s_from: float, s_to: float) -> PackedVector3Array:
+	var e: Edge = edges[edge_idx]
+	var out: PackedVector3Array = PackedVector3Array()
+	out.append(sample(edge_idx, s_from, 1)[0])
+	if s_to >= s_from:
+		for i: int in e.points.size():
+			if e.cum[i] > s_from and e.cum[i] < s_to:
+				out.append(e.points[i])
+	else:
+		for i: int in range(e.points.size() - 1, -1, -1):
+			if e.cum[i] < s_from and e.cum[i] > s_to:
+				out.append(e.points[i])
+	out.append(sample(edge_idx, s_to, 1)[0])
+	return out
+
+static func _heap_push(heap: Array[Array], item: Array) -> void:
+	heap.append(item)
+	var i: int = heap.size() - 1
+	while i > 0:
+		var parent: int = (i - 1) / 2
+		if float(heap[parent][0]) <= float(heap[i][0]):
+			break
+		var tmp: Array = heap[parent]
+		heap[parent] = heap[i]
+		heap[i] = tmp
+		i = parent
+
+static func _heap_pop(heap: Array[Array]) -> Array:
+	var top: Array = heap[0]
+	var last: Array = heap.pop_back()
+	if not heap.is_empty():
+		heap[0] = last
+		var i: int = 0
+		while true:
+			var l: int = i * 2 + 1
+			var r: int = l + 1
+			var m: int = i
+			if l < heap.size() and float(heap[l][0]) < float(heap[m][0]):
+				m = l
+			if r < heap.size() and float(heap[r][0]) < float(heap[m][0]):
+				m = r
+			if m == i:
+				break
+			var tmp: Array = heap[m]
+			heap[m] = heap[i]
+			heap[i] = tmp
+			i = m
+	return top
