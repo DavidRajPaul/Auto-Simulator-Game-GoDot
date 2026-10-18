@@ -1,0 +1,40 @@
+name: OSM Import
+
+# Downloads OpenStreetMap data for the MVP map (Overpass), rebuilds the game's
+# chunk files with tools/osm/build_world.py and commits any changes to the branch.
+# Run manually: Actions → OSM Import → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      refetch:
+        description: "Re-download OSM data even if data/osm/chennai_mvp.osm.json.gz exists"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Fetch OSM (Overpass)
+        if: inputs.refetch || hashFiles('data/osm/chennai_mvp.osm.json.gz') == ''
+        run: python3 tools/osm/fetch_osm.py
+      - name: Build world chunks
+        run: |
+          if [ -f tools/osm/build_world.py ]; then python3 tools/osm/build_world.py; else echo "build_world.py not present yet"; fi
+      - name: Commit results
+        run: |
+          git config user.name "osm-import[bot]"
+          git config user.email "osm-import@users.noreply.github.com"
+          git add data/osm data/world 2>/dev/null || true
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "data(osm): import Chennai MVP map data (© OpenStreetMap contributors, ODbL)"
+          git push
