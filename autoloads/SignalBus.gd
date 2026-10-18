@@ -72,3 +72,10 @@ signal settings_changed(settings: Dictionary)
 signal pause_requested(open: bool)
 signal tow_requested(from_position: Vector3)
 signal teleport_requested(xform: Transform3D)
+# --- Comfort (Phase 5) ------------------------------------------------------
+signal recover_available(available: bool)
+signal recover_requested()
+signal hint_requested(text: String, seconds: float)
+signal weather_changed(raining: bool)
+## Kick-start mini-game: one timed kick (good = landed in the green zone).
+signal kick_timed(good: bool)

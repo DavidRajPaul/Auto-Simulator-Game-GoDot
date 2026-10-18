@@ -51,8 +51,11 @@ var wallet_inr: int = 500
 var stand_respect_xp: int = 100
 var star_rating: float = 4.5
 var completed_savaris: int = 0
-## Set by the weather system (Phase 5). Riders haggle less and monsoon riders appear.
+## Set by the weather schedule below. Riders haggle less and monsoon riders appear.
 var is_raining: bool = false
+## Today's rain window in shift minutes ([-1, -1] = dry day). NE monsoon: Oct–Dec.
+var rain_window: Vector2 = Vector2(-1.0, -1.0)
+const MONSOON_RAIN_CHANCE: float = 0.4
 
 var owned_vehicles: PackedStringArray = ["singara_classic"]
 var active_vehicle: String = "singara_classic"
@@ -69,7 +72,8 @@ var shift_minute: float = SHIFT_START_MIN
 var shift_running: bool = true
 var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 
-var settings: Dictionary = {"control_scheme": 0, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8}
+var settings: Dictionary = {"control_scheme": 0, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
+	"vibration": true, "guidance_arrow": true, "tutorial_step": 0}
 
 ## Saving is disabled for test runs so suites never read or clobber a real profile.
 var persistence_enabled: bool = true
@@ -82,6 +86,7 @@ func _ready() -> void:
 	for a: String in OS.get_cmdline_args():
 		if a.begins_with("res://tests/"):
 			persistence_enabled = false
+	roll_weather()
 	if persistence_enabled:
 		load_game()
 	SignalBus.player_collision.connect(_on_collision)
@@ -98,6 +103,7 @@ func _process(delta: float) -> void:
 		return
 	if shift_running:
 		shift_minute += delta * GAME_MIN_PER_SECOND
+		_update_weather()
 		_clock_emit_timer += delta
 		if _clock_emit_timer >= 1.0:
 			_clock_emit_timer = 0.0
@@ -112,6 +118,9 @@ func _process(delta: float) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		save_game()
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		# Phone call / app switch: never leave the auto driving unattended.
+		SignalBus.pause_requested.emit(true)
 
 # --- Money, respect, rating ------------------------------------------------------
 
@@ -293,6 +302,31 @@ func clock_text() -> String:
 	var h: int = m / 60
 	return "%d:%02d %s" % [((h + 11) % 12) + 1, m % 60, "AM" if h < 12 else "PM"]
 
+func roll_weather() -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(day * 7919)
+	var month: int = int(Time.get_date_dict_from_system()["month"])
+	var chance: float = MONSOON_RAIN_CHANCE if month >= 10 or month <= 1 else 0.12
+	if rng.randf() < chance:
+		var start: float = rng.randf_range(540.0, 960.0) # 9 AM – 4 PM
+		rain_window = Vector2(start, start + rng.randf_range(120.0, 300.0))
+	else:
+		rain_window = Vector2(-1.0, -1.0)
+
+## Force weather (tests, debug menu). duration in game minutes.
+func set_rain(on: bool, duration_min: float = 180.0) -> void:
+	rain_window = Vector2(shift_minute, shift_minute + duration_min) if on else Vector2(-1.0, -1.0)
+	_update_weather()
+
+func _update_weather() -> void:
+	var raining: bool = shift_minute >= rain_window.x and shift_minute < rain_window.y
+	if raining != is_raining:
+		is_raining = raining
+		SignalBus.weather_changed.emit(is_raining)
+
+func is_night() -> bool:
+	return shift_minute >= 1140.0 or shift_minute < 375.0 # after 7 PM
+
 func end_shift() -> void:
 	shift_running = false
 	shift_minute = SHIFT_END_MIN
@@ -308,6 +342,8 @@ func start_next_day() -> void:
 	shift_minute = SHIFT_START_MIN
 	shift_running = true
 	day_stats = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
+	roll_weather()
+	_update_weather()
 	SignalBus.shift_clock_updated.emit(day, shift_minute)
 	save_game()
 
@@ -351,7 +387,7 @@ func to_dict() -> Dictionary:
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
 		"fuel": fuel_level, "condition": condition, "day": day, "minute": shift_minute, "day_stats": day_stats,
-		"settings": settings,
+		"settings": settings, "rain": [rain_window.x, rain_window.y],
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -373,6 +409,8 @@ func from_dict(d: Dictionary) -> void:
 	day = int(d.get("day", 1))
 	shift_minute = float(d.get("minute", SHIFT_START_MIN))
 	day_stats = d.get("day_stats", day_stats)
+	var rw: Array = d.get("rain", [-1.0, -1.0])
+	rain_window = Vector2(float(rw[0]), float(rw[1]))
 	var s: Dictionary = d.get("settings", {})
 	for k: String in s:
 		settings[k] = s[k]

@@ -29,6 +29,8 @@ var _fare_timer: float = 0.0
 var _toast: Label
 var _toast_timer: float = 0.0
 var minimap: MiniMap
+var _hint: Label
+var _hint_timer: float = 0.0
 
 func _ready() -> void:
 	layer = 11
@@ -56,6 +58,13 @@ func _ready() -> void:
 	SignalBus.haggle_resolved.connect(_on_haggle_resolved)
 	SignalBus.ride_updated.connect(_on_ride_updated)
 	SignalBus.ride_completed.connect(_on_ride_completed)
+	_hint = _label("", 22, Color(0.75, 1.0, 0.8))
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	SignalBus.hint_requested.connect(func(text: String, seconds: float) -> void:
+		_hint.text = text
+		_hint_timer = seconds)
+	_layout()
 	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
 
 func _process(delta: float) -> void:
@@ -68,6 +77,10 @@ func _process(delta: float) -> void:
 		_fare_timer -= delta
 		if _fare_timer <= 0.0:
 			_fare_card.visible = false
+	if _hint_timer > 0.0:
+		_hint_timer -= delta
+		if _hint_timer <= 0.0:
+			_hint.text = ""
 	if _toast_timer > 0.0:
 		_toast_timer -= delta
 		if _toast_timer <= 0.0:
@@ -175,6 +188,9 @@ func _layout() -> void:
 	_fare_card.custom_minimum_size = Vector2(360.0, 0.0)
 	_fare_card.position = Vector2(vp.x * 0.5 - 180.0, vp.y * 0.2)
 	_toast.position = Vector2(0.0, vp.y * 0.25)
+	if _hint != null:
+		_hint.position = Vector2(vp.x * 0.2, vp.y * 0.36)
+		_hint.size = Vector2(vp.x * 0.6, 60.0)
 	_toast.size = Vector2(vp.x, 40.0)
 
 # --- Behaviour -----------------------------------------------------------------

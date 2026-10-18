@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/passenger_hud.tscn" id="10"]
 [ext_resource type="Script" path="res://scripts/world/ServicePoints.gd" id="11"]
 [ext_resource type="Script" path="res://scripts/ui/GarageUI.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/vehicle/ComfortAssist.gd" id="13"]
+[ext_resource type="Script" path="res://scripts/world/Atmosphere.gd" id="14"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -45,6 +47,11 @@ shadow_enabled = true
 directional_shadow_mode = 0
 directional_shadow_max_distance = 45.0
 
+[node name="Atmosphere" type="Node" parent="."]
+script = ExtResource("14")
+environment_path = NodePath("../WorldEnvironment")
+sun_path = NodePath("../Sun")
+
 [node name="World" type="Node3D" parent="."]
 script = ExtResource("6")
 player_path = NodePath("../AutoRickshaw")
@@ -65,6 +72,9 @@ graph_path = "res://data/world/road_graph.json"
 
 [node name="ServicePoints" type="Node3D" parent="."]
 script = ExtResource("11")
+
+[node name="ComfortAssist" type="Node3D" parent="."]
+script = ExtResource("13")
 
 [node name="SavariManager" type="Node3D" parent="."]
 script = ExtResource("8")

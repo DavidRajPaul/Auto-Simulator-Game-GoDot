@@ -48,6 +48,10 @@ func _ready() -> void:
 	SignalBus.fuel_changed.connect(_on_fuel)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
 	SignalBus.shift_ended.connect(_on_shift_ended)
+	SignalBus.pause_requested.connect(func(open: bool) -> void:
+		if open and not is_open():
+			open_pause())
+	SignalBus.recover_available.connect(_on_recover_available)
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	SignalBus.wallet_balance_changed.connect(func(_b: int, _d: int) -> void:
 		if _modal.visible and _modal_title.text == tr("GARAGE"):
@@ -134,6 +138,22 @@ func _on_fuel(level: float, _capacity: float) -> void:
 		_service_msg.text = tr("OUT_OF_FUEL")
 		_service_bar.add_child(_button("%s  ₹%d" % [tr("TOW"), ServicePoints.TOW_COST_INR], Color(0.6, 0.2, 0.15), _tow))
 		_service_bar.visible = true
+
+func _on_recover_available(available: bool) -> void:
+	if not available:
+		if _service_kind == "" and not _out_of_fuel_shown:
+			_service_bar.visible = false
+			_service_msg.text = ""
+		return
+	if _service_kind != "":
+		return
+	for c: Node in _service_bar.get_children():
+		c.queue_free()
+	_service_msg.text = ""
+	_service_bar.add_child(_button(tr("RESET_AUTO"), Color(0.25, 0.35, 0.6), func() -> void:
+		SignalBus.recover_requested.emit()
+		_service_bar.visible = false))
+	_service_bar.visible = true
 
 func _tow() -> void:
 	SignalBus.tow_requested.emit(_last_player_pos())
@@ -240,6 +260,14 @@ func _render_settings() -> void:
 	_choice_row(tr("LANGUAGE"), PackedStringArray(["English", "தமிழ்"]), 0 if str(s["language"]) == "en" else 1,
 		func(i: int) -> void:
 			GameState.set_setting("language", "en" if i == 0 else "ta")
+			open_pause())
+	_choice_row(tr("VIBRATION"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if bool(s.get("vibration", true)) else 1,
+		func(i: int) -> void:
+			GameState.set_setting("vibration", i == 0)
+			open_pause())
+	_choice_row(tr("GUIDE_ARROW"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if bool(s.get("guidance_arrow", true)) else 1,
+		func(i: int) -> void:
+			GameState.set_setting("guidance_arrow", i == 0)
 			open_pause())
 	var vl: Label = Label.new()
 	vl.text = tr("VOLUME")

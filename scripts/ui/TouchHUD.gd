@@ -231,7 +231,9 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		var sd: InputEventScreenDrag = event as InputEventScreenDrag
 		if sd.index == _steer_touch_index:
-			set_steer((sd.position.x - _steer_touch_origin_x) / STEER_DRAG_RANGE_PX)
+			# Gentle curve: fine control near centre, full lock at the edge.
+			var raw: float = clampf((sd.position.x - _steer_touch_origin_x) / STEER_DRAG_RANGE_PX, -1.0, 1.0)
+			set_steer(signf(raw) * pow(absf(raw), 1.4))
 
 ## -1 = full left, +1 = full right. Public so tests and tilt-steering can reuse it.
 func set_steer(value: float) -> void:

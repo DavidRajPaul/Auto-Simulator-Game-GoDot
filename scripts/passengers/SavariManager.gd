@@ -130,8 +130,10 @@ func pick_archetype(zone_id: String) -> PassengerArchetype:
 	var weights: Array[float] = []
 	for a: PassengerArchetype in archetypes:
 		var w: float = a.spawn_weight * (2.0 if zone_id != "" and a.home_zones.has(zone_id) else 1.0)
-		if a.surge_multiplier > 1.0 and not GameState.is_raining:
-			w *= 0.15 # monsoon riders are rare on dry days
+		if a.surge_multiplier > 1.0 and not GameState.is_raining and not GameState.is_night():
+			w *= 0.15 # monsoon / late-night riders are rare on dry days
+		elif a.surge_multiplier > 1.0:
+			w *= 2.5
 		weights.append(w)
 		total += w
 	var roll: float = rng.randf() * total

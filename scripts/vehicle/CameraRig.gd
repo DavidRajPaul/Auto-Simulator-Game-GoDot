@@ -47,7 +47,9 @@ func _process(delta: float) -> void:
 			desired = _target.global_position + basis_flat * CHASE_OFFSET
 	var t: float = 1.0 - exp(-follow_sharpness * delta)
 	_camera.global_position = _camera.global_position.lerp(desired, t)
-	_camera.fov = 70.0
+	# A little wider with speed: reads as faster without needing more speed.
+	var speed: float = (_target as RigidBody3D).linear_velocity.length() if _target is RigidBody3D else 0.0
+	_camera.fov = lerpf(_camera.fov, 68.0 + clampf(speed * 0.45, 0.0, 9.0), 1.0 - exp(-3.0 * delta))
 	var look_at_pt: Vector3 = _target.global_position + Vector3(0.0, 0.4, 0.0)
 	if _camera.global_position.distance_to(look_at_pt) > 0.1:
 		_camera.look_at(look_at_pt, Vector3.UP if mode != Mode.TOP_DOWN else -basis_flat.z)
