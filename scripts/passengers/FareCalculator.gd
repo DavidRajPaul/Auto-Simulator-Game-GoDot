@@ -52,9 +52,10 @@ static func ride_time_limit_s(route_m: float, rider: PassengerArchetype) -> floa
 
 ## Final settlement shown on the fare breakdown screen.
 ## comfort: 0–1 tea-cup level at drop-off; near_misses: Gap-la Gethu count during the ride.
-static func settle(agreed_fare: int, rider: PassengerArchetype, comfort: float, on_time: bool, near_misses: int) -> Dictionary:
+## tip_bonus: extra tip fraction (e.g. +0.25 green-ride bonus from IT riders in the EV).
+static func settle(agreed_fare: int, rider: PassengerArchetype, comfort: float, on_time: bool, near_misses: int, tip_bonus: float = 0.0) -> Dictionary:
 	var c: float = clampf(comfort, 0.0, 1.0)
-	var tip: int = roundi(float(rider.max_tip_inr) * c) if on_time else 0
+	var tip: int = roundi(float(rider.max_tip_inr) * c * (1.0 + tip_bonus)) if on_time else 0
 	var gethu: int = 0
 	if rider.likes_fast_driving:
 		gethu = near_misses * (NEAR_MISS_BONUS_INR + rider.near_miss_tip_inr)

@@ -514,10 +514,112 @@
    "yaw": -0.126
   }
  ],
+ "services": [
+  {
+   "id": "lpg_royapettah",
+   "name": "Royapettah LPG Bunk",
+   "kind": "lpg",
+   "x": 218.7,
+   "z": -242.66,
+   "road_x": 228.78,
+   "road_z": -239.71,
+   "yaw": -0.285
+  },
+  {
+   "id": "lpg_mylapore",
+   "name": "Mylapore LPG Bunk",
+   "kind": "lpg",
+   "x": 261.24,
+   "z": 553.04,
+   "road_x": 259.61,
+   "road_z": 563.41,
+   "yaw": 1.415
+  },
+  {
+   "id": "lpg_teynampet",
+   "name": "Teynampet LPG Bunk",
+   "kind": "lpg",
+   "x": -454.96,
+   "z": 158.88,
+   "road_x": -465.32,
+   "road_z": 157.15,
+   "yaw": 2.976
+  },
+  {
+   "id": "lpg_tnagar",
+   "name": "T. Nagar LPG Bunk",
+   "kind": "lpg",
+   "x": -822.07,
+   "z": 225.75,
+   "road_x": -817.75,
+   "road_z": 235.32,
+   "yaw": -1.146
+  },
+  {
+   "id": "ev_marina",
+   "name": "Marina EV Kiosk",
+   "kind": "ev",
+   "x": 886.9,
+   "z": 107.85,
+   "road_x": 885.64,
+   "road_z": 118.28,
+   "yaw": -1.691
+  },
+  {
+   "id": "ev_anna_salai",
+   "name": "Anna Salai EV Kiosk",
+   "kind": "ev",
+   "x": 43.31,
+   "z": -486.46,
+   "road_x": 50.03,
+   "road_z": -478.4,
+   "yaw": -0.876
+  },
+  {
+   "id": "ev_panagal",
+   "name": "Panagal Park EV Kiosk",
+   "kind": "ev",
+   "x": -944.8,
+   "z": 402.13,
+   "road_x": -946.67,
+   "road_z": 412.46,
+   "yaw": -1.75
+  },
+  {
+   "id": "garage_mylapore",
+   "name": "Mylapore Puncture & Tinkering",
+   "kind": "garage",
+   "x": 402.06,
+   "z": 623.66,
+   "road_x": 391.69,
+   "road_z": 625.27,
+   "yaw": -2.988
+  },
+  {
+   "id": "garage_marina",
+   "name": "Marina Puncture & Tinkering",
+   "kind": "garage",
+   "x": 875.17,
+   "z": 313.07,
+   "road_x": 885.56,
+   "road_z": 314.56,
+   "yaw": -0.142
+  },
+  {
+   "id": "garage_tnagar",
+   "name": "T. Nagar Puncture & Tinkering",
+   "kind": "garage",
+   "x": -953.53,
+   "z": 301.37,
+   "road_x": -954.54,
+   "road_z": 311.82,
+   "yaw": 1.474
+  }
+ ],
  "stats": {
   "edges": 3105,
   "nodes": 2360,
-  "buildings": 3515,
+  "buildings": 3456,
   "chunks": 95
  }
 }

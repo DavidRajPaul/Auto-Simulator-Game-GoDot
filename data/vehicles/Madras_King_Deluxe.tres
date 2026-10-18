@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="VehicleStats" format=3]
+
+[ext_resource type="Script" path="res://data/vehicles/VehicleStats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "madras_king_deluxe"
+display_name = "Madras King Deluxe"
+fuel_type = 0
+passenger_capacity = 3
+base_mass_kg = 390.0
+center_of_mass_offset = Vector3(0, -0.25, 0.35)
+max_speed_kmh = 72.0
+max_steer_angle_deg = 44.0
+engine_peak_force_n = 2150.0
+torque_falloff = 0.4
+aero_drag_coeff = 0.33
+anti_roll_start_deg = 11.0
+anti_roll_torque_strength = 7800.0
+fuel_capacity = 9.0
+fuel_burn_per_km = 0.27
+price_inr = 1500
+fuel_price_inr = 62.0
+comfort_damping = 0.5
+body_colour = Color(0.95, 0.72, 0.0, 1)
+canopy_colour = Color(0.05, 0.05, 0.05, 1)
+blurb = "Mid-tier upgrade: 72 km/h, heavy-duty shocks (half the pothole discomfort), chrome bumper and a twin air-horn."
+horn_tier = 1

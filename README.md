@@ -52,19 +52,21 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── export_presets.cfg                # Android preset (arm64 + armv7)
 ├── .github/workflows/android-build.yml   # CI: tests → Android APK
 ├── autoloads/        SignalBus.gd, GameState.gd
-├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres
+├── data/vehicles/    VehicleStats.gd, Bajaj_RE_4S.tres, Madras_King_Deluxe.tres, Namma_Green_EV.tres
 ├── data/passengers/  PassengerArchetype.gd
 ├── scenes/           main_chennai.tscn (game), main_phase1_greybox.tscn (physics test arena), vehicles/, traffic/, ui/
-├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd
+├── scripts/vehicle/  AutoRickshawController.gd, CameraRig.gd, VehicleAudio.gd, AutoRickshawModel.gd, WheelModel.gd, MeshKit.gd
 ├── scripts/traffic/  ChennaiTrafficManager.gd, TrafficVehicleAI.gd
-├── scripts/world/    WorldChunkStreamer.gd, RoadGraph.gd, WaterlogZone.gd, GreyboxDressing.gd
+├── scripts/world/    WorldChunkStreamer.gd, RoadGraph.gd, ServicePoints.gd, WaterlogZone.gd, GreyboxDressing.gd
 ├── data/world/       OSM-built Chennai map: manifest, road graph, areas, 95 chunk files
 ├── data/osm/         raw Overpass extract (gz), © OpenStreetMap contributors
 ├── tools/osm/        fetch_osm.py, build_world.py, preview_map.py, config.py (zones, landmarks, stands)
-├── scripts/ui/       TouchHUD.gd, PassengerHUD.gd, MiniMap.gd, DebugOverlay.gd
+├── scripts/ui/       TouchHUD.gd, PassengerHUD.gd, MiniMap.gd, GarageUI.gd, DebugOverlay.gd
 ├── scripts/passengers/ SavariManager.gd (ride loop), FareCalculator.gd, RouteLine.gd
+├── assets/fonts/     Noto Sans Tamil (OFL)
+├── translations/     ui.csv (English / Tamil)
 ├── data/passengers/  5 rider archetypes (.tres)
-└── tests/            run_phase1_tests (47), run_phase2_tests (30), run_phase3_tests (41), run_perf_probe
+└── tests/            run_phase1_tests (50), phase2 (30), phase3 (41), phase4 (51), run_perf_probe
 ```
 
 ### Phase 1 controls (greybox)
@@ -102,7 +104,7 @@ Open the folder in **Godot 4.4.1** to play the greybox in the editor (keyboard c
 
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
-1. **Tests + perf budget:** import, boot the main scene, run the Phase 1, 2 and 3 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
+1. **Tests + perf budget:** import, boot the main scene, run the Phase 1–4 suites, then drive both the city and the greybox under a virtual display and fail if draw calls exceed 150. Results appear in the run summary.
 2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 + the runner's Android SDK → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a). The version code is the CI run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`. Install with `adb install -r NammaAuto-debug.apk` or sideload.
 4. **Release APK (optional):** add repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS` and `ANDROID_KEYSTORE_PASSWORD`, and CI also signs `NammaAuto-release.apk`.
@@ -200,15 +202,33 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 
 **Exit gate:** 30-minute session of continuous rides with no crash **(you, on device)**; fare maths covered by tests ✅.
 
-### Phase 4 · Economy, garage & vehicles *(Week 5)*
-**Goal:** progression from starter auto to the second auto.
-- LPG/fuel use and pull-in LPG bunk; EV charge kiosks.
-- Garage: repair, engine/suspension/tyre upgrades, paint, hood, stickers, horn tiers (bulb → twin → musical air-horn).
-- 3 autos as `.tres`: Singara Classic, Madras King Deluxe (₹15,000), Namma Green EV.
-- Encrypted local save (`FileAccess.open_encrypted_with_pass`, HMAC).
-- Settings: 3 control schemes (wheel, arcade buttons, tilt), graphics presets, Tamil/English text.
+### Phase 4 · Economy, garage & vehicles ✅ code complete *(Week 5)*
+**Goal:** progression from the starter auto to the second auto.
 
-**Exit gate:** a new player can earn and unlock Madras King Deluxe in ~30 min; save/load survives app kill.
+| Singara Classic | Madras King Deluxe (Black-Gold paint) | Namma Green EV |
+|---|---|---|
+| ![Singara Classic](docs/auto_model_front.png) | ![King Deluxe](docs/auto_king_deluxe_blackgold.png) | ![Green EV](docs/auto_namma_green_ev.png) |
+
+| Garage | Settings in Tamil |
+|---|---|
+| ![Garage](docs/ingame_garage.png) | ![Tamil settings](docs/ingame_settings_tamil.png) |
+
+| Item | Status |
+|---|---|
+| **Procedural Bajaj RE model** (tapered snout & headlamp, canvas hood, windscreen, chrome bumper/rails, maroon bench, handlebar, mirrors, meter box, mudguards): 2.4k tris incl. wheels, 6 draw calls; paint follows the garage | ✅ |
+| 3 autos as `.tres`: Singara Classic (starter, bulb horn), Madras King Deluxe (₹1,500, 72 km/h, half pothole discomfort, twin air-horn), Namma Green EV (₹4,500, instant torque, silent, +25% green tip) | ✅ |
+| Garage at each auto stand ("Puncture & Tinkering"): Repair (₹3/%), Upgrades (engine/suspension/tyres ×3 levels), Horns (bulb → twin → musical air-horn, changes which traffic gives way), Paint/Alangaram (better Meter Mela odds), Autos (buy/switch, live swap) | ✅ |
+| LPG drain per km, 4 LPG bunks (₹62/L) and 3 EV kiosks (₹12/kWh) on the map, wrong-fuel warning, ₹150 tow when you run dry | ✅ |
+| Condition: crashes wear the auto; below 40% it loses speed | ✅ |
+| Shift clock 6 AM → 10 PM in 12 real minutes, end-of-day summary, next day | ✅ |
+| Encrypted save (`user://savegame.dat`, device-bound key + checksum; tampered saves rejected), autosave after rides/purchases/every 60 s/app pause | ✅ |
+| Settings: controls (handlebar drag / arrow buttons / tilt), graphics Low/Medium/High (shadows, 3D resolution), **English / தமிழ்** with bundled Noto Sans Tamil, volume | ✅ |
+| `tests/run_phase4_tests.tscn`: 51 checks incl. economy simulation | ✅ |
+| Tilt steering on a real phone (sensor axis) | ⬜ **needs you + a phone** |
+
+**Economy note:** the GDD prices the King Deluxe at ₹15,000 but also wants it unlockable in ~30 minutes. Realistic Chennai meter fares earn ~₹70–150 per ride, so the price is ₹1,500 in `Madras_King_Deluxe.tres`. The test simulates ~14 rides (≈30 min) to afford it. Raise the price if the 8-rewarded-videos route (Phase 6) should be the main path.
+
+**Exit gate:** a new player can earn and unlock Madras King Deluxe in ~30 min ✅ (simulated); save/load survives app kill ✅ (autosave on pause/close; **(you)** confirm on device).
 
 ### Phase 5 · Polish: weather, audio, UX → **MVP complete** *(Week 6)*
 **Goal:** a build good enough to put in front of testers.
@@ -279,23 +299,17 @@ Agent work is everything not marked **(you)**.
 2. Jaywalkers in market zones, reusing the cattle spawning path.
 3. Gemini Flyover and Napier Bridge as real elevated ramps (needs ramp collision; the rest of the map is flat).
 
-**Phase 3 – Core loop** ✅ done in code
-4. **(you)** Play 30 minutes of rides on the phone: is the 5 s haggle card readable while stopped? Are fares and tips satisfying? Does the comfort meter feel fair?
-5. Balance pass from your notes (all numbers are in `data/passengers/*.tres` and `FareCalculator.gd`).
+**Phase 3–4 – Core loop, economy & garage** ✅ done in code
+4. **(you)** Play a full in-game day (12 real minutes) on the phone. Check: haggle readability, fares/tips, comfort fairness, fuel lasting ~15–20 rides, whether ₹1,500 for the King Deluxe feels right, and **tilt steering** (sensor axis/sign).
+5. Balance pass from your notes (numbers live in `data/passengers/*.tres`, `data/vehicles/*.tres`, `FareCalculator.gd`, `GameState.UPGRADES/HORNS/PAINTS`).
 
-**Phase 4 – Economy & garage** (next)
-6. Shift clock (day length) so "10 s lost" and timers matter; LPG drain tuned to ~3–4 rides per tank.
-8. LPG bunks / EV kiosks on the map; garage repairs, upgrades and horn tiers.
-9. `Madras_King_Deluxe.tres`, `Namma_Green_EV.tres` (+ EV audio).
-10. Encrypted save/load; Settings (3 control schemes incl. tilt, graphics presets, Tamil/English).
-
-**Phase 5 – Polish → MVP**
-11. Day/night and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
-12. Real audio replacing the placeholders (full list under Phase 5).
-13. Real 3D models (auto, traffic, cattle, landmarks) and shopfront/signage texture atlases.
-14. Main menu, pause, onboarding, credits incl. OpenStreetMap (ODbL) attribution.
-15. AAB via Gradle build in CI, size check < 85 MB.
-16. **(you)** 20-minute thermal soak on the budget phone.
+**Phase 5 – Polish → MVP** (next)
+6. Day/night tied to the shift clock (noon glare → Marina sunset → neon night) and headlights; monsoon rain shader, working wiper, kick-start rhythm mini-game.
+7. Real audio replacing the placeholders (full list under Phase 5).
+8. Traffic/cattle/landmark models (the player auto is now modelled) and shopfront/signage texture atlases.
+9. Main menu, onboarding, credits incl. OpenStreetMap (ODbL) attribution.
+10. AAB via Gradle build in CI, size check < 85 MB.
+11. **(you)** 20-minute thermal soak on the budget phone.
 
 **Start early, in parallel (you):** Google Play developer account and app entry, upload keystore (→ `ANDROID_KEYSTORE_*` repo secrets), 12+ closed testers.
 
@@ -320,4 +334,4 @@ Roads, coastline, water and parks come from **OpenStreetMap** (© OpenStreetMap 
 
 ## 📜 Licence & credits
 
-Code licence: TBD. Third-party assets and plugins are listed with their licences in the in-game Credits screen. OpenStreetMap data © OpenStreetMap contributors (ODbL).
+Code licence: TBD. Fonts: Noto Sans Tamil © The Noto Project Authors, SIL Open Font License 1.1 (`assets/fonts/OFL.txt`). Third-party assets and plugins are listed with their licences in the in-game Credits screen. OpenStreetMap data © OpenStreetMap contributors (ODbL).

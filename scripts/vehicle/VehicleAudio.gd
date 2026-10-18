@@ -25,6 +25,8 @@ func _ready() -> void:
 	_horn = _make_player("Horn", _build_horn(), horn_volume_db)
 	_clunk = _make_player("KickClunk", _build_clunk(), -4.0)
 	_engine.play()
+	_apply_drivetrain(GameState.active_stats())
+	SignalBus.vehicle_loadout_changed.connect(_apply_drivetrain)
 	SignalBus.speed_updated.connect(_on_speed)
 	SignalBus.horn_blasted.connect(func(_o: Vector3, _f: Vector3, _r: float, _t: int) -> void: _horn.play())
 	SignalBus.engine_stalled_in_water.connect(func(_p: Vector3) -> void: _set_engine(false))
@@ -39,6 +41,23 @@ func _process(delta: float) -> void:
 	if Input.is_action_pressed("accelerate"):
 		target_pitch += 0.15 # throttle "blip"
 	_engine.pitch_scale = lerpf(_engine.pitch_scale, target_pitch, 1.0 - exp(-8.0 * delta))
+
+## EV autos get a quiet electric whine instead of the LPG putter.
+func _apply_drivetrain(s: VehicleStats) -> void:
+	var is_ev: bool = s.fuel_type == 2
+	_engine.stream = _build_ev_whine() if is_ev else _build_engine_loop()
+	_engine.volume_db = engine_volume_db - (8.0 if is_ev else 0.0)
+	if _engine_running:
+		_engine.play()
+
+func _build_ev_whine() -> AudioStreamWAV:
+	var n: int = MIX_RATE / 2
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	samples.resize(n)
+	for i: int in n:
+		var t: float = float(i) / MIX_RATE
+		samples[i] = 0.35 * sin(TAU * 180.0 * t) + 0.15 * sin(TAU * 360.0 * t) + 0.05 * sin(TAU * 1080.0 * t)
+	return _to_wav(samples, true)
 
 func _on_speed(kmh: float) -> void:
 	_speed_kmh = kmh

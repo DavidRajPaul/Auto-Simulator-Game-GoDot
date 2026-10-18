@@ -187,6 +187,7 @@ func _test_horn(traffic: ChennaiTrafficManager, auto: AutoRickshawController) ->
 	traffic.place_vehicle(bus, 0, player_s + 14.0, 1, bus_lane)
 	bus.cruise_speed_mps = 0.0
 	bus.current_speed_mps = 0.0
+	auto.stats.horn_tier = 1 # starter has the bulb horn (tier 0); this checks the twin horn
 	await _physics(2)
 	Input.action_press("horn")
 	await _physics(1)

@@ -56,3 +56,19 @@ signal passenger_alighted()
 signal ride_completed(breakdown: Dictionary)
 signal wallet_balance_changed(new_balance_inr: int, delta_inr: int)
 signal stand_respect_changed(new_xp: int, star_rating: float)
+
+# --- Garage, fuel, shift, settings (Phase 4) -------------------------------
+## Active auto's effective stats changed (purchase, upgrade, paint, repair, swap).
+signal vehicle_loadout_changed(stats: VehicleStats)
+signal fuel_changed(level: float, capacity: float)
+signal refueled(level: float)
+signal condition_changed(condition: float)
+## kind: "lpg", "ev", "garage". info: {id, name, kind}. Fired when stopped at a service point.
+signal service_available(kind: String, info: Dictionary)
+signal service_unavailable()
+signal shift_clock_updated(day: int, minute: float)
+signal shift_ended(summary: Dictionary)
+signal settings_changed(settings: Dictionary)
+signal pause_requested(open: bool)
+signal tow_requested(from_position: Vector3)
+signal teleport_requested(xform: Transform3D)

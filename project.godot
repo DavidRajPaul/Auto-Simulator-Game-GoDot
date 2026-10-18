@@ -73,6 +73,11 @@ wiper_toggle={
 
 pointing/emulate_touch_from_mouse=true
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/ui.en.translation", "res://translations/ui.ta.translation")
+locale/fallback="en"
+
 [layer_names]
 
 3d_physics/layer_1="Environment_Roads"

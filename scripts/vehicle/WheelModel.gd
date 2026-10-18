@@ -26,7 +26,7 @@ func _ready() -> void:
 			# Leading-link fork: arm from the axle back to the pivot, then up into the snout.
 			MeshKit.tube(st, Vector3(side * 0.085, 0, 0), Vector3(side * 0.085, 0.05, 0.16), 0.022, black)
 			MeshKit.tube(st, Vector3(side * 0.085, 0.05, 0.16), Vector3(side * 0.07, 0.40, 0.12), 0.026, black)
-		MeshKit.arc_shell(st, Vector3.ZERO, r + 0.05, 0.15, deg_to_rad(15.0), deg_to_rad(165.0), Color(0.98, 0.76, 0.02))
+		MeshKit.arc_shell(st, Vector3.ZERO, r + 0.05, 0.15, deg_to_rad(15.0), deg_to_rad(165.0), Color(0.07, 0.07, 0.07)) # black suits every paint
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 	mat.vertex_color_is_srgb = true

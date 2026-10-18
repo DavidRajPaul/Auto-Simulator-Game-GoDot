@@ -56,7 +56,7 @@ func _ready() -> void:
 	SignalBus.haggle_resolved.connect(_on_haggle_resolved)
 	SignalBus.ride_updated.connect(_on_ride_updated)
 	SignalBus.ride_completed.connect(_on_ride_completed)
-	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu! 🔥", 1.2))
+	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
 
 func _process(delta: float) -> void:
 	if _haggle.visible:
@@ -109,7 +109,7 @@ func _build_ride_card() -> void:
 	_ride_text.reparent(v)
 	var row: HBoxContainer = HBoxContainer.new()
 	v.add_child(row)
-	var cup: Label = _label("☕ comfort", 18, AMBER, false)
+	var cup: Label = _label("Tea cup", 18, AMBER, false)
 	cup.reparent(row)
 	_comfort_bar = ProgressBar.new()
 	_comfort_bar.max_value = 1.0
@@ -223,7 +223,7 @@ func _on_ride_updated(info: Dictionary) -> void:
 	_ride_card.visible = true
 	var t: float = float(info["time_left_s"])
 	var clock: String = "%d:%02d" % [int(absf(t)) / 60, int(absf(t)) % 60]
-	_ride_text.text = "%s → %s\n%.1f km   ⏱ %s%s   ₹%d" % [info["archetype"], info["destination"],
+	_ride_text.text = "%s → %s\n%.1f km   %s%s   ₹%d" % [info["archetype"], info["destination"],
 		float(info["remaining_m"]) / 1000.0 * FareCalculator.REAL_KM_PER_GAME_KM, "-" if t < 0.0 else "", clock, int(info["fare"])]
 	_ride_text.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if t < 0.0 else Color.WHITE)
 	_comfort_bar.value = float(info["comfort"])

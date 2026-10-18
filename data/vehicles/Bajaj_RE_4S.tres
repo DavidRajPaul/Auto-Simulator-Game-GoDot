@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="VehicleStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="VehicleStats" format=3]
 
 [ext_resource type="Script" path="res://data/vehicles/VehicleStats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+id = "singara_classic"
 display_name = "Singara Classic"
 fuel_type = 0
 passenger_capacity = 3
@@ -11,9 +12,17 @@ base_mass_kg = 365.0
 center_of_mass_offset = Vector3(0, -0.25, 0.35)
 max_speed_kmh = 58.0
 max_steer_angle_deg = 45.0
-horn_tier = 1
 engine_peak_force_n = 1800.0
 torque_falloff = 0.35
 aero_drag_coeff = 0.35
 anti_roll_start_deg = 11.0
 anti_roll_torque_strength = 7200.0
+fuel_capacity = 8.0
+fuel_burn_per_km = 0.25
+price_inr = 0
+fuel_price_inr = 62.0
+comfort_damping = 1.0
+body_colour = Color(0.98, 0.76, 0.02, 1)
+canopy_colour = Color(0.07, 0.07, 0.07, 1)
+blurb = "Starter Bajaj RE on LPG. Nimble, punchy low end, classic phat-phat. Stock bulb horn."
+horn_tier = 0

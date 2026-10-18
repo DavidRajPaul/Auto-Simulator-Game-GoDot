@@ -61,6 +61,7 @@ var _player_fwd: Vector3 = Vector3.FORWARD
 var _speed_kmh: float = 0.0
 var _hail_pool: Array[Node3D] = []
 var _dest_marker: Node3D
+var _comfort_damping: float = 1.0
 
 func _ready() -> void:
 	rng.seed = rng_seed
@@ -79,6 +80,8 @@ func _ready() -> void:
 	SignalBus.near_miss.connect(_on_near_miss)
 	SignalBus.road_graph_ready.connect(func(g: RoadGraph) -> void: graph = g)
 	graph = SignalBus.current_road_graph
+	_comfort_damping = GameState.active_stats().comfort_damping
+	SignalBus.vehicle_loadout_changed.connect(func(s: VehicleStats) -> void: _comfort_damping = s.comfort_damping)
 
 func _load_manifest() -> void:
 	var f: FileAccess = FileAccess.open(world_dir.path_join("manifest.json"), FileAccess.READ)
@@ -152,7 +155,7 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	node.global_position = pos
 	var body: MeshInstance3D = node.get_node("Body") as MeshInstance3D
 	(body.material_override as StandardMaterial3D).albedo_color = archetype.colour
-	(node.get_node("Label") as Label3D).text = "🙋 " + archetype.archetype_name
+	(node.get_node("Label") as Label3D).text = archetype.archetype_name
 	node.visible = true
 	hails.append(h)
 	_publish_hails()
@@ -244,7 +247,7 @@ func start_haggle(h: Dictionary) -> void:
 	var odds: Array[float] = []
 	for o: int in 3:
 		_haggle_quotes.append(FareCalculator.quote(o as FareCalculator.Offer, _haggle_trip_km, a))
-		odds.append(FareCalculator.acceptance_chance(o as FareCalculator.Offer, a, GameState.is_raining))
+		odds.append(FareCalculator.acceptance_chance(o as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige()))
 	SignalBus.haggle_started.emit({
 		"archetype": a.id, "name": a.archetype_name, "line": a.line_hail,
 		"destination": destination["name"], "distance_km": _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM,
@@ -278,7 +281,7 @@ func _resolve_haggle(offer: int) -> void:
 	var a: PassengerArchetype = _haggle_hail["archetype"]
 	var accepted: bool = false
 	if offer >= 0:
-		accepted = rng.randf() < FareCalculator.acceptance_chance(offer as FareCalculator.Offer, a, GameState.is_raining)
+		accepted = rng.randf() < FareCalculator.acceptance_chance(offer as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige())
 	_remove_hail(_haggle_hail)
 	_haggle_hail = {}
 	_publish_hails()
@@ -329,7 +332,9 @@ func _tick_ride(delta: float) -> void:
 
 func complete_ride() -> void:
 	var on_time: bool = time_left_s >= 0.0
-	var b: Dictionary = FareCalculator.settle(agreed_fare, rider, comfort, on_time, near_misses)
+	var vs: VehicleStats = GameState.active_stats()
+	var green: float = vs.green_tip_bonus if rider.id == "it_commuter" else 0.0
+	var b: Dictionary = FareCalculator.settle(agreed_fare, rider, comfort, on_time, near_misses, green)
 	b["destination"] = destination["name"]
 	b["archetype_name"] = rider.archetype_name
 	b["line"] = rider.line_happy if comfort >= 0.5 and on_time else rider.line_upset
@@ -384,6 +389,7 @@ func _on_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)
 		spill += (-longitudinal_g - 0.55) * 0.4 * dt
 	if vertical_jolt > 0.9: # speed breaker / pothole at speed
 		spill += minf((vertical_jolt - 0.9) * 0.08, 0.15)
+	spill *= _comfort_damping
 	if rider.likes_fast_driving:
 		spill *= 0.35
 		if _speed_kmh < 20.0:

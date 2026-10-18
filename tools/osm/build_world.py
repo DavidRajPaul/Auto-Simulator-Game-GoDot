@@ -19,7 +19,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from config import (AUTO_STANDS, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
+from config import (AUTO_STANDS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
                     MAP_SCALE, ORIGIN, ROAD_CLASSES, ZONES)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -417,7 +417,20 @@ def main() -> int:
             n = math.hypot(ox, oz) or 1.0
             x, z = rx + ox / n * 26.0, rz + oz / n * 26.0
         landmarks.append({"id": l["id"], "name": l["name"], "kind": l["kind"], "x": r2(x), "z": r2(z), "yaw": round(yaw, 3)})
-    buildings = build_buildings(edges, areas, landmarks)
+    services = []
+    for sv in SERVICES:
+        x, z = project(sv["lat"], sv["lon"])
+        rx, rz, dx, dz = nearest_road_point(edges, x, z, side=0.0)
+        # Park bay just off the kerb on the side the real location is on.
+        nx, nz = dz, -dx  # left of travel
+        side = 1.0 if (x - rx) * nx + (z - rz) * nz >= 0 else -1.0
+        w = next((e["width"] for e in edges if any(math.hypot(px - rx, pz - rz) < 0.5 for px, pz in e["pts"][:1])), 9.0)
+        off = w / 2.0 + 6.0
+        services.append({"id": sv["id"], "name": sv["name"], "kind": sv["kind"],
+                         "x": r2(rx + nx * side * off), "z": r2(rz + nz * side * off),
+                         "road_x": r2(rx), "road_z": r2(rz), "yaw": round(math.atan2(-dx, -dz), 3)})
+    # Keep buildings off service points like landmarks.
+    buildings = build_buildings(edges, areas, landmarks + [{"x": s_["x"], "z": s_["z"]} for s_ in services])
 
     # Chunk road ribbons and buildings.
     chunks: dict[tuple[int, int], dict] = defaultdict(lambda: {"roads": [], "buildings": []})
@@ -463,7 +476,7 @@ def main() -> int:
         "map_scale": MAP_SCALE, "chunk_size": CHUNK_SIZE_M, "origin_latlon": list(ORIGIN),
         "bounds": [r2(min(xs)), r2(min(zs)), r2(max(xs)), r2(max(zs))],
         "chunks": sorted([list(k) for k in chunks]),
-        "zones": zones, "landmarks": landmarks, "auto_stands": stands,
+        "zones": zones, "landmarks": landmarks, "auto_stands": stands, "services": services,
         "stats": {"edges": len(graph["edges"]), "nodes": len(graph["nodes"]), "buildings": len(buildings),
                   "chunks": len(chunks)},
     }

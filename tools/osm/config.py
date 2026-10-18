@@ -49,3 +49,18 @@ ROAD_CLASSES = {
     "unclassified": (7.0, 1, False), "residential": (6.5, 1, False), "living_street": (5.5, 1, False),
 }
 LANE_WIDTH_M = 3.3
+
+# Service points (Phase 4). Positions are near real arterials; names are generic (no brands).
+# kind: "lpg" (autogas bunk), "ev" (charging kiosk), "garage" (Puncture & Tinkering shed).
+SERVICES = [
+    {"id": "lpg_royapettah", "name": "Royapettah LPG Bunk", "kind": "lpg", "lat": 13.0545, "lon": 80.2640},
+    {"id": "lpg_mylapore", "name": "Mylapore LPG Bunk", "kind": "lpg", "lat": 13.0365, "lon": 80.2650},
+    {"id": "lpg_teynampet", "name": "Teynampet LPG Bunk", "kind": "lpg", "lat": 13.0450, "lon": 80.2510},
+    {"id": "lpg_tnagar", "name": "T. Nagar LPG Bunk", "kind": "lpg", "lat": 13.0440, "lon": 80.2400},
+    {"id": "ev_marina", "name": "Marina EV Kiosk", "kind": "ev", "lat": 13.0470, "lon": 80.2795},
+    {"id": "ev_anna_salai", "name": "Anna Salai EV Kiosk", "kind": "ev", "lat": 13.0600, "lon": 80.2600},
+    {"id": "ev_panagal", "name": "Panagal Park EV Kiosk", "kind": "ev", "lat": 13.0398, "lon": 80.2372},
+    {"id": "garage_mylapore", "name": "Mylapore Puncture & Tinkering", "kind": "garage", "lat": 13.0349, "lon": 80.2683},
+    {"id": "garage_marina", "name": "Marina Puncture & Tinkering", "kind": "garage", "lat": 13.0420, "lon": 80.2786},
+    {"id": "garage_tnagar", "name": "T. Nagar Puncture & Tinkering", "kind": "garage", "lat": 13.0420, "lon": 80.2370},
+]

@@ -10,6 +10,8 @@ const GETHU_MIN_SPEED_KMH: float = 20.0
 const GETHU_BONUS_INR: int = 15
 
 @export var stats: VehicleStats
+## Use the player's garage loadout from GameState (off = use `stats` as-is, e.g. demos).
+@export var use_player_profile: bool = true
 
 ## Wheel ray origins sit below the chassis origin so the origin (and the CoM offset from
 ## VehicleStats) ends up ~0.55 m above the road, like a real loaded auto.
@@ -40,16 +42,41 @@ var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
 
 func _ready() -> void:
+	if use_player_profile:
+		stats = GameState.active_stats()
 	if stats == null:
 		stats = VehicleStats.new()
 	add_to_group("player_auto")
-	fuel_level = stats.fuel_capacity
+	fuel_level = stats.fuel_capacity if GameState.fuel_level < 0.0 or not use_player_profile else minf(GameState.fuel_level, stats.fuel_capacity)
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	_apply_mass()
 	_setup_wheel_rays()
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
 	SignalBus.passenger_boarded.connect(_on_passenger_boarded)
 	SignalBus.passenger_alighted.connect(_on_passenger_alighted)
+	SignalBus.refueled.connect(func(level: float) -> void: fuel_level = minf(level, stats.fuel_capacity))
+	SignalBus.teleport_requested.connect(func(xform: Transform3D) -> void:
+		global_transform = xform
+		linear_velocity = Vector3.ZERO
+		angular_velocity = Vector3.ZERO
+		_prev_velocity = Vector3.ZERO)
+	if use_player_profile:
+		SignalBus.vehicle_loadout_changed.connect(apply_stats)
+	_recolour.call_deferred()
+
+## Swap to new effective stats at runtime (garage purchase/upgrade/paint).
+func apply_stats(new_stats: VehicleStats) -> void:
+	stats = new_stats
+	fuel_level = minf(fuel_level, stats.fuel_capacity)
+	_apply_mass()
+	_recolour()
+
+func _recolour() -> void:
+	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
+	if model != null and (model.paint != stats.body_colour or model.trim != stats.canopy_colour):
+		model.paint = stats.body_colour
+		model.trim = stats.canopy_colour
+		model.build()
 
 func _setup_wheel_rays() -> void:
 	var ray_len: float = stats.suspension_rest_dist_m + stats.wheel_radius_m + 0.15
@@ -227,6 +254,7 @@ func _emit_telemetry(delta: float) -> void:
 	if _telemetry_timer < TELEMETRY_INTERVAL_S:
 		return
 	_telemetry_timer = 0.0
+	SignalBus.fuel_changed.emit(fuel_level, stats.fuel_capacity)
 	SignalBus.telemetry_updated.emit({
 		"speed_kmh": current_speed_kmh,
 		"lpg_liters": fuel_level,

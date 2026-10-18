@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scripts/passengers/SavariManager.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/passengers/RouteLine.gd" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/ui/passenger_hud.tscn" id="10"]
+[ext_resource type="Script" path="res://scripts/world/ServicePoints.gd" id="11"]
+[ext_resource type="Script" path="res://scripts/ui/GarageUI.gd" id="12"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -36,7 +38,7 @@ fog_sky_affect = 0.3
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="." groups=["sun_light"]]
 transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 30, 0)
 light_energy = 0.75
 shadow_enabled = true
@@ -61,6 +63,9 @@ vehicle_scene = ExtResource("4")
 player_path = NodePath("../AutoRickshaw")
 graph_path = "res://data/world/road_graph.json"
 
+[node name="ServicePoints" type="Node3D" parent="."]
+script = ExtResource("11")
+
 [node name="SavariManager" type="Node3D" parent="."]
 script = ExtResource("8")
 
@@ -73,3 +78,6 @@ script = ExtResource("9")
 
 [node name="DebugOverlay" type="CanvasLayer" parent="."]
 script = ExtResource("7")
+
+[node name="GarageUI" type="CanvasLayer" parent="."]
+script = ExtResource("12")
