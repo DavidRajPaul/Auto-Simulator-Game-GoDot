@@ -12,7 +12,8 @@ const CREDITS: String = """Namma Auto — Chennai Rickshaw Simulator 3D
 Map data © OpenStreetMap contributors, available under the Open Database Licence (ODbL).
 Road and lane geometry: osm2streets by the A/B Street project (Apache-2.0).
 Game engine: Godot Engine (MIT). Physics: Jolt Physics (MIT).
-Tamil font: Noto Sans Tamil, SIL Open Font License 1.1.
+Fonts: Noto Sans Tamil and Baloo Thambi 2, SIL Open Font License 1.1.
+UI sounds: Kenney Interface Sounds (CC0). Ambience and horns: BigSoundBank, Joseph Sardin (CC0).
 Build-time triangulation: earcut (ISC).
 
 Made for every Chennai auto anna and akka. Drive safe, use the meter."""

@@ -9,6 +9,7 @@ extends Node3D
 const MAX_POOL: int = 18
 const RECYCLE_RADIUS_M: float = 120.0
 const INDICATOR_YIELD_RANGE_M: float = 25.0
+const HONK_FILE: String = "res://assets/audio/traffic/truck_horn.ogg"
 const INDICATOR_YIELD_S: float = 3.0
 const SPAWN_MIN_AHEAD_M: float = 45.0
 const SPAWN_MAX_AHEAD_M: float = 110.0
@@ -30,6 +31,7 @@ var graph: RoadGraph
 var pool: Array[TrafficVehicleAI] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _player: Node3D
+var _honk: AudioStreamPlayer3D
 var _respawn_queue: Array[TrafficVehicleAI] = []
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
@@ -43,6 +45,14 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
 	graph = RoadGraph.from_json_file(graph_path) if graph_path != "" else _build_greybox_graph()
 	_load_market_zones()
+	if ResourceLoader.exists(HONK_FILE):
+		_honk = AudioStreamPlayer3D.new()
+		_honk.name = "HonkBack"
+		_honk.stream = load(HONK_FILE) as AudioStream
+		_honk.volume_db = -6.0
+		_honk.unit_size = 10.0
+		_honk.max_distance = 90.0
+		add_child(_honk)
 	SignalBus.current_road_graph = graph
 	SignalBus.road_graph_ready.emit.call_deferred(graph)
 	var materials: Array[StandardMaterial3D] = []
@@ -137,6 +147,15 @@ func _detect_near_misses(delta: float) -> void:
 		if along < v.half_length() + 1.4 and clearance > 0.05 and clearance < NEAR_MISS_CLEARANCE_M:
 			_near_miss_cooldown[v] = 2.0
 			SignalBus.near_miss.emit(clearance)
+			honk_at(v)
+
+## A squeezed driver honks back (one pooled 3D player; buses/lorries get the air-horn).
+func honk_at(v: TrafficVehicleAI) -> void:
+	if _honk == null or v.archetype == TrafficVehicleAI.Archetype.STRAY_COW:
+		return
+	_honk.global_position = v.global_position
+	_honk.pitch_scale = 0.8 if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS else rng.randf_range(1.15, 1.45)
+	_honk.play()
 
 func request_respawn(v: TrafficVehicleAI) -> void:
 	if not _respawn_queue.has(v):

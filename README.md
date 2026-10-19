@@ -69,25 +69,36 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── assets/fonts/     Noto Sans Tamil (OFL)
 ├── translations/     ui.csv (English / Tamil)
 ├── data/passengers/  5 rider archetypes (.tres)
-└── tests/            run_phase1_tests (50), phase2 (32), phase3 (41), phase4 (51), phase5 (35), run_perf_probe
+├── scripts/progression/ DriverProgress.gd (driver levels, shift goals)
+├── assets/textures/  facade_atlas.png + facade_glow.png (tools/art/make_facade_atlas.py)
+├── assets/ui/        controls_atlas.png (tools/art/make_ui_icons.py)
+├── assets/audio/     ui/ (Kenney), ambience/ + traffic/ (BigSoundBank, Fetch Assets workflow)
+├── assets_src/incoming/  downloads waiting to be integrated (not imported, not exported)
+└── tests/            run_phase1_tests (50), phase2 (32), phase3 (41), phase4 (51), phase5 (35), phase6 (48), run_perf_probe
 ```
 
 ### Controls
 | Action | Touch | Keyboard (editor testing) |
 |---|---|---|
-| Accelerate / Brake–reverse | right pedals | W/↑ · S/↓ |
+| Accelerate / Brake | right pedals | W/↑ · S/↓ |
+| Gear D ↔ R (stop first) | D/R button above the brake | R |
+| Indicators left / right (self-cancel after the turn) | arrow buttons above the steering | Q · E |
 | Steer | drag the handlebar zone (bottom-left) | A/← · D/→ |
 | Handbrake | H-BRK | Space |
 | Horn ("Pom-Pom") | POM POM | H |
-| Kick-start after flooding | KICK | K |
+| Kick-start after flooding (button appears only then) | KICK | K |
 | Camera (Chase → Cockpit → Top-down) | CAM | C |
-| Wiper | WIPER | V |
+| Wiper (button appears in rain) | WIPER | V |
+
+With **Brake to reverse** on (default, in Settings), holding BRAKE at a stop also engages R; then BRAKE drives backwards and ACCEL stops you and returns to D.
 
 The game opens on the **main menu** (Continue / New career / Settings / Credits), then drops you at the **Mylapore Tank auto stand** in real-size Chennai. A first-run hint line walks you through one ride: drive off, stop beside a yellow beam (a rider waving you down), pick an offer within 5 seconds, then follow the green route and the green arrow above your auto. The Android back button pauses; back again resumes.
 
 | Main menu | Mylapore at 1 : 1 (real OSM buildings, osm2streets lanes) | Monsoon night |
 |---|---|---|
 | ![Main menu](docs/ingame_main_menu.png) | ![Mylapore, real size](docs/ingame_mylapore_real_size.png) | ![Monsoon night with headlight](docs/ingame_monsoon_night.png) |
+
+![Chennai facades and the new controls: indicators above the steering, D/R gear above the brake](docs/ingame_facades_controls.png)
 
 The Phase 1 greybox strip (`scenes/main_phase1_greybox.tscn`) is kept as the physics test arena. It has a speed breaker at 180 m and a monsoon puddle (right side) at 320 m: stop in the puddle and the engine floods; tap KICK three times to restart.
 
@@ -253,10 +264,26 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 | Kick-start rhythm: after a flood, kicks only count in a steady rhythm (mashing floods it) | ✅ |
 | Main menu (Continue / New career / Settings / Credits with OSM ODbL, osm2streets, Godot, Jolt, Noto credits); pause → Main menu; Android back button | ✅ |
 | CI: Gradle-built **App Bundle (.aab)** next to the APK | ✅ |
+| **Controls:** real reverse gear (D/R), indicators with blinking lamps + relay tick that self-cancel after the turn (+2 Respect, traffic behind gives way), brake/reverse lamps, icon-based pedals/buttons, KICK and WIPER only when needed | ✅ |
+| **Building skins:** Chennai facade atlas — grilled windows with sunshades, balconies, AC units, office glass, a shop with a Tamil/English board per ground-floor bay, temple *kaavi* stripes, Mylapore heritage shutters, terrace roofs with water tanks; windows and shops light up at night (one shader, no extra draw calls) | ✅ |
+| **Driver levels + shift goals** (see "Levels" below) | ✅ |
+| Audio: Kenney UI sounds; CC0 rain / Marina waves / market / honk-back from BigSoundBank via the **Fetch Assets** workflow; zone ambience | ✅ |
+| `tests/run_phase6_tests.tscn`: 48 checks (gears, indicators, give-way, levels, goals, save, facades, sounds); perf probe 125 / 150 | ✅ |
 | `tests/run_phase5_tests.tscn`: 35 checks; perf probe 120 / 150 draw calls in the city | ✅ |
 | **Audio** replacing the synth placeholders (engine loops per auto, 5 horns, rain/wiper/splash/kick, zone ambience, UI SFX, audio buses; ≤ 5 MB) | ⬜ needs the assets you download |
 | Art pass: traffic/cattle/landmark models, shopfront & signboard atlases, building facades, lane-arrow decals | ⬜ UX phase |
 | 60 FPS 20-minute thermal soak on the budget phone; AAB < 85 MB | ⬜ **needs you + a phone** (CI reports AAB size) |
+
+#### Levels
+
+There are no "level 1, level 2" stages: the whole city is open from minute one (GDD pillar 2, and gated free roam was the top complaint about rival games). Progression is:
+
+* **Driver Level 1–20** from Driver XP: every ride gives 20 XP, plus up to 10 for comfort, 5 for on time, 3 for a Correct Meter fare and 2 per near miss; each signalled turn gives 2. Lv 2 comes after ~4 rides, Lv 5 after ~30, Lv 10 after ~150.
+* Each level pays **₹50 × level** and a stand title (Puthu Driver → Stand Member → Meter Maestro → … → **Madras Legend**).
+* A few unlocks, never core play: **Lv 4** Madras Musical Air-Horn, **Lv 5** Namma Green EV, **Lv 6** Neon Night paint, Lv 3 ride-app teaser (app dispatch is Phase 10). The King Deluxe is never gated.
+* **3 shift goals per day** (e.g. "Complete 4 rides", "2 smooth rides", "Earn ₹300", "3 Correct Meter rides", "4 Gap-la Gethu", "Signal 5 turns"): ₹40 + 60 XP each, ₹100 for all three. Shown in the pause menu and the end-of-day summary.
+
+Asset sources with exact download links and licences: **[docs/ASSETS.md](docs/ASSETS.md)**.
 
 **Lessons:** Jolt clips `WorldBoundaryShape3D` to 2 km by default, so on the 7 km map the auto fell through the ground away from the origin; `project.godot` now sets it to 20 km. osm2streets' 540k lane-arrow polygons were too heavy as geometry and are left for decals.
 
@@ -311,8 +338,8 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 The MVP is **feature-complete in code**. What's left is real assets, the UX/art pass and on-device checks. Agent work is everything not marked **(you)**.
 
 1. **(you)** Install the latest CI APK (`NammaAuto-android-<run>`) on a Helio G85 / SD680-class phone and play one full shift (18 minutes). Tap the top-left readout for full stats. Report FPS / worst FPS, RAM, hitches when chunks load, and anything uncomfortable: steering, night or rain visibility, ride length, fares, tilt steering axis.
-2. **(you)** Drop the downloaded assets into `assets_src/incoming/<category>/` with a `SOURCES.md` (links + licences): engine/horn/rain/ambience WAVs, CC0 vehicle/cattle/prop `.glb` models, 1K textures, fonts, icons.
-3. Audio integration from those files (buses, per-vehicle engine loops, horns, monsoon, ambience, UI SFX).
+2. **(you)** Download the assets in **[docs/ASSETS.md](docs/ASSETS.md)** (exact links: real Indian auto engine and kick-start recordings, horns, indicator, Chennai ambience, Kenney/Quaternius traffic and cow models, Indian scooter) into `assets_src/incoming/<category>/` and fill in `assets_src/incoming/SOURCES.md`. Record a few Chennai sounds on your phone (T. Nagar crowd, temple bells, Marina, a real auto horn).
+3. Integrate those files: engine idle/rev loops per auto, horns, kick-start, cabin sound, traffic and cattle models (the game already uses a real file automatically when it exists at the path in `VehicleAudio.gd`).
 4. UX/art pass: traffic, cattle and landmark models; building facades and Tamil/English signboards; lane-arrow decals; HUD and menu visual design.
 5. Jaywalkers in market zones; Gemini Flyover / Napier Bridge as real elevated ramps (osm2streets already marks their `layer`).
 6. Balance pass from your play notes (`data/passengers/*.tres`, `data/vehicles/*.tres`, `FareCalculator.gd`, `GameState` tables).

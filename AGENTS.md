@@ -43,7 +43,12 @@ res://
 │       ├── manifest.json, road_graph.json, areas.json   # manifest: map_scale 1.0, stands, services, flood_spots
 │       └── chunks/c_<i>_<j>.json    # 250 m chunks: "surf" (pre-triangulated lanes/walks/junctions/markings) + "blds" (footprints + heights)
 ├── tools/osm/                       # fetch_osm.py, run_osm2streets.py, build_world.py, streets.py, preview_map.py, config.py
+├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py (Pillow + raqm for Tamil)
+├── tools/assets/fetch_assets.py     # CC0 downloads for the Fetch Assets workflow (BigSoundBank)
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
+├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
+├── assets/textures/, assets/ui/, assets/audio/   # generated atlases + CC0 audio (credits in docs/ASSETS.md)
+├── assets_src/incoming/             # user downloads awaiting integration (.gdignore, not exported)
 ├── assets/fonts/                    # Noto Sans Tamil (OFL) — UI fallback font
 ├── translations/ui.csv              # en/ta UI strings (keys used via tr())
 ├── scenes/
@@ -62,6 +67,7 @@ res://
 │   │   ├── AutoRickshawModel.gd     # Bajaj RE body, 3 surfaces; paint from loadout
 │   │   ├── WheelModel.gd            # Tyre/hub (+ front fork & mudguard)
 │   │   └── ComfortAssist.gd         # Flip/stuck recovery, guidance arrow, first-run hints, haptics
+│   ├── progression/DriverProgress.gd  # Driver Level 1–20, XP, unlocks, 3 daily shift goals
 │   ├── passengers/
 │   │   ├── SavariManager.gd         # Ride loop: hails → 5 s haggle → GPS ride → payout
 │   │   ├── FareCalculator.gd        # Pure fare/odds/tip maths (unit-tested)
@@ -75,11 +81,13 @@ res://
 │   │   ├── ServicePoints.gd         # LPG bunks, EV kiosks, garages; tow
 │   │   ├── Atmosphere.gd            # Sun/sky/fog/ambient over the shift clock; headlights
 │   │   ├── MonsoonFX.gd             # Rain overlay + wiper, flood spots (WaterlogZones) while raining
+│   │   ├── AmbienceAudio.gd         # Sea / market / rain loops by zone and weather
 │   │   ├── WaterlogZone.gd          # Monsoon puddle → SignalBus.water_depth_changed
 │   │   └── GreyboxDressing.gd       # MultiMesh lane dashes & placeholder buildings
 │   └── ui/
 │       ├── MainMenu.gd              # Continue / New career / Settings / Credits; back button
-│       ├── TouchHUD.gd              # Driving controls + meter flag
+│       ├── TouchHUD.gd              # Driving controls (icon atlas, D/R gear, indicators) + meter flag
+│       ├── UISfx.gd                 # Click sound on every Button + fare/level/goal sounds
 │       ├── PassengerHUD.gd          # Haggle card, passenger card, fare screen, wallet
 │       ├── MiniMap.gd               # Heading-up circular mini-map
 │       ├── GarageUI.gd              # Service prompts, clock, pause/settings, garage, shift summary
@@ -91,6 +99,7 @@ res://
     ├── run_phase3_tests.gd/.tscn    # Fares, odds, routing, full rides end-to-end
     ├── run_phase4_tests.gd/.tscn    # Garage economy, fuel, save/load, shift, settings
     ├── run_phase5_tests.gd/.tscn    # 1:1 world, comfort pack, day/night, monsoon, kick rhythm, menu, back button
+    ├── run_phase6_tests.gd/.tscn    # Gears, indicators, give-way, driver levels, goals, facades, sounds
     └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display); PROBE_SCENE env picks the scene
 ```
 
@@ -140,6 +149,11 @@ res://
 * The road graph takes lane counts/widths from osm2streets (`streets.way_lanes()`), so traffic sits in the drawn lanes. If you change one, rebuild both (`build_world.py`).
 * Building walls collide through **one** `ConcavePolygonShape3D` per chunk (static only). Don't go back to a box per building.
 * Kick-start rhythm and other timing use accumulated physics time, never `Time.get_ticks_msec()`, so tests under `--fixed-fps` stay deterministic.
+* Packed arrays read out of a `Dictionary` are **copies**: `(d["v"] as PackedVector3Array).append(x)` silently does nothing. Keep growable buffers as class members (see `WorldChunkStreamer.MeshBuf`).
+* `Vector2` is 32-bit: a time window stored in one can round past a `float` "now" (forced rain once stayed off). Pad the start.
+* In tests, `await get_tree().physics_frame` resumes **before** nodes' `_physics_process` that frame: wait 2 frames after `Input.action_press` before asserting `is_action_just_pressed` effects.
+* Real audio files override the synth automatically when present (`VehicleAudio.stream_or()`); keep the synth fallback so tests and builds never depend on downloads.
+* Never gate core play (free roam, Savari, the King Deluxe) behind Driver Level — only cosmetics and the EV.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---
@@ -157,6 +171,7 @@ res://
    godot --headless --path . --fixed-fps 60 res://tests/run_phase3_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase4_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase5_tests.tscn
+   godot --headless --path . --fixed-fps 60 res://tests/run_phase6_tests.tscn
    ```
    After adding a new `class_name`, re-run `--import` first or the runner fails to parse. A parse error leaves the runner idling, so always wrap it in `timeout`.
    Do not use `-s` — autoload globals (`SignalBus`, `GameState`) don't resolve in `-s` scripts. Each new phase adds `tests/run_phaseN_tests.tscn` and a CI step.
@@ -176,3 +191,4 @@ Full roadmap with exit gates: `README.md` → Roadmap.
 * **Phase 3 — Core loop (Savari & haggling):** hails, 5 s haggle, GPS + mini-map, comfort, near misses, payout; 41/41 tests; 108/150 draw calls. Remaining: device play-test & balance.
 * **Phase 4 — Economy & garage:** procedural Bajaj RE model, 3 autos, garage (repair/upgrades/horns/paint/autos), LPG/EV/tow, condition, shift clock, encrypted save, settings incl. tilt & Tamil; 51/51 tests; 108/150 draw calls. Remaining: device check (tilt axis), balance.
 * **Phase 5 — Polish → MVP:** code complete. Real-size osm2streets roads + 21.6k real buildings, comfort pack, day/night, monsoon (rain, wiper, wet roads, flood spots), kick rhythm, main menu, back button, AAB in CI; 35/35 tests; 120/150 draw calls. Remaining: real audio + art (from the user's downloaded assets), on-device soak.
+  Added after MVP: reverse gear + indicators, facade atlas building skins, driver levels + shift goals, UI/ambience audio; phase 6 suite 48/48; 125/150 draw calls. Asset links: `docs/ASSETS.md`.
