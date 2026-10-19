@@ -252,11 +252,28 @@ func _choice_row(title: String, options: PackedStringArray, selected: int, on_pi
 func open_pause() -> void:
 	_open_modal(tr("PAUSE"))
 	_row("₹%d   ★%.1f   %s %d · %s" % [GameState.wallet_inr, GameState.star_rating, tr("DAY"), GameState.day, GameState.clock_text()], tr("RESUME"), true, close_modal)
+	_render_progress()
 	_render_settings()
 	_row(tr("SAVED_AUTOMATICALLY"), tr("MAIN_MENU"), true, func() -> void:
 		GameState.save_game()
 		close_modal()
 		get_tree().change_scene_to_file(MAIN_MENU_SCENE), Color(0.35, 0.25, 0.4))
+
+## Driver level + today's shift goals (pause menu and shift summary).
+func _render_progress() -> void:
+	var lvl: int = GameState.driver_level()
+	var nxt: String = "" if lvl >= DriverProgress.MAX_LEVEL else "   (%d / %d XP)" % [GameState.progress.xp, DriverProgress.xp_for_level(lvl + 1)]
+	var head: Label = Label.new()
+	head.text = "%s %d · %s%s" % [tr("LV"), lvl, DriverProgress.title(lvl), nxt]
+	head.add_theme_font_size_override("font_size", 22)
+	head.add_theme_color_override("font_color", AMBER)
+	_modal_body.add_child(head)
+	for g: Dictionary in GameState.progress.goals:
+		var l: Label = Label.new()
+		l.text = "%s  %s   %d / %d" % ["[x]" if bool(g["done"]) else "[ ]", PassengerHUD.goal_text(g), int(g["progress"]), int(g["target"])]
+		l.add_theme_font_size_override("font_size", 20)
+		l.add_theme_color_override("font_color", Color(0.6, 1.0, 0.65) if bool(g["done"]) else Color(0.9, 0.9, 0.9))
+		_modal_body.add_child(l)
 
 func _render_settings() -> void:
 	var s: Dictionary = GameState.settings
@@ -279,6 +296,10 @@ func _render_settings() -> void:
 	_choice_row(tr("GUIDE_ARROW"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if bool(s.get("guidance_arrow", true)) else 1,
 		func(i: int) -> void:
 			GameState.set_setting("guidance_arrow", i == 0)
+			open_pause())
+	_choice_row(tr("AUTO_REVERSE"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if bool(s.get("auto_reverse", true)) else 1,
+		func(i: int) -> void:
+			GameState.set_setting("auto_reverse", i == 0)
 			open_pause())
 	var vl: Label = Label.new()
 	vl.text = tr("VOLUME")
@@ -346,6 +367,9 @@ func _render_garage() -> void:
 				var owned: bool = i <= GameState.horns_owned
 				var label: String = tr("EQUIPPED") if GameState.horn_equipped == i else (tr("EQUIP") if owned else "%s ₹%d" % [tr("BUY"), int(h["cost"])])
 				var can: bool = GameState.horn_equipped != i and (owned or (i == GameState.horns_owned + 1 and GameState.wallet_inr >= int(h["cost"])))
+				if not owned and not GameState.is_unlocked("horn:%d" % i):
+					label = _locked_label("horn:%d" % i)
+					can = false
 				_row("%s\n%s" % [h["name"], h["desc"]], label, can, func() -> void:
 					GameState.buy_horn(tier)
 					_render_garage())
@@ -355,8 +379,11 @@ func _render_garage() -> void:
 				var p: Dictionary = GameState.PAINTS[i]
 				var owned: bool = GameState.paints_owned.has(i)
 				var label: String = tr("EQUIPPED") if GameState.paint_equipped == i else (tr("EQUIP") if owned else "%s ₹%d" % [tr("BUY"), int(p["cost"])])
+				var unlocked: bool = owned or GameState.is_unlocked("paint:%d" % i)
+				if not unlocked:
+					label = _locked_label("paint:%d" % i)
 				_row("%s  (+%d%% Meter Mela odds)" % [p["name"], roundi(10.0 * float(p["prestige"]))], label,
-					GameState.paint_equipped != i and (owned or GameState.wallet_inr >= int(p["cost"])), func() -> void:
+					unlocked and GameState.paint_equipped != i and (owned or GameState.wallet_inr >= int(p["cost"])), func() -> void:
 						GameState.buy_paint(idx)
 						_render_garage(), p["body"] as Color)
 		"TAB_AUTOS":
@@ -365,13 +392,19 @@ func _render_garage() -> void:
 				var s: VehicleStats = GameState.base_stats(id)
 				var owned: bool = GameState.owned_vehicles.has(id)
 				var label: String = tr("DRIVING") if GameState.active_vehicle == id else (tr("DRIVE") if owned else "%s ₹%s" % [tr("BUY"), _inr(s.price_inr)])
+				var unlocked: bool = owned or GameState.is_unlocked("vehicle:" + id)
+				if not unlocked:
+					label = _locked_label("vehicle:" + id)
 				_row("%s — %d km/h\n%s" % [s.display_name, roundi(s.max_speed_kmh), s.blurb], label,
-					GameState.active_vehicle != id and (owned or GameState.wallet_inr >= s.price_inr), func() -> void:
+					unlocked and GameState.active_vehicle != id and (owned or GameState.wallet_inr >= s.price_inr), func() -> void:
 						if GameState.owned_vehicles.has(vid):
 							GameState.select_vehicle(vid)
 						else:
 							GameState.buy_vehicle(vid)
 						_render_garage())
+
+func _locked_label(key: String) -> String:
+	return "%s %d" % [tr("UNLOCKS_AT_LV"), DriverProgress.required_level(key)]
 
 func _inr(v: int) -> String:
 	var s: String = str(v)
@@ -389,6 +422,7 @@ func _on_shift_ended(summary: Dictionary) -> void:
 	_row("%s:  ₹%d\n%s:  %d\n%s:  ₹%d\n%s:  ₹%d\n%s:  ₹%d    %s:  ★%.1f" % [
 		tr("EARNED"), int(summary["earned"]), tr("RIDES"), int(summary["rides"]), tr("FUEL_SPENT"), int(summary["fuel_spent"]),
 		tr("REPAIRS"), int(summary["repairs"]), tr("WALLET"), int(summary["wallet"]), tr("RATING"), float(summary["rating"])], "", false, Callable())
+	_render_progress()
 	_row("", tr("NEXT_DAY"), true, func() -> void:
 		GameState.start_next_day()
 		close_modal())

@@ -8,6 +8,8 @@ extends Node3D
 
 const MAX_POOL: int = 18
 const RECYCLE_RADIUS_M: float = 120.0
+const INDICATOR_YIELD_RANGE_M: float = 25.0
+const INDICATOR_YIELD_S: float = 3.0
 const SPAWN_MIN_AHEAD_M: float = 45.0
 const SPAWN_MAX_AHEAD_M: float = 110.0
 const GREYBOX_LENGTH_M: float = 3000.0
@@ -57,6 +59,7 @@ func _ready() -> void:
 		v.setup(self, kind, materials[kind])
 		pool.append(v)
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
+	SignalBus.indicator_changed.connect(_on_player_indicator)
 	_initial_spawn.call_deferred()
 
 func _load_market_zones() -> void:
@@ -233,6 +236,22 @@ func _spawn_spot_free(v: TrafficVehicleAI) -> bool:
 	if _player != null and _player.global_position.distance_to(v.global_position) < 15.0:
 		return false
 	return true
+
+## Vehicles just behind the player, on the side being signalled, give way (Chennai traffic
+## won't always — but an indicator should help). Buses and cows don't bother.
+func _on_player_indicator(direction: int) -> void:
+	if direction == 0 or _player == null:
+		return
+	var fwd: Vector3 = -_player.global_transform.basis.z
+	var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+	for v: TrafficVehicleAI in pool:
+		if not v.active or v.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.STRAY_COW]:
+			continue
+		var to_v: Vector3 = v.global_position - _player.global_position
+		var behind: float = -to_v.dot(fwd)
+		var side: float = to_v.dot(left) * float(-direction) # >0 on the signalled side (left = -1)
+		if behind > -3.0 and behind < INDICATOR_YIELD_RANGE_M and side > -1.0 and side < 7.0:
+			v.give_way(INDICATOR_YIELD_S)
 
 func _on_horn_blasted(origin: Vector3, forward_dir: Vector3, radius_m: float, horn_tier: int) -> void:
 	for v: TrafficVehicleAI in pool:

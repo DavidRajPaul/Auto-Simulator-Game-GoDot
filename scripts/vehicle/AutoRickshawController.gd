@@ -39,9 +39,29 @@ var passenger_count: int = 0
 var luggage_kg: float = 0.0
 var wheels_grounded: int = 0
 
+## Gears: the Bajaj RE has a separate reverse gear. +1 drive, -1 reverse.
+const GEAR_DRIVE: int = 1
+const GEAR_REVERSE: int = -1
+const GEAR_SHIFT_MAX_KMH: float = 4.0
+## Holding BRAKE while stopped this long engages reverse (when the auto-reverse setting is on).
+const AUTO_REVERSE_HOLD_S: float = 0.6
+const INDICATOR_BLINK_HZ: float = 1.5
+## A turn of this much heading change, followed by straightening up, cancels the indicator.
+const INDICATOR_CANCEL_TURN_RAD: float = 0.9
 const KICK_RHYTHM_MIN_S: float = 0.3
 const KICK_RHYTHM_MAX_S: float = 1.4
 
+var gear: int = GEAR_DRIVE
+var indicator: int = 0 # -1 left, 0 off, +1 right
+var indicator_lamp_on: bool = false
+var is_braking: bool = false
+var _brake_hold_s: float = 0.0
+var _auto_reversed: bool = false
+var _blink_t: float = 0.0
+var _indicator_start_yaw: float = 0.0
+var _indicator_turned: bool = false
+var _brake_lamps: MeshInstance3D
+var _indicator_lamps: Array[MeshInstance3D] = [] # [left, right]
 var _last_kick_s: float = -10.0
 var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
 var _telemetry_timer: float = 0.0
@@ -70,6 +90,7 @@ func _ready() -> void:
 	if use_player_profile:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
 	_recolour.call_deferred()
+	_build_lamps()
 
 ## Swap to new effective stats at runtime (garage purchase/upgrade/paint).
 func apply_stats(new_stats: VehicleStats) -> void:
@@ -124,6 +145,17 @@ func _physics_process(delta: float) -> void:
 		blow_horn()
 	if Input.is_action_just_pressed("kick_start"):
 		pull_hand_kick_starter()
+	if Input.is_action_just_pressed("gear_toggle"):
+		set_gear(GEAR_REVERSE if gear == GEAR_DRIVE else GEAR_DRIVE)
+	if Input.is_action_just_pressed("indicator_left"):
+		set_indicator(0 if indicator == -1 else -1)
+	if Input.is_action_just_pressed("indicator_right"):
+		set_indicator(0 if indicator == 1 else 1)
+	_auto_gear(throttle_in, brake_in, delta)
+	if gear == GEAR_REVERSE and _auto_reversed:
+		var tmp: float = throttle_in # auto-reverse: BRAKE pedal drives backwards, ACCEL brakes
+		throttle_in = brake_in
+		brake_in = tmp
 
 	if fuel_level <= 0.0:
 		throttle_in = 0.0
@@ -145,6 +177,7 @@ func _physics_process(delta: float) -> void:
 	_apply_aero_drag()
 	_update_fuel_and_odometer(delta)
 	_check_water_stall()
+	_update_lamps(brake_in, delta)
 	_emit_telemetry(delta)
 
 func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: float, handbrake_on: bool, delta: float) -> void:
@@ -177,14 +210,15 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	# Longitudinal: rear-wheel drive, brakes on all wheels, rolling resistance.
 	var wheel_fwd_speed: float = w_fwd.dot(pt_vel)
 	var long_f: float = -wheel_fwd_speed * 12.0
-	if not is_front and not is_engine_stalled:
-		if throttle_in > 0.01 and current_speed_kmh < stats.max_speed_kmh:
+	if not is_front and not is_engine_stalled and throttle_in > 0.01:
+		if gear == GEAR_DRIVE and current_speed_kmh < stats.max_speed_kmh:
 			var torque_curve: float = 1.0 - stats.torque_falloff * clampf(current_speed_kmh / stats.max_speed_kmh, 0.0, 1.0)
 			long_f += throttle_in * stats.engine_peak_force_n * 0.5 * torque_curve
-		elif brake_in > 0.01 and forward_speed_mps < 0.5 and current_speed_kmh < stats.reverse_max_speed_kmh:
-			long_f -= brake_in * stats.engine_peak_force_n * 0.25 # reverse gear
-	if brake_in > 0.01 and forward_speed_mps > 0.5:
-		long_f -= brake_in * stats.service_brake_force_n / 3.0
+		elif gear == GEAR_REVERSE and (forward_speed_mps > 0.0 or current_speed_kmh < stats.reverse_max_speed_kmh):
+			long_f -= throttle_in * stats.engine_peak_force_n * 0.25 # reverse gear: ACCEL drives backwards
+	# Brakes oppose whichever way the wheel is rolling (forwards or in reverse).
+	if brake_in > 0.01 and absf(wheel_fwd_speed) > 0.3:
+		long_f -= signf(wheel_fwd_speed) * brake_in * stats.service_brake_force_n / 3.0
 	if handbrake_on and not is_front:
 		long_f -= signf(wheel_fwd_speed) * minf(stats.handbrake_force_n * 0.5, absf(wheel_fwd_speed) * mass * 2.0)
 	# Drive/brake act at CoM height so throttle doesn't wheelie the trike.
@@ -271,7 +305,110 @@ func _emit_telemetry(delta: float) -> void:
 		"roll_deg": current_roll_deg,
 		"is_stalled": is_engine_stalled,
 		"is_on_two_wheels": is_on_two_wheels,
+		"gear": gear,
+		"indicator": indicator,
 	})
+
+# --- Gears, indicators, lamps -------------------------------------------------------------
+
+## Change gear; only allowed (nearly) stopped, like the real lever. Returns true if it changed.
+func set_gear(g: int) -> bool:
+	if g == gear:
+		return true
+	if current_speed_kmh > GEAR_SHIFT_MAX_KMH:
+		SignalBus.gear_change_refused.emit()
+		return false
+	gear = g
+	_auto_reversed = false
+	_brake_hold_s = 0.0
+	SignalBus.gear_changed.emit(gear)
+	return true
+
+## Auto-reverse (setting, on by default), the way most phone driving games work: hold BRAKE
+## at a standstill to engage R, then BRAKE drives backwards and ACCEL stops you / returns to D.
+## The manual R/D button always works too: in a manually selected R, ACCEL drives backwards.
+func _auto_gear(throttle_in: float, brake_in: float, delta: float) -> void:
+	if not bool(GameState.settings.get("auto_reverse", true)):
+		_brake_hold_s = 0.0
+		return
+	if gear == GEAR_DRIVE and current_speed_kmh < 1.5 and brake_in > 0.5 and throttle_in < 0.05:
+		_brake_hold_s += delta
+		if _brake_hold_s >= AUTO_REVERSE_HOLD_S and set_gear(GEAR_REVERSE):
+			_auto_reversed = true
+	else:
+		_brake_hold_s = 0.0
+	if gear == GEAR_REVERSE and _auto_reversed and throttle_in > 0.3 and current_speed_kmh < 1.0:
+		set_gear(GEAR_DRIVE)
+
+## -1 left, 0 off, +1 right.
+func set_indicator(d: int) -> void:
+	indicator = clampi(d, -1, 1)
+	_blink_t = 0.0
+	indicator_lamp_on = indicator != 0
+	_indicator_start_yaw = global_rotation.y
+	_indicator_turned = false
+	SignalBus.indicator_changed.emit(indicator)
+	SignalBus.indicator_blink.emit(indicator, indicator_lamp_on)
+
+func _update_lamps(brake_in: float, delta: float) -> void:
+	var braking: bool = brake_in > 0.05
+	if braking != is_braking:
+		is_braking = braking
+		SignalBus.brake_lights_changed.emit(is_braking)
+	if _brake_lamps != null:
+		_brake_lamps.visible = is_braking or gear == GEAR_REVERSE
+	if indicator == 0:
+		for l: MeshInstance3D in _indicator_lamps:
+			l.visible = false
+		return
+	_blink_t += delta
+	var on: bool = fmod(_blink_t * INDICATOR_BLINK_HZ, 1.0) < 0.5
+	if on != indicator_lamp_on:
+		indicator_lamp_on = on
+		SignalBus.indicator_blink.emit(indicator, on)
+	if _indicator_lamps.size() == 2:
+		_indicator_lamps[0].visible = indicator == -1 and on
+		_indicator_lamps[1].visible = indicator == 1 and on
+	# Self-cancel after the turn is made and the handlebar straightens, like a real switch.
+	var turned: float = angle_difference(_indicator_start_yaw, global_rotation.y)
+	if absf(turned) > INDICATOR_CANCEL_TURN_RAD:
+		if not _indicator_turned:
+			_indicator_turned = true
+			# Turned the way we signalled (left = yaw increases in Godot's +Y rotation).
+			if signf(turned) == -float(indicator):
+				SignalBus.signalled_turn.emit(indicator)
+		if absf(current_steer_rad) < 0.08:
+			set_indicator(0)
+
+## Emissive brake/reverse and indicator lamp glows (hidden when off). One shared material each.
+func _build_lamps() -> void:
+	var red: StandardMaterial3D = StandardMaterial3D.new()
+	red.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	red.albedo_color = Color(1.0, 0.12, 0.08)
+	var amber: StandardMaterial3D = StandardMaterial3D.new()
+	amber.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	amber.albedo_color = Color(1.0, 0.62, 0.05)
+	_brake_lamps = _lamp_mesh("BrakeLamps", [Vector3(-0.46, -0.12, 1.29), Vector3(0.46, -0.12, 1.29)], Vector3(0.14, 0.1, 0.03), red)
+	_indicator_lamps = [
+		_lamp_mesh("IndicatorLeft", [Vector3(-0.37, -0.02, -1.16), Vector3(-0.58, -0.12, 1.29)], Vector3(0.05, 0.06, 0.07), amber),
+		_lamp_mesh("IndicatorRight", [Vector3(0.37, -0.02, -1.16), Vector3(0.58, -0.12, 1.29)], Vector3(0.05, 0.06, 0.07), amber),
+	]
+
+func _lamp_mesh(lamp_name: String, centres: Array[Vector3], size: Vector3, mat: Material) -> MeshInstance3D:
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for c: Vector3 in centres:
+		var bm: BoxMesh = BoxMesh.new()
+		bm.size = size
+		st.append_from(bm, 0, Transform3D(Basis.IDENTITY, c))
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = lamp_name
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.visible = false
+	add_child(mi)
+	return mi
 
 func blow_horn() -> void:
 	SignalBus.horn_blasted.emit(global_position, -global_transform.basis.z, stats.horn_radius_m, stats.horn_tier)

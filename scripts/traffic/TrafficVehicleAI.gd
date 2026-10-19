@@ -30,6 +30,7 @@ var sub_lane: int = 0
 var lateral: float = 0.0 # current left offset (m) — eases toward the sub-lane target
 
 var _enable_collision_next_tick: bool = false
+var courtesy_timer: float = 0.0
 var _horn_timer: float = -1.0
 var _horn_dir: int = 0
 var _gap_seek_timer: float = 0.0
@@ -87,6 +88,10 @@ func reacts_to_horn(horn_tier: int) -> bool:
 	return horn_tier >= MIN_HORN_TIER[archetype]
 
 ## Queue a sideways dodge (+1 = to the right/centre, -1 = to the left/kerb).
+## The player is indicating into this vehicle's path: ease off for a few seconds.
+func give_way(seconds: float) -> void:
+	courtesy_timer = maxf(courtesy_timer, seconds)
+
 func hear_horn(away_dir: int) -> void:
 	if _horn_timer >= 0.0:
 		return
@@ -113,6 +118,9 @@ func tick(delta: float) -> void:
 	var remaining: float = manager.graph.edges[edge].length - t
 	if remaining < TURN_SLOWDOWN_M:
 		target_speed *= 0.7 # ease off into junctions
+	if courtesy_timer > 0.0:
+		courtesy_timer -= delta
+		target_speed *= 0.5 # letting the indicating auto merge or turn
 	if lead_gap < safe_gap:
 		target_speed = minf(target_speed, cruise_speed_mps * clampf((lead_gap - 2.0) / safe_gap, 0.0, 1.0))
 		_gap_seek_timer -= delta

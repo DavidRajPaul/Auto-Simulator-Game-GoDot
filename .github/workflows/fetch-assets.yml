@@ -1,0 +1,31 @@
+name: Fetch Assets
+
+# Downloads the CC0 audio listed in tools/assets/fetch_assets.py (hosts the dev sandbox can't
+# reach), converts it to mono .ogg and commits it under assets/audio/.
+# Run manually: Actions → Fetch Assets → Run workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Fetch + convert
+        run: python3 tools/assets/fetch_assets.py
+      - name: Commit results
+        run: |
+          git config user.name "fetch-assets[bot]"
+          git config user.email "fetch-assets@users.noreply.github.com"
+          git add -A assets/audio
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "assets: fetch CC0 audio (BigSoundBank)"
+          git pull --rebase
+          git push

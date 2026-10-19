@@ -24,7 +24,16 @@ const SURF_STYLE: Dictionary = {
 	"centre": [Color(0.92, 0.82, 0.42), 0.07],
 }
 const UP_LAYER_Y: float = 0.012
-const GROUND_FLOOR_M: float = 3.2
+const FLOOR_M: float = 3.2
+const BAY_M: float = 3.4
+const ROOF_TILE_M: float = 6.0
+## Facade atlas cells (column, row) — see tools/art/make_facade_atlas.py for the map.
+const CELLS_HOME: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(2, 0), Vector2(3, 0), Vector2(4, 0), Vector2(0, 0), Vector2(4, 0)]
+const CELLS_OFFICE: Array[Vector2] = [Vector2(5, 0), Vector2(6, 0)]
+const CELLS_HOUSE_GROUND: Array[Vector2] = [Vector2(0, 1), Vector2(1, 1), Vector2(0, 1)]
+const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1), Vector2(5, 1), Vector2(6, 1), Vector2(7, 1),
+	Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(3, 2), Vector2(4, 2), Vector2(5, 2), Vector2(6, 2), Vector2(7, 2)]
+const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
 const KIND_PALETTES: Dictionary = {
 	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
@@ -32,9 +41,6 @@ const KIND_PALETTES: Dictionary = {
 	"civic": [Color(0.93, 0.88, 0.76), Color(0.85, 0.5, 0.4), Color(0.95, 0.95, 0.92)],
 	"shed": [Color(0.55, 0.58, 0.62), Color(0.45, 0.5, 0.6), Color(0.62, 0.55, 0.48)],
 }
-## Shop-front / signboard colours for ground floors on busy streets.
-const SHOPFRONT: Array[Color] = [Color(0.85, 0.2, 0.15), Color(0.15, 0.4, 0.75), Color(0.95, 0.75, 0.1),
-	Color(0.2, 0.6, 0.3), Color(0.35, 0.3, 0.28), Color(0.9, 0.45, 0.1)]
 const ROOF_COLOUR: Color = Color(0.7, 0.68, 0.64)
 const ZONE_PALETTES: Dictionary = {
 	"marina": [Color(0.93, 0.9, 0.82), Color(0.85, 0.82, 0.7), Color(0.75, 0.82, 0.86)],
@@ -59,7 +65,7 @@ var _player: Node3D
 var _timer: float = 0.0
 var wetness: float = 0.0
 var _road_mat: StandardMaterial3D
-var _bld_mat: StandardMaterial3D
+var _bld_mat: ShaderMaterial
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 
@@ -78,10 +84,10 @@ func _ready() -> void:
 	_road_mat.vertex_color_is_srgb = true
 	_road_mat.roughness = 0.95
 	_road_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_bld_mat = StandardMaterial3D.new()
-	_bld_mat.vertex_color_use_as_albedo = true
-	_bld_mat.vertex_color_is_srgb = true
-	_bld_mat.roughness = 0.9
+	_bld_mat = ShaderMaterial.new()
+	_bld_mat.shader = load("res://shaders/building_facade.gdshader") as Shader
+	_bld_mat.set_shader_parameter("atlas", load("res://assets/textures/facade_atlas.png") as Texture2D)
+	_bld_mat.set_shader_parameter("glow", load("res://assets/textures/facade_glow.png") as Texture2D)
 	_build_ground()
 	_build_areas()
 	_build_landmarks()
@@ -91,6 +97,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_attach_finished()
 	_update_wetness(delta)
+	_bld_mat.set_shader_parameter("night", 1.0 - smoothstep(-0.05, 0.2, Atmosphere.sun_height(GameState.shift_minute)))
 	_timer += delta
 	if _timer >= CHECK_INTERVAL_S:
 		_timer = 0.0
@@ -292,16 +299,16 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 		st.add_vertex(right[i - 1])
 		st.add_vertex(right[i])
 
-## Real footprints (and procedural fill) extruded to their heights: walls + flat roofs in one
-## vertex-coloured mesh, shop-front bands on busy streets, one trimesh collider for the walls.
+## Real footprints (and procedural fill) extruded to their heights and skinned from the
+## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
+## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
+## One mesh + one trimesh wall collider per chunk.
 func _buildings(blds: Array) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
 	holder.collision_mask = 0
-	var verts: PackedVector3Array = PackedVector3Array()
-	var norms: PackedVector3Array = PackedVector3Array()
-	var cols: PackedColorArray = PackedColorArray()
+	var m: MeshBuf = MeshBuf.new()
 	var faces: PackedVector3Array = PackedVector3Array()
 	for b: Dictionary in blds:
 		var flat: Array = b["p"]
@@ -311,54 +318,70 @@ func _buildings(blds: Array) -> Node3D:
 		if pts.size() < 3:
 			continue
 		var h: float = float(b["h"])
-		var seed_f: float = float(b.get("s", 0))
-		var colour: Color = building_colour(str(b.get("k", "")), str(b.get("z", "")), seed_f)
-		var shopfront: bool = h > 6.0 and (str(b.get("k", "")) == "shop" or (str(b.get("z", "")) in ["t_nagar", "anna_salai"] and fposmod(seed_f * 0.37, 1.0) < 0.7))
-		var band: Color = SHOPFRONT[int(seed_f) % SHOPFRONT.size()]
+		var kind: String = str(b.get("k", ""))
+		var zone: String = str(b.get("z", ""))
+		var seed_i: int = int(b.get("s", 0))
+		var colour: Color = building_colour(kind, zone, float(seed_i))
+		var skin: Dictionary = facade_skin(kind, zone, h, seed_i)
 		# Signed area tells us the winding, so walls always face outwards.
 		var area2: float = 0.0
 		for i: int in pts.size():
 			area2 += pts[i - 1].cross(pts[i])
 		var outward_sign: float = 1.0 if area2 > 0.0 else -1.0
+		var floors: float = h / FLOOR_M
 		for i: int in pts.size():
 			var a: Vector2 = pts[i - 1]
 			var c: Vector2 = pts[i]
 			var e: Vector2 = c - a
-			if e.length_squared() < 0.0001:
+			var length: float = e.length()
+			if length < 0.01:
 				continue
 			var n2: Vector2 = Vector2(e.y, -e.x).normalized() * outward_sign
 			var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
-			# Cheap fake AO/sun: walls facing the sea-breeze east/south a touch brighter.
 			var tint: Color = colour.darkened(0.08 * (1.0 - absf(n2.x)))
-			if shopfront:
-				_quad(verts, norms, cols, a, c, 0.0, GROUND_FLOOR_M, n, band)
-				_quad(verts, norms, cols, a, c, GROUND_FLOOR_M, h, n, tint)
+			var bays: float = maxf(1.0, roundf(length / BAY_M)) if length >= 2.0 else length / BAY_M
+			var ground_top: float = minf(h, FLOOR_M)
+			var shops: Array = skin["ground"]
+			if bool(skin["per_bay"]) and bays >= 1.0:
+				# Each ground-floor bay gets its own shop, so a street front reads as many shops.
+				var nb: int = int(bays)
+				for k: int in nb:
+					var p0: Vector2 = a.lerp(c, float(k) / float(nb))
+					var p1: Vector2 = a.lerp(c, float(k + 1) / float(nb))
+					var cell: Vector2 = shops[absi(seed_i * 31 + i * 7 + k * 13) % shops.size()]
+					_quad(m, p0, p1, 0.0, ground_top, n, tint, Vector2(0.0, 0.0), Vector2(1.0, 1.0), cell)
 			else:
-				_quad(verts, norms, cols, a, c, 0.0, h, n, tint)
+				var gcell: Vector2 = shops[absi(seed_i + i) % shops.size()]
+				_quad(m, a, c, 0.0, ground_top, n, tint, Vector2(0.0, 0.0), Vector2(bays, ground_top / FLOOR_M), gcell)
+			if h > FLOOR_M:
+				var ucells: Array = skin["upper"]
+				var ucell: Vector2 = ucells[absi(seed_i * 3 + (i % 2)) % ucells.size()]
+				_quad(m, a, c, FLOOR_M, h, n, tint, Vector2(0.0, 1.0), Vector2(bays, floors), ucell)
 			var top: float = minf(h, COLLIDER_MAX_H)
 			faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
 				Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
 		var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
-		var roof: Color = ROOF_COLOUR.lerp(colour, 0.35).darkened(fposmod(seed_f * 0.13, 0.12))
+		var roof: Color = ROOF_COLOUR.lerp(colour, 0.35).darkened(fposmod(float(seed_i) * 0.13, 0.12))
+		var rcell: Vector2 = ROOF_CELLS[seed_i % ROOF_CELLS.size()]
 		for t: int in range(0, tri.size(), 3):
-			var p0: Vector2 = pts[tri[t]]
-			var p1: Vector2 = pts[tri[t + 1]]
-			var p2: Vector2 = pts[tri[t + 2]]
-			if (p1 - p0).cross(p2 - p0) < 0.0: # clockwise seen from above = faces up
-				var tmp: Vector2 = p1
-				p1 = p2
-				p2 = tmp
-			for p: Vector2 in [p0, p1, p2]:
-				verts.append(Vector3(p.x, h, p.y))
-				norms.append(Vector3.UP)
-				cols.append(roof)
-	if verts.is_empty():
+			var q0: Vector2 = pts[tri[t]]
+			var q1: Vector2 = pts[tri[t + 1]]
+			var q2: Vector2 = pts[tri[t + 2]]
+			if (q1 - q0).cross(q2 - q0) < 0.0: # clockwise seen from above = faces up
+				var tmp: Vector2 = q1
+				q1 = q2
+				q2 = tmp
+			for p: Vector2 in [q0, q1, q2]:
+				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
+	if m.verts.is_empty():
 		return holder
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = norms
-	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_VERTEX] = m.verts
+	arrays[Mesh.ARRAY_NORMAL] = m.norms
+	arrays[Mesh.ARRAY_COLOR] = m.cols
+	arrays[Mesh.ARRAY_TEX_UV] = m.uvs
+	arrays[Mesh.ARRAY_TEX_UV2] = m.uv2s
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.surface_set_material(0, _bld_mat)
@@ -379,21 +402,63 @@ static func building_colour(kind: String, zone: String, seed_f: float) -> Color:
 	var pick: Color = palette[int(seed_f) % palette.size()]
 	return pick.darkened(fposmod(seed_f * 0.618, 1.0) * 0.15)
 
-## One wall quad from a→c between heights y0 and y1, facing n (wound for front faces).
-func _quad(verts: PackedVector3Array, norms: PackedVector3Array, cols: PackedColorArray, a: Vector2, c: Vector2,
-		y0: float, y1: float, n: Vector3, colour: Color) -> void:
+## Which atlas cells a building uses: {"upper": [cells], "ground": [cells], "per_bay": bool}.
+static func facade_skin(kind: String, zone: String, h: float, seed_i: int) -> Dictionary:
+	match kind:
+		"temple":
+			return {"upper": [Vector2(0, 3)], "ground": [Vector2(1, 3), Vector2(0, 3)], "per_bay": false}
+		"office":
+			return {"upper": CELLS_OFFICE, "ground": [Vector2(5, 0)], "per_bay": false}
+		"civic":
+			return {"upper": [Vector2(6, 3)], "ground": [Vector2(7, 3)], "per_bay": false}
+		"shed":
+			return {"upper": [Vector2(7, 0)], "ground": [Vector2(7, 0), Vector2(2, 1)], "per_bay": false}
+	var busy: bool = zone in ["t_nagar", "anna_salai"]
+	var shop: bool = kind == "shop" or (busy and seed_i % 10 < 7) or (zone == "mylapore" and seed_i % 10 < 3)
+	if zone == "mylapore" and h <= 8.0 and not shop and seed_i % 3 == 0:
+		return {"upper": [Vector2(4, 3)], "ground": [Vector2(5, 3)], "per_bay": false} # heritage house
+	if busy and h > 18.0 and seed_i % 2 == 0:
+		return {"upper": CELLS_OFFICE, "ground": CELLS_SHOPS, "per_bay": true}
+	if shop:
+		return {"upper": CELLS_HOME, "ground": CELLS_SHOPS, "per_bay": true}
+	return {"upper": CELLS_HOME, "ground": CELLS_HOUSE_GROUND, "per_bay": false}
+
+## One wall quad a→c between heights y0..y1 facing n. uv0/uv1 = bay/floor coordinates at the
+## bottom-left/top-right corners (they repeat inside `cell` in the shader).
+func _quad(m: MeshBuf, a: Vector2, c: Vector2, y0: float, y1: float, n: Vector3, colour: Color,
+		uv0: Vector2, uv1: Vector2, cell: Vector2) -> void:
 	var v0: Vector3 = Vector3(a.x, y0, a.y)
 	var v1: Vector3 = Vector3(c.x, y0, c.y)
 	var v2: Vector3 = Vector3(c.x, y1, c.y)
 	var v3: Vector3 = Vector3(a.x, y1, a.y)
+	var t0: Vector2 = uv0
+	var t1: Vector2 = Vector2(uv1.x, uv0.y)
+	var t2: Vector2 = uv1
+	var t3: Vector2 = Vector2(uv0.x, uv1.y)
 	# Godot front faces are clockwise when viewed from the front.
-	var tri: PackedVector3Array = PackedVector3Array([v0, v2, v1, v0, v3, v2])
+	var order: PackedInt32Array = PackedInt32Array([0, 2, 1, 0, 3, 2])
 	if (v1 - v0).cross(v3 - v0).dot(n) <= 0.0:
-		tri = PackedVector3Array([v0, v1, v2, v0, v2, v3])
-	for v: Vector3 in tri:
+		order = PackedInt32Array([0, 1, 2, 0, 2, 3])
+	var vs: Array[Vector3] = [v0, v1, v2, v3]
+	var ts: Array[Vector2] = [t0, t1, t2, t3]
+	for k: int in order:
+		m.add(vs[k], n, colour, ts[k], cell)
+
+## Growable vertex buffers for one chunk's building mesh (packed arrays are copied when
+## read out of a Dictionary, so they live as members here).
+class MeshBuf:
+	var verts: PackedVector3Array = PackedVector3Array()
+	var norms: PackedVector3Array = PackedVector3Array()
+	var cols: PackedColorArray = PackedColorArray()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var uv2s: PackedVector2Array = PackedVector2Array()
+
+	func add(v: Vector3, n: Vector3, c: Color, uv: Vector2, uv2: Vector2) -> void:
 		verts.append(v)
 		norms.append(n)
-		cols.append(colour)
+		cols.append(c)
+		uvs.append(uv)
+		uv2s.append(uv2)
 
 # --- Always-loaded layers ----------------------------------------------------
 

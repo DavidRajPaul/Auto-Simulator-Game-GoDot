@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://scripts/vehicle/ComfortAssist.gd" id="13"]
 [ext_resource type="Script" path="res://scripts/world/Atmosphere.gd" id="14"]
 [ext_resource type="Script" path="res://scripts/world/MonsoonFX.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/world/AmbienceAudio.gd" id="16"]
+[ext_resource type="Script" path="res://scripts/ui/UISfx.gd" id="17"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -77,6 +79,12 @@ script = ExtResource("11")
 
 [node name="MonsoonFX" type="Node3D" parent="."]
 script = ExtResource("15")
+
+[node name="AmbienceAudio" type="Node" parent="."]
+script = ExtResource("16")
+
+[node name="UISfx" type="Node" parent="."]
+script = ExtResource("17")
 
 [node name="ComfortAssist" type="Node3D" parent="."]
 script = ExtResource("13")

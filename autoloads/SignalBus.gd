@@ -81,3 +81,22 @@ signal weather_changed(raining: bool)
 signal kick_timed(good: bool)
 ## Android back button / Esc (GameState turns NOTIFICATION_WM_GO_BACK_REQUEST into this).
 signal back_requested()
+# --- Controls (gear, indicators, lamps) --------------------------------------------
+## +1 drive, -1 reverse.
+signal gear_changed(gear: int)
+## Tried to change gear while moving.
+signal gear_change_refused()
+## -1 left, 0 off, +1 right.
+signal indicator_changed(direction: int)
+## Each blink (lamp on/off) — drives the tick sound and HUD arrows.
+signal indicator_blink(direction: int, lamp_on: bool)
+## A turn made with the matching indicator on (Respect bonus, courtesy goals).
+signal signalled_turn(direction: int)
+signal brake_lights_changed(on: bool)
+# --- Driver level & shift goals ---------------------------------------------------------
+signal driver_xp_changed(total_xp: int, level: int, progress: float)
+## unlock_key: translation key of what this level unlocks ("" if nothing).
+signal driver_level_up(level: int, title: String, reward_inr: int, unlock_key: String)
+signal goals_updated(goals: Array)
+signal goal_completed(goal: Dictionary)
+signal all_goals_completed(bonus_inr: int)

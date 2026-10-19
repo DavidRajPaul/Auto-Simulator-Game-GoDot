@@ -13,6 +13,8 @@ const MINIMAP_SIZE: float = 190.0
 
 var _root: Control
 var _wallet: Label
+var _level: Label
+var _xp_bar: ProgressBar
 var _ride_card: PanelContainer
 var _ride_text: Label
 var _comfort_bar: ProgressBar
@@ -44,6 +46,21 @@ func _ready() -> void:
 	minimap.position = Vector2(16.0, 16.0)
 	_root.add_child(minimap)
 	_wallet = _label("₹500   ★4.5", 26, Color.WHITE)
+	_xp_bar = ProgressBar.new()
+	_xp_bar.max_value = 1.0
+	_xp_bar.step = 0.001
+	_xp_bar.show_percentage = false
+	_xp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fill: StyleBoxFlat = StyleBoxFlat.new()
+	fill.bg_color = Color(1.0, 0.72, 0.1)
+	fill.set_corner_radius_all(4)
+	var bg: StyleBoxFlat = StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.45)
+	bg.set_corner_radius_all(4)
+	_xp_bar.add_theme_stylebox_override("fill", fill)
+	_xp_bar.add_theme_stylebox_override("background", bg)
+	_root.add_child(_xp_bar)
+	_level = _label("", 18, Color(1.0, 0.85, 0.45))
 	_build_ride_card()
 	_build_haggle()
 	_build_fare_card()
@@ -66,6 +83,14 @@ func _ready() -> void:
 		_hint_timer = seconds)
 	_layout()
 	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
+	SignalBus.driver_xp_changed.connect(func(_x: int, _l: int, _p: float) -> void: _refresh_level())
+	SignalBus.driver_level_up.connect(func(lvl: int, title: String, reward: int, unlock_key: String) -> void:
+		var extra: String = ("\n" + tr(unlock_key)) if unlock_key != "" else ""
+		toast("%s %d — %s!  +₹%d%s" % [tr("LEVEL_UP"), lvl, title, reward, extra], 4.0))
+	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
+		toast("%s: %s  +₹%d" % [tr("GOAL_DONE"), goal_text(g), DriverProgress.GOAL_INR], 3.0))
+	SignalBus.all_goals_completed.connect(func(bonus: int) -> void: toast("%s  +₹%d" % [tr("ALL_GOALS_DONE"), bonus], 4.0))
+	_refresh_level()
 
 func _process(delta: float) -> void:
 	if _haggle.visible:
@@ -181,6 +206,11 @@ func _layout() -> void:
 	_wallet.position = Vector2(vp.x - 24.0 - 260.0, 104.0) # under the CAM button, clear of the meter
 	_wallet.size = Vector2(260.0, 40.0)
 	_wallet.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_level.position = Vector2(vp.x - 24.0 - 260.0, 138.0)
+	_level.size = Vector2(260.0, 26.0)
+	_level.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_xp_bar.position = Vector2(vp.x - 24.0 - 160.0, 166.0)
+	_xp_bar.size = Vector2(160.0, 8.0)
 	_ride_card.position = Vector2(vp.x * 0.5 - 200.0, 12.0)
 	_ride_card.custom_minimum_size = Vector2(400.0, 0.0)
 	_haggle.custom_minimum_size = Vector2(minf(680.0, vp.x - 40.0), 0.0)
@@ -198,6 +228,15 @@ func _layout() -> void:
 func toast(text: String, seconds: float) -> void:
 	_toast.text = text
 	_toast_timer = seconds
+
+func _refresh_level() -> void:
+	var lvl: int = GameState.driver_level()
+	_level.text = "%s %d · %s" % [tr("LV"), lvl, DriverProgress.title(lvl)]
+	_xp_bar.value = GameState.progress.level_progress()
+
+## "Complete 3 rides (1/3)"
+static func goal_text(g: Dictionary) -> String:
+	return TranslationServer.translate(str(g["text"])) % int(g["target"])
 
 func _refresh_wallet() -> void:
 	_wallet.text = "₹%s   ★%.1f" % [_inr(GameState.wallet_inr), GameState.star_rating]

@@ -10,6 +10,11 @@ const MIX_RATE: int = 22050
 const IDLE_PITCH: float = 0.85
 const TOP_PITCH: float = 2.6
 const TOP_SPEED_KMH: float = 58.0
+## Real recordings replace the synth when these files exist (see docs/ASSETS.md).
+const ENGINE_FILE: String = "res://assets/audio/vehicle/engine_lpg_loop.ogg"
+const HORN_FILE: String = "res://assets/audio/vehicle/horn_bulb.ogg"
+const KICK_FILE: String = "res://assets/audio/vehicle/kick_start.ogg"
+const TICK_FILE: String = "res://assets/audio/vehicle/indicator_tick.ogg"
 
 @export var engine_volume_db: float = -6.0
 @export var horn_volume_db: float = -2.0
@@ -17,13 +22,28 @@ const TOP_SPEED_KMH: float = 58.0
 var _engine: AudioStreamPlayer3D
 var _horn: AudioStreamPlayer3D
 var _clunk: AudioStreamPlayer3D
+var _tick: AudioStreamPlayer
+var _tock: AudioStream
+var _tick_stream: AudioStream
 var _speed_kmh: float = 0.0
 var _engine_running: bool = true
 
 func _ready() -> void:
-	_engine = _make_player("Engine", _build_engine_loop(), engine_volume_db)
-	_horn = _make_player("Horn", _build_horn(), horn_volume_db)
-	_clunk = _make_player("KickClunk", _build_clunk(), -4.0)
+	_engine = _make_player("Engine", stream_or(ENGINE_FILE, _build_engine_loop()), engine_volume_db)
+	_horn = _make_player("Horn", stream_or(HORN_FILE, _build_horn()), horn_volume_db)
+	_clunk = _make_player("KickClunk", stream_or(KICK_FILE, _build_clunk()), -4.0)
+	# Indicator relay: heard inside the cab, so a plain (non-positional) player.
+	_tick_stream = stream_or(TICK_FILE, _build_tick(1800.0))
+	_tock = _build_tick(1350.0) if not ResourceLoader.exists(TICK_FILE) else _tick_stream
+	_tick = AudioStreamPlayer.new()
+	_tick.name = "IndicatorTick"
+	_tick.volume_db = -10.0
+	add_child(_tick)
+	SignalBus.indicator_blink.connect(func(d: int, lamp_on: bool) -> void:
+		if d == 0:
+			return
+		_tick.stream = _tick_stream if lamp_on else _tock
+		_tick.play())
 	_engine.play()
 	_apply_drivetrain(GameState.active_stats())
 	SignalBus.vehicle_loadout_changed.connect(_apply_drivetrain)
@@ -45,7 +65,7 @@ func _process(delta: float) -> void:
 ## EV autos get a quiet electric whine instead of the LPG putter.
 func _apply_drivetrain(s: VehicleStats) -> void:
 	var is_ev: bool = s.fuel_type == 2
-	_engine.stream = _build_ev_whine() if is_ev else _build_engine_loop()
+	_engine.stream = _build_ev_whine() if is_ev else stream_or(ENGINE_FILE, _build_engine_loop())
 	_engine.volume_db = engine_volume_db - (8.0 if is_ev else 0.0)
 	if _engine_running:
 		_engine.play()
@@ -120,6 +140,24 @@ func _build_horn() -> AudioStreamWAV:
 		var env: float = minf(lt / 0.01, 1.0) * minf((honk_len - lt) / 0.03, 1.0)
 		var tone: float = signf(sin(TAU * f * lt)) * 0.5 + sin(TAU * f * 1.5 * lt) * 0.3 + sin(TAU * f * 0.5 * lt) * 0.2
 		samples[i] = tone * env * 0.55
+	return _to_wav(samples, false)
+
+## Use a real recording when it's been added to the project, else the synthesised fallback.
+static func stream_or(path: String, fallback: AudioStream) -> AudioStream:
+	if ResourceLoader.exists(path):
+		var s: AudioStream = load(path) as AudioStream
+		if s != null:
+			return s
+	return fallback
+
+## Indicator relay click: a 25 ms damped burst.
+func _build_tick(freq: float) -> AudioStreamWAV:
+	var n: int = int(MIX_RATE * 0.025)
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	samples.resize(n)
+	for i: int in n:
+		var t: float = float(i) / MIX_RATE
+		samples[i] = sin(TAU * freq * t) * exp(-t * 260.0) * 0.8
 	return _to_wav(samples, false)
 
 func _build_clunk() -> AudioStreamWAV:

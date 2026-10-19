@@ -30,6 +30,9 @@ func _ready() -> void:
 	get_tree().paused = false
 	_build_scene()
 	_build_ui()
+	var sfx: UISfx = UISfx.new()
+	sfx.name = "UISfx"
+	add_child(sfx)
 	SignalBus.back_requested.connect(_on_back)
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	get_viewport().size_changed.connect(_layout)

@@ -49,6 +49,8 @@ const SHIFT_END_MIN: float = 1320.0
 const SHIFT_REAL_SECONDS: float = 1080.0
 const GAME_MIN_PER_SECOND: float = (SHIFT_END_MIN - SHIFT_START_MIN) / SHIFT_REAL_SECONDS
 
+## Driver level (XP) + daily shift goals — see scripts/progression/DriverProgress.gd.
+var progress: DriverProgress = DriverProgress.new()
 var wallet_inr: int = 500
 var stand_respect_xp: int = 100
 var star_rating: float = 4.5
@@ -58,6 +60,7 @@ var is_raining: bool = false
 ## Today's rain window in shift minutes ([-1, -1] = dry day). NE monsoon: Oct–Dec.
 var rain_window: Vector2 = Vector2(-1.0, -1.0)
 const MONSOON_RAIN_CHANCE: float = 0.4
+const SIGNAL_RESPECT_XP: int = 2
 
 var owned_vehicles: PackedStringArray = ["singara_classic"]
 var active_vehicle: String = "singara_classic"
@@ -75,7 +78,7 @@ var shift_running: bool = true
 var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 
 var settings: Dictionary = {"control_scheme": 0, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
-	"vibration": true, "guidance_arrow": true, "tutorial_step": 0}
+	"vibration": true, "guidance_arrow": true, "tutorial_step": 0, "auto_reverse": true}
 
 ## Saving is disabled for test runs so suites never read or clobber a real profile.
 var persistence_enabled: bool = true
@@ -92,6 +95,14 @@ func _ready() -> void:
 	if persistence_enabled:
 		load_game()
 	SignalBus.player_collision.connect(_on_collision)
+	SignalBus.signalled_turn.connect(func(_d: int) -> void:
+		add_respect(SIGNAL_RESPECT_XP)
+		add_driver_xp(DriverProgress.SIGNAL_XP)
+		_advance_goal("signal", 1))
+	SignalBus.near_miss.connect(func(_c: float) -> void: _advance_goal("gethu", 1))
+	SignalBus.ride_completed.connect(_on_ride_progress)
+	if progress.goals_day != day:
+		progress.roll_goals(day)
 	SignalBus.fuel_changed.connect(func(level: float, _cap: float) -> void: fuel_level = level)
 	SignalBus.ride_completed.connect(func(b: Dictionary) -> void:
 		day_stats["earned"] = int(day_stats["earned"]) + int(b.get("total", 0))
@@ -125,6 +136,48 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		# Phone call / app switch: never leave the auto driving unattended.
 		SignalBus.pause_requested.emit(true)
+
+# --- Driver level & shift goals -----------------------------------------------------------
+
+func driver_level() -> int:
+	return progress.level()
+
+## Add Driver XP; pays the cash bonus for every level crossed and announces it.
+func add_driver_xp(amount: int) -> void:
+	var before: int = progress.level()
+	progress.xp += maxi(0, amount)
+	var after: int = progress.level()
+	for lvl: int in range(before + 1, after + 1):
+		var reward: int = DriverProgress.level_reward_inr(lvl)
+		add_inr(reward)
+		SignalBus.driver_level_up.emit(lvl, DriverProgress.title(lvl), reward, str(DriverProgress.UNLOCKS.get(lvl, "")))
+	SignalBus.driver_xp_changed.emit(progress.xp, after, progress.level_progress())
+
+## Whether a garage item ("horn:2", "vehicle:namma_green_ev", "paint:4") is unlocked yet.
+func is_unlocked(key: String) -> bool:
+	return driver_level() >= DriverProgress.required_level(key)
+
+func _on_ride_progress(b: Dictionary) -> void:
+	add_driver_xp(DriverProgress.ride_xp(b))
+	_advance_goal("rides", 1)
+	_advance_goal("earn", int(b.get("total", 0)))
+	if float(b.get("comfort", 0.0)) >= DriverProgress.SMOOTH_COMFORT:
+		_advance_goal("smooth", 1)
+	if int(b.get("offer", -1)) == 0:
+		_advance_goal("meter", 1)
+
+func _advance_goal(kind: String, amount: int) -> void:
+	var had_all: bool = progress.all_goals_done()
+	var done: Array[Dictionary] = progress.advance(kind, amount)
+	for g: Dictionary in done:
+		add_inr(DriverProgress.GOAL_INR)
+		add_driver_xp(DriverProgress.GOAL_XP)
+		SignalBus.goal_completed.emit(g)
+	if not had_all and progress.all_goals_done():
+		add_inr(DriverProgress.ALL_GOALS_BONUS_INR)
+		SignalBus.all_goals_completed.emit(DriverProgress.ALL_GOALS_BONUS_INR)
+	if not done.is_empty() or amount > 0:
+		SignalBus.goals_updated.emit(progress.goals)
 
 # --- Money, respect, rating ------------------------------------------------------
 
@@ -205,7 +258,7 @@ func _loadout_changed() -> void:
 # --- Garage purchases (return true on success) ------------------------------------------
 
 func buy_vehicle(vehicle_id: String) -> bool:
-	if owned_vehicles.has(vehicle_id) or not VEHICLES.has(vehicle_id):
+	if owned_vehicles.has(vehicle_id) or not VEHICLES.has(vehicle_id) or not is_unlocked("vehicle:" + vehicle_id):
 		return false
 	if not spend(base_stats(vehicle_id).price_inr):
 		return false
@@ -242,7 +295,7 @@ func buy_horn(tier: int) -> bool:
 		horn_equipped = tier
 		_loadout_changed()
 		return true
-	if tier != horns_owned + 1 or not spend(int(HORNS[tier]["cost"])):
+	if tier != horns_owned + 1 or not is_unlocked("horn:%d" % tier) or not spend(int(HORNS[tier]["cost"])):
 		return false
 	horns_owned = tier
 	horn_equipped = tier
@@ -251,7 +304,7 @@ func buy_horn(tier: int) -> bool:
 
 func buy_paint(index: int) -> bool:
 	if not paints_owned.has(index):
-		if not spend(int(PAINTS[index]["cost"])):
+		if not is_unlocked("paint:%d" % index) or not spend(int(PAINTS[index]["cost"])):
 			return false
 		paints_owned.append(index)
 	paint_equipped = index
@@ -319,7 +372,8 @@ func roll_weather() -> void:
 
 ## Force weather (tests, debug menu). duration in game minutes.
 func set_rain(on: bool, duration_min: float = 180.0) -> void:
-	rain_window = Vector2(shift_minute, shift_minute + duration_min) if on else Vector2(-1.0, -1.0)
+	# Vector2 is 32-bit: start a hair early so float rounding can't put "now" outside the window.
+	rain_window = Vector2(shift_minute - 0.05, shift_minute + duration_min) if on else Vector2(-1.0, -1.0)
 	_update_weather()
 
 func _update_weather() -> void:
@@ -348,6 +402,8 @@ func start_next_day() -> void:
 	day_stats = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 	roll_weather()
 	_update_weather()
+	progress.roll_goals(day)
+	SignalBus.goals_updated.emit(progress.goals)
 	SignalBus.shift_clock_updated.emit(day, shift_minute)
 	save_game()
 
@@ -391,7 +447,7 @@ func to_dict() -> Dictionary:
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
 		"fuel": fuel_level, "condition": condition, "day": day, "minute": shift_minute, "day_stats": day_stats,
-		"settings": settings, "rain": [rain_window.x, rain_window.y],
+		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -415,6 +471,10 @@ func from_dict(d: Dictionary) -> void:
 	day_stats = d.get("day_stats", day_stats)
 	var rw: Array = d.get("rain", [-1.0, -1.0])
 	rain_window = Vector2(float(rw[0]), float(rw[1]))
+	progress = DriverProgress.new()
+	progress.from_dict(d.get("progress", {}))
+	if progress.goals_day != day:
+		progress.roll_goals(day)
 	var s: Dictionary = d.get("settings", {})
 	for k: String in s:
 		settings[k] = s[k]

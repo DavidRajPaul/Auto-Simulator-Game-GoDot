@@ -7,6 +7,13 @@ extends CanvasLayer
 const STEER_DRAG_RANGE_PX: float = 140.0
 const AMBER: Color = Color(1.0, 0.72, 0.1)
 const PANEL_DARK: Color = Color(0.05, 0.05, 0.05, 0.62)
+const ICON_ATLAS: String = "res://assets/ui/controls_atlas.png"
+const ICON_CELL: int = 128
+## Icon indices in assets/ui/controls_atlas.png (tools/art/make_ui_icons.py).
+const ICONS: Dictionary = {"accel": 0, "brake": 1, "handbrake": 2, "horn": 3, "ind_left": 4, "ind_right": 5,
+	"gear_d": 6, "gear_r": 7, "kick": 8, "camera": 9, "wiper": 10, "handlebar": 11}
+const INDICATOR_ON: Color = Color(0.2, 0.85, 0.3, 0.95)
+const INDICATOR_OFF: Color = Color(0.18, 0.2, 0.22, 0.75)
 
 var steer_value: float = 0.0
 var wiper_on: bool = false
@@ -15,7 +22,11 @@ var _root: Control
 ## Draw-order layers: every panel first, then every label. Interleaving them broke 2D
 ## batching and cost ~55 draw calls on the compatibility renderer.
 var _panels: Control
+var _icons: Control
 var _texts: Control
+var _icon_tex: Texture2D
+var gear: int = 1
+var indicator: int = 0
 var _steer_zone: Panel
 var _handlebar: Panel
 var _steer_touch_index: int = -1
@@ -37,14 +48,16 @@ func _ready() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
-	for layer_name: String in ["Panels", "Texts"]:
+	for layer_name: String in ["Panels", "Icons", "Texts"]:
 		var c: Control = Control.new()
 		c.name = layer_name
 		c.set_anchors_preset(Control.PRESET_FULL_RECT)
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(c)
 	_panels = _root.get_node("Panels") as Control
+	_icons = _root.get_node("Icons") as Control
 	_texts = _root.get_node("Texts") as Control
+	_icon_tex = load(ICON_ATLAS) as Texture2D
 	_build_dashboard()
 	_build_controls()
 	get_viewport().size_changed.connect(_layout)
@@ -63,6 +76,17 @@ func _ready() -> void:
 	SignalBus.ride_updated.connect(func(info: Dictionary) -> void: _ride_fare = int(info["fare"]))
 	SignalBus.ride_completed.connect(func(_b: Dictionary) -> void: _ride_fare = -1)
 	SignalBus.lpg_empty.connect(func() -> void: _flash("LPG khaali! Find a bunk.", 3.0))
+	SignalBus.gear_changed.connect(_on_gear_changed)
+	SignalBus.gear_change_refused.connect(func() -> void: _flash(tr("STOP_TO_SHIFT"), 1.5))
+	SignalBus.indicator_blink.connect(_on_indicator_blink)
+	SignalBus.indicator_changed.connect(func(d: int) -> void:
+		indicator = d
+		_on_indicator_blink(d, d != 0))
+	SignalBus.signalled_turn.connect(func(_d: int) -> void: _flash(tr("SIGNAL_SIR"), 1.4))
+	SignalBus.engine_restarted.connect(func() -> void: _set_button_visible("KickStart", false))
+	SignalBus.weather_changed.connect(func(_r: bool) -> void: _refresh_wiper_visibility())
+	_set_button_visible("KickStart", false)
+	_refresh_wiper_visibility()
 
 func _process(delta: float) -> void:
 	if _status_timer > 0.0:
@@ -98,22 +122,34 @@ func _build_controls() -> void:
 	_handlebar.reparent(_steer_zone)
 	var hint: Label = _make_label("◀  drag to steer  ▶", 18, Color(1, 1, 1, 0.7), false)
 	hint.name = "SteerHint"
-	_add_button("Accelerate", "ACCEL", "accelerate", Color(0.1, 0.55, 0.15, 0.75))
-	_add_button("Brake", "BRAKE\nREV", "brake", Color(0.7, 0.1, 0.1, 0.75))
-	_add_button("Handbrake", "H-BRK", "handbrake", Color(0.3, 0.3, 0.3, 0.75))
-	_add_button("Horn", "POM\nPOM", "horn", Color(0.95, 0.7, 0.05, 0.85))
-	_add_button("KickStart", "KICK", "kick_start", Color(0.45, 0.3, 0.1, 0.8))
-	_add_button("Camera", "CAM", "camera_cycle", Color(0.2, 0.2, 0.45, 0.75))
-	_add_button("Wiper", "WIPER", "", Color(0.2, 0.35, 0.45, 0.75))
+	_add_button("Accelerate", "ACCEL", "accelerate", Color(0.1, 0.55, 0.15, 0.8), "accel")
+	_add_button("Brake", "BRAKE", "brake", Color(0.72, 0.1, 0.1, 0.8), "brake")
+	_add_button("Gear", "", "gear_toggle", Color(0.16, 0.18, 0.22, 0.85), "gear_d")
+	_add_button("Handbrake", "", "handbrake", Color(0.3, 0.3, 0.3, 0.75), "handbrake")
+	_add_button("Horn", "", "horn", Color(0.95, 0.7, 0.05, 0.85), "horn")
+	_add_button("IndicatorLeft", "", "indicator_left", INDICATOR_OFF, "ind_left")
+	_add_button("IndicatorRight", "", "indicator_right", INDICATOR_OFF, "ind_right")
+	_add_button("KickStart", "KICK", "kick_start", Color(0.55, 0.36, 0.1, 0.9), "kick")
+	_add_button("Camera", "", "camera_cycle", Color(0.2, 0.2, 0.45, 0.75), "camera")
+	_add_button("Wiper", "", "", Color(0.2, 0.35, 0.45, 0.75), "wiper")
 	_add_button("SteerLeft", "◀", "steer_left", Color(0.25, 0.25, 0.3, 0.8))
 	_add_button("SteerRight", "▶", "steer_right", Color(0.25, 0.25, 0.3, 0.8))
 	(_buttons["Wiper"]["touch"] as TouchScreenButton).pressed.connect(_toggle_wiper)
 
-func _add_button(button_name: String, text: String, action: String, colour: Color) -> void:
+func _add_button(button_name: String, text: String, action: String, colour: Color, icon: String = "") -> void:
 	var panel: Panel = _make_panel(button_name + "Panel", colour)
-	var label: Label = _make_label(text, 22, Color.WHITE, false)
+	var icon_rect: TextureRect = null
+	if icon != "":
+		icon_rect = TextureRect.new()
+		icon_rect.name = button_name + "Icon"
+		icon_rect.texture = _icon(icon)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_icons.add_child(icon_rect)
+	var label: Label = _make_label(text, 16 if icon != "" else 22, Color.WHITE, false)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM if icon != "" else VERTICAL_ALIGNMENT_CENTER
 	var touch: TouchScreenButton = TouchScreenButton.new()
 	touch.name = button_name
 	touch.action = action
@@ -123,7 +159,22 @@ func _add_button(button_name: String, text: String, action: String, colour: Colo
 	add_child(touch)
 	touch.pressed.connect(func() -> void: panel.modulate = Color(1.4, 1.4, 1.4))
 	touch.released.connect(func() -> void: panel.modulate = Color.WHITE)
-	_buttons[button_name] = {"panel": panel, "touch": touch, "label": label}
+	_buttons[button_name] = {"panel": panel, "touch": touch, "label": label, "icon": icon_rect}
+
+func _icon(icon_name: String) -> AtlasTexture:
+	var idx: int = int(ICONS[icon_name])
+	var at: AtlasTexture = AtlasTexture.new()
+	at.atlas = _icon_tex
+	at.region = Rect2((idx % 8) * ICON_CELL, (idx / 8) * ICON_CELL, ICON_CELL, ICON_CELL)
+	return at
+
+func _set_button_visible(button_name: String, on: bool) -> void:
+	var e: Dictionary = _buttons[button_name]
+	(e["panel"] as Panel).visible = on
+	(e["label"] as Label).visible = on
+	(e["touch"] as TouchScreenButton).visible = on
+	if e["icon"] != null:
+		(e["icon"] as TextureRect).visible = on
 
 func _make_panel(panel_name: String, colour: Color) -> Panel:
 	var p: Panel = Panel.new()
@@ -153,8 +204,11 @@ func _make_label(text: String, size: int, colour: Color, outline: bool = true) -
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var m: float = 24.0
+	var g: float = 12.0 # gap between controls
 	var b: float = clampf(vp.y * 0.17, 84.0, 140.0) # base button size
-	_place(_steer_zone, Rect2(m, vp.y - b * 2.0 - m, b * 3.2, b * 2.0))
+	# Left thumb: steering, with horn and both indicators right above it (GDD HUD wireframe).
+	var steer: Rect2 = Rect2(m, vp.y - b * 2.0 - m, b * 3.2, b * 2.0)
+	_place(_steer_zone, steer)
 	_handlebar.size = Vector2(b * 2.6, b * 0.32)
 	_handlebar.position = Vector2(b * 0.3, b * 0.84)
 	_handlebar.pivot_offset = _handlebar.size * 0.5
@@ -162,16 +216,25 @@ func _layout() -> void:
 	hint.position = _steer_zone.position + Vector2(b * 0.55, b * 1.4)
 	_place_button("SteerLeft", Rect2(m, vp.y - b * 1.5 - m, b * 1.4, b * 1.5))
 	_place_button("SteerRight", Rect2(m + b * 1.6, vp.y - b * 1.5 - m, b * 1.4, b * 1.5))
-	_place_button("Horn", Rect2(m, vp.y - b * 3.25 - m, b * 1.1, b * 1.1))
-	_place_button("Wiper", Rect2(m + b * 1.3, vp.y - b * 2.95 - m, b * 1.2, b * 0.8))
-	_place_button("Accelerate", Rect2(vp.x - m - b * 1.15, vp.y - m - b * 2.4, b * 1.15, b * 2.4))
-	_place_button("Brake", Rect2(vp.x - m - b * 2.65, vp.y - m - b * 1.4, b * 1.35, b * 1.4))
-	_place_button("Handbrake", Rect2(vp.x - m - b * 2.65, vp.y - m - b * 2.4, b * 1.35, b * 0.85))
-	_place_button("KickStart", Rect2(vp.x - m - b * 3.9, vp.y - m - b * 0.9, b * 1.1, b * 0.9))
+	var top_row_y: float = steer.position.y - g - b * 0.8
+	_place_button("IndicatorLeft", Rect2(m, top_row_y, b * 0.95, b * 0.8))
+	_place_button("Horn", Rect2(m + b * 1.1, top_row_y - b * 0.15, b * 1.0, b * 0.95))
+	_place_button("IndicatorRight", Rect2(m + b * 3.2 - b * 0.95, top_row_y, b * 0.95, b * 0.8))
+	_place_button("Wiper", Rect2(m, top_row_y - g - b * 0.7, b * 0.95, b * 0.7))
+	# Right thumb: tall accelerator, wide brake, D/R gear above the brake, handbrake beside it.
+	var accel: Rect2 = Rect2(vp.x - m - b * 1.15, vp.y - m - b * 2.4, b * 1.15, b * 2.4)
+	var brake: Rect2 = Rect2(accel.position.x - g - b * 1.35, vp.y - m - b * 1.4, b * 1.35, b * 1.4)
+	var gear_r: Rect2 = Rect2(brake.position.x, brake.position.y - g - b * 0.85, b * 1.35, b * 0.85)
+	var hbrake: Rect2 = Rect2(brake.position.x - g - b * 0.95, vp.y - m - b * 0.9, b * 0.95, b * 0.9)
+	_place_button("Accelerate", accel)
+	_place_button("Brake", brake)
+	_place_button("Gear", gear_r)
+	_place_button("Handbrake", hbrake)
+	_place_button("KickStart", Rect2(hbrake.position.x, hbrake.position.y - g - b * 0.95, b * 0.95, b * 0.95))
 	_place_button("Camera", Rect2(vp.x - m - b * 1.1, m, b * 1.1, b * 0.7))
-	_speed_label.position = Vector2(vp.x - m - b * 2.7, vp.y - m - b * 3.4)
-	_lpg_bar.position = Vector2(vp.x - m - b * 2.65, vp.y - m - b * 2.65)
-	_lpg_bar.size = Vector2(b * 2.65, 14.0)
+	_speed_label.position = Vector2(vp.x - m - b * 2.7, gear_r.position.y - b * 1.05)
+	_lpg_bar.position = Vector2(gear_r.position.x, gear_r.position.y - 22.0)
+	_lpg_bar.size = Vector2(accel.end.x - gear_r.position.x, 12.0)
 	_meter_label.position = Vector2(vp.x - m - b * 1.3 - 230.0, m)
 	_meter_label.size = Vector2(220.0, 70.0)
 	_status_label.position = Vector2(0.0, vp.y * 0.22)
@@ -190,6 +253,13 @@ func _place_button(button_name: String, r: Rect2) -> void:
 	var t: TouchScreenButton = entry["touch"] as TouchScreenButton
 	t.position = r.position
 	(t.shape as RectangleShape2D).size = r.size
+	if entry["icon"] != null:
+		var ic: TextureRect = entry["icon"] as TextureRect
+		var has_text: bool = lbl.text != ""
+		var side: float = minf(r.size.x, r.size.y) * (0.6 if has_text else 0.72)
+		ic.size = Vector2(side, side)
+		ic.position = r.position + Vector2((r.size.x - side) * 0.5, (r.size.y - side) * (0.35 if has_text else 0.5))
+		lbl.position.y -= 6.0
 
 # --- Steering (multitouch-safe: tracks its own finger index) ---------------
 
@@ -259,11 +329,32 @@ func _on_telemetry(data: Dictionary) -> void:
 	_meter_label.text = "METER\nFOR HIRE" if _ride_fare < 0 else "METER  ₹%d\nhired" % _ride_fare
 	var cap: float = maxf(data.get("lpg_capacity", 1.0), 0.001)
 	_lpg_bar.value = float(data.get("lpg_liters", cap)) / cap
-	if data.get("is_stalled", false) and _status_timer <= 0.0:
-		_status_label.text = "Engine flooded! Tap KICK"
+	if data.get("is_stalled", false):
+		_set_button_visible("KickStart", true)
+		if _status_timer <= 0.0:
+			_status_label.text = "Engine flooded! Tap KICK"
 
 func _on_stalled(_pos: Vector3) -> void:
 	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0)
+	_set_button_visible("KickStart", true)
+
+func _on_gear_changed(g: int) -> void:
+	gear = g
+	var e: Dictionary = _buttons["Gear"]
+	(e["icon"] as TextureRect).texture = _icon("gear_r" if g < 0 else "gear_d")
+	((e["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color(0.85, 0.85, 0.88, 0.9) if g < 0 else Color(0.16, 0.18, 0.22, 0.85)
+	(e["icon"] as TextureRect).modulate = Color(0.1, 0.1, 0.12) if g < 0 else Color.WHITE
+	_flash(tr("GEAR_REVERSE") if g < 0 else tr("GEAR_DRIVE"), 1.2)
+
+## Blink the indicator button with the lamps; the other side stays dark.
+func _on_indicator_blink(d: int, lamp_on: bool) -> void:
+	for side: int in [-1, 1]:
+		var e: Dictionary = _buttons["IndicatorLeft" if side < 0 else "IndicatorRight"]
+		var lit: bool = d == side and lamp_on
+		((e["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat).bg_color = INDICATOR_ON if lit else (Color(0.12, 0.35, 0.16, 0.85) if d == side else INDICATOR_OFF)
+
+func _refresh_wiper_visibility() -> void:
+	_set_button_visible("Wiper", GameState.is_raining or wiper_on)
 
 func _on_kick_attempt(ratio: float) -> void:
 	_flash("Kick… %d%%" % roundi(ratio * 100.0), 1.0)
@@ -272,6 +363,7 @@ func _toggle_wiper() -> void:
 	wiper_on = not wiper_on
 	SignalBus.wiper_toggled.emit(wiper_on)
 	_flash("Wiper " + ("ON" if wiper_on else "OFF"), 1.0)
+	_refresh_wiper_visibility()
 
 func _flash(text: String, seconds: float) -> void:
 	_status_label.text = text

@@ -342,6 +342,8 @@ func complete_ride() -> void:
 	b["archetype_name"] = rider.archetype_name
 	b["line"] = rider.line_happy if comfort >= 0.5 and on_time else rider.line_upset
 	b["offer"] = agreed_offer
+	b["comfort"] = comfort
+	b["near_misses"] = near_misses
 	GameState.add_inr(int(b["total"]))
 	GameState.add_respect(FareCalculator.RESPECT_XP[agreed_offer])
 	GameState.record_ride_rating(float(b["stars"]))
