@@ -12,3 +12,6 @@ android/
 # Local-only raw audio: the originals are large, so they stay out of git.
 assets_src/incoming/**/*.wav
 assets_src/incoming/**/*.mp3
+tools/assets/node_modules/
+assets_src/incoming/models/
+assets_src/incoming/textures/

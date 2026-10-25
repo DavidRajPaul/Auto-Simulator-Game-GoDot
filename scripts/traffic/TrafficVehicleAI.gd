@@ -14,6 +14,16 @@ const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0]
 const LATERAL_SPEED_MPS: float = 2.6
 const HORN_REACTION_DELAY_S: float = 0.35
 const TURN_SLOWDOWN_M: float = 12.0
+## Optimised models per archetype (assets/models/traffic). "" keeps the box (the MTC bus has no fitting model yet).
+const MODEL_FILES: Array[String] = [
+	"res://assets/models/traffic/two_wheeler.glb",
+	"res://assets/models/traffic/hatchback.glb",
+	"res://assets/models/traffic/share_auto.glb",
+	"",
+	"res://assets/models/traffic/stray_cow.glb",
+]
+## The scooter model is authored facing -Z; the cars, autos and cow face +Z.
+const MODEL_FLIP: Array[bool] = [true, false, false, false, false]
 
 var manager: ChennaiTrafficManager
 var archetype: Archetype = Archetype.HATCHBACK
@@ -51,6 +61,8 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	_mesh.scale = size
 	_mesh.position.y = size.y * 0.5
 	_mesh.material_override = material
+	if TrafficModelFit.attach(self, MODEL_FILES[kind], size, MODEL_FLIP[kind]):
+		_mesh.visible = false
 	deactivate()
 
 func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
