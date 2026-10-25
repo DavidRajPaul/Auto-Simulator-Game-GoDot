@@ -268,6 +268,9 @@ func _test_touch_controls(hud: TouchHUD) -> void:
 	var gas: Vector2 = _centre(hud, "Accelerate")
 	_touch(hud, 0, gas, true)
 	_check("Gas acts on touch-down (no wait for release)", Input.is_action_pressed("accelerate"))
+	var gas_icon: TextureRect = hud._buttons["Accelerate"]["icon"] as TextureRect
+	_check("Painted game art drives the buttons (pressed pedal art while held)", hud._buttons["Accelerate"].has("art")
+		and (gas_icon.texture as AtlasTexture).atlas.resource_path == TouchHUD.ART_ATLAS and gas_icon.texture == hud._art("gas_p"))
 	_drag(hud, 0, _centre(hud, "Brake"))
 	_check("Sliding gas → brake swaps pedals without lifting", Input.is_action_pressed("brake") and not Input.is_action_pressed("accelerate"))
 	_touch(hud, 0, _centre(hud, "Brake"), false)

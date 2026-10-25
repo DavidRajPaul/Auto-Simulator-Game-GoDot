@@ -164,3 +164,18 @@ python3 tools/assets/process_incoming.py
 
 It cuts each clip to the part the game uses, makes engine loops seamless with a crossfade, peak-normalises,
 and encodes mono Vorbis at 96 kbps. It also writes `assets/audio/CREDITS_vehicle.md`.
+
+## Game art (Stitch, made by the project owner)
+
+Prompts: the "Namma Auto Game Art Prompt Pack" doc (1A-2I). Raw PNGs go in `assets_src/incoming/art/` (git-ignored);
+`python3 tools/art/import_game_art.py` builds:
+
+| Output | From |
+|---|---|
+| `assets/ui/controls_v2.png` (driving buttons, pause, touch ripple; 1536x768 atlas) | 2B-2I |
+| `assets/ui/logo.png` (menu logo) | 1G |
+| `assets/ui/loading_bg.jpg` (loading screen) | 1F |
+| `icon.png`, `assets/icon/icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
+| `assets/icon/boot_splash.png` | 1E |
+
+Not used yet: 1A and 1C (alternative icons) and 2A (the full sheet; the single-button images are sharper).

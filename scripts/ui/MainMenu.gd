@@ -6,6 +6,8 @@ extends Node3D
 
 const GAME_SCENE: String = "res://scenes/main_chennai.tscn"
 const AMBER: Color = Color(1.0, 0.72, 0.1)
+## Painted game logo (1G); it includes the Tamil subtitle.
+const LOGO: String = "res://assets/ui/logo.png"
 const PANEL_BG: Color = Color(0.06, 0.06, 0.07, 0.9)
 const SPIN_RAD_PER_S: float = 0.35
 const CREDITS: String = """Namma Auto — Chennai Rickshaw Simulator 3D
@@ -167,8 +169,17 @@ func _build_ui() -> void:
 	_menu = VBoxContainer.new()
 	_menu.add_theme_constant_override("separation", 12)
 	_root.add_child(_menu)
-	_menu.add_child(_label("NAMMA AUTO", 80, AMBER, 12))
-	_menu.add_child(_label("நம்ம ஆட்டோ", 36, Color(1, 1, 1), 8))
+	if ResourceLoader.exists(LOGO):
+		var logo: TextureRect = TextureRect.new()
+		logo.name = "Logo"
+		logo.texture = load(LOGO) as Texture2D
+		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		logo.custom_minimum_size = Vector2(0, 200)
+		_menu.add_child(logo)
+	else:
+		_menu.add_child(_label("NAMMA AUTO", 80, AMBER, 12))
+		_menu.add_child(_label("நம்ம ஆட்டோ", 36, Color(1, 1, 1), 8))
 	_buttons["tagline"] = _label(tr("TAGLINE"), 22, Color(1.0, 0.92, 0.82))
 	_menu.add_child(_buttons["tagline"])
 	var gap: Control = Control.new()

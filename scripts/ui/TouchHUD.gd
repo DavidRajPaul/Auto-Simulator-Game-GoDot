@@ -29,6 +29,21 @@ const HIT_PAD: float = 18.0
 ## Buttons a finger may slide onto and off without lifting (held controls only).
 const SLIDEABLE: Array[String] = ["Accelerate", "Brake", "SteerLeft", "SteerRight"]
 const PRESSED_TINT: Color = Color(1.45, 1.45, 1.45)
+## Game art (tools/art/import_game_art.py): one 1536x768 atlas, 192 px cells, so every button
+## icon batches into the same 2D draw. Falls back to the old icon atlas + panels if missing.
+const ART_ATLAS: String = "res://assets/ui/controls_v2.png"
+const ART_CELL: int = 192
+const ART_COLS: int = 8
+const ART_CELLS: Dictionary = {"steer_left": 0, "steer_left_p": 1, "steer_right": 2, "steer_right_p": 3,
+	"gas": 4, "gas_p": 5, "brake": 6, "brake_p": 7, "gear_d": 8, "gear_d_p": 9, "gear_r": 10, "gear_r_p": 11,
+	"horn": 12, "horn_p": 13, "air_horn": 14, "air_horn_p": 15, "camera": 16, "camera_p": 17,
+	"ind_left": 18, "ind_left_on": 19, "ind_right": 20, "ind_right_on": 21, "handbrake": 22, "handbrake_p": 23,
+	"kick": 24, "kick_p": 25, "wiper": 26, "wiper_p": 27, "pause": 28, "pause_p": 29, "ripple": 30}
+## Button -> art cell base name ("<base>" normal, "<base>_p" pressed).
+const BUTTON_ART: Dictionary = {"SteerLeft": "steer_left", "SteerRight": "steer_right", "Accelerate": "gas",
+	"Brake": "brake", "Gear": "gear_d", "Handbrake": "handbrake", "Horn": "horn", "Camera": "camera",
+	"KickStart": "kick", "Wiper": "wiper", "IndicatorLeft": "ind_left", "IndicatorRight": "ind_right"}
+const RIPPLE_SECONDS: float = 0.28
 
 var steer_value: float = 0.0
 var wiper_on: bool = false
@@ -60,6 +75,10 @@ var _fingers: Dictionary = {}
 ## button name -> number of fingers holding it.
 var _held: Dictionary = {}
 var _dash: Dashboard
+var _art_tex: Texture2D
+var _art_cache: Dictionary = {} # cell name -> AtlasTexture
+var _ripple: TextureRect
+var _ripple_tween: Tween
 ## Quick taps can press and release inside one frame, and readers that poll
 ## is_action_just_pressed (camera, gear, indicators) would miss them. Every press is held for
 ## at least MIN_HOLD_FRAMES process frames; early releases wait here: action -> release frame.
@@ -117,6 +136,7 @@ func _ready() -> void:
 	_icon_tex = load(ICON_ATLAS) as Texture2D
 	_build_dashboard()
 	_build_controls()
+	_apply_art()
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	SignalBus.telemetry_updated.connect(_on_telemetry)
@@ -374,7 +394,11 @@ func _place_button(button_name: String, r: Rect2) -> void:
 	lbl.size = r.size
 	var t: TouchScreenButton = entry["touch"] as TouchScreenButton
 	t.position = r.position
-	if entry["icon"] != null:
+	if entry.has("art") and entry["icon"] != null:
+		var art_ic: TextureRect = entry["icon"] as TextureRect
+		art_ic.position = r.position
+		art_ic.size = r.size
+	elif entry["icon"] != null:
 		var ic: TextureRect = entry["icon"] as TextureRect
 		var has_text: bool = lbl.text != ""
 		var side: float = minf(r.size.x, r.size.y) * (0.6 if has_text else 0.7)
@@ -394,6 +418,8 @@ func set_control_scheme(scheme: int) -> void:
 		(e["panel"] as Panel).visible = on
 		(e["label"] as Label).visible = on
 		(e["touch"] as TouchScreenButton).visible = on
+		if e["icon"] != null:
+			(e["icon"] as TextureRect).visible = on
 		if not on:
 			_force_release(n)
 	var hint: Label = _texts.get_node("SteerHint") as Label
@@ -443,6 +469,7 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	var hit: String = button_at(pos)
 	if hit != "":
 		_finger_on(index, hit)
+		_play_ripple(pos)
 
 func _touch_move(index: int, pos: Vector2) -> void:
 	if index == _steer_touch_index:
@@ -491,6 +518,7 @@ func _finger_off(index: int) -> void:
 func _press(button_name: String) -> void:
 	var e: Dictionary = _buttons[button_name]
 	(e["panel"] as Panel).modulate = PRESSED_TINT
+	_show_art(button_name, true)
 	var action: String = str(e["action"])
 	if button_name == "Wiper":
 		_toggle_wiper()
@@ -506,6 +534,7 @@ func _press(button_name: String) -> void:
 func _release(button_name: String) -> void:
 	var e: Dictionary = _buttons[button_name]
 	(e["panel"] as Panel).modulate = Color.WHITE
+	_show_art(button_name, false)
 	var action: String = str(e["action"])
 	if action != "":
 		var due: int = int(_pressed_at.get(action, -100)) + MIN_HOLD_FRAMES
@@ -579,6 +608,11 @@ func _on_stalled(_pos: Vector3) -> void:
 func _on_gear_changed(g: int) -> void:
 	gear = g
 	var e: Dictionary = _buttons["Gear"]
+	if e.has("art"):
+		e["art"] = "gear_r" if g < 0 else "gear_d"
+		_show_art("Gear", _held.has("Gear"))
+		_flash(tr("GEAR_REVERSE") if g < 0 else tr("GEAR_DRIVE"), 1.2)
+		return
 	(e["icon"] as TextureRect).texture = _icon("gear_r" if g < 0 else "gear_d")
 	((e["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color(0.85, 0.85, 0.88, 0.9) if g < 0 else Color(0.16, 0.18, 0.22, 0.8)
 	(e["icon"] as TextureRect).modulate = Color(0.1, 0.1, 0.12) if g < 0 else Color.WHITE
@@ -589,6 +623,10 @@ func _on_indicator_blink(d: int, lamp_on: bool) -> void:
 	for side: int in [-1, 1]:
 		var e: Dictionary = _buttons["IndicatorLeft" if side < 0 else "IndicatorRight"]
 		var lit: bool = d == side and lamp_on
+		if e.has("art"):
+			var base: String = "ind_left" if side < 0 else "ind_right"
+			(e["icon"] as TextureRect).texture = _art(base + "_on" if lit else base)
+			continue
 		((e["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat).bg_color = INDICATOR_ON if lit else (Color(0.12, 0.35, 0.16, 0.85) if d == side else INDICATOR_OFF)
 
 func _refresh_wiper_visibility() -> void:
@@ -606,3 +644,85 @@ func _toggle_wiper() -> void:
 func _flash(text: String, seconds: float) -> void:
 	_status_label.text = text
 	_status_timer = seconds
+
+# --- Game art ----------------------------------------------------------------
+
+func _art(cell: String) -> AtlasTexture:
+	if _art_cache.has(cell):
+		return _art_cache[cell] as AtlasTexture
+	var idx: int = int(ART_CELLS[cell])
+	var at: AtlasTexture = AtlasTexture.new()
+	at.atlas = _art_tex
+	at.region = Rect2((idx % ART_COLS) * ART_CELL, (idx / ART_COLS) * ART_CELL, ART_CELL, ART_CELL)
+	_art_cache[cell] = at
+	return at
+
+## Swap panels + atlas icons for the painted buttons (they carry their own base and outline).
+func _apply_art() -> void:
+	if not ResourceLoader.exists(ART_ATLAS):
+		return
+	_art_tex = load(ART_ATLAS) as Texture2D
+	for n: String in BUTTON_ART:
+		var e: Dictionary = _buttons[n]
+		var sb: StyleBoxFlat = (e["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat
+		sb.draw_center = false
+		sb.set_border_width_all(0)
+		if e["icon"] == null:
+			var ic: TextureRect = TextureRect.new()
+			ic.name = n + "Icon"
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ic.visible = (e["panel"] as Panel).visible
+			_icons.add_child(ic)
+			e["icon"] = ic
+		(e["label"] as Label).text = ""
+		e["art"] = str(BUTTON_ART[n])
+		(e["icon"] as TextureRect).modulate = Color.WHITE
+		if n.begins_with("Indicator"):
+			(e["icon"] as TextureRect).texture = _art(str(e["art"]))
+		_show_art(n, false)
+	_refresh_horn_art(GameState.active_stats())
+	SignalBus.vehicle_loadout_changed.connect(_refresh_horn_art)
+	_ripple = TextureRect.new()
+	_ripple.name = "Ripple"
+	_ripple.texture = _art("ripple")
+	_ripple.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_ripple.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ripple.visible = false
+	_icons.add_child(_ripple)
+
+func _show_art(button_name: String, pressed: bool) -> void:
+	var e: Dictionary = _buttons[button_name]
+	if not e.has("art"):
+		return
+	var base: String = str(e["art"])
+	if base.begins_with("ind_"):
+		return # indicators follow the blink, not the finger
+	(e["icon"] as TextureRect).texture = _art(base + "_p" if pressed else base)
+
+## The level-4 air horn gets its own chrome button.
+func _refresh_horn_art(st: VehicleStats) -> void:
+	var e: Dictionary = _buttons["Horn"]
+	if not e.has("art") or st == null:
+		return
+	e["art"] = "air_horn" if st.horn_tier >= VehicleAudio.AIR_HORN_TIER else "horn"
+	_show_art("Horn", _held.has("Horn"))
+
+## One reused ring under the finger: scale up and fade (no nodes created while driving).
+func _play_ripple(pos: Vector2) -> void:
+	if _ripple == null:
+		return
+	if _ripple_tween != null and _ripple_tween.is_valid():
+		_ripple_tween.kill()
+	var size0: float = 60.0
+	_ripple.visible = true
+	_ripple.size = Vector2(size0, size0)
+	_ripple.pivot_offset = _ripple.size * 0.5
+	_ripple.position = pos - _ripple.size * 0.5
+	_ripple.scale = Vector2.ONE * 0.5
+	_ripple.modulate = Color(1, 1, 1, 0.95)
+	_ripple_tween = create_tween().set_parallel(true)
+	_ripple_tween.tween_property(_ripple, "scale", Vector2.ONE * 2.4, RIPPLE_SECONDS)
+	_ripple_tween.tween_property(_ripple, "modulate:a", 0.0, RIPPLE_SECONDS)
+	_ripple_tween.chain().tween_callback(func() -> void: _ripple.visible = false)

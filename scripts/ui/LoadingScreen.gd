@@ -11,6 +11,9 @@ const TIP_SECONDS: float = 3.5
 ## Time to keep covering the city after it is in the tree (first chunks, shaders, traffic).
 const SETTLE_SECONDS: float = 0.8
 const FADE_SECONDS: float = 0.35
+## Painted night-street art (tools/art/import_game_art.py, 1F). It carries its own logo, so the
+## drawn backdrop and text title are hidden when it is present.
+const ART_BG: String = "res://assets/ui/loading_bg.jpg"
 
 enum Stage { LOADING, BUILDING, SETTLING, FADING }
 
@@ -24,6 +27,8 @@ var _status: Label
 var _tip: Label
 var _percent: Label
 var _root: Control
+var _art: TextureRect
+var _band: ColorRect
 var _shown: float = 0.0
 var _goal: float = 0.0
 var _tip_index: int = 0
@@ -104,6 +109,19 @@ func _build() -> void:
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(shade)
+	if ResourceLoader.exists(ART_BG):
+		_art = TextureRect.new()
+		_art.texture = load(ART_BG) as Texture2D
+		_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(_art)
+		_band = ColorRect.new()
+		_band.color = Color(0.05, 0.02, 0.07, 0.62) # keeps the bar and tip readable over the art
+		_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(_band)
+		_backdrop.visible = false
+		shade.visible = false
 	var title: Label = _label("NAMMA AUTO", 72, AMBER, 10)
 	title.name = "Title"
 	var tamil: Label = _label("நம்ம ஆட்டோ", 32, Color.WHITE, 6)
@@ -120,10 +138,17 @@ func _build() -> void:
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
+	if _art != null:
+		_art.position = Vector2.ZERO
+		_art.size = vp
+		_band.position = Vector2(0, vp.y * 0.7)
+		_band.size = Vector2(vp.x, vp.y * 0.3)
 	var title: Label = _root.get_node("Title") as Label
+	title.visible = _art == null
 	title.position = Vector2(0, vp.y * 0.12)
 	title.size = Vector2(vp.x, 90)
 	var tamil: Label = _root.get_node("Tamil") as Label
+	tamil.visible = _art == null
 	tamil.position = Vector2(0, vp.y * 0.12 + 88)
 	tamil.size = Vector2(vp.x, 44)
 	var bw: float = minf(760.0, vp.x * 0.66)

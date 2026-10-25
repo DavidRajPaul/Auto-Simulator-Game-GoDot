@@ -15,3 +15,4 @@ assets_src/incoming/**/*.mp3
 tools/assets/node_modules/
 assets_src/incoming/models/
 assets_src/incoming/textures/
+assets_src/incoming/art/

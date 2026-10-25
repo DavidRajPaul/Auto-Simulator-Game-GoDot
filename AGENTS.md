@@ -43,7 +43,7 @@ res://
 │       ├── manifest.json, road_graph.json, areas.json   # manifest: map_scale 1.0, stands, services, flood_spots
 │       └── chunks/c_<i>_<j>.json    # 250 m chunks: "surf" (pre-triangulated lanes/walks/junctions/markings) + "blds" (footprints + heights)
 ├── tools/osm/                       # fetch_osm.py, run_osm2streets.py, build_world.py, streets.py, preview_map.py, config.py
-├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py (Pillow + raqm for Tamil)
+├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py, import_game_art.py (Stitch art → atlas, icons, logo)
 ├── tools/assets/fetch_assets.py     # CC0 downloads for the Fetch Assets workflow (BigSoundBank)
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
 ├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
@@ -161,6 +161,7 @@ res://
 * Buildings are dropped if **any** 2 m raster cell under the footprint is carriageway (`Raster.count_in_polygon`); checking corners only let large footprints stand on roads.
 * A Control placed straight under a `CanvasLayer` may get size 0 from anchors here; size it from the viewport (see `ChennaiBackdrop._fit`).
 * Don't measure "stuck" on a frozen auto with a stale speed; settle it first (phase 5 was flaky).
+* Painted UI art lives in ONE atlas (`assets/ui/controls_v2.png`, `TouchHUD.ART_CELLS`); keep new button art in it so the HUD stays one 2D batch. The Stitch PNGs are flat RGB with painted checkerboards: `import_game_art.py` cuts them out, never ship the raw files.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---
