@@ -132,3 +132,19 @@ Indian bus with Indian livery (optional, heavy): [Indian Bus Model Type 3 — CG
 * [Light Rain on Windscreen with Wipers — soundslikewillem](https://freesound.org/people/soundslikewillem/sounds/242200/) is **CC BY-NC 4.0** (no commercial use). We already have a CC0 rain loop.
 * Artlist, Sonniss "Tuk Tuks", Epidemic, Pond5: paid libraries. Fine if you buy them, but not free.
 * Sketchfab models marked "Standard" or "Editorial" licence, and any model without a **Download** button.
+
+## How big audio files are handled
+
+Raw downloads (WAV/MP3, tens of MB each) are kept in `assets_src/incoming/`, which is gitignored, so they never go into git.
+Only the game-ready OGG files go into `assets/audio/`, which is what git stores. The kalhan pack alone is 126 MB raw,
+but the four clips the game uses now come to about 260 KB. Other games do the same: masters stay in a separate store
+(or Git LFS when they must be versioned), and the build ships small compressed files.
+
+To regenerate the game files after changing a raw clip:
+
+```
+python3 tools/assets/process_incoming.py
+```
+
+It cuts each clip to the part the game uses, makes engine loops seamless with a crossfade, peak-normalises,
+and encodes mono Vorbis at 96 kbps. It also writes `assets/audio/CREDITS_vehicle.md`.

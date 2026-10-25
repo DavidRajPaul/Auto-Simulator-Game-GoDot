@@ -14,6 +14,8 @@ Road and lane geometry: osm2streets by the A/B Street project (Apache-2.0).
 Game engine: Godot Engine (MIT). Physics: Jolt Physics (MIT).
 Fonts: Noto Sans Tamil and Baloo Thambi 2, SIL Open Font License 1.1.
 UI sounds: Kenney Interface Sounds (CC0). Ambience and horns: BigSoundBank, Joseph Sardin (CC0).
+Auto engine and kick-start sounds: kalhan, Freesound (CC BY 4.0). Bulb horn: alex_jauk, Pixabay.
+Indicator tick: ProductionNow, Freesound (CC0).
 Build-time triangulation: earcut (ISC).
 
 Made for every Chennai auto anna and akka. Drive safe, use the meter."""

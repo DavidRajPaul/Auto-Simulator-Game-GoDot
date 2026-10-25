@@ -147,6 +147,8 @@ static func stream_or(path: String, fallback: AudioStream) -> AudioStream:
 	if ResourceLoader.exists(path):
 		var s: AudioStream = load(path) as AudioStream
 		if s != null:
+			if s is AudioStreamOggVorbis and path.contains("_loop"):
+				(s as AudioStreamOggVorbis).loop = true
 			return s
 	return fallback
 
