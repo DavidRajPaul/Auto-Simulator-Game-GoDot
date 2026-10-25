@@ -28,16 +28,43 @@ models **.glb** (or .fbx/.gltf), textures **1K PNG/JPG**.
 
 ### 1. Vehicle sounds — highest priority
 
-| # | Use in game | Download | Licence | Notes |
+**Status (2026-10-25): the kalhan pack is in hand, so most of this section is covered.**
+Source: [kalhan / Auto Rickshaw pack, Freesound #16017](https://freesound.org/people/kalhan/packs/16017/).
+19 mono WAV files, 48 kHz, **CC BY 4.0** (credit required). Put the unzipped files in
+`assets_src/incoming/audio/kalhan/` with their original names, and add one row to `SOURCES.md`.
+
+Mean loudness varies from about −19 dB to −40 dB, and every clip peaks at 0 dB, so each one must be
+normalised on import. Uses below are guessed from the file names; they still need checking by ear.
+
+| Use in game | Pack clip (Freesound ID) | Length | Notes |
+|---|---|---|---|
+| Engine idle + revving loop (primary) | 261059 Start, idle, some revving | 46 s | Cut an idle loop and a rev loop |
+| Engine, second layer | 261051 Start, idle, revving | 47 s | Adds richness under the primary |
+| Kick-start mini-game | 261158 Start lever, attempts, start, pull away, return, stop | 77 s | Failed tries and the successful start |
+| Kick-start, short | 261063 Start lever, attempts, idle with little revving | 18 s | Single attempt |
+| Ignition key | 261056 Key in ignition | 8 s | Ignition turn |
+| Engine off, gear change | 261055 Start lever, idling, gear change, engine off | 41 s | Engine shut-off |
+| Drive-off, start and pull away | 261065 Start, pull away | 32 s | Launch transient |
+| Fumble start, drive away | 261067 Fumble start, drive away | 40 s | Alternative launch |
+| Approach and stop | 261050 Approach, stop | 30 s | Braking transient |
+| Cockpit cabin bed | 261064 Sitting in the back seat | 16 s | Cockpit-camera cabin sound |
+| Engine bay, from behind | 261058 Engine, cabinet, back sounds | 27 s | Engine heard from the passenger seat |
+| Passenger ride ambience | 261062 Start, ride, stop, some talking | 103 s | Longest clip, good for ride loops |
+| AI autos passing | 261066 Pass by | 40 s | Traffic autos |
+| Getting in and out | 261057 Getting in, getting out | 14 s | Passenger boarding events |
+| Unpaved road | 261159 Wheels on gravel | 21 s | Gravel road surface loop |
+| Bumps and creaks | 261061 Clanks, 261052 Clicks, creaks and noises | 13 s, 48 s | Pothole and speed-bump hits |
+| Ambulance in the distance (optional) | 261053 Arrival, ambulance in background | 37 s | Background city ambience only |
+
+**Still to download in this section** (not in the pack):
+
+| # | Use | Download | Licence | Notes |
 |---|---|---|---|---|
-| 1 | Engine idle + revving (Singara Classic) | [kalhan — Auto Rickshaw: Start, Idle, Some Revving](https://freesound.org/people/kalhan/sounds/261059/) (46 s) | CC BY 4.0 | A real Indian auto. I'll cut an idle loop and a rev loop |
-| 2 | Kick-start lever, failed tries, start | [kalhan — Start Lever, Attempts, Start, Pull Away…](https://freesound.org/people/kalhan/sounds/261158/) (1:16) | CC BY 4.0 | Kick-start mini-game |
-| 3 | AI autos passing | [kalhan — Pass By](https://freesound.org/people/kalhan/sounds/261066/) | CC BY 4.0 | Whole pack: [kalhan / Auto Rickshaw](https://freesound.org/people/kalhan/packs/16017/) |
-| 4 | Cabin sound (cockpit camera) | [kalhan — Sitting in the Back Seat](https://freesound.org/people/kalhan/sounds/261064/) | CC BY 4.0 | |
-| 5 | Chennai back-seat ride (4 min) | [xserra — auto-rickshaw-trip.wav](https://freesound.org/people/xserra/sounds/161817/) | CC BY 4.0 | Recorded in Chennai, 2011 — street ambience + engine |
-| 6 | Diesel auto (King Deluxe) | [Pixabay — Diesel Auto Rickshaw Sound](https://pixabay.com/sound-effects/city-diesel-auto-rickshaw-sound-199866/) (1:29) | Pixabay licence | MP3 only |
-| 7 | Start / leave / approach | [Pixabay — Indian Auto rickshaw, start leave and approach](https://pixabay.com/sound-effects/city-indian-auto-rickshaw-start-leave-and-approach-23448/) | Pixabay licence | |
-| 8 | Ignition | [Pixabay — rickshaw ignition](https://pixabay.com/sound-effects/city-rickshaw-ignition-84548/) | Pixabay licence | |
+| 5 | Chennai back-seat ride (4 min) | [xserra — auto-rickshaw-trip.wav](https://freesound.org/people/xserra/sounds/161817/) | CC BY 4.0 | Recorded in Chennai, 2011. Street ambience and engine. Optional, now that 261062 covers rides |
+| 6 | Diesel auto (King Deluxe) | [Pixabay — Diesel Auto Rickshaw Sound](https://pixabay.com/sound-effects/city-diesel-auto-rickshaw-sound-199866/) (1:29) | Pixabay licence | MP3 only. Optional |
+
+Dropped from the list because the pack covers them: old #7 (start, leave, approach → 261050, 261065)
+and old #8 (ignition → 261056).
 
 Freesound needs a free account to download originals. Pixabay downloads without one.
 
