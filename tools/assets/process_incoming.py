@@ -32,6 +32,8 @@ SPECS = [
      "trim", "kalhan (Freesound #261063), CC BY 4.0"),
     ("horn_bulb.ogg", "horns/2ac72971-alex_jauk-bulb-horn-honk-221702.mp3",
      "trim", "alex_jauk (Pixabay Content Licence)"),
+    ("horn_air.ogg", "horns/ed77d235-174819__goose278__air-horn-close-and-loud.wav",
+     "trim", "goose278 (Freesound #174819), CC0"),
     ("indicator_tick.ogg", "indicator/22008cfc-195994__productionnow__car-turn-signal-blinker-left-and-right.wav",
      "first_click", "ProductionNow (Freesound #195994), CC0"),
 ]
