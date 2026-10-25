@@ -13,6 +13,9 @@ const TOP_SPEED_KMH: float = 58.0
 ## Real recordings replace the synth when these files exist (see docs/ASSETS.md).
 const ENGINE_FILE: String = "res://assets/audio/vehicle/engine_lpg_loop.ogg"
 const HORN_FILE: String = "res://assets/audio/vehicle/horn_bulb.ogg"
+## Musical air horn, equipped at horn tier 2 (unlocked at Driver Level 4). Falls back to the bulb.
+const HORN_AIR_FILE: String = "res://assets/audio/vehicle/horn_air.ogg"
+const AIR_HORN_TIER: int = 2
 const KICK_FILE: String = "res://assets/audio/vehicle/kick_start.ogg"
 const TICK_FILE: String = "res://assets/audio/vehicle/indicator_tick.ogg"
 
@@ -21,6 +24,7 @@ const TICK_FILE: String = "res://assets/audio/vehicle/indicator_tick.ogg"
 
 var _engine: AudioStreamPlayer3D
 var _horn: AudioStreamPlayer3D
+var _horn_air: AudioStreamPlayer3D
 var _clunk: AudioStreamPlayer3D
 var _tick: AudioStreamPlayer
 var _tock: AudioStream
@@ -31,6 +35,7 @@ var _engine_running: bool = true
 func _ready() -> void:
 	_engine = _make_player("Engine", stream_or(ENGINE_FILE, _build_engine_loop()), engine_volume_db)
 	_horn = _make_player("Horn", stream_or(HORN_FILE, _build_horn()), horn_volume_db)
+	_horn_air = _make_player("HornAir", stream_or(HORN_AIR_FILE, _horn.stream), horn_volume_db)
 	_clunk = _make_player("KickClunk", stream_or(KICK_FILE, _build_clunk()), -4.0)
 	# Indicator relay: heard inside the cab, so a plain (non-positional) player.
 	_tick_stream = stream_or(TICK_FILE, _build_tick(1800.0))
@@ -48,10 +53,13 @@ func _ready() -> void:
 	_apply_drivetrain(GameState.active_stats())
 	SignalBus.vehicle_loadout_changed.connect(_apply_drivetrain)
 	SignalBus.speed_updated.connect(_on_speed)
-	SignalBus.horn_blasted.connect(func(_o: Vector3, _f: Vector3, _r: float, _t: int) -> void: _horn.play())
+	SignalBus.horn_blasted.connect(func(_o: Vector3, _f: Vector3, _r: float, tier: int) -> void: _play_horn(tier))
 	SignalBus.engine_stalled_in_water.connect(func(_p: Vector3) -> void: _set_engine(false))
 	SignalBus.engine_restarted.connect(func() -> void: _set_engine(true))
 	SignalBus.kick_start_attempt.connect(func(_r: float) -> void: _clunk.play())
+
+func _play_horn(tier: int) -> void:
+	(_horn_air if tier >= AIR_HORN_TIER else _horn).play()
 
 func _process(delta: float) -> void:
 	if not _engine_running:
