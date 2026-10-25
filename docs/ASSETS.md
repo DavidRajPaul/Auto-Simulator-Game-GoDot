@@ -95,6 +95,19 @@ the way to get the "Madras Soul" sounds.
 
 ### 4. 3D models (traffic, cattle, props)
 
+**Status (2026-10-25): done for traffic.** Optimised files are in `assets/models/traffic/` (about 1 MB in total, 1.4k–2.5k triangles each, textures at 256–512 px). The game uses them as visuals on the existing traffic boxes, so collisions and gameplay do not change:
+
+| Archetype | File | Source | Licence |
+|---|---|---|---|
+| Two-wheeler | `two_wheeler.glb` | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0. The file itself has no licence text, so check the Sketchfab page |
+| Hatchback | `hatchback.glb` | Kenney Car Kit (official GLB) | CC0 |
+| Share auto | `share_auto.glb` | Auto Rickshaw, rSquare (Sketchfab), the yellow Chennai auto | CC BY 4.0 |
+| Stray cow | `stray_cow.glb` | Cow, Quaternius (poly.pizza), converted from FBX | CC0 |
+| Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). Stray cows pick either cow at random | CC BY 4.0 |
+| MTC bus | none yet | The free bus models are about 4 m long and cannot be stretched to 11 m. It keeps its box until a real bus model is found | |
+
+Run `python3 tools/assets/process_models.py` to rebuild these from `assets_src/incoming/models/`. Credits are in `assets/models/CREDITS_models.md`.
+
 | # | Use | Download | Licence | Size |
 |---|---|---|---|---|
 | 15 | Cars, vans, trucks (traffic) | [Kenney — Car Kit](https://kenney-assets.itch.io/car-kit) (choose "No thanks, just take me to the downloads") | CC0 | 40+ models, 3.4 MB |
@@ -113,6 +126,8 @@ Indian bus with Indian livery (optional, heavy): [Indian Bus Model Type 3 — CG
 (free, Royalty Free licence, 64k polygons, so it needs a big reduction).
 
 ### 5. Textures and sky (optional — the generated atlas already covers Chennai)
+
+**Status (2026-10-25):** the Facade 001 and painted plaster sets are converted to 1K in `assets_src/incoming/textures/` (local, not in git). Nothing loads them yet, because the generated facade atlas already covers the buildings and adding them would change how the city looks.
 
 | # | Use | Download | Licence |
 |---|---|---|---|
