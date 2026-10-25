@@ -227,9 +227,13 @@ func _test_audio(auto: AutoRickshawController) -> void:
 		return
 	var engine: AudioStreamPlayer3D = audio.get_node("Engine") as AudioStreamPlayer3D
 	var horn: AudioStreamPlayer3D = audio.get_node("Horn") as AudioStreamPlayer3D
+	# Either the real recorded loop (assets/audio/vehicle, looping OGG) or the procedural fallback.
 	var engine_wav: AudioStreamWAV = engine.stream as AudioStreamWAV
-	_check("Engine loop generated & looping", engine_wav != null and engine_wav.data.size() > 10000 and engine_wav.loop_mode == AudioStreamWAV.LOOP_FORWARD)
-	_check("Horn sample generated", horn.stream != null and (horn.stream as AudioStreamWAV).data.size() > 5000)
+	var engine_ogg: AudioStreamOggVorbis = engine.stream as AudioStreamOggVorbis
+	var engine_ok: bool = (engine_wav != null and engine_wav.data.size() > 10000 and engine_wav.loop_mode == AudioStreamWAV.LOOP_FORWARD) \
+		or (engine_ogg != null and engine_ogg.loop)
+	_check("Engine loop generated & looping", engine_ok)
+	_check("Horn sample present", horn.stream != null)
 	var idle_pitch: float = engine.pitch_scale
 	Input.action_press("accelerate")
 	await _physics(150)

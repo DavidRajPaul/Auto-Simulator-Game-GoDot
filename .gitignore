@@ -8,3 +8,7 @@ export_credentials.cfg
 __pycache__/
 tests/tmp/
 android/
+
+# Local-only raw audio: the originals are large, so they stay out of git.
+assets_src/incoming/**/*.wav
+assets_src/incoming/**/*.mp3
