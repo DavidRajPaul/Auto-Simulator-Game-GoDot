@@ -281,6 +281,21 @@ func _test_touch_controls(hud: TouchHUD) -> void:
 	_drag(hud, 1, _centre(hud, "SteerRight"))
 	_check("Thumb slides from left to right", Input.is_action_pressed("steer_right") and not Input.is_action_pressed("steer_left"))
 	hud.release_all()
+	await _physics(4)
+	var modes: Array[String] = []
+	var on_mode: Callable = func(m: String) -> void: modes.append(m)
+	SignalBus.camera_mode_changed.connect(on_mode)
+	_touch(hud, 3, _centre(hud, "Camera"), true)
+	_touch(hud, 3, _centre(hud, "Camera"), false)
+	_check("A same-frame tap still registers (held a few frames)", Input.is_action_pressed("camera_cycle"))
+	await _physics(5)
+	_check("…and is released afterwards", not Input.is_action_pressed("camera_cycle"))
+	_check("Camera button switches the camera mode", modes.size() == 1, "%d changes" % modes.size())
+	SignalBus.camera_mode_changed.disconnect(on_mode)
+	for i: int in 3:
+		_touch(hud, 3, _centre(hud, "Camera"), true)
+		_touch(hud, 3, _centre(hud, "Camera"), false)
+		await _physics(5) # back to chase
 	_check("release_all lets go of every control", not Input.is_action_pressed("steer_right") and not Input.is_action_pressed("accelerate"))
 	await _physics(2)
 

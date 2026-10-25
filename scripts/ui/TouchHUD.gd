@@ -60,6 +60,12 @@ var _fingers: Dictionary = {}
 ## button name -> number of fingers holding it.
 var _held: Dictionary = {}
 var _dash: Dashboard
+## Quick taps can press and release inside one frame, and readers that poll
+## is_action_just_pressed (camera, gear, indicators) would miss them. Every press is held for
+## at least MIN_HOLD_FRAMES process frames; early releases wait here: action -> release frame.
+const MIN_HOLD_FRAMES: int = 3
+var _pressed_at: Dictionary = {}
+var _late_release: Dictionary = {}
 
 ## Speedometer + LPG dial, drawn in one Control (a handful of 2D draw calls).
 class Dashboard:
@@ -140,6 +146,11 @@ func _ready() -> void:
 	_refresh_wiper_visibility()
 
 func _process(delta: float) -> void:
+	var now: int = Engine.get_process_frames()
+	for a: String in _late_release.keys():
+		if now >= int(_late_release[a]):
+			_late_release.erase(a)
+			Input.action_release(a)
 	if _status_timer > 0.0:
 		_status_timer -= delta
 		if _status_timer <= 0.0:
@@ -484,7 +495,9 @@ func _press(button_name: String) -> void:
 	if button_name == "Wiper":
 		_toggle_wiper()
 	elif action != "":
+		_late_release.erase(action)
 		Input.action_press(action)
+		_pressed_at[action] = Engine.get_process_frames()
 	if button_name == "SteerLeft" or button_name == "SteerRight":
 		steer_value = -1.0 if button_name == "SteerLeft" else 1.0
 	if OS.get_name() == "Android" and bool(GameState.settings.get("vibration", true)):
@@ -495,7 +508,11 @@ func _release(button_name: String) -> void:
 	(e["panel"] as Panel).modulate = Color.WHITE
 	var action: String = str(e["action"])
 	if action != "":
-		Input.action_release(action)
+		var due: int = int(_pressed_at.get(action, -100)) + MIN_HOLD_FRAMES
+		if not SLIDEABLE.has(button_name) and Engine.get_process_frames() < due:
+			_late_release[action] = due
+		else:
+			Input.action_release(action)
 	if (button_name == "SteerLeft" or button_name == "SteerRight") and not _held.has("SteerLeft") and not _held.has("SteerRight"):
 		steer_value = 0.0
 
