@@ -36,6 +36,8 @@ SPECS = [
      "Indian Scooter by Shiveloper (Sketchfab), CC BY 4.0"),
     ("traffic/stray_cow.glb", "traffic/quaternius_Cow_converted.glb", 0.4, 256, True,
      "Cow by Quaternius (poly.pizza), CC0"),
+    ("traffic/stray_cow_fadly.glb", "traffic/fadly_cow/scene.gltf", 0.03, 256, False,
+     "Cow - LowPoly by Fadly.W (Sketchfab), CC BY 4.0"),
 ]
 
 
