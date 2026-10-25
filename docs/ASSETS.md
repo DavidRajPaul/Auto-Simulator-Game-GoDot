@@ -56,7 +56,7 @@ normalised on import. Uses below are guessed from the file names; they still nee
 | Bumps and creaks | 261061 Clanks, 261052 Clicks, creaks and noises | 13 s, 48 s | Pothole and speed-bump hits |
 | Ambulance in the distance (optional) | 261053 Arrival, ambulance in background | 37 s | Background city ambience only |
 
-**Still to download in this section** (not in the pack):
+**Downloaded and filed (2026-10-25):** the xserra Chennai ride and the diesel auto (both in `assets_src/incoming/audio/vehicle/`). Their sources are in `assets_src/incoming/SOURCES.md`.
 
 | # | Use | Download | Licence | Notes |
 |---|---|---|---|---|
@@ -70,6 +70,8 @@ Freesound needs a free account to download originals. Pixabay downloads without 
 
 ### 2. Horns and indicator
 
+**Downloaded and filed (2026-10-25):** items 9–12 are in `assets_src/incoming/audio/horns/` and `audio/indicator/`. For item 10 the alex_jauk Pixabay horn was used instead of the Pixabay link.
+
 | # | Use | Download | Licence |
 |---|---|---|---|
 | 9 | Stock bulb horn "pom-pom" | [Breviceps — Honk! (Vintage Bicycle Horn)](https://freesound.org/people/Breviceps/sounds/468441/) | CC0 |
@@ -80,6 +82,8 @@ Freesound needs a free account to download originals. Pixabay downloads without 
 The twin electric horn can be made from #11 by pitch-shifting, so it doesn't need its own download.
 
 ### 3. Chennai ambience (best recorded yourself)
+
+**Downloaded and filed (2026-10-25):** item 13 is in `assets_src/incoming/audio/ambience/`.
 
 | # | Use | Download | Licence |
 |---|---|---|---|
