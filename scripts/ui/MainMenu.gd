@@ -1,6 +1,7 @@
 class_name MainMenu
 extends Node3D
-## Title screen: Continue / New career / Settings / Credits / Quit, over a slowly turning auto.
+## Title screen: Continue / New career / Settings / Credits / Quit, over a slowly turning auto
+## in front of a Chennai sunset skyline. Starting the game goes through LoadingScreen.
 ## Built in code (like the other HUDs) so it scales with the viewport and stays theme-free.
 
 const GAME_SCENE: String = "res://scenes/main_chennai.tscn"
@@ -50,7 +51,7 @@ func _process(delta: float) -> void:
 
 func start_game() -> void:
 	GameState.shift_running = true
-	get_tree().change_scene_to_file(GAME_SCENE)
+	LoadingScreen.go(get_tree(), GAME_SCENE)
 
 func continue_game() -> void:
 	start_game()
@@ -100,11 +101,15 @@ func _on_back() -> void:
 
 func _build_scene() -> void:
 	var env: Environment = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.12, 0.09, 0.14)
+	# The 2D skyline (CanvasLayer -1) shows through behind the 3D auto.
+	env.background_mode = Environment.BG_CANVAS
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.5, 0.42, 0.4)
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	var back: CanvasLayer = CanvasLayer.new()
+	back.layer = -1
+	add_child(back)
+	back.add_child(ChennaiBackdrop.new())
 	var we: WorldEnvironment = WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -126,12 +131,12 @@ func _build_scene() -> void:
 	disc.height = 0.06
 	disc.radial_segments = 40
 	var gm: StandardMaterial3D = StandardMaterial3D.new()
-	gm.albedo_color = Color(0.22, 0.22, 0.24)
+	gm.albedo_color = Color(0.12, 0.1, 0.12)
 	disc.material = gm
 	ground.mesh = disc
 	ground.position = Vector3(0, -0.03, 0)
 	add_child(ground)
-	# The same procedural Bajaj RE the player drives, painted in their current colours.
+	# The auto the player drives: the real Chennai model in stock yellow, else the procedural one.
 	_auto = Node3D.new()
 	_auto.position = Vector3(0, 0.8, 0)
 	add_child(_auto)
@@ -141,6 +146,8 @@ func _build_scene() -> void:
 	body.set("paint", st.body_colour)
 	body.set("trim", st.canopy_colour)
 	_auto.add_child(body)
+	if bool(body.get("uses_real_model")):
+		return # the model's wheels are part of the body
 	for w: Array in [[Vector3(0, -0.64, -1.05), true], [Vector3(-0.58, -0.64, 0.88), false], [Vector3(0.58, -0.64, 0.88), false]]:
 		var wheel: Node3D = Node3D.new()
 		wheel.set_script(load("res://scripts/vehicle/WheelModel.gd"))
@@ -158,27 +165,44 @@ func _build_ui() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_root)
 	_menu = VBoxContainer.new()
-	_menu.add_theme_constant_override("separation", 14)
+	_menu.add_theme_constant_override("separation", 12)
 	_root.add_child(_menu)
-	_menu.add_child(_label("NAMMA AUTO", 64, AMBER))
-	_menu.add_child(_label("நம்ம ஆட்டோ", 34, Color(1, 1, 1)))
-	_buttons["tagline"] = _label(tr("TAGLINE"), 22, Color(0.85, 0.85, 0.85))
+	_menu.add_child(_label("NAMMA AUTO", 80, AMBER, 12))
+	_menu.add_child(_label("நம்ம ஆட்டோ", 36, Color(1, 1, 1), 8))
+	_buttons["tagline"] = _label(tr("TAGLINE"), 22, Color(1.0, 0.92, 0.82))
 	_menu.add_child(_buttons["tagline"])
 	var gap: Control = Control.new()
-	gap.custom_minimum_size = Vector2(0, 10)
+	gap.custom_minimum_size = Vector2(0, 8)
 	_menu.add_child(gap)
-	if GameState.has_save():
-		_buttons["continue"] = _button(tr("CONTINUE"), Color(0.15, 0.5, 0.22), continue_game)
+	var has_save: bool = GameState.has_save()
+	if has_save:
+		_menu.add_child(_profile_card())
+		_buttons["continue"] = _button("▶  " + tr("CONTINUE"), AMBER, continue_game, 34, Color(0.08, 0.05, 0.02))
+		_buttons["continue"].custom_minimum_size = Vector2(0, 88)
 		_menu.add_child(_buttons["continue"])
-	_buttons["new"] = _button(tr("NEW_GAME"), Color(0.75, 0.5, 0.05) if not GameState.has_save() else Color(0.3, 0.3, 0.34), new_career)
-	_buttons["settings"] = _button(tr("SETTINGS"), Color(0.3, 0.3, 0.34), open_settings)
-	_buttons["credits"] = _button(tr("CREDITS"), Color(0.3, 0.3, 0.34), open_credits)
-	_buttons["quit"] = _button(tr("QUIT"), Color(0.35, 0.18, 0.18), func() -> void: get_tree().quit())
-	for k: String in ["new", "settings", "credits", "quit"]:
-		_menu.add_child(_buttons[k])
-	_buttons["hint"] = _label(tr("MENU_HINT"), 18, Color(0.75, 0.75, 0.75))
+		_buttons["new"] = _button(tr("NEW_GAME"), Color(0.22, 0.2, 0.24, 0.92), new_career)
+	else:
+		_buttons["new"] = _button("▶  " + tr("NEW_GAME"), AMBER, new_career, 34, Color(0.08, 0.05, 0.02))
+		_buttons["new"].custom_minimum_size = Vector2(0, 88)
+		_menu.add_child(_buttons["new"])
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	_menu.add_child(row)
+	_buttons["settings"] = _button(tr("SETTINGS"), Color(0.22, 0.2, 0.24, 0.92), open_settings)
+	_buttons["credits"] = _button(tr("CREDITS"), Color(0.22, 0.2, 0.24, 0.92), open_credits)
+	var secondary: Array[String] = ["settings", "credits"]
+	if has_save:
+		secondary.push_front("new")
+	for k: String in secondary:
+		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(_buttons[k])
+	_buttons["hint"] = _label(tr("MENU_HINT"), 18, Color(1.0, 0.92, 0.82))
 	_buttons["hint"].autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_menu.add_child(_buttons["hint"])
+	# Quit sits in the corner, away from the thumb's path to Play.
+	_buttons["quit"] = _button(tr("QUIT"), Color(0.3, 0.12, 0.12, 0.85), func() -> void: get_tree().quit(), 20)
+	_buttons["quit"].custom_minimum_size = Vector2(120, 52)
+	_root.add_child(_buttons["quit"])
 
 	_panel = PanelContainer.new()
 	var sb: StyleBoxFlat = StyleBoxFlat.new()
@@ -212,18 +236,20 @@ func _build_ui() -> void:
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
-	_menu.position = Vector2(maxf(40.0, vp.x * 0.07), maxf(24.0, vp.y * 0.08))
-	_menu.custom_minimum_size = Vector2(minf(440.0, vp.x * 0.42), 0)
+	_menu.position = Vector2(maxf(40.0, vp.x * 0.06), maxf(20.0, vp.y * 0.06))
+	_menu.custom_minimum_size = Vector2(minf(520.0, vp.x * 0.42), 0)
 	_menu.size = _menu.custom_minimum_size
+	(_buttons["quit"] as Button).position = Vector2(vp.x - 24.0 - 120.0, 20.0)
 	_panel.custom_minimum_size = Vector2(minf(820.0, vp.x - 40.0), minf(560.0, vp.y - 40.0))
 	_panel.position = (vp - _panel.custom_minimum_size) * 0.5
 
 func _refresh_texts() -> void:
 	var keys: Dictionary = {"continue": "CONTINUE", "new": "NEW_GAME", "settings": "SETTINGS", "credits": "CREDITS",
 		"quit": "QUIT", "back": "BACK", "tagline": "TAGLINE", "hint": "MENU_HINT"}
+	var primary: String = "continue" if _buttons.has("continue") else "new"
 	for k: String in keys:
 		if _buttons.has(k):
-			_buttons[k].set("text", tr(str(keys[k])))
+			_buttons[k].set("text", ("▶  " if k == primary else "") + tr(str(keys[k])))
 
 func _open_panel(title: String) -> void:
 	_panel_title.text = title
@@ -249,20 +275,40 @@ func _choice(title: String, options: PackedStringArray, selected: int, on_pick: 
 		row.add_child(b)
 	_panel_body.add_child(row)
 
-func _label(text: String, size: int, colour: Color) -> Label:
+## Wallet, rating and driver level from the save, above the Continue button.
+func _profile_card() -> PanelContainer:
+	var card: PanelContainer = PanelContainer.new()
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.03, 0.06, 0.72)
+	sb.border_color = Color(1.0, 0.72, 0.1, 0.6)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(14)
+	sb.set_content_margin_all(14.0)
+	card.add_theme_stylebox_override("panel", sb)
+	var lvl: int = GameState.progress.level()
+	var text: String = "₹%d   ★%.1f   %s %d · %s   %s %d" % [GameState.wallet_inr, GameState.star_rating, tr("LEVEL"), lvl,
+		DriverProgress.title(lvl), tr("DAY"), GameState.day]
+	var l: Label = _label(text, 22, Color.WHITE, 0)
+	card.add_child(l)
+	_buttons["profile"] = card
+	return card
+
+func _label(text: String, size: int, colour: Color, outline: int = 6) -> Label:
 	var l: Label = Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", colour)
-	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 6)
+	l.add_theme_color_override("font_outline_color", Color(0.06, 0.02, 0.05))
+	l.add_theme_constant_override("outline_size", outline)
 	return l
 
-func _button(text: String, colour: Color, on_press: Callable) -> Button:
+func _button(text: String, colour: Color, on_press: Callable, font_size: int = 24, font_colour: Color = Color.WHITE) -> Button:
 	var b: Button = Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(0, 64)
-	b.add_theme_font_size_override("font_size", 24)
+	b.add_theme_font_size_override("font_size", font_size)
+	for st: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		b.add_theme_color_override(st, font_colour)
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var sb: StyleBoxFlat = StyleBoxFlat.new()
 		sb.bg_color = colour.lightened(0.2) if state == "pressed" else (colour.darkened(0.5) if state == "disabled" else colour)

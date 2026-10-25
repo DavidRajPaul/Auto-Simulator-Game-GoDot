@@ -86,7 +86,9 @@ res://
 │   │   └── GreyboxDressing.gd       # MultiMesh lane dashes & placeholder buildings
 │   └── ui/
 │       ├── MainMenu.gd              # Continue / New career / Settings / Credits; back button
-│       ├── TouchHUD.gd              # Driving controls (icon atlas, D/R gear, indicators) + meter flag
+│       ├── TouchHUD.gd              # Driving controls v2: steer buttons, pedals, per-finger touch, dials
+│       ├── LoadingScreen.gd         # Threaded scene load, progress + tips, survives the scene change
+│       ├── ChennaiBackdrop.gd       # Drawn sunset skyline shared by menu and loading screen
 │       ├── UISfx.gd                 # Click sound on every Button + fare/level/goal sounds
 │       ├── PassengerHUD.gd          # Haggle card, passenger card, fare screen, wallet
 │       ├── MiniMap.gd               # Heading-up circular mini-map
@@ -154,6 +156,11 @@ res://
 * In tests, `await get_tree().physics_frame` resumes **before** nodes' `_physics_process` that frame: wait 2 frames after `Input.action_press` before asserting `is_action_just_pressed` effects.
 * Real audio files override the synth automatically when present (`VehicleAudio.stream_or()`); keep the synth fallback so tests and builds never depend on downloads.
 * Never gate core play (free roam, Savari, the King Deluxe) behind Driver Level — only cosmetics and the EV.
+* Traffic and the player move along **-Z**; glTF files face **+Z**. Every model needs its facing flag (`TrafficVehicleAI.MODEL_FLIP` / `COW_FLIP`, `TrafficModelFit.attach(..., flip)`) checked with a side render, or traffic drives tail-first.
+* Touch controls handle `InputEventScreenTouch/Drag` per finger in `TouchHUD._input` (press on touch-down, padded hit areas, slide between held controls). Don't go back to `TouchScreenButton` actions; they felt late and missed thumbs between buttons.
+* Buildings are dropped if **any** 2 m raster cell under the footprint is carriageway (`Raster.count_in_polygon`); checking corners only let large footprints stand on roads.
+* A Control placed straight under a `CanvasLayer` may get size 0 from anchors here; size it from the viewport (see `ChennaiBackdrop._fit`).
+* Don't measure "stuck" on a frozen auto with a stale speed; settle it first (phase 5 was flaky).
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

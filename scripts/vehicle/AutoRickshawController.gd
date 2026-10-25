@@ -105,6 +105,11 @@ func _recolour() -> void:
 		model.paint = stats.body_colour
 		model.trim = stats.canopy_colour
 		model.build()
+	var procedural_wheels: bool = model == null or not model.uses_real_model
+	for wheel_name: String in ["FrontWheelMesh", "RearLeftWheelMesh", "RearRightWheelMesh"]:
+		var w: Node3D = get_node_or_null(wheel_name) as Node3D
+		if w != null:
+			w.visible = procedural_wheels
 
 func _setup_wheel_rays() -> void:
 	var ray_len: float = stats.suspension_rest_dist_m + stats.wheel_radius_m + 0.15

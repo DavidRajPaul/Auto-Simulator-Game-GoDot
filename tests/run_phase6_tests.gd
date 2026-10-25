@@ -37,6 +37,8 @@ func _run() -> void:
 	await _test_indicators(auto, hud)
 	await _test_give_way(main)
 	_test_contextual_buttons(hud)
+	await _test_touch_controls(hud)
+	_test_player_model(auto)
 	main.queue_free()
 	await _physics(2)
 
@@ -241,6 +243,53 @@ func _test_contextual_buttons(hud: TouchHUD) -> void:
 			_check("%s has an icon" % n, false)
 			return
 	_check("All driving buttons use the icon atlas", true)
+
+# --- Touch controls v2 / models ------------------------------------------------------------------
+
+func _touch(hud: TouchHUD, index: int, pos: Vector2, pressed: bool) -> void:
+	var e: InputEventScreenTouch = InputEventScreenTouch.new()
+	e.index = index
+	e.position = pos
+	e.pressed = pressed
+	hud._input(e)
+
+func _drag(hud: TouchHUD, index: int, pos: Vector2) -> void:
+	var e: InputEventScreenDrag = InputEventScreenDrag.new()
+	e.index = index
+	e.position = pos
+	hud._input(e)
+
+func _centre(hud: TouchHUD, button_name: String) -> Vector2:
+	var p: Panel = hud._buttons[button_name]["panel"] as Panel
+	return p.position + p.size * 0.5
+
+func _test_touch_controls(hud: TouchHUD) -> void:
+	_check("Steer buttons are the default controls", GameState.settings["control_scheme"] == 1 and hud.control_scheme == 1)
+	var gas: Vector2 = _centre(hud, "Accelerate")
+	_touch(hud, 0, gas, true)
+	_check("Gas acts on touch-down (no wait for release)", Input.is_action_pressed("accelerate"))
+	_drag(hud, 0, _centre(hud, "Brake"))
+	_check("Sliding gas → brake swaps pedals without lifting", Input.is_action_pressed("brake") and not Input.is_action_pressed("accelerate"))
+	_touch(hud, 0, _centre(hud, "Brake"), false)
+	_check("Lifting releases the pedal", not Input.is_action_pressed("brake"))
+	var sl: Panel = hud._buttons["SteerLeft"]["panel"] as Panel
+	var near_edge: Vector2 = Vector2(sl.position.x - TouchHUD.HIT_PAD * 0.5, sl.position.y + sl.size.y * 0.5)
+	_check("Padded hit area: a thumb just outside the button still steers", hud.button_at(near_edge) == "SteerLeft")
+	_touch(hud, 1, _centre(hud, "SteerLeft"), true)
+	_touch(hud, 2, gas, true)
+	_check("Steer + gas together (multitouch)", Input.is_action_pressed("steer_left") and Input.is_action_pressed("accelerate"))
+	_drag(hud, 1, _centre(hud, "SteerRight"))
+	_check("Thumb slides from left to right", Input.is_action_pressed("steer_right") and not Input.is_action_pressed("steer_left"))
+	hud.release_all()
+	_check("release_all lets go of every control", not Input.is_action_pressed("steer_right") and not Input.is_action_pressed("accelerate"))
+	await _physics(2)
+
+func _test_player_model(auto: AutoRickshawController) -> void:
+	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
+	_check("Player auto uses the real Chennai auto model in stock yellow", model.uses_real_model and model.real_body != null and not model.body_mesh.visible)
+	_check("…and hides the procedural wheels (the model has its own)", not (auto.get_node("FrontWheelMesh") as Node3D).visible)
+	_check("Traffic models face their direction of travel (glTF +Z files are turned)",
+		TrafficVehicleAI.MODEL_FLIP == [false, true, true, false, true] and TrafficVehicleAI.COW_FLIP == [true, true])
 
 # --- Building skins ----------------------------------------------------------------------------
 

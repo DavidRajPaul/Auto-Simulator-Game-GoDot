@@ -103,7 +103,8 @@ the way to get the "Madras Soul" sounds.
 | Hatchback | `hatchback.glb` | Kenney Car Kit (official GLB) | CC0 |
 | Share auto | `share_auto.glb` | Auto Rickshaw, rSquare (Sketchfab), the yellow Chennai auto | CC BY 4.0 |
 | Stray cow | `stray_cow.glb` | Cow, Quaternius (poly.pizza), converted from FBX | CC0 |
-| Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). Stray cows pick either cow at random | CC BY 4.0 |
+| Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). The file holds two cows; the pipeline keeps "cow 2" only. Stray cows pick either cow at random | CC BY 4.0 |
+| Player auto | `vehicles/player_auto.glb` | Same rSquare auto at higher detail (6.3k tris, 1024 px). Used while the paint is stock yellow; other paints keep the procedural body | CC BY 4.0 |
 | MTC bus | none yet | The free bus models are about 4 m long and cannot be stretched to 11 m. It keeps its box until a real bus model is found | |
 
 Run `python3 tools/assets/process_models.py` to rebuild these from `assets_src/incoming/models/`. Credits are in `assets/models/CREDITS_models.md`.
