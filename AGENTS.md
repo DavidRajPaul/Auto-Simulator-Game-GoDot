@@ -87,6 +87,7 @@ res://
 │   └── ui/
 │       ├── MainMenu.gd              # Continue / New career / Settings / Credits; back button
 │       ├── TouchHUD.gd              # Driving controls v2: steer buttons, pedals, per-finger touch, dials
+│       ├── UIKit.gd                 # "Namma Auto Arcade" kit: theme, arcade buttons, cards, chips, bars, rewards atlas, tweens
 │       ├── LoadingScreen.gd         # Threaded scene load, progress + tips, survives the scene change
 │       ├── ChennaiBackdrop.gd       # Drawn sunset skyline shared by menu and loading screen
 │       ├── UISfx.gd                 # Click sound on every Button + fare/level/goal sounds
@@ -102,6 +103,7 @@ res://
     ├── run_phase4_tests.gd/.tscn    # Garage economy, fuel, save/load, shift, settings
     ├── run_phase5_tests.gd/.tscn    # 1:1 world, comfort pack, day/night, monsoon, kick rhythm, menu, back button
     ├── run_phase6_tests.gd/.tscn    # Gears, indicators, give-way, driver levels, goals, facades, sounds
+    ├── run_phase7_tests.gd/.tscn    # Game UI screens: kit, home, haggle, ride-complete, level-up, menus hide HUD
     └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display); PROBE_SCENE env picks the scene
 ```
 
@@ -162,6 +164,8 @@ res://
 * A Control placed straight under a `CanvasLayer` may get size 0 from anchors here; size it from the viewport (see `ChennaiBackdrop._fit`).
 * Don't measure "stuck" on a frozen auto with a stale speed; settle it first (phase 5 was flaky).
 * Painted UI art lives in ONE atlas (`assets/ui/controls_v2.png`, `TouchHUD.ART_CELLS`); keep new button art in it so the HUD stays one 2D batch. The Stitch PNGs are flat RGB with painted checkerboards: `import_game_art.py` cuts them out, never ship the raw files.
+* Every screen builds from `UIKit` (one cached Theme, cached StyleBoxFlats, the rewards atlas). Don't hand-roll button styles; add a Tone instead. Full-screen menus emit `SignalBus.ui_modal_changed` so the HUDs hide underneath (pause dropped from 195 to 116 draws).
+* Stitch screens are layout references: they invent features (gems, races). Rebuild them in Godot with the game's real data; their hosted images (lh3.googleusercontent.com) can't be fetched here.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

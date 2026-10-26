@@ -340,6 +340,8 @@ func complete_ride() -> void:
 	var b: Dictionary = FareCalculator.settle(agreed_fare, rider, comfort, on_time, near_misses, green)
 	b["destination"] = destination["name"]
 	b["archetype_name"] = rider.archetype_name
+	b["archetype"] = rider.id
+	b["distance_km"] = _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM
 	b["line"] = rider.line_happy if comfort >= 0.5 and on_time else rider.line_upset
 	b["offer"] = agreed_offer
 	b["comfort"] = comfort
