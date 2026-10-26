@@ -50,6 +50,10 @@ func _ready() -> void:
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	get_viewport().size_changed.connect(_layout)
 	_layout()
+	AdMonetizationManager.set_screen("main_menu")
+	# A claimable daily bonus greets the player once per day.
+	if bool(GameState.daily_reward_status()["available"]) and GameState.has_save():
+		open_daily.call_deferred()
 
 func _process(delta: float) -> void:
 	if _auto != null:
@@ -63,6 +67,77 @@ func start_game() -> void:
 
 func continue_game() -> void:
 	start_game()
+
+## 7-day stand bonus calendar (RewardsEngine): today's tile highlighted, day 7 = jackpot.
+func open_daily() -> void:
+	var st: Dictionary = GameState.daily_reward_status()
+	_open_panel(tr("DAILY_REWARD"))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_panel_body.add_child(row)
+	var today_idx: int = int(st["day_index"])
+	var available: bool = bool(st["available"])
+	for i: int in 7:
+		var today: bool = i == today_idx and available
+		var claimed: bool = i < today_idx or (i == today_idx and not available)
+		var tile: PanelContainer = PanelContainer.new()
+		tile.custom_minimum_size = Vector2(100, 112)
+		tile.add_theme_stylebox_override("panel", UIKit.button_box(UIKit.Tone.YELLOW if today else UIKit.Tone.DARK, "normal"))
+		var col: VBoxContainer = VBoxContainer.new()
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.add_theme_constant_override("separation", 2)
+		tile.add_child(col)
+		var day: Label = UIKit.label(tr("DAY_N") % (i + 1), 15, UIKit.PLUM if today else UIKit.MUTED, true)
+		day.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(day)
+		var icon: TextureRect = UIKit.reward_icon("tick" if claimed else ("gift" if i == 6 else "coins"), 40)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		col.add_child(icon)
+		var amt: Label = UIKit.label("₹%d" % RewardsEngine.DAILY_INR[i], 17, UIKit.PLUM if today else UIKit.JASMINE, true)
+		amt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(amt)
+		if claimed:
+			tile.modulate = Color(1, 1, 1, 0.55)
+		row.add_child(tile)
+		if today:
+			UIKit.pulse(tile, 0.05)
+	if available:
+		var claim: Button = UIKit.button("%s  ₹%d" % [tr("CLAIM"), int(st["inr"])], UIKit.Tone.GREEN, func() -> void:
+			GameState.claim_daily_reward()
+			close_panel(), 26, "coin")
+		claim.custom_minimum_size = Vector2(0, 68)
+		_panel_body.add_child(claim)
+	else:
+		_panel_text(tr("DAILY_COME_BACK") % GameState.rewards.streak)
+
+func open_achievements() -> void:
+	_open_panel(tr("ACHIEVEMENTS"))
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(760, 330)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_panel_body.add_child(scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	for id: String in RewardsEngine.ACHIEVEMENTS:
+		var a: Dictionary = RewardsEngine.ACHIEVEMENTS[id]
+		var done: bool = GameState.rewards.achieved.has(id)
+		var prog: float = GameState.rewards.achievement_progress(id)
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		list.add_child(row)
+		row.add_child(UIKit.reward_icon("badge_gold" if done else "lock", 44))
+		var text: VBoxContainer = VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.add_theme_constant_override("separation", 2)
+		row.add_child(text)
+		text.add_child(UIKit.label(str(a["title"]), 19, UIKit.YELLOW if done else UIKit.JASMINE, true))
+		var desc: Label = UIKit.label(str(a["desc"]), 15, UIKit.MUTED)
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(desc)
+		text.add_child(UIKit.bar(prog, UIKit.GREEN if done else UIKit.YELLOW))
+		row.add_child(UIKit.chip("tick" if done else "coin", "✓" if done else "₹%d" % int(a["inr"]), 16))
 
 func new_career() -> void:
 	if GameState.has_save():
@@ -231,6 +306,14 @@ func _build_ui() -> void:
 	for k: String in (["new", "settings", "credits"] if has_save else ["settings", "credits"]):
 		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(_buttons[k])
+	var row2: HBoxContainer = HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 12)
+	_menu.add_child(row2)
+	_buttons["daily"] = UIKit.button(tr("DAILY_REWARD"), UIKit.Tone.GREEN, open_daily, 20, "gift")
+	_buttons["achievements"] = UIKit.button(tr("ACHIEVEMENTS"), UIKit.Tone.PURPLE, open_achievements, 20, "badge_gold")
+	for k: String in ["daily", "achievements"]:
+		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row2.add_child(_buttons[k])
 	_buttons["hint"] = UIKit.label(tr("MENU_HINT"), 16, UIKit.MUTED)
 	_buttons["hint"].autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_menu.add_child(_buttons["hint"])

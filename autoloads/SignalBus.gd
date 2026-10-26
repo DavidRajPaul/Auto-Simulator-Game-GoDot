@@ -25,6 +25,8 @@ signal traffic_vehicle_shifted(sub_lane: int)
 # --- UI / controls -------------------------------------------------------
 signal wiper_toggled(is_on: bool)
 signal camera_mode_changed(mode_name: String)
+## Short camera kick on impacts, 0–1 strength.
+signal camera_shake(strength: float)
 
 # --- Navigation ------------------------------------------------------------
 ## Latest published road graph, for listeners that start after road_graph_ready fired.
@@ -34,9 +36,24 @@ signal road_graph_ready(graph: RoadGraph)
 signal player_pose_updated(position: Vector3, heading: Vector3)
 ## Active GPS route polyline (empty = no route).
 signal route_updated(points: PackedVector3Array)
+## Full sat-nav route (GpsRoute: guide path + turn-by-turn), null when cleared.
+signal gps_route_changed(gps: RefCounted)
+## Turn-by-turn prompt for the HUD: {turn, text, glyph, distance_m, road, road_ta, remaining_m}.
+signal nav_instruction(info: Dictionary)
+## Tap the mini-map: open (true) or close (false) the full-screen city map.
+signal full_map_requested(open: bool)
 ## Gap-la Gethu: passed a moving vehicle with < 0.6 m clearance above 35 km/h.
 signal near_miss(clearance_m: float)
+## Traffic model (TrafficDensity) around the player: 0–1 density, current zone id, rush hour?
+## Also drives rider demand in haggling.
+signal traffic_density_changed(density: float, zone_id: String, is_peak: bool)
 signal player_collision(impulse: float)
+## Richer impact info (CollisionFX, traffic): {speed_mps, kind: "wall"|"vehicle"|"prop", point, normal, severity 0–1}.
+signal player_impact(info: Dictionary)
+## Sliding along a wall/vehicle: tangential speed (m/s), 0 when the scrape ends.
+signal player_scraping(speed_mps: float, point: Vector3)
+## The player bumped this AI vehicle (it stops, honks, then carries on).
+signal traffic_bumped(vehicle: Node3D, impact_mps: float)
 ## Per-physics-frame ride dynamics for the comfort meter (g units; jolt = vertical speed change).
 signal vehicle_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)
 
@@ -102,3 +119,16 @@ signal driver_level_up(level: int, title: String, reward_inr: int, unlock_key: S
 signal goals_updated(goals: Array)
 signal goal_completed(goal: Dictionary)
 signal all_goals_completed(bonus_inr: int)
+
+# --- Rewards & ads (Phase 7: publishing-ready) -----------------------------------------------
+## Any reward paid through GameState.grant_reward (source: "ride_bonus", "daily_login", "achievement", "ad_*").
+signal reward_granted(source: String, inr: int, xp: int)
+signal achievement_unlocked(id: String, info: Dictionary)
+## Daily login calendar status changed / claimable: RewardsEngine.daily_status().
+signal daily_reward_status(status: Dictionary)
+## Ad flow. Requests go to the AdMonetizationManager autoload directly (it's a service);
+## results come back here so any UI can react.
+signal rewarded_ad_completed(placement: String, context: Dictionary)
+signal rewarded_ad_failed(placement: String, reason: String)
+signal interstitial_closed(placement: String)
+signal ad_state_changed(info: Dictionary)

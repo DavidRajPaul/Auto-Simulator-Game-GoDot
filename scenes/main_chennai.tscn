@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/world/MonsoonFX.gd" id="15"]
 [ext_resource type="Script" path="res://scripts/world/AmbienceAudio.gd" id="16"]
 [ext_resource type="Script" path="res://scripts/ui/UISfx.gd" id="17"]
+[ext_resource type="Script" path="res://scripts/world/StreetSigns.gd" id="18"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -48,7 +49,11 @@ transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.6
 light_energy = 0.75
 shadow_enabled = true
 directional_shadow_mode = 0
-directional_shadow_max_distance = 45.0
+directional_shadow_max_distance = 40.0
+directional_shadow_fade_start = 0.7
+shadow_bias = 0.06
+shadow_normal_bias = 1.6
+shadow_blur = 1.4
 
 [node name="Atmosphere" type="Node" parent="."]
 script = ExtResource("14")
@@ -91,6 +96,9 @@ script = ExtResource("13")
 
 [node name="SavariManager" type="Node3D" parent="."]
 script = ExtResource("8")
+
+[node name="StreetSigns" type="Node3D" parent="."]
+script = ExtResource("18")
 
 [node name="RouteLine" type="MeshInstance3D" parent="."]
 script = ExtResource("9")

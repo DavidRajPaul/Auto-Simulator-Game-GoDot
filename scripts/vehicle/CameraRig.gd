@@ -13,9 +13,22 @@ const TOP_DOWN_OFFSET: Vector3 = Vector3(0.0, 24.0, 6.0)
 @export var target_path: NodePath
 @export var follow_sharpness: float = 6.0
 @export var mode: Mode = Mode.CHASE
+## Cockpit head stabilisation: how quickly the eye follows chassis pitch/roll (yaw stays tight).
+## Real drivers' necks soak up suspension buzz; a rigid camera shows every physics micro-bump.
+@export var cockpit_tilt_sharpness: float = 5.0
+@export var cockpit_yaw_sharpness: float = 22.0
+## Fraction of chassis pitch/roll the eye keeps (1 = rigid, 0 = horizon-locked).
+@export var cockpit_tilt_follow: float = 0.45
 
 var _target: Node3D
 var _camera: Camera3D
+var _cockpit_basis: Basis = Basis.IDENTITY
+var _cockpit_pos: Vector3 = Vector3.ZERO
+## Impact shake: decaying, smooth (noise-free sine mix) so it reads as a jolt, not jitter.
+const SHAKE_DECAY: float = 5.0
+const SHAKE_MAX_M: float = 0.12
+var _shake: float = 0.0
+var _shake_t: float = 0.0
 
 func _ready() -> void:
 	_target = get_node_or_null(target_path) as Node3D
@@ -26,6 +39,12 @@ func _ready() -> void:
 	add_child(_camera)
 	_camera.make_current()
 	top_level = true
+	# The rig is driven every rendered frame from the target's *interpolated* transform, so it
+	# must not be interpolated a second time by the engine.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	SignalBus.teleport_requested.connect(func(_x: Transform3D) -> void: _snap.call_deferred())
+	SignalBus.camera_shake.connect(func(s: float) -> void: _shake = clampf(maxf(_shake, s), 0.0, 1.0))
 	_snap()
 
 func _process(delta: float) -> void:
@@ -33,34 +52,74 @@ func _process(delta: float) -> void:
 		cycle_mode()
 	if _target == null:
 		return
-	var basis_flat: Basis = _flat_basis()
+	# Interpolated pose: physics runs at 60 Hz but phones render at uneven 30–120 Hz; reading
+	# the raw physics transform here is what made the auto judder on screen.
+	_shake = maxf(0.0, _shake - _shake * SHAKE_DECAY * delta - delta * 0.2)
+	_shake_t += delta
+	var xf: Transform3D = _target_xform()
+	var basis_flat: Basis = _flat_basis(xf)
 	var desired: Vector3
 	match mode:
 		Mode.COCKPIT:
-			# Cockpit is rigid to the chassis so the handlebar view never lags.
-			_camera.global_transform = _target.global_transform.translated_local(COCKPIT_OFFSET).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout
-			_camera.fov = 78.0
+			_update_cockpit(xf, delta)
 			return
 		Mode.TOP_DOWN:
-			desired = _target.global_position + basis_flat * TOP_DOWN_OFFSET
+			desired = xf.origin + basis_flat * TOP_DOWN_OFFSET
 		_:
-			desired = _target.global_position + basis_flat * CHASE_OFFSET
+			desired = xf.origin + basis_flat * CHASE_OFFSET
 	var t: float = 1.0 - exp(-follow_sharpness * delta)
 	_camera.global_position = _camera.global_position.lerp(desired, t)
 	# A little wider with speed: reads as faster without needing more speed.
 	var speed: float = (_target as RigidBody3D).linear_velocity.length() if _target is RigidBody3D else 0.0
 	_camera.fov = lerpf(_camera.fov, 68.0 + clampf(speed * 0.45, 0.0, 9.0), 1.0 - exp(-3.0 * delta))
-	var look_at_pt: Vector3 = _target.global_position + Vector3(0.0, 0.4, 0.0)
+	var look_at_pt: Vector3 = xf.origin + Vector3(0.0, 0.4, 0.0)
 	if _camera.global_position.distance_to(look_at_pt) > 0.1:
 		_camera.look_at(look_at_pt, Vector3.UP if mode != Mode.TOP_DOWN else -basis_flat.z)
+	if _shake > 0.001:
+		_camera.global_position += _shake_offset() * 1.6
+
+func _shake_offset() -> Vector3:
+	var a: float = _shake * _shake * SHAKE_MAX_M
+	return Vector3(sin(_shake_t * 37.0) + 0.5 * sin(_shake_t * 61.0), sin(_shake_t * 43.0 + 1.3), 0.0) * a
+
+## Head-stabilised cockpit: yaw tracks the handlebar tightly, pitch/roll are partly
+## levelled and low-pass filtered so road buzz and suspension bounce don't shake the view.
+func _update_cockpit(xf: Transform3D, delta: float) -> void:
+	var fwd: Vector3 = -xf.basis.z
+	var flat: Vector3 = Vector3(fwd.x, 0.0, fwd.z)
+	if flat.length_squared() < 0.0001:
+		flat = Vector3.FORWARD
+	var level: Basis = Basis.looking_at(flat.normalized(), Vector3.UP)
+	var chassis: Basis = xf.basis.orthonormalized()
+	var target_q: Quaternion = Quaternion(level).slerp(Quaternion(chassis), cockpit_tilt_follow)
+	var cur_q: Quaternion = Quaternion(_cockpit_basis.orthonormalized())
+	# Yaw responsive, tilt soft: blend with two rates, then take the faster yaw back.
+	var tilt_q: Quaternion = cur_q.slerp(target_q, 1.0 - exp(-cockpit_tilt_sharpness * delta))
+	var yaw_err: float = angle_difference(Basis(tilt_q).get_euler().y, level.get_euler().y)
+	tilt_q = Quaternion(Vector3.UP, yaw_err * (1.0 - exp(-cockpit_yaw_sharpness * delta))) * tilt_q
+	_cockpit_basis = Basis(tilt_q.normalized())
+	# Eye position follows the seat, with vertical bounce softened.
+	var seat: Vector3 = xf * COCKPIT_OFFSET
+	_cockpit_pos.x = seat.x
+	_cockpit_pos.z = seat.z
+	_cockpit_pos.y = lerpf(_cockpit_pos.y, seat.y, 1.0 - exp(-14.0 * delta))
+	if _cockpit_pos.distance_squared_to(seat) > 1.0:
+		_cockpit_pos = seat
+	_camera.global_transform = Transform3D(_cockpit_basis, _cockpit_pos + _cockpit_basis * _shake_offset()).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout
+	_camera.fov = 78.0
+
+func _target_xform() -> Transform3D:
+	if is_inside_tree() and get_tree().physics_interpolation:
+		return _target.get_global_transform_interpolated()
+	return _target.global_transform
 
 func cycle_mode() -> void:
 	mode = ((mode + 1) % Mode.size()) as Mode
 	_snap()
 	SignalBus.camera_mode_changed.emit(MODE_NAMES[mode])
 
-func _flat_basis() -> Basis:
-	var fwd: Vector3 = -_target.global_transform.basis.z
+func _flat_basis(xf: Transform3D) -> Basis:
+	var fwd: Vector3 = -xf.basis.z
 	fwd.y = 0.0
 	if fwd.length_squared() < 0.0001:
 		return Basis.IDENTITY
@@ -69,4 +128,7 @@ func _flat_basis() -> Basis:
 func _snap() -> void:
 	if _target == null or _camera == null:
 		return
-	_camera.global_position = _target.global_position + _flat_basis() * (TOP_DOWN_OFFSET if mode == Mode.TOP_DOWN else CHASE_OFFSET)
+	var xf: Transform3D = _target.global_transform
+	_camera.global_position = xf.origin + _flat_basis(xf) * (TOP_DOWN_OFFSET if mode == Mode.TOP_DOWN else CHASE_OFFSET)
+	_cockpit_basis = xf.basis.orthonormalized()
+	_cockpit_pos = xf * COCKPIT_OFFSET
