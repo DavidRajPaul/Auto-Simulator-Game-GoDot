@@ -13,6 +13,19 @@ func _run() -> void:
 	for i: int in 30:
 		await get_tree().physics_frame
 	var rig: CameraRig = city.get_node("CameraRig") as CameraRig
+	if OS.has_environment("SHOT_LOOK"):
+		# "x,z,cx,cy,cz": park the camera at cam pos looking at (x, 2, z).
+		var v: PackedFloat64Array = PackedFloat64Array(Array(OS.get_environment("SHOT_LOOK").split(",")).map(func(t: String) -> float: return float(t)))
+		var auto0: Node3D = city.get_node("AutoRickshaw") as Node3D
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, Vector3(v[2], 1.0, v[4])))
+		SignalBus.player_pose_updated.emit(Vector3(v[2], 0, v[4]), Vector3.FORWARD)
+		for i: int in 90:
+			await get_tree().physics_frame
+		rig.set_process(false)
+		var cam0: Camera3D = rig.get_node("Camera") as Camera3D
+		cam0.global_position = Vector3(v[2], v[3], v[4])
+		cam0.look_at(Vector3(v[0], 3.0, v[1]))
+		auto0.visible = false
 	var cam_mode: int = int(OS.get_environment("SHOT_CAM")) if OS.has_environment("SHOT_CAM") else 0
 	while int(rig.mode) != cam_mode:
 		rig.cycle_mode()

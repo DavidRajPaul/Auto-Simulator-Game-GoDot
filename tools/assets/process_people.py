@@ -62,6 +62,12 @@ CLIPS = {
     "idle": ("female_test", 0),
 }
 
+# Fallback clip source when the raw animation downloads above are not on this machine: a shipped
+# character that already carries the retargeted in-place "walk" and "idle" on the same 22 bones.
+# Its walk has no root motion left, so the pace comes from people.json, scaled by hips height.
+FALLBACK_CLIP_GLB = OUT / "young_man.glb"
+FALLBACK_CLIP_ID = "young_man"
+
 # id, raw folder, height m, triangle budget, skin index (for files with several people), credit
 PEOPLE = [
     ("old_man_veshti", "indian_old_man_walking", 1.66, 3000, 0,
@@ -79,6 +85,11 @@ PEOPLE = [
      '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.03, 0.26, 0.09, 1.0]}),
     ("woman_saree_maroon", "female_test", 1.54, 3200, 0,
      '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.33, 0.02, 0.04, 1.0]}),
+    # Ready Player Me style avatars (74 bones, 50–112k tris, ~25 textures) → 22 bones, one atlas.
+    ("woman_modern", "modern_indian_woman", 1.58, 3800, 0,
+     '"Modern Indian Woman" by Pixel_Monster (Sketchfab), CC BY 4.0'),
+    ("man_casual", "chennai_man_rpm", 1.72, 3600, 0,
+     '"Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0'),
     ("girl_churidar", "south_indian_women", 1.55, 3200, 0,
      '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0'),
     ("girl_pavadai", "south_indian_women", 1.52, 4000, 1,
@@ -327,7 +338,10 @@ def build_atlas(g: Gltf, parts: list[dict], size: int = 1024) -> tuple[Image.Ima
     for _, ps in keyed.items():
         img, alpha = material_image(g, ps[0]["mat"])
         uv = np.concatenate([p["uv"] for p in ps])
-        lo = np.floor(uv.min(0) + 1e-4)
+        # Which unit square the UVs live in: take it from the centre of their range. Flooring the
+        # minimum sent a material with a tiny overshoot (u = -0.004) a whole tile off, and every
+        # vertex was clamped onto one atlas pixel (the white "Chennai Slum" walls).
+        lo = np.floor((uv.min(0) + uv.max(0)) * 0.5)
         span = uv.max(0) - uv.min(0)
         tiled = bool((span > 1.02).any())
         share = sum(tri_area(p["pos"], p["idx"]) for p in ps) / total
@@ -569,16 +583,27 @@ def main() -> int:
     only = set(sys.argv[1:])
     OUT.mkdir(parents=True, exist_ok=True)
     WORK.mkdir(parents=True, exist_ok=True)
-    sources = {}
-    for clip, (folder, anim) in CLIPS.items():
-        g = Gltf(SRC / folder / "scene.gltf")
-        rig = Rig(g, 0, None)
-        rig.fit_skeleton_only()
-        sources[clip] = (rig, anim)
     meta = {}
     meta_path = OUT / "people.json"
     if meta_path.exists():
         meta = json.loads(meta_path.read_text()).get("people", {})
+    sources = {}
+    fallback_speed = 0.0
+    for clip, (folder, anim) in CLIPS.items():
+        path = SRC / folder / "scene.gltf"
+        if path.exists():
+            g = Gltf(path)
+            rig = Rig(g, 0, None)
+            rig.fit_skeleton_only()
+            sources[clip] = (rig, anim)
+        else:
+            g = Gltf(FALLBACK_CLIP_GLB)
+            names = [a.get("name", "") for a in g.j.get("animations", [])]
+            rig = Rig(g, 0, None)
+            rig.fit_skeleton_only()
+            sources[clip] = (rig, names.index(clip))
+            fallback_speed = float(meta.get(FALLBACK_CLIP_ID, {}).get("walk_speed", 1.3))
+            print(f"     clip '{clip}': raw {folder} missing, using {FALLBACK_CLIP_GLB.name}")
     credits = []
     for spec in PEOPLE:
         pid, folder, height, budget, skin_i, credit = spec[:6]
@@ -607,6 +632,10 @@ def main() -> int:
         clips = {}
         for clip, (src, anim) in sources.items():
             clips[clip] = bake_clip(pose_rest, src, anim, clip == "walk")
+            if clip == "walk" and clips[clip]["speed"] < 0.05 and fallback_speed > 0.0:
+                # In-place source: scale its known pace by leg length (hips height ratio).
+                k = pose_rest["Hips"][1][1] / max(src.pose(src.rest)["Hips"][1][1], 1e-6)
+                clips[clip]["speed"] = fallback_speed * k
         raw = WORK / f"{pid}.gltf"
         write_character(raw, parts, atlas_png, alpha, pose_rest, clips)
         dest = OUT / f"{pid}.glb"

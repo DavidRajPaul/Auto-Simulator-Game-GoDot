@@ -35,7 +35,7 @@ SPECS = [
      '"chennai central" by SudharsanArivalagan (Sketchfab), CC BY 4.0'),
     ("water_tower", "chennai_water_tank/scene.gltf", [], 1e9, 0.0, 9000, 512,
      '"Chennai Water Tank" by TamilarasanRG (Sketchfab), CC BY 4.0'),
-    ("slum_cluster", "chennai_slum/scene.gltf", [], 1e9, 34.0, 9000, 1024,
+    ("slum_cluster", "chennai_slum/scene.gltf", [], 1e9, 34.0, 14000, 1024,
      '"Chennai Slum" by aswin.baskaran (Sketchfab), CC BY 4.0'),
 ]
 # The water tower is scaled by height instead (real TWAD overhead tanks stand ~18 m).

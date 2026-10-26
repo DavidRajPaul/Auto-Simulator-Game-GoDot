@@ -163,15 +163,15 @@ def main() -> int:
     hx, hz = sl[0] * 0.5, sl[2] * 0.5
     placed = []
     for poly in sorted(areas.get("water", []), key=lambda p: -len(p)):
-        if len(poly) < 12:
+        if len(poly) < 8:
             continue
-        for i in range(0, len(poly), 2):
-            if len(placed) >= 4:
+        for i in range(0, len(poly)):
+            if len(placed) >= 10:
                 break
             ax, az = poly[i - 1]
             bx, bz = poly[i]
             L = math.hypot(bx - ax, bz - az)
-            if L < 30.0:
+            if L < 12.0:
                 continue
             mx, mz = (ax + bx) * 0.5, (az + bz) * 0.5
             nx, nz = (bz - az) / L, -(bx - ax) / L
@@ -179,7 +179,7 @@ def main() -> int:
                 px, pz = mx + nx * sign * (hz + 3.0), mz + nz * sign * (hz + 3.0)
                 if point_in(px, pz, poly):
                     continue
-                if any(math.hypot(px - q[0], pz - q[1]) < 400.0 for q in placed):
+                if any(math.hypot(px - q[0], pz - q[1]) < 250.0 for q in placed):
                     continue
                 # Long side along the bank; the model's canal wall (+Z side) faces the water.
                 yaw = math.atan2(-sign * nx, -sign * nz)

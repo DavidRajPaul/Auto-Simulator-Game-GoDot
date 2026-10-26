@@ -14,6 +14,7 @@ func _run() -> void:
 	print("\n=== Namma Auto — Phase 10 tests ===")
 	_test_trees()
 	_test_atlases()
+	_test_new_people_and_slum()
 	GameState.reset_profile()
 	var city: Node = (load(CITY) as PackedScene).instantiate()
 	add_child(city)
@@ -99,6 +100,34 @@ func _test_atlases() -> void:
 							ok = false
 							detail = "%s @ %s" % [item[0].get_file(), str(p)]
 	_check("Icon cells have clean transparent margins", ok, detail)
+
+func _test_new_people_and_slum() -> void:
+	var meta: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://assets/models/people/people.json")) as Dictionary)["people"]
+	var ok: bool = true
+	for id: String in ["woman_modern", "man_casual"]:
+		var scene: PackedScene = load("res://assets/models/people/%s.glb" % id) as PackedScene
+		if not meta.has(id) or scene == null:
+			ok = false
+			continue
+		var n: Node = scene.instantiate()
+		var ap: Array[Node] = n.find_children("*", "AnimationPlayer", true, false)
+		var mis: Array[Node] = n.find_children("*", "MeshInstance3D", true, false)
+		var tris: int = 0
+		for mi: Node in mis:
+			var m: Mesh = (mi as MeshInstance3D).mesh
+			for sidx: int in m.get_surface_count():
+				tris += m.surface_get_arrays(sidx)[Mesh.ARRAY_INDEX].size() / 3
+		if ap.is_empty() or not (ap[0] as AnimationPlayer).has_animation("walk") or not (ap[0] as AnimationPlayer).has_animation("idle") or tris > 4200 or mis.size() != 1:
+			ok = false
+		n.free()
+	_check("New Chennai man + woman: rigged, walk + idle, ≤ 4.2k tris, one draw call", ok)
+	var props: Array = (JSON.parse_string(FileAccess.get_file_as_string("res://data/world/city_props.json")) as Dictionary)["props"]
+	var slums: int = 0
+	for pr: Dictionary in props:
+		slums += 1 if str(pr["model"]) == "slum_cluster" else 0
+	_check("Chennai slum placed along the canals (≥ 5 sites)", slums >= 5, "%d" % slums)
+	var img: Image = (load("res://assets/models/city/slum_cluster_0.png") as Texture2D).get_image()
+	_check("Slum keeps its colours (textured atlas)", img != null and img.get_width() >= 512)
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:
