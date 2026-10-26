@@ -16,6 +16,8 @@ func _run() -> void:
 	_test_density_model()
 	_test_people_meshes()
 	_test_project_settings()
+	_test_rewards_engine()
+	await _test_ads()
 	GameState.reset_profile()
 	var city: Node = (load(CITY) as PackedScene).instantiate()
 	add_child(city)
@@ -215,6 +217,58 @@ func _test_collisions() -> void:
 	_check("Bumped AI stops (no bulldozing)", v.bumped_timer > 1.0 and is_zero_approx(v.current_speed_mps))
 	main.queue_free()
 	await _physics(2)
+
+func _test_rewards_engine() -> void:
+	var r: RewardsEngine = RewardsEngine.new()
+	var g1: Dictionary = r.grant("ad_double_fare", 120, 0, "ad_double_fare:ride-1", "2026-10-26")
+	var g2: Dictionary = r.grant("ad_double_fare", 120, 0, "ad_double_fare:ride-1", "2026-10-26")
+	_check("Rewards are idempotent (same ride can't be doubled twice)", int(g1["inr"]) == 120 and int(g2["inr"]) == 0 and str(g2["refused"]) == "duplicate")
+	for i: int in 20:
+		r.grant("ad_double_fare", 10, 0, "x%d" % i, "2026-10-26")
+	_check("Daily cap per source", r.remaining_today("ad_double_fare", "2026-10-26") == 0 and r.remaining_today("ad_double_fare", "2026-10-27") > 0)
+	var d1: Dictionary = r.claim_daily("2026-10-26")
+	var again: Dictionary = r.claim_daily("2026-10-26")
+	var d2: Dictionary = r.claim_daily("2026-10-27")
+	_check("Daily login: once per day, streak grows on consecutive days", int(d1["inr"]) == RewardsEngine.DAILY_INR[0] and int(again["inr"]) == 0 and int(d2["inr"]) == RewardsEngine.DAILY_INR[1] and r.streak == 2)
+	r.claim_daily("2026-10-30")
+	_check("Missing a day resets the streak", r.streak == 1)
+	r.add_stat("rides", 1)
+	var got: Array[String] = r.check_achievements("2026-10-30")
+	_check("Achievement unlocks once", got.has("first_savari") and r.check_achievements("2026-10-30").is_empty())
+	var r2: RewardsEngine = RewardsEngine.new()
+	r2.from_dict(JSON.parse_string(JSON.stringify(r.to_dict())) as Dictionary)
+	_check("Rewards survive save/load", r2.streak == r.streak and r2.achieved.has("first_savari") and r2.granted_ids.has("ad_double_fare:ride-1"))
+	GameState.reset_profile()
+	var w: int = GameState.wallet_inr
+	GameState.claim_daily_reward()
+	_check("GameState pays the daily bonus into the wallet", GameState.wallet_inr == w + RewardsEngine.DAILY_INR[0])
+	GameState.reset_profile()
+
+func _test_ads() -> void:
+	var ads: Node = get_node("/root/AdMonetizationManager")
+	_check("Ad manager autoload with a provider", ads != null and ads.provider != null, str(ads.provider.provider_name()))
+	_check("No forced ad in the first-session grace period", ads.interstitial_block_reason("after_fare_summary") == "first_session_grace")
+	_check("Forced ads never at arbitrary placements", ads.interstitial_block_reason("mid_ride") == "placement_not_allowed")
+	ads.debug_advance(900.0)
+	_check("Ride spacing: not after every ride", ads.interstitial_block_reason("after_fare_summary") == "ride_spacing")
+	_check("Shift end may show one after grace", ads.interstitial_block_reason("shift_end") == "")
+	ads.maybe_show_interstitial("shift_end")
+	await get_tree().process_frame
+	_check("Cooldown blocks a second interstitial", ads.interstitial_block_reason("shift_end") == "cooldown")
+	GameState.no_ads = true
+	_check("No-Ads purchase blocks forced ads", ads.interstitial_block_reason("shift_end") == "no_ads_purchased")
+	GameState.no_ads = false
+	GameState.reset_profile()
+	var w: int = GameState.wallet_inr
+	ads.show_rewarded("ad_double_fare", {"ride_id": "t-1", "inr": 90})
+	for i: int in 3:
+		await get_tree().process_frame
+	_check("Rewarded 2× fare pays after the ad completes", GameState.wallet_inr == w + 90, "%d → %d" % [w, GameState.wallet_inr])
+	ads.show_rewarded("ad_double_fare", {"ride_id": "t-1", "inr": 90})
+	for i: int in 3:
+		await get_tree().process_frame
+	_check("…and only once per ride", GameState.wallet_inr == w + 90)
+	GameState.reset_profile()
 
 func _test_splash() -> void:
 	var s: SplashScreen = (load("res://scenes/splash.tscn") as PackedScene).instantiate() as SplashScreen

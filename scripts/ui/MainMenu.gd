@@ -44,6 +44,10 @@ func _ready() -> void:
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	get_viewport().size_changed.connect(_layout)
 	_layout()
+	AdMonetizationManager.set_screen("main_menu")
+	# A claimable daily bonus greets the player once per day.
+	if bool(GameState.daily_reward_status()["available"]) and GameState.has_save():
+		open_daily.call_deferred()
 
 func _process(delta: float) -> void:
 	if _auto != null:
@@ -57,6 +61,39 @@ func start_game() -> void:
 
 func continue_game() -> void:
 	start_game()
+
+## 7-day stand bonus calendar (RewardsEngine): today's tile highlighted, day 7 = jackpot.
+func open_daily() -> void:
+	var st: Dictionary = GameState.daily_reward_status()
+	_open_panel(tr("DAILY_REWARD"))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_panel_body.add_child(row)
+	var today_idx: int = int(st["day_index"])
+	for i: int in 7:
+		var tile: Label = _label("%s\n₹%d" % [tr("DAY_N") % (i + 1), RewardsEngine.DAILY_INR[i]], 20,
+			Color(0.08, 0.05, 0.02) if i == today_idx and bool(st["available"]) else (Color(0.6, 0.6, 0.6) if i < today_idx or (i == today_idx and not bool(st["available"])) else Color.WHITE))
+		tile.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tile.custom_minimum_size = Vector2(96, 76)
+		var sb: StyleBoxFlat = StyleBoxFlat.new()
+		sb.bg_color = AMBER if i == today_idx and bool(st["available"]) else Color(0.18, 0.16, 0.2)
+		sb.set_corner_radius_all(10)
+		tile.add_theme_stylebox_override("normal", sb)
+		row.add_child(tile)
+	if bool(st["available"]):
+		_panel_body.add_child(_button("%s  ₹%d" % [tr("CLAIM"), int(st["inr"])], AMBER, func() -> void:
+			GameState.claim_daily_reward()
+			close_panel(), 30, Color(0.08, 0.05, 0.02)))
+	else:
+		_panel_text("Come back tomorrow — streak: %d day(s)." % GameState.rewards.streak)
+
+func open_achievements() -> void:
+	_open_panel(tr("ACHIEVEMENTS"))
+	for id: String in RewardsEngine.ACHIEVEMENTS:
+		var a: Dictionary = RewardsEngine.ACHIEVEMENTS[id]
+		var done: bool = GameState.rewards.achieved.has(id)
+		var pct: int = roundi(GameState.rewards.achievement_progress(id) * 100.0)
+		_panel_text("%s  %s — %s   %s" % ["🏆" if done else "▫", str(a["title"]), str(a["desc"]), "✓" if done else "%d%%  (+₹%d)" % [pct, int(a["inr"])]])
 
 func new_career() -> void:
 	if GameState.has_save():
@@ -207,6 +244,14 @@ func _build_ui() -> void:
 	for k: String in secondary:
 		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(_buttons[k])
+	var row2: HBoxContainer = HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 12)
+	_menu.add_child(row2)
+	_buttons["daily"] = _button("🎁 " + tr("DAILY_REWARD"), Color(0.55, 0.32, 0.05, 0.92), open_daily)
+	_buttons["achievements"] = _button("🏆 " + tr("ACHIEVEMENTS"), Color(0.22, 0.2, 0.24, 0.92), open_achievements)
+	for k: String in ["daily", "achievements"]:
+		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row2.add_child(_buttons[k])
 	_buttons["hint"] = _label(tr("MENU_HINT"), 18, Color(1.0, 0.92, 0.82))
 	_buttons["hint"].autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_menu.add_child(_buttons["hint"])

@@ -388,6 +388,8 @@ func complete_ride() -> void:
 	b["offer"] = agreed_offer
 	b["comfort"] = comfort
 	b["near_misses"] = near_misses
+	# Unique per ride: rewarded "2× fare" can be claimed once for this ride only.
+	b["ride_id"] = "d%d-r%d-%d" % [GameState.day, GameState.completed_savaris + 1, Time.get_ticks_msec()]
 	GameState.add_inr(int(b["total"]))
 	GameState.add_respect(FareCalculator.RESPECT_XP[agreed_offer])
 	GameState.record_ride_rating(float(b["stars"]))

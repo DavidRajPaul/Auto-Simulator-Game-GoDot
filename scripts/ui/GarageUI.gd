@@ -148,6 +148,13 @@ func _on_fuel(level: float, _capacity: float) -> void:
 			c.queue_free()
 		_service_msg.text = tr("OUT_OF_FUEL")
 		_service_bar.add_child(_button("%s  ₹%d" % [tr("TOW"), ServicePoints.TOW_COST_INR], Color(0.6, 0.2, 0.15), _tow))
+		# Opt-in rescues instead of a forced ad: half a tank, or a free tow.
+		if AdMonetizationManager.can_offer_rewarded("ad_fuel_rescue"):
+			_service_bar.add_child(_button("▶ " + tr("AD_FUEL_RESCUE"), Color(0.12, 0.5, 0.22), func() -> void:
+				AdMonetizationManager.show_rewarded("ad_fuel_rescue")))
+		if AdMonetizationManager.can_offer_rewarded("ad_tow"):
+			_service_bar.add_child(_button("▶ " + tr("AD_FREE_TOW"), Color(0.12, 0.5, 0.22), func() -> void:
+				AdMonetizationManager.show_rewarded("ad_tow", {"from": _last_player_pos()})))
 		_service_bar.visible = true
 
 func _on_recover_available(available: bool) -> void:
@@ -213,10 +220,12 @@ func _open_modal(title: String) -> void:
 		c.queue_free()
 	_modal.visible = true
 	get_tree().paused = true
+	AdMonetizationManager.set_screen("pause")
 
 func close_modal() -> void:
 	_modal.visible = false
 	get_tree().paused = false
+	AdMonetizationManager.set_screen("driving")
 
 func is_open() -> bool:
 	return _modal.visible
@@ -429,7 +438,8 @@ func _on_shift_ended(summary: Dictionary) -> void:
 	_render_progress()
 	_row("", tr("NEXT_DAY"), true, func() -> void:
 		GameState.start_next_day()
-		close_modal())
+		close_modal()
+		AdMonetizationManager.maybe_show_interstitial("shift_end"))
 
 ## The painted gold pause coin from the game-art atlas (same atlas as the driving buttons).
 func _paint_pause_button() -> void:

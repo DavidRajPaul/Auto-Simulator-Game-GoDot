@@ -22,6 +22,7 @@ boot_splash/show_image=true
 
 SignalBus="*res://autoloads/SignalBus.gd"
 GameState="*res://autoloads/GameState.gd"
+AdMonetizationManager="*res://autoloads/AdMonetizationManager.gd"
 
 [debug]
 

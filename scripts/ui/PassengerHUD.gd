@@ -104,6 +104,15 @@ func _ready() -> void:
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
 		toast("%s: %s  +₹%d" % [tr("GOAL_DONE"), goal_text(g), DriverProgress.GOAL_INR], 3.0))
 	SignalBus.all_goals_completed.connect(func(bonus: int) -> void: toast("%s  +₹%d" % [tr("ALL_GOALS_DONE"), bonus], 4.0))
+	SignalBus.achievement_unlocked.connect(func(_id: String, a: Dictionary) -> void:
+		toast("🏆 %s — %s  +₹%d" % [str(a["title"]), str(a["desc"]), int(a["inr"])], 4.5))
+	SignalBus.reward_granted.connect(func(source: String, inr: int, _xp: int) -> void:
+		if source == "ad_double_fare" and inr > 0:
+			toast("2× fare!  +₹%d" % inr, 3.0)
+			_fare_card.visible = false)
+	SignalBus.rewarded_ad_failed.connect(func(p: String, _why: String) -> void:
+		if p == "ad_double_fare" and _double_btn != null:
+			_double_btn.disabled = false)
 	_refresh_level()
 
 func _process(delta: float) -> void:
@@ -116,6 +125,8 @@ func _process(delta: float) -> void:
 		_fare_timer -= delta
 		if _fare_timer <= 0.0:
 			_fare_card.visible = false
+			# Natural break: the policy decides (usually "no" — cooldowns, grace, ride spacing).
+			AdMonetizationManager.maybe_show_interstitial("after_fare_summary")
 	if _hint_timer > 0.0:
 		_hint_timer -= delta
 		if _hint_timer <= 0.0:
@@ -210,10 +221,29 @@ func _build_haggle() -> void:
 	_haggle_timer_bar.custom_minimum_size = Vector2(0, 10)
 	v.add_child(_haggle_timer_bar)
 
+var _double_btn: Button
+var _last_ride: Dictionary = {}
+
 func _build_fare_card() -> void:
 	_fare_card = _card()
+	var v: VBoxContainer = VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_fare_card.add_child(v)
 	_fare_text = _label("", 22, Color.WHITE, false)
-	_fare_text.reparent(_fare_card)
+	_fare_text.reparent(v)
+	# Opt-in rewarded video: double this fare. Never forced, hidden when no ad is ready.
+	_double_btn = Button.new()
+	_double_btn.add_theme_font_size_override("font_size", 22)
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(0.12, 0.55, 0.22)
+	sb.set_corner_radius_all(12)
+	sb.set_content_margin_all(10.0)
+	for st: String in ["normal", "hover", "pressed"]:
+		_double_btn.add_theme_stylebox_override(st, sb)
+	_double_btn.pressed.connect(func() -> void:
+		_double_btn.disabled = true
+		AdMonetizationManager.show_rewarded("ad_double_fare", {"ride_id": str(_last_ride.get("ride_id", "")), "inr": int(_last_ride.get("total", 0))}))
+	v.add_child(_double_btn)
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
@@ -325,3 +355,10 @@ func _on_ride_completed(b: Dictionary) -> void:
 		"★".repeat(stars) + "☆".repeat(5 - stars), "On time" if bool(b["on_time"]) else "Late!", b["line"]]
 	_fare_card.visible = true
 	_fare_timer = 5.0
+	_last_ride = b
+	var can_double: bool = AdMonetizationManager.can_offer_rewarded("ad_double_fare") and int(b.get("total", 0)) > 0
+	_double_btn.visible = can_double
+	_double_btn.disabled = false
+	_double_btn.text = "▶  2× fare  +₹%d" % int(b.get("total", 0))
+	if can_double:
+		_fare_timer = 7.0 # a little longer to decide

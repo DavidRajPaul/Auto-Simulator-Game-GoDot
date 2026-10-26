@@ -117,3 +117,16 @@ signal driver_level_up(level: int, title: String, reward_inr: int, unlock_key: S
 signal goals_updated(goals: Array)
 signal goal_completed(goal: Dictionary)
 signal all_goals_completed(bonus_inr: int)
+
+# --- Rewards & ads (Phase 7: publishing-ready) -----------------------------------------------
+## Any reward paid through GameState.grant_reward (source: "ride_bonus", "daily_login", "achievement", "ad_*").
+signal reward_granted(source: String, inr: int, xp: int)
+signal achievement_unlocked(id: String, info: Dictionary)
+## Daily login calendar status changed / claimable: RewardsEngine.daily_status().
+signal daily_reward_status(status: Dictionary)
+## Ad flow. Requests go to the AdMonetizationManager autoload directly (it's a service);
+## results come back here so any UI can react.
+signal rewarded_ad_completed(placement: String, context: Dictionary)
+signal rewarded_ad_failed(placement: String, reason: String)
+signal interstitial_closed(placement: String)
+signal ad_state_changed(info: Dictionary)
