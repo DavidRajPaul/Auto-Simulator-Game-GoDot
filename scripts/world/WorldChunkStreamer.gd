@@ -582,10 +582,11 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 			_wire(m, a + off, b + off, 0.35 + 0.12 * float(k))
 	for t: Array in dress.get("trees", []):
 		var base2: Vector3 = Vector3(float(t[0]), 0.0, float(t[1]))
-		if int(t[2]) == 1:
-			_palm(m, base2, float(t[3]), int(t[4]))
-		else:
-			_shade_tree(m, base2, float(t[3]), int(t[4]))
+		match int(t[2]):
+			1: _palm(m, base2, float(t[3]), int(t[4]))
+			2: _mast_tree(m, base2, float(t[3]), int(t[4]))
+			3: _copper_pod(m, base2, float(t[3]), int(t[4]))
+			_: _shade_tree(m, base2, float(t[3]), int(t[4]))
 
 func _pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
 	var u: Vector3 = Vector3(along.x, 0.0, along.y)
@@ -618,16 +619,50 @@ func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
 		_face(m, q, -side, col)
 		prev = p
 
-## Neem / rain tree: tapered trunk and a cluster of leafy blobs.
+## Rain tree (wide umbrella crown, very common on Chennai roads) or neem (rounder, denser),
+## picked by seed. Thick trunk that forks into the crown.
 func _shade_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.36, 0.28, 0.2)
-	_trunk(m, base, base + Vector3(0.0, 3.2 * s, 0.0), 0.22 * s, 0.14 * s, bark)
-	var greens: Array[Color] = [Color(0.28, 0.48, 0.2), Color(0.22, 0.42, 0.18), Color(0.34, 0.52, 0.22), Color(0.25, 0.45, 0.25)]
-	var top: Vector3 = base + Vector3(0.0, 3.2 * s, 0.0)
+	var bark: Color = Color(0.34, 0.27, 0.2)
+	var rain: bool = seed_i % 2 == 0
+	var trunk_h: float = (3.6 if rain else 3.0) * s
+	var top: Vector3 = base + Vector3(0.0, trunk_h, 0.0)
+	_trunk(m, base, top, 0.26 * s, 0.16 * s, bark)
+	var greens: Array[Color] = [Color(0.26, 0.46, 0.19), Color(0.21, 0.4, 0.17), Color(0.31, 0.5, 0.21), Color(0.24, 0.43, 0.22)]
+	var lobes: int = 5 if rain else 4
+	for k: int in lobes:
+		var a: float = float(seed_i % 7) + float(k) * TAU / float(lobes)
+		var r: float = (1.9 if rain else 1.1) * s
+		# Forked limbs out to each lobe.
+		var tip: Vector3 = top + Vector3(cos(a) * r * 0.7, (0.9 if rain else 0.8) * s, sin(a) * r * 0.7)
+		_trunk(m, top - Vector3(0.0, 0.3 * s, 0.0), tip, 0.1 * s, 0.06 * s, bark)
+		var size: Vector3 = Vector3(2.6, 1.2, 2.6) * s if rain else Vector3(2.0, 1.7, 2.0) * s
+		_blob(m, top + Vector3(cos(a) * r, (1.1 if rain else 1.0 + float(k % 2) * 0.5) * s, sin(a) * r), size, greens[(seed_i + k) % greens.size()])
+	_blob(m, top + Vector3(0.0, (1.5 if rain else 1.8) * s, 0.0), Vector3(3.0, 1.2, 3.0) * s if rain else Vector3(2.2, 1.8, 2.2) * s, greens[seed_i % greens.size()].lightened(0.04))
+
+## Ashoka / mast tree (Polyalthia longifolia): the tall, slim, dark-green column lining Chennai
+## avenues and compound walls.
+func _mast_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var h: float = 8.0 * s + float(seed_i % 5) * 0.3
+	_trunk(m, base, base + Vector3(0.0, 1.4 * s, 0.0), 0.13 * s, 0.1 * s, Color(0.3, 0.24, 0.18))
+	var green: Color = Color(0.13, 0.3, 0.12)
+	var tiers: int = 4
+	for k: int in tiers:
+		var f: float = float(k) / float(tiers - 1)
+		var y: float = 1.6 * s + f * (h - 2.4 * s)
+		var w: float = lerpf(1.5, 0.6, f) * s
+		_blob(m, base + Vector3(0.0, y + 0.6 * s, 0.0), Vector3(w, 2.2 * s, w), green.lightened(0.05 * float(k % 2)))
+
+## Copper-pod / gulmohar: spreading flat crown, yellow or flame-orange flowers on top.
+func _copper_pod(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.4, 0.33, 0.25)
+	var top: Vector3 = base + Vector3(0.0, 3.6 * s, 0.0)
+	_trunk(m, base, top, 0.2 * s, 0.13 * s, bark)
+	var leaf: Color = Color(0.3, 0.5, 0.2)
+	var bloom: Color = Color(0.98, 0.78, 0.1) if seed_i % 3 != 0 else Color(0.95, 0.35, 0.12)
+	_blob(m, top + Vector3(0.0, 0.7 * s, 0.0), Vector3(4.6, 1.3, 4.6) * s, leaf)
 	for k: int in 3:
-		var a: float = float(seed_i % 7) + float(k) * 2.4
-		var off: Vector3 = Vector3(cos(a) * 1.1, 0.6 + float(k % 2) * 0.9, sin(a) * 1.1) * s if k > 0 else Vector3(0.0, 1.3 * s, 0.0)
-		_blob(m, top + off, Vector3(2.0, 1.4, 2.0) * s * (1.0 if k == 0 else 0.75), greens[(seed_i + k) % greens.size()])
+		var a: float = float(seed_i % 11) + float(k) * 2.1
+		_blob(m, top + Vector3(cos(a) * 1.2 * s, 1.3 * s, sin(a) * 1.2 * s), Vector3(1.6, 0.6, 1.6) * s, bloom if k != 1 else leaf.lightened(0.1))
 
 ## Coconut palm: leaning trunk, drooping fronds.
 func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:

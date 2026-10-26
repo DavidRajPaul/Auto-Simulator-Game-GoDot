@@ -837,7 +837,7 @@ func _layout_hud_art() -> void:
 	_speed_label.add_theme_font_size_override("font_size", 18)
 	# Meter flag top-right, under the wallet; the fare prints on its dark display.
 	var mw: float = 220.0
-	var meter_r: Rect2 = Rect2(Vector2(vp.x - 26.0 - mw, 176.0), Vector2(mw, mw * 0.5))
+	var meter_r: Rect2 = Rect2(Vector2(vp.x - 26.0 - mw, 216.0), Vector2(mw, mw * 0.5)) # below the XP bar (196–206)
 	_place(_meter, meter_r)
 	_meter_label.position = meter_r.position + meter_r.size * METER_DISPLAY.position
 	_meter_label.size = meter_r.size * METER_DISPLAY.size

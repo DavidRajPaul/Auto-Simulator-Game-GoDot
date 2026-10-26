@@ -1,33 +1,35 @@
 class_name StreetSigns
 extends Node3D
-## Street-name boards at real junctions, using the real OSM names of each street (Tamil on top,
-## English below, like Greater Chennai Corporation boards: blue plate on two posts).
+## Greater Chennai Corporation street-name boards at real junctions, with the real OSM names
+## (Tamil on top, English below, white on a blue plate, two polished chrome posts).
 ##
-## Pooled: MAX_SIGNS boards are built once and re-assigned to the nearest junctions as the
-## player drives (no instantiate/free while driving). A board stands on the left kerb a few
-## metres into each named street that leaves a junction, facing traffic turning into it.
-## Cost per board: 1 mesh (plate + posts merged) + 2 Label3D ≈ 3 draw calls, culled past
-## VISIBLE_M, so the whole system stays inside the 150-draw-call budget.
+## Spots come from data/world/street_signs.json (tools/osm/build_street_signs.py), which places
+## every board on the footpath against the REAL osm2streets road surface — never in a lane.
+## Pooled: MAX_SIGNS boards built once and re-assigned to the nearest spots as the player drives
+## (no instantiate/free while driving). Per board: 1 mesh (2 surfaces: painted plate + chrome) +
+## 2 Label3D, culled past VISIBLE_M, inside the 150-draw-call budget.
 
+const SPOTS_FILE: String = "res://data/world/street_signs.json"
 const MAX_SIGNS: int = 8
 const SEARCH_M: float = 110.0
 const VISIBLE_M: float = 95.0
 const UPDATE_S: float = 0.75
-const INTO_STREET_M: float = 7.0
-const KERB_GAP_M: float = 1.1
 const CELL_M: float = 60.0
-const PLATE: Vector3 = Vector3(2.2, 0.62, 0.05)
-const PLATE_HEIGHT_M: float = 2.35
-const BLUE: Color = Color(0.05, 0.22, 0.6)
+const PLATE: Vector3 = Vector3(2.0, 0.66, 0.04)
+const PLATE_HEIGHT_M: float = 2.55
+const POST_GAP_M: float = 1.62
+const POST_R: float = 0.035
+const BLUE: Color = Color(0.03, 0.2, 0.58)
 
-var graph: RoadGraph
 var _player: Vector3 = Vector3.ZERO
 var _pool: Array[Node3D] = []
-var _assigned: Dictionary = {} # key -> Node3D
-var _junction_grid: Dictionary = {} # Vector2i -> PackedInt32Array(node ids)
+var _assigned: Dictionary = {} # spot index -> Node3D
+var _spots: Array = [] # [x, z, yaw, name, name_ta]
+var _grid: Dictionary = {} # Vector2i -> PackedInt32Array(spot indices)
 var _timer: float = UPDATE_S
 
 func _ready() -> void:
+	_load_spots()
 	var mesh: ArrayMesh = _sign_mesh()
 	for i: int in MAX_SIGNS:
 		var n: Node3D = Node3D.new()
@@ -38,45 +40,44 @@ func _ready() -> void:
 		mi.visibility_range_end = VISIBLE_M
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		n.add_child(mi)
-		n.add_child(_label("Tamil", PLATE_HEIGHT_M + 0.12, 54))
-		n.add_child(_label("English", PLATE_HEIGHT_M - 0.13, 44))
+		n.add_child(_label("Tamil", PLATE_HEIGHT_M + 0.14, 54))
+		n.add_child(_label("English", PLATE_HEIGHT_M - 0.14, 46))
 		add_child(n)
 		_pool.append(n)
-	SignalBus.road_graph_ready.connect(_set_graph)
-	if SignalBus.current_road_graph != null:
-		_set_graph(SignalBus.current_road_graph)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player = p)
+
+func _load_spots() -> void:
+	var f: FileAccess = FileAccess.open(SPOTS_FILE, FileAccess.READ)
+	if f == null:
+		push_warning("StreetSigns: %s missing — run tools/osm/build_street_signs.py" % SPOTS_FILE)
+		return
+	_spots = JSON.parse_string(f.get_as_text()) as Array
+	for i: int in _spots.size():
+		var s: Array = _spots[i]
+		var k: Vector2i = Vector2i(floori(float(s[0]) / CELL_M), floori(float(s[1]) / CELL_M))
+		var arr: PackedInt32Array = _grid.get(k, PackedInt32Array())
+		arr.append(i)
+		_grid[k] = arr
 
 func _label(label_name: String, y: float, font_size: int) -> Label3D:
 	var l: Label3D = Label3D.new()
 	l.name = label_name
-	l.position = Vector3(0.0, y, -PLATE.z * 0.5 - 0.01)
-	l.rotation.y = PI # read from the -Z side (the side facing the approaching driver)
+	# Both faces of the plate carry the name (boards are read from either direction).
+	l.position = Vector3(0.0, y, -PLATE.z * 0.5 - 0.006)
+	l.rotation.y = PI
 	l.pixel_size = 0.0042
 	l.font_size = font_size
 	l.outline_size = 0
 	l.modulate = Color.WHITE
-	l.double_sided = false
-	l.width = 500.0
+	l.double_sided = true
+	l.width = 480.0
 	l.autowrap_mode = TextServer.AUTOWRAP_OFF
 	l.visibility_range_end = VISIBLE_M * 0.8
 	l.shaded = false
 	return l
 
-func _set_graph(g: RoadGraph) -> void:
-	graph = g
-	_junction_grid.clear()
-	for ni: int in g.nodes.size():
-		if g.node_edges[ni].size() < 3:
-			continue # only real junctions get boards
-		var p: Vector3 = g.nodes[ni]
-		var k: Vector2i = Vector2i(floori(p.x / CELL_M), floori(p.z / CELL_M))
-		var arr: PackedInt32Array = _junction_grid.get(k, PackedInt32Array())
-		arr.append(ni)
-		_junction_grid[k] = arr
-
 func _process(delta: float) -> void:
-	if graph == null:
+	if _spots.is_empty():
 		return
 	_timer += delta
 	if _timer < UPDATE_S:
@@ -90,8 +91,7 @@ func refresh() -> void:
 	var keep: Dictionary = {}
 	for c: Dictionary in wanted:
 		keep[c["key"]] = c
-	# Free boards whose spot is no longer wanted.
-	for key: String in _assigned.keys():
+	for key: Variant in _assigned.keys():
 		if not keep.has(key):
 			(_assigned[key] as Node3D).visible = false
 			_assigned.erase(key)
@@ -110,61 +110,37 @@ func _free_board() -> Node3D:
 			return n
 	return null
 
-## Board spots near `p`, nearest first: {key, pos, yaw, name, ta}.
+## Board spots near `p`, nearest first: {key, pos, yaw, name, ta, dist}.
 func candidates(p: Vector3) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var r: int = ceili(SEARCH_M / CELL_M)
 	var c: Vector2i = Vector2i(floori(p.x / CELL_M), floori(p.z / CELL_M))
 	for dx: int in range(-r, r + 1):
 		for dz: int in range(-r, r + 1):
-			for ni: int in _junction_grid.get(c + Vector2i(dx, dz), PackedInt32Array()):
-				var jp: Vector3 = graph.nodes[ni]
-				var d: float = Vector2(jp.x - p.x, jp.z - p.z).length()
-				if d > SEARCH_M:
-					continue
-				var seen: Dictionary = {}
-				for ei: int in graph.node_edges[ni]:
-					var e: RoadGraph.Edge = graph.edges[ei]
-					if e.road_name == "" or seen.has(e.road_name) or e.length < INTO_STREET_M * 2.0:
-						continue
-					seen[e.road_name] = true
-					var spot: Dictionary = _spot(ni, ei)
-					spot["dist"] = d
-					out.append(spot)
+			for i: int in _grid.get(c + Vector2i(dx, dz), PackedInt32Array()):
+				var s: Array = _spots[i]
+				var d: float = Vector2(float(s[0]) - p.x, float(s[1]) - p.z).length()
+				if d <= SEARCH_M:
+					out.append({"key": i, "pos": Vector3(float(s[0]), 0.0, float(s[1])), "yaw": float(s[2]),
+						"name": str(s[3]), "ta": str(s[4]), "dist": d})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["dist"]) < float(b["dist"]))
 	if out.size() > MAX_SIGNS:
 		out.resize(MAX_SIGNS)
 	return out
-
-## A few metres into street `ei` from junction `ni`, on the left kerb, plate across the kerb
-## facing the junction (what you see as you turn in).
-func _spot(ni: int, ei: int) -> Dictionary:
-	var e: RoadGraph.Edge = graph.edges[ei]
-	var from_a: bool = e.a == ni
-	var s: float = INTO_STREET_M if from_a else e.length - INTO_STREET_M
-	var pd: Array[Vector3] = graph.sample(ei, s, 1 if from_a else -1)
-	var into: Vector3 = pd[1] # direction leaving the junction
-	var left: Vector3 = Vector3(into.z, 0.0, -into.x)
-	var pos: Vector3 = pd[0] + left * (e.width * 0.5 + KERB_GAP_M)
-	# Plate faces back toward the junction.
-	var yaw: float = atan2(into.x, into.z)
-	return {"key": "%d:%d" % [ni, ei], "pos": pos, "yaw": yaw, "name": e.road_name, "ta": e.road_name_ta}
 
 func _place(n: Node3D, c: Dictionary) -> void:
 	n.global_position = c["pos"]
 	n.rotation = Vector3(0.0, float(c["yaw"]), 0.0)
 	var ta: Label3D = n.get_node("Tamil") as Label3D
 	var en: Label3D = n.get_node("English") as Label3D
-	var english: String = _short(str(c["name"]))
+	var english: String = _short(str(c["name"])).to_upper()
 	ta.text = str(c["ta"])
 	en.text = english
-	# Single-language board: centre the English line.
-	en.position.y = PLATE_HEIGHT_M - 0.13 if ta.text != "" else PLATE_HEIGHT_M
-	en.font_size = 44 if ta.text != "" else 52
-	# Long names shrink to fit the plate.
-	var fit: float = clampf(22.0 / maxf(float(english.length()), 1.0), 0.55, 1.0)
+	en.position.y = PLATE_HEIGHT_M - 0.14 if ta.text != "" else PLATE_HEIGHT_M - 0.02
+	en.font_size = 46 if ta.text != "" else 56
+	var fit: float = clampf(19.0 / maxf(float(english.length()), 1.0), 0.5, 1.0)
 	en.pixel_size = 0.0042 * fit
-	ta.pixel_size = 0.0042 * clampf(18.0 / maxf(float(ta.text.length()), 1.0), 0.5, 1.0)
+	ta.pixel_size = 0.0042 * clampf(16.0 / maxf(float(ta.text.length()), 1.0), 0.5, 1.0)
 	n.visible = true
 
 ## Chennai boards abbreviate: "Road" → "Rd", "Street" → "St", "Salai" stays.
@@ -172,14 +148,35 @@ static func _short(s: String) -> String:
 	return s.replace(" Road", " Rd").replace(" Street", " St").replace(" Avenue", " Ave").replace("Doctor ", "Dr ")
 
 static func _sign_mesh() -> ArrayMesh:
+	# Surface 0: the painted plate (blue face, white rim + white back frame).
 	var st: SurfaceTool = MeshKit.begin()
 	MeshKit.box(st, Vector3(0, PLATE_HEIGHT_M, 0), PLATE, BLUE)
-	MeshKit.box(st, Vector3(0, PLATE_HEIGHT_M, 0.005), PLATE + Vector3(0.06, 0.06, -0.02), Color(0.92, 0.92, 0.92)) # white rim
+	MeshKit.box(st, Vector3(0, PLATE_HEIGHT_M, 0.0), PLATE + Vector3(0.05, 0.05, -0.012), Color(0.95, 0.95, 0.95))
+	var paint: StandardMaterial3D = StandardMaterial3D.new()
+	paint.vertex_color_use_as_albedo = true
+	paint.roughness = 0.45
+	var mesh: ArrayMesh = MeshKit.finish(st, paint)
+	# Surface 1: polished chrome posts with end caps and clamp bands.
+	var ch: SurfaceTool = MeshKit.begin()
+	var silver: Color = Color(0.9, 0.91, 0.94)
+	var top_y: float = PLATE_HEIGHT_M + PLATE.y * 0.5 + 0.06
 	for side: float in [-1.0, 1.0]:
-		MeshKit.box(st, Vector3(side * (PLATE.x * 0.5 - 0.12), (PLATE_HEIGHT_M - PLATE.y * 0.5) * 0.5, 0.03), Vector3(0.06, PLATE_HEIGHT_M - PLATE.y * 0.5, 0.06), Color(0.85, 0.85, 0.85))
-		# Black-and-yellow kerb paint at the foot of each post (very Chennai).
-		MeshKit.box(st, Vector3(side * (PLATE.x * 0.5 - 0.12), 0.2, 0.03), Vector3(0.08, 0.4, 0.08), Color(0.95, 0.8, 0.1))
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.6
-	return MeshKit.finish(st, mat)
+		var x: float = side * POST_GAP_M * 0.5
+		MeshKit.tube(ch, Vector3(x, 0.0, 0.035), Vector3(x, top_y, 0.035), POST_R, silver, 10)
+		MeshKit.disc(ch, Vector3(x, top_y, 0.035), Vector3.UP, POST_R * 1.25, silver, 10)
+		for band_y: float in [PLATE_HEIGHT_M - PLATE.y * 0.35, PLATE_HEIGHT_M + PLATE.y * 0.35]:
+			MeshKit.tube(ch, Vector3(x, band_y - 0.02, 0.035), Vector3(x, band_y + 0.02, 0.035), POST_R * 1.35, silver, 10)
+		MeshKit.tube(ch, Vector3(x, 0.0, 0.035), Vector3(x, 0.05, 0.035), POST_R * 2.2, Color(0.55, 0.55, 0.57), 10) # base flange
+	var chrome: StandardMaterial3D = StandardMaterial3D.new()
+	chrome.vertex_color_use_as_albedo = true
+	# Bright, half-metallic: a fully metallic surface turns black wherever there is no sky
+	# reflection to show (compatibility renderer, budget GPUs). This reads as polished steel
+	# everywhere, with a sharp highlight from rim lighting.
+	chrome.metallic = 0.45
+	chrome.metallic_specular = 0.9
+	chrome.roughness = 0.22
+	chrome.rim_enabled = true
+	chrome.rim = 0.6
+	chrome.rim_tint = 0.2
+	MeshKit.finish(ch, chrome, mesh)
+	return mesh

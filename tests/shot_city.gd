@@ -6,6 +6,8 @@ func _ready() -> void:
 
 func _run() -> void:
 	GameState.reset_profile()
+	if OS.has_environment("SHOT_MIN"):
+		GameState.shift_minute = float(OS.get_environment("SHOT_MIN"))
 	var city: Node = (load("res://scenes/main_chennai.tscn") as PackedScene).instantiate()
 	add_child(city)
 	for i: int in 30:
@@ -36,7 +38,7 @@ func _run() -> void:
 			if n.visible:
 				rig.set_process(false)
 				var cam: Camera3D = rig.get_node("Camera") as Camera3D
-				cam.global_position = n.global_position + n.global_basis * Vector3(0.6, 1.9, -5.5)
+				cam.global_position = n.global_position + n.global_basis * Vector3(float(OS.get_environment("SHOT_SX")) if OS.has_environment("SHOT_SX") else 0.6, 1.9, -5.5)
 				cam.look_at(n.global_position + Vector3(0, 2.2, 0))
 				print("SIGN ", (n.get_node("English") as Label3D).text)
 				break

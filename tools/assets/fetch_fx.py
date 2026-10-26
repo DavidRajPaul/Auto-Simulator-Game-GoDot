@@ -26,8 +26,6 @@ ZIPS = {
 }
 # output name -> (zip, name keyword(s) to match, nth match, size px)
 WANT = {
-    "spark_a": ("particle", ("spark",), 0, 128),
-    "spark_b": ("particle", ("spark",), 2, 128),
     "spark_streak": ("particle", ("trace",), 0, 128),
     "smoke_a": ("particle", ("smoke",), 0, 256),
     "smoke_b": ("particle", ("smoke",), 3, 256),
