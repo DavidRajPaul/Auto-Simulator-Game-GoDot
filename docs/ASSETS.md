@@ -105,7 +105,7 @@ the way to get the "Madras Soul" sounds.
 | Stray cow | `stray_cow.glb` | Cow, Quaternius (poly.pizza), converted from FBX | CC0 |
 | Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). The file holds two cows; the pipeline keeps "cow 2" only. Stray cows pick either cow at random | CC BY 4.0 |
 | Player auto | `vehicles/player_auto.glb` | Same rSquare auto at higher detail (6.3k tris, 1024 px). Used while the paint is stock yellow; other paints keep the procedural body | CC BY 4.0 |
-| MTC bus | none yet | The free bus models are about 4 m long and cannot be stretched to 11 m. It keeps its box until a real bus model is found | |
+| MTC bus | `bus_tnstc.glb`, `bus_setc.glb` | Tamil Nadu buses by Nobel Tech (Sketchfab), see 4b | CC BY 4.0 |
 
 Run `python3 tools/assets/process_models.py` to rebuild these from `assets_src/incoming/models/`. Credits are in `assets/models/CREDITS_models.md`.
 
@@ -125,6 +125,39 @@ auto stays procedural (it's already modelled and repaints in the garage).
 
 Indian bus with Indian livery (optional, heavy): [Indian Bus Model Type 3 — CGTrader](https://www.cgtrader.com/free-3d-models/vehicle/bus/indian-bus-model-type-3)
 (free, Royalty Free licence, 64k polygons, so it needs a big reduction).
+
+### 4b. Chennai city and people (2026-10-26)
+
+**In the game** (optimised from the downloads, raw files stay in `assets_src/incoming/models/`):
+
+| What | File(s) | Source | Licence |
+|---|---|---|---|
+| TNSTC town bus, SETC coach (bus slot) | `assets/models/traffic/bus_tnstc.glb`, `bus_setc.glb` | Nobel Tech (Sketchfab) | CC BY 4.0 |
+| Goods lorry (new traffic type) | `assets/models/traffic/lorry.glb` | Oren garage (Sketchfab) | CC BY 4.0 |
+| Old man in veshti (+ the shared walk clip) | `assets/models/people/old_man_veshti.glb` | anandmohan662 (Sketchfab) | CC BY 4.0 |
+| Young man | `young_man.glb` | alex.texelsales (Sketchfab) | CC BY 4.0 |
+| Women in saree (violet, green, maroon; + the shared idle clip) | `woman_saree_*.glb` | "Female test", CloudHubOmniTeam (Sketchfab) | CC BY 4.0 |
+| Girl in churidar, girl in pavadai-davani | `girl_churidar.glb`, `girl_pavadai.glb` | "South Indian Women", alnmathew (Sketchfab) | CC BY 4.0 |
+| TWAD overhead water tower | `assets/models/city/water_tower.glb` | TamilarasanRG (Sketchfab) | CC BY 4.0 |
+| Canal-side settlement | `slum_cluster.glb` | aswin.baskaran (Sketchfab) | CC BY 4.0 |
+| Chennai Central (skyline, north of the map) | `chennai_central.glb` | SudharsanArivalagan (Sketchfab) | CC BY 4.0 |
+| Diesel auto engine (King Deluxe) | `assets/audio/vehicle/engine_diesel_loop.ogg` | recordx_media (Pixabay) | Pixabay |
+| Indian city road ambience | `assets/audio/ambience/city_traffic_loop.ogg` | SoundQue (Pixabay) | Pixabay |
+
+Rebuild: `python3 tools/assets/process_people.py`, `process_city.py`, `process_models.py traffic/bus_tnstc.glb …`,
+`process_incoming.py engine_diesel_loop.ogg city_traffic_loop.ogg`, then `tools/osm/place_city_props.py` and `build_street_dressing.py`.
+
+**Downloaded but not used:**
+
+| File | Why |
+|---|---|
+| Chennai Lighthouse (rajkumar005071), Uthirakosamangai temple (Archéomatique) | **CC BY-NC** (no commercial use). The lighthouse and gopuram are built in code instead (`LandmarkKit.gd`) |
+| Indian Woman in Saree (Pixel_Monster) | Sketchfab Standard licence. The same avatar is in "Female test" (CC BY), which is used instead |
+| CID ACP Pradhuman | Likeness of a real actor's TV character: personality-rights risk |
+| Indian Man In Dhoti | The dhoti cloth is bound to the skeleton at the wrong scale in the export (skins into a 3 m sheet) |
+| Wife Final | No skeleton, so it cannot walk |
+| Chennai 0006 Flower Vendor | A photo-scan of a wooden box stall and pavement (83k triangles), no person in it |
+| Kenney City Kit Commercial, Quaternius Ultimate Textured Buildings | Generic Western blocks. Swapping real OSM footprints for prefab buildings would break the 1 : 1 map, so the Chennai detail is added to the real footprints instead (sunshades, parapets, stair head-rooms with Sintex tanks, AC units, awnings, poles, wires, trees) |
 
 ### 5. Textures and sky (optional — the generated atlas already covers Chennai)
 
@@ -148,6 +181,7 @@ Indian bus with Indian livery (optional, heavy): [Indian Bus Model Type 3 — CG
 * [Light Rain on Windscreen with Wipers — soundslikewillem](https://freesound.org/people/soundslikewillem/sounds/242200/) is **CC BY-NC 4.0** (no commercial use). We already have a CC0 rain loop.
 * Artlist, Sonniss "Tuk Tuks", Epidemic, Pond5: paid libraries. Fine if you buy them, but not free.
 * Sketchfab models marked "Standard" or "Editorial" licence, and any model without a **Download** button.
+* Models of real people or their TV/film characters.
 
 ## How big audio files are handled
 
@@ -174,9 +208,15 @@ Prompts: the "Namma Auto Game Art Prompt Pack" doc (1A-2I). Raw PNGs go in `asse
 |---|---|
 | `assets/ui/controls_v2.png` (driving buttons, pause, touch ripple; 1536x768 atlas) | 2B-2I |
 | `assets/ui/hud_v2.png` (speedometer, LPG dial, needle, mini-map ring and pins, fare meter, ribbons, stunt burst; 2048x1024 atlas) | 3A-3E |
+| `assets/ui/rewards.png` (coins, stars, XP, LPG, tick, gift, padlock, 5 rank badges) | 5A, 5B |
+| `assets/ui/portraits.png` (rider portraits) | cropped from 4G and 4F |
 | `assets/ui/logo.png` (menu logo) | 1G |
 | `assets/ui/loading_bg.jpg` (loading screen) | 1F |
 | `icon.png`, `assets/icon/icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
 | `assets/icon/boot_splash.png` | 1E |
 
 Not used yet: 1A and 1C (alternative icons), 2A (the full sheet; the single-button images are sharper) and the LPG bunk pin from 3B (the mini-map doesn't show bunks yet).
+
+Screens 4A-4H (Stitch HTML + DESIGN.md "Namma Auto Arcade") are rebuilt in Godot by `scripts/ui/UIKit.gd` and the
+screen scripts; the HTML animations are reproduced as tweens (pulse, bob, pop-in, count-up, rays, stripes, flicker).
+Fonts from the design: Bricolage Grotesque and Rubik (Google Fonts, SIL OFL 1.1) in `assets/fonts/ui/`.

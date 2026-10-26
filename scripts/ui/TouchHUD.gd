@@ -188,6 +188,10 @@ func _ready() -> void:
 	SignalBus.weather_changed.connect(func(_r: bool) -> void: _refresh_wiper_visibility())
 	_set_button_visible("KickStart", false)
 	_refresh_wiper_visibility()
+	SignalBus.ui_modal_changed.connect(func(open: bool) -> void:
+		_root.visible = not open
+		if open:
+			release_all())
 
 func _process(delta: float) -> void:
 	var now: int = Engine.get_process_frames()

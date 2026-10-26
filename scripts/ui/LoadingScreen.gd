@@ -28,7 +28,24 @@ var _tip: Label
 var _percent: Label
 var _root: Control
 var _art: TextureRect
+var _stripes: Stripes
+var _tip_card: PanelContainer
+
+## Diagonal stripes scrolling across the progress fill (4D "progressStripes").
+class Stripes:
+	extends Control
+	var offset: float = 0.0
+	func _process(delta: float) -> void:
+		offset = fmod(offset + delta * 60.0, 28.0)
+		queue_redraw()
+	func _draw() -> void:
+		var x: float = -28.0 + offset
+		while x < size.x + size.y:
+			draw_colored_polygon(PackedVector2Array([Vector2(x, 0), Vector2(x + 12, 0), Vector2(x + 12 - size.y, size.y), Vector2(x - size.y, size.y)]),
+				Color(1, 1, 1, 0.22))
+			x += 28.0
 var _band: ColorRect
+var _rider: TextureRect
 var _shown: float = 0.0
 var _goal: float = 0.0
 var _tip_index: int = 0
@@ -100,6 +117,7 @@ func _build() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP # swallow taps while loading
+	_root.theme = UIKit.theme()
 	add_child(_root)
 	_backdrop = ChennaiBackdrop.new()
 	_backdrop.dash_y = 0.86 # keep the dashes clear of the bar and the tip
@@ -109,7 +127,8 @@ func _build() -> void:
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(shade)
-	if ResourceLoader.exists(ART_BG):
+	# Two looks, picked at random: the painted night street (1F) or the drawn Marina sunset.
+	if ResourceLoader.exists(ART_BG) and randf() < 0.6:
 		_art = TextureRect.new()
 		_art.texture = load(ART_BG) as Texture2D
 		_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -126,13 +145,48 @@ func _build() -> void:
 	title.name = "Title"
 	var tamil: Label = _label("நம்ம ஆட்டோ", 32, Color.WHITE, 6)
 	tamil.name = "Tamil"
-	_bar_bg = _panel(Color(0, 0, 0, 0.6), AMBER)
-	_bar_fill = _panel(AMBER, Color(0, 0, 0, 0))
-	_auto_icon = _label("▶", 34, Color.WHITE, 6)
-	_status = _label(tr("LOADING_CITY"), 24, Color.WHITE, 5)
-	_percent = _label("0%", 24, AMBER, 5)
-	_tip = _label("", 22, Color(1, 0.95, 0.85), 5)
+	_bar_bg = _panel(Color("120c16"), UIKit.PLUM)
+	_bar_fill = _panel(UIKit.YELLOW, Color(0, 0, 0, 0))
+	_bar_fill.clip_contents = true
+	_stripes = Stripes.new()
+	_stripes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_fill.add_child(_stripes)
+	_auto_icon = Label.new() # kept for the layout code; the painted auto rides on top
+	_auto_icon.visible = false
+	_root.add_child(_auto_icon)
+	_status = _label(tr("LOADING_CITY"), 24, UIKit.JASMINE, 6)
+	_percent = _label("0%", 46, UIKit.YELLOW, 8)
+	_tip_card = PanelContainer.new()
+	_tip_card.add_theme_stylebox_override("panel", UIKit.card_box(Color(UIKit.DUSK, 0.92), 18))
+	_tip_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_tip_card)
+	var tip_row: HBoxContainer = HBoxContainer.new()
+	tip_row.add_theme_constant_override("separation", 12)
+	_tip_card.add_child(tip_row)
+	tip_row.add_child(UIKit.reward_icon("star", 34))
+	_tip = UIKit.label("", 19, UIKit.JASMINE)
 	_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tip_row.add_child(_tip)
+	# The little auto bouncing along the bar (4C "autoBounce", 0.45 s).
+	_rider = TextureRect.new()
+	_rider.texture = load(TouchHUD.HUD_ATLAS) as Texture2D
+	var at: AtlasTexture = AtlasTexture.new()
+	at.atlas = _rider.texture
+	at.region = TouchHUD.HUD_REGIONS["pin_player"] as Rect2
+	_rider.texture = at
+	_rider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_rider.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_rider.rotation = PI * 0.5 # the map pin faces up; turn it to drive along the bar
+	_rider.size = Vector2(54, 54)
+	_rider.pivot_offset = _rider.size * 0.5
+	_rider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_rider)
+	var bounce: Tween = _rider.create_tween().set_loops()
+	bounce.tween_property(_rider, "scale", Vector2(1.0, 1.08), 0.225).set_trans(Tween.TRANS_SINE)
+	bounce.tween_property(_rider, "scale", Vector2.ONE, 0.225).set_trans(Tween.TRANS_SINE)
+	if _art == null:
+		UIKit.flicker(title, 2.5) # neon sign flicker on the drawn-skyline look (4C T. Nagar)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -152,16 +206,19 @@ func _layout() -> void:
 	tamil.position = Vector2(0, vp.y * 0.12 + 88)
 	tamil.size = Vector2(vp.x, 44)
 	var bw: float = minf(760.0, vp.x * 0.66)
-	_bar_bg.position = Vector2((vp.x - bw) * 0.5, vp.y * 0.76)
-	_bar_bg.size = Vector2(bw, 22)
-	_status.position = Vector2(_bar_bg.position.x, _bar_bg.position.y - 40)
-	_status.size = Vector2(bw * 0.8, 32)
+	bw = minf(900.0, vp.x * 0.74)
+	_bar_bg.position = Vector2((vp.x - bw) * 0.5, vp.y * 0.78)
+	_bar_bg.size = Vector2(bw, 30)
+	_stripes.size = Vector2(bw, 30)
+	_status.position = Vector2(_bar_bg.position.x, _bar_bg.position.y - 46)
+	_status.size = Vector2(bw * 0.75, 36)
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_percent.position = Vector2(_bar_bg.position.x + bw * 0.8, _bar_bg.position.y - 40)
-	_percent.size = Vector2(bw * 0.2, 32)
+	_percent.position = Vector2(_bar_bg.position.x + bw * 0.6, _bar_bg.position.y - 62)
+	_percent.size = Vector2(bw * 0.4, 56)
 	_percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_tip.position = Vector2((vp.x - bw) * 0.5, vp.y * 0.76 + 40)
-	_tip.size = Vector2(bw, 70)
+	_tip_card.position = Vector2((vp.x - bw) * 0.5, vp.y * 0.78 + 46)
+	_tip_card.custom_minimum_size = Vector2(bw, 0)
+	_tip_card.size = Vector2(bw, 0)
 	_update_bar()
 
 func _update_bar() -> void:
@@ -170,19 +227,15 @@ func _update_bar() -> void:
 	_bar_fill.size = Vector2(maxf(0.0, (_bar_bg.size.x - 6.0) * fill), _bar_bg.size.y - 6.0)
 	_auto_icon.position = Vector2(_bar_fill.position.x + _bar_fill.size.x - 10.0, _bar_bg.position.y - 9.0)
 	_auto_icon.size = Vector2(30, 40)
+	if _rider != null:
+		_rider.position = Vector2(_bar_fill.position.x + _bar_fill.size.x - 30.0, _bar_bg.position.y - 14.0)
 	_percent.text = "%d%%" % roundi(fill * 100.0)
 	_backdrop.road_scroll = fill * 4.0
 	_backdrop.queue_redraw()
 
 func _label(text: String, size: int, colour: Color, outline: int) -> Label:
-	var l: Label = Label.new()
-	l.text = text
+	var l: Label = UIKit.label(text, size, colour, true, outline)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.05))
-	l.add_theme_constant_override("outline_size", outline)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(l)
 	return l
 
@@ -191,8 +244,8 @@ func _panel(bg: Color, border: Color) -> Panel:
 	var sb: StyleBoxFlat = StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.border_color = border
-	sb.set_border_width_all(2 if border.a > 0.0 else 0)
-	sb.set_corner_radius_all(11)
+	sb.set_border_width_all(4 if border.a > 0.0 else 0)
+	sb.set_corner_radius_all(15)
 	p.add_theme_stylebox_override("panel", sb)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(p)

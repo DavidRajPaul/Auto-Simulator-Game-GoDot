@@ -98,6 +98,10 @@ signal weather_changed(raining: bool)
 signal kick_timed(good: bool)
 ## Android back button / Esc (GameState turns NOTIFICATION_WM_GO_BACK_REQUEST into this).
 signal back_requested()
+## A full-screen menu (pause, garage, summary) opened or closed: HUDs hide underneath to save draws.
+signal ui_modal_changed(open: bool)
+## A walker had to jump out of the auto's way (PedestrianManager).
+signal pedestrian_startled(pos: Vector3)
 # --- Controls (gear, indicators, lamps) --------------------------------------------
 ## +1 drive, -1 reverse.
 signal gear_changed(gear: int)

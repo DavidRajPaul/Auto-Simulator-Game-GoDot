@@ -1,0 +1,47 @@
+{
+ "_note": "made by tools/assets/process_people.py \u2014 walk_speed is the in-place walk's true pace in m/s at speed_scale 1",
+ "people": {
+  "girl_churidar": {
+   "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
+   "height": 1.55,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.238
+  },
+  "girl_pavadai": {
+   "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
+   "height": 1.52,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.274
+  },
+  "old_man_veshti": {
+   "credit": "\"Indian Old man walking\" by anandmohan662 (Sketchfab), CC BY 4.0",
+   "height": 1.66,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.329
+  },
+  "woman_saree_green": {
+   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
+   "height": 1.58,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.24
+  },
+  "woman_saree_maroon": {
+   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
+   "height": 1.54,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.209
+  },
+  "woman_saree_violet": {
+   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0",
+   "height": 1.56,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.224
+  },
+  "young_man": {
+   "credit": "\"Alex Texel A-pose\" by alex.texelsales (Sketchfab), CC BY 4.0",
+   "height": 1.72,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.393
+  }
+ }
+}

@@ -4,24 +4,31 @@ extends AnimatableBody3D
 ## Keeps a gap to whatever is ahead, seeks open sub-lanes (two-wheelers aggressively),
 ## turns at junctions and dodges horns. Spawned once, recycled — never freed while driving.
 
-enum Archetype { TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW }
+enum Archetype { TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW, LORRY }
 
-const SIZES: Array[Vector3] = [Vector3(0.8, 1.3, 2.0), Vector3(1.7, 1.5, 3.8), Vector3(1.4, 1.8, 3.0), Vector3(2.5, 3.0, 11.0), Vector3(0.7, 1.4, 2.0)]
-const SPEED_RANGES_KMH: Array[Vector2] = [Vector2(32.0, 46.0), Vector2(28.0, 42.0), Vector2(22.0, 32.0), Vector2(20.0, 30.0), Vector2(0.0, 3.0)]
+const SIZES: Array[Vector3] = [Vector3(0.8, 1.3, 2.0), Vector3(1.7, 1.5, 3.8), Vector3(1.4, 1.8, 3.0), Vector3(2.5, 3.2, 11.0), Vector3(0.7, 1.4, 2.0), Vector3(1.6, 2.0, 4.2)]
+const SPEED_RANGES_KMH: Array[Vector2] = [Vector2(32.0, 46.0), Vector2(28.0, 42.0), Vector2(22.0, 32.0), Vector2(20.0, 30.0), Vector2(0.0, 3.0), Vector2(22.0, 34.0)]
 ## Lowest horn tier this archetype reacts to (0 bulb, 1 twin electric, 2 musical air-horn).
-const MIN_HORN_TIER: Array[int] = [1, 1, 2, 2, 2]
-const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0]
+const MIN_HORN_TIER: Array[int] = [1, 1, 2, 2, 2, 1]
+const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0, 4.0]
 const LATERAL_SPEED_MPS: float = 2.6
 const HORN_REACTION_DELAY_S: float = 0.35
 const TURN_SLOWDOWN_M: float = 12.0
-## Optimised models per archetype (assets/models/traffic). "" keeps the box (the MTC bus has no fitting model yet).
+## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
 	"res://assets/models/traffic/two_wheeler.glb",
 	"res://assets/models/traffic/hatchback.glb",
 	"res://assets/models/traffic/share_auto.glb",
-	"",
+	"res://assets/models/traffic/bus_tnstc.glb",
 	"res://assets/models/traffic/stray_cow.glb",
+	"res://assets/models/traffic/lorry.glb",
 ]
+## Tamil Nadu buses: the green-and-yellow town bus and the white SETC coach.
+const BUS_FILES: Array[String] = [
+	"res://assets/models/traffic/bus_tnstc.glb",
+	"res://assets/models/traffic/bus_setc.glb",
+]
+const BUS_FLIP: bool = true
 ## Stray cows pick one of these at random when the pool is built.
 const COW_FILES: Array[String] = [
 	"res://assets/models/traffic/stray_cow.glb",
@@ -29,7 +36,7 @@ const COW_FILES: Array[String] = [
 ]
 ## Traffic drives along -Z (Basis.looking_at). Most glTF files face +Z, so they need a half turn;
 ## the scooter already faces -Z. Checked with side renders: forgetting this drives them tail-first.
-const MODEL_FLIP: Array[bool] = [false, true, true, false, true]
+const MODEL_FLIP: Array[bool] = [false, true, true, true, true, true]
 ## Per-file flip for the cow variants (same order as COW_FILES).
 const COW_FLIP: Array[bool] = [true, true]
 ## Two-wheelers: the scooter model is fitted to this height (the collision box stays 1.3 m tall
@@ -37,6 +44,7 @@ const COW_FLIP: Array[bool] = [true, true]
 const SCOOTER_MODEL_HEIGHT_M: float = 1.0
 const RIDER_SEAT_POS: Vector3 = Vector3(0.0, 0.72, 0.22)
 static var _rider_variant: int = 0
+static var _bus_variant: int = 0
 
 var manager: ChennaiTrafficManager
 var archetype: Archetype = Archetype.HATCHBACK
@@ -80,6 +88,10 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	var cow: int = randi() % COW_FILES.size()
 	var model_path: String = COW_FILES[cow] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
 	var flip: bool = COW_FLIP[cow] if kind == Archetype.STRAY_COW else MODEL_FLIP[kind]
+	if kind == Archetype.MTC_BUS:
+		model_path = BUS_FILES[_bus_variant % BUS_FILES.size()]
+		flip = BUS_FLIP
+		_bus_variant += 1
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
 	if TrafficModelFit.attach(self, model_path, fit_size, flip):
 		_mesh.visible = false
