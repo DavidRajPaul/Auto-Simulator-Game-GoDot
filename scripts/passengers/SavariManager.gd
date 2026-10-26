@@ -27,6 +27,24 @@ const MIN_TRIP_M: float = 600.0
 const MAX_TRIP_M: float = 2400.0
 const REROUTE_OFF_ROUTE_M: float = 30.0
 const RIDE_UPDATE_INTERVAL_S: float = 0.2
+## Which low-poly person each passenger archetype looks like (PersonMesh.Style).
+const ARCHETYPE_STYLE: Dictionary = {
+	"it_commuter": PersonMesh.Style.SHIRT_TROUSERS,
+	"tnagar_shopper": PersonMesh.Style.SAREE,
+	"tourist": PersonMesh.Style.TOURIST,
+	"monsoon_rider": PersonMesh.Style.VESHTI,
+	"college_student": PersonMesh.Style.TSHIRT_JEANS,
+}
+## The textured, animated character each archetype is played by (assets/models/people). They
+## stand in their idle with a WaveModifier raising the arm. Archetypes not listed (tourist)
+## keep the low-poly PersonMesh.
+const ARCHETYPE_PEOPLE: Dictionary = {
+	"it_commuter": ["young_man"],
+	"tnagar_shopper": ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet"],
+	"monsoon_rider": ["old_man_veshti"],
+	"college_student": ["girl_churidar", "girl_pavadai"],
+}
+const PEOPLE_DIR: String = "res://assets/models/people/"
 
 @export var world_dir: String = "res://data/world"
 @export var archetypes: Array[PassengerArchetype] = []
@@ -63,6 +81,9 @@ var _speed_kmh: float = 0.0
 var _hail_pool: Array[Node3D] = []
 var _dest_marker: Node3D
 var _comfort_damping: float = 1.0
+## Haggling context: rider demand from the traffic model, and how greedy we've been lately.
+var demand: float = 0.5
+var greed_streak: int = 0
 
 func _ready() -> void:
 	rng.seed = rng_seed
@@ -76,6 +97,8 @@ func _ready() -> void:
 	SignalBus.player_pose_updated.connect(_on_pose)
 	SignalBus.speed_updated.connect(func(kmh: float) -> void: _speed_kmh = kmh)
 	SignalBus.haggle_choice_made.connect(_on_haggle_choice)
+	SignalBus.traffic_density_changed.connect(func(d: float, _zone: String, _peak: bool) -> void:
+		demand = TrafficDensity.rider_demand(d, GameState.is_raining))
 	SignalBus.vehicle_dynamics.connect(_on_dynamics)
 	SignalBus.player_collision.connect(_on_collision)
 	SignalBus.near_miss.connect(_on_near_miss)
@@ -103,6 +126,7 @@ func _physics_process(delta: float) -> void:
 		if graph == null:
 			return
 	_age_hails(delta)
+	_animate_hails()
 	match state:
 		State.CRUISING:
 			_maintain_hails()
@@ -157,12 +181,57 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	_next_hail_id += 1
 	node.global_position = pos
 	var body: MeshInstance3D = node.get_node("Body") as MeshInstance3D
-	(body.material_override as StandardMaterial3D).albedo_color = archetype.colour
+	var style: PersonMesh.Style = ARCHETYPE_STYLE.get(archetype.id, PersonMesh.Style.SHIRT_TROUSERS) as PersonMesh.Style
+	var variant: int = rng.randi() % 12
+	body.mesh = PersonMesh.standing(style, variant, true)
+	(node.get_node("WaveArm") as MeshInstance3D).mesh = PersonMesh.wave_arm(style, variant)
+	var animated: bool = _set_character(node, archetype.id, variant)
+	body.visible = not animated
+	(node.get_node("WaveArm") as Node3D).visible = not animated
+	# Face the road / the approaching auto.
+	var to_player: Vector3 = _player_pos - pos
+	to_player.y = 0.0
+	if to_player.length_squared() > 0.01:
+		node.global_basis = Basis.looking_at(to_player.normalized(), Vector3.UP)
 	(node.get_node("Label") as Label3D).text = archetype.archetype_name
 	node.visible = true
 	hails.append(h)
 	_publish_hails()
 	return h
+
+## Puts the archetype's animated character on a hail node (reusing it when it already is one).
+func _set_character(node: Node3D, archetype_id: String, variant: int) -> bool:
+	var ids: Array = ARCHETYPE_PEOPLE.get(archetype_id, [])
+	var old: Node3D = node.get_node_or_null("Character") as Node3D
+	if ids.is_empty():
+		if old != null:
+			old.visible = false
+		return false
+	var id: String = str(ids[variant % ids.size()])
+	if old != null and str(old.get_meta("person_id", "")) == id:
+		old.visible = true
+		return true
+	var path: String = PEOPLE_DIR + id + ".glb"
+	if not ResourceLoader.exists(path):
+		return false
+	if old != null:
+		node.remove_child(old)
+		old.queue_free()
+	var ch: Node3D = (load(path) as PackedScene).instantiate() as Node3D
+	ch.name = "Character"
+	ch.set_meta("person_id", id)
+	ch.rotation.y = PI # characters face +Z; the hail node looks down -Z at the auto
+	node.add_child(ch)
+	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if ap != null and ap.has_animation("idle"):
+		ap.get_animation("idle").loop_mode = Animation.LOOP_LINEAR
+		ap.play("idle")
+		ap.seek(rng.randf() * ap.get_animation("idle").length, true)
+	for sk: Node in ch.find_children("*", "Skeleton3D", true, false):
+		var wave: WaveModifier = WaveModifier.new()
+		wave.name = "Wave"
+		sk.add_child(wave)
+	return true
 
 func _maintain_hails() -> void:
 	if hails.size() >= MAX_HAILS:
@@ -250,7 +319,7 @@ func start_haggle(h: Dictionary) -> void:
 	var odds: Array[float] = []
 	for o: int in 3:
 		_haggle_quotes.append(FareCalculator.quote(o as FareCalculator.Offer, _haggle_trip_km, a))
-		odds.append(FareCalculator.acceptance_chance(o as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige()))
+		odds.append(_odds(o, a))
 	SignalBus.haggle_started.emit({
 		"archetype": a.id, "name": a.archetype_name, "line": a.line_hail,
 		"destination": destination["name"], "distance_km": _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM,
@@ -276,6 +345,10 @@ func _choose_destination(a: PassengerArchetype) -> Dictionary:
 		return {"name": "Nearby street", "pos": _player_pos + _player_fwd * 400.0, "kind": "street"}
 	return options[rng.randi() % options.size()]
 
+func _odds(offer: int, a: PassengerArchetype) -> float:
+	return FareCalculator.acceptance_chance(offer as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige(),
+		_haggle_quotes[0] if not _haggle_quotes.is_empty() else 0, demand, GameState.star_rating, greed_streak)
+
 func _on_haggle_choice(offer: int) -> void:
 	if state == State.HAGGLING:
 		_resolve_haggle(offer)
@@ -284,12 +357,19 @@ func _resolve_haggle(offer: int) -> void:
 	var a: PassengerArchetype = _haggle_hail["archetype"]
 	var accepted: bool = false
 	if offer >= 0:
-		accepted = rng.randf() < FareCalculator.acceptance_chance(offer as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige())
+		accepted = rng.randf() < _odds(offer, a)
+	# Greed memory: asking above meter raises the streak (more if refused); honest meter rides
+	# calm the stand down again.
+	if offer == FareCalculator.Offer.METER:
+		greed_streak = maxi(0, greed_streak - 2)
+	elif offer > 0:
+		greed_streak = mini(greed_streak + (2 if not accepted else 1), FareCalculator.MAX_GREED_STREAK)
 	_remove_hail(_haggle_hail)
 	_haggle_hail = {}
 	_publish_hails()
 	if not accepted:
-		GameState.add_respect(FareCalculator.RESPECT_XP_REJECTED)
+		# Walking away from a greedy fixed-rate ask hurts the stand's opinion more.
+		GameState.add_respect(FareCalculator.RESPECT_XP_REJECTED * (4 if offer == FareCalculator.Offer.FIXED else (2 if offer == FareCalculator.Offer.METER_MELA else 1)))
 		SignalBus.haggle_resolved.emit({"accepted": false, "offer": offer, "fare": 0, "line": a.line_reject})
 		state = State.COOLDOWN
 		_state_timer = REJECT_COOLDOWN_S
@@ -303,7 +383,7 @@ func _resolve_haggle(offer: int) -> void:
 	state = State.RIDING
 	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "line": a.line_accept})
 	SignalBus.passenger_boarded.emit(a.party_size, a.luggage_kg)
-	SignalBus.route_updated.emit(route["points"])
+	_publish_route(route)
 	_dest_marker.global_position = destination["pos"]
 	_dest_marker.visible = true
 
@@ -323,7 +403,7 @@ func _tick_ride(delta: float) -> void:
 			var r: Dictionary = graph.find_route(_player_pos, dest)
 			if bool(r.get("ok", false)):
 				route = r
-				SignalBus.route_updated.emit(route["points"])
+				_publish_route(route)
 	_ride_update_timer -= delta
 	if _ride_update_timer <= 0.0:
 		_ride_update_timer = RIDE_UPDATE_INTERVAL_S
@@ -332,6 +412,17 @@ func _tick_ride(delta: float) -> void:
 			"time_left_s": time_left_s, "comfort": comfort, "fare": agreed_fare,
 			"near_misses": near_misses, "archetype": rider.archetype_name,
 		})
+
+## Sat-nav: the lane-offset, corner-rounded guide line + turn-by-turn for the GPS (RouteLine),
+## the mini-map and the full map. An empty route clears them.
+func _publish_route(r: Dictionary) -> void:
+	if r.is_empty():
+		SignalBus.route_updated.emit(PackedVector3Array())
+		SignalBus.gps_route_changed.emit(null)
+		return
+	var gps: GpsRoute = GpsRoute.build(graph, r)
+	SignalBus.route_updated.emit(gps.path)
+	SignalBus.gps_route_changed.emit(gps)
 
 func complete_ride() -> void:
 	var on_time: bool = time_left_s >= 0.0
@@ -346,11 +437,13 @@ func complete_ride() -> void:
 	b["offer"] = agreed_offer
 	b["comfort"] = comfort
 	b["near_misses"] = near_misses
+	# Unique per ride: rewarded "2× fare" can be claimed once for this ride only.
+	b["ride_id"] = "d%d-r%d-%d" % [GameState.day, GameState.completed_savaris + 1, Time.get_ticks_msec()]
 	GameState.add_inr(int(b["total"]))
 	GameState.add_respect(FareCalculator.RESPECT_XP[agreed_offer])
 	GameState.record_ride_rating(float(b["stars"]))
 	SignalBus.passenger_alighted.emit()
-	SignalBus.route_updated.emit(PackedVector3Array())
+	_publish_route({})
 	SignalBus.ride_completed.emit(b)
 	_dest_marker.visible = false
 	rider = null
@@ -419,10 +512,16 @@ func _on_pose(pos: Vector3, fwd: Vector3) -> void:
 
 # --- Visual pools ----------------------------------------------------------------
 
+## Hailing passengers wave their raised arm ("Auto!") — one rotation per visible hail.
+func _animate_hails() -> void:
+	var t: float = Time.get_ticks_msec() * 0.001
+	for h: Dictionary in hails:
+		var n: Node3D = h["node"]
+		var arm: Node3D = n.get_node_or_null("WaveArm") as Node3D
+		if arm != null:
+			arm.rotation.z = -0.35 + sin(t * 7.0 + float(h["id"])) * 0.45
+
 func _build_pools() -> void:
-	var capsule: CapsuleMesh = CapsuleMesh.new()
-	capsule.radius = 0.3
-	capsule.height = 1.65
 	var beam: CylinderMesh = CylinderMesh.new()
 	beam.top_radius = 0.35
 	beam.bottom_radius = 0.35
@@ -438,10 +537,13 @@ func _build_pools() -> void:
 		n.visible = false
 		var body: MeshInstance3D = MeshInstance3D.new()
 		body.name = "Body"
-		body.mesh = capsule
-		body.position.y = 0.85
-		body.material_override = StandardMaterial3D.new()
+		body.mesh = PersonMesh.standing(PersonMesh.Style.SHIRT_TROUSERS, i, true)
 		n.add_child(body)
+		var arm: MeshInstance3D = MeshInstance3D.new()
+		arm.name = "WaveArm"
+		arm.mesh = PersonMesh.wave_arm(PersonMesh.Style.SHIRT_TROUSERS, i)
+		arm.position = Vector3(0.21, 1.38, 0.0)
+		n.add_child(arm)
 		var b: MeshInstance3D = MeshInstance3D.new()
 		b.mesh = beam
 		b.position.y = 4.5

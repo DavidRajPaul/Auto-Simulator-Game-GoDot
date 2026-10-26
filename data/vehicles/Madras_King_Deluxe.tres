@@ -7,6 +7,7 @@ script = ExtResource("1")
 id = "madras_king_deluxe"
 display_name = "Madras King Deluxe"
 fuel_type = 0
+engine_loop = "res://assets/audio/vehicle/engine_diesel_loop.ogg"
 passenger_capacity = 3
 base_mass_kg = 390.0
 center_of_mass_offset = Vector3(0, -0.25, 0.35)

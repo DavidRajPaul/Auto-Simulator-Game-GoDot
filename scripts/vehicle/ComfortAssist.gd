@@ -28,6 +28,7 @@ var _flip_timer: float = 0.0
 var _stuck_timer: float = 0.0
 var _recover_offered: bool = false
 var _route: PackedVector3Array = PackedVector3Array()
+var _route_idx: int = 0
 var _hails: Array = []
 var _speed_kmh: float = 0.0
 var _arrow: MeshInstance3D
@@ -35,7 +36,9 @@ var _hint_cooldown: float = 1.5
 
 func _ready() -> void:
 	_build_arrow()
-	SignalBus.route_updated.connect(func(p: PackedVector3Array) -> void: _route = p)
+	SignalBus.route_updated.connect(func(p: PackedVector3Array) -> void:
+		_route = p
+		_route_idx = 0)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
 	SignalBus.recover_requested.connect(recover)
@@ -136,13 +139,22 @@ func guidance_target() -> Vector3:
 	var p: Vector3 = _player.global_position
 	if _route.size() >= 2:
 		# Point a little ahead along the route from where we are.
-		var best_i: int = 0
+		# Windowed search around the last match (the GPS path is dense; a full scan every
+		# frame was a measurable cost on low-end phones). Full rescan only when far off.
+		var best_i: int = clampi(_route_idx, 0, _route.size() - 1)
 		var best_d: float = INF
-		for i: int in _route.size():
+		for i: int in range(maxi(_route_idx - 15, 0), mini(_route_idx + 120, _route.size())):
 			var d: float = _route[i].distance_squared_to(p)
 			if d < best_d:
 				best_d = d
 				best_i = i
+		if best_d > 900.0:
+			for i: int in _route.size():
+				var d: float = _route[i].distance_squared_to(p)
+				if d < best_d:
+					best_d = d
+					best_i = i
+		_route_idx = best_i
 		var acc: float = 0.0
 		for i: int in range(best_i, _route.size() - 1):
 			acc += _route[i].distance_to(_route[i + 1])

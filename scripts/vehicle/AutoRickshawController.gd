@@ -67,6 +67,31 @@ var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
+## --- Collisions (modelled on BUSSID / Car Parking Multiplayer / Truckers of Europe feel) ---
+## Low body friction so a glancing hit SLIDES along the wall instead of gluing the auto to it,
+## a little restitution for a believable bump-back, chamfered hull corners so building corners
+## and kerb edges don't snag, impact = pre-impact closing speed along the contact normal
+## (not a frame-to-frame velocity guess), and a short post-impact stabiliser so hits never
+## flip or spin the trike wildly.
+const BODY_FRICTION: float = 0.12
+const BODY_BOUNCE: float = 0.16
+const IMPACT_MIN_MPS: float = 1.2 # below this it's a scrape/touch, no damage
+const IMPACT_HARD_MPS: float = 8.0 # severity 1.0
+const IMPACT_COOLDOWN_S: float = 0.3
+const POST_IMPACT_S: float = 0.5
+const POST_IMPACT_TILT_DAMP: float = 0.7 # fraction of roll/pitch rate removed per tick
+const POST_IMPACT_MAX_YAW: float = 1.4 # rad/s
+const SCRAPE_MIN_MPS: float = 1.5
+var _impact_cooldown: float = 0.0
+var _post_impact_t: float = 0.0
+var _scraping: bool = false
+var last_impact_mps: float = 0.0
+## Velocity going into the last physics solve (contacts reported now come from that solve).
+var _pre_step_velocity: Vector3 = Vector3.ZERO
+
+## Off in the cockpit view: the canopy/frame shadows sweeping over the dash as the auto turns
+## read as flickering dark bands right in the driver's eyes.
+var _self_shadows: bool = true
 
 func _ready() -> void:
 	if use_player_profile:
@@ -76,6 +101,7 @@ func _ready() -> void:
 	add_to_group("player_auto")
 	fuel_level = stats.fuel_capacity if GameState.fuel_level < 0.0 or not use_player_profile else minf(GameState.fuel_level, stats.fuel_capacity)
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
+	_setup_collision()
 	_apply_mass()
 	_setup_wheel_rays()
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
@@ -84,6 +110,7 @@ func _ready() -> void:
 	SignalBus.refueled.connect(func(level: float) -> void: fuel_level = minf(level, stats.fuel_capacity))
 	SignalBus.teleport_requested.connect(func(xform: Transform3D) -> void:
 		global_transform = xform
+		reset_physics_interpolation()
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
 		_prev_velocity = Vector3.ZERO)
@@ -91,6 +118,9 @@ func _ready() -> void:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
 	_recolour.call_deferred()
 	_build_lamps()
+	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void:
+		_self_shadows = mode_name != "Cockpit"
+		_apply_self_shadows())
 
 ## Swap to new effective stats at runtime (garage purchase/upgrade/paint).
 func apply_stats(new_stats: VehicleStats) -> void:
@@ -105,11 +135,97 @@ func _recolour() -> void:
 		model.paint = stats.body_colour
 		model.trim = stats.canopy_colour
 		model.build()
+	_apply_self_shadows()
 	var procedural_wheels: bool = model == null or not model.uses_real_model
 	for wheel_name: String in ["FrontWheelMesh", "RearLeftWheelMesh", "RearRightWheelMesh"]:
 		var w: Node3D = get_node_or_null(wheel_name) as Node3D
 		if w != null:
 			w.visible = procedural_wheels
+
+func _setup_collision() -> void:
+	var pm: PhysicsMaterial = PhysicsMaterial.new()
+	pm.friction = BODY_FRICTION
+	pm.bounce = BODY_BOUNCE
+	physics_material_override = pm
+	contact_monitor = true
+	max_contacts_reported = 6
+	var cs: CollisionShape3D = get_node_or_null("ChassisCollision") as CollisionShape3D
+	if cs != null and cs.shape is BoxShape3D:
+		cs.shape = chamfered_hull((cs.shape as BoxShape3D).size, 0.22)
+
+## Box with bevelled vertical edges and a rounded nose/tail: glides off corners.
+static func chamfered_hull(size: Vector3, c: float) -> ConvexPolygonShape3D:
+	var h: Vector3 = size * 0.5
+	var pts: PackedVector3Array = PackedVector3Array()
+	for y: float in [-h.y, h.y]:
+		var cy: float = c * 0.5 if y > 0.0 else 0.0 # roof corners a bit rounder
+		for p: Vector2 in [Vector2(-h.x + c + cy, -h.z), Vector2(h.x - c - cy, -h.z), Vector2(h.x, -h.z + c + cy), Vector2(h.x, h.z - c),
+				Vector2(h.x - c, h.z), Vector2(-h.x + c, h.z), Vector2(-h.x, h.z - c), Vector2(-h.x, -h.z + c + cy)]:
+			pts.append(Vector3(p.x, y, p.y))
+	var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+	shape.points = pts
+	return shape
+
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	var dt: float = state.step
+	_impact_cooldown = maxf(0.0, _impact_cooldown - dt)
+	var best: float = 0.0
+	var best_i: int = -1
+	var scrape_speed: float = 0.0
+	var scrape_pt: Vector3 = Vector3.ZERO
+	for i: int in state.get_contact_count():
+		var n: Vector3 = state.get_contact_local_normal(i)
+		if n.y > 0.6:
+			continue # resting on the road / a ramp — not a hit
+		var v_rel: Vector3 = _pre_step_velocity - state.get_contact_collider_velocity_at_position(i)
+		var closing: float = -v_rel.dot(n)
+		if closing > best:
+			best = closing
+			best_i = i
+		var tangential: float = (v_rel + n * v_rel.dot(n)).length()
+		if tangential > scrape_speed:
+			scrape_speed = tangential
+			scrape_pt = state.get_contact_collider_position(i)
+	if best_i >= 0 and best >= IMPACT_MIN_MPS and _impact_cooldown <= 0.0:
+		_impact_cooldown = IMPACT_COOLDOWN_S
+		_post_impact_t = POST_IMPACT_S
+		last_impact_mps = best
+		var collider: Object = state.get_contact_collider_object(best_i)
+		var kind: String = "wall"
+		if collider is TrafficVehicleAI:
+			kind = "vehicle"
+			SignalBus.traffic_bumped.emit(collider as Node3D, best)
+		elif collider is StaticBody3D and (collider as StaticBody3D).collision_layer & 8:
+			kind = "prop"
+		SignalBus.player_collision.emit(best)
+		SignalBus.player_impact.emit({"speed_mps": best, "kind": kind, "point": state.get_contact_collider_position(best_i),
+			"normal": state.get_contact_local_normal(best_i), "severity": clampf(best / IMPACT_HARD_MPS, 0.0, 1.0)})
+	var now_scraping: bool = scrape_speed >= SCRAPE_MIN_MPS and state.get_contact_count() > 0 and best_i >= 0
+	if now_scraping or _scraping:
+		SignalBus.player_scraping.emit(scrape_speed if now_scraping else 0.0, scrape_pt)
+	_scraping = now_scraping
+	# Post-impact stabiliser: bleed off roll/pitch, cap spin. Keeps hits readable, never a flip.
+	if _post_impact_t > 0.0:
+		_post_impact_t -= dt
+		var b: Basis = state.transform.basis
+		var w: Vector3 = state.angular_velocity
+		var pitch: float = w.dot(b.x)
+		var roll: float = w.dot(b.z)
+		w -= b.x * pitch * POST_IMPACT_TILT_DAMP + b.z * roll * POST_IMPACT_TILT_DAMP
+		var yaw: float = w.dot(b.y)
+		if absf(yaw) > POST_IMPACT_MAX_YAW:
+			w -= b.y * (yaw - signf(yaw) * POST_IMPACT_MAX_YAW)
+		state.angular_velocity = w
+	_pre_step_velocity = state.linear_velocity
+
+func _apply_self_shadows() -> void:
+	var setting: GeometryInstance3D.ShadowCastingSetting = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _self_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var stack: Array[Node] = [self]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is GeometryInstance3D and n.name not in ["BrakeLamps", "IndicatorLeft", "IndicatorRight"]:
+			(n as GeometryInstance3D).cast_shadow = setting
+		stack.append_array(n.get_children())
 
 func _setup_wheel_rays() -> void:
 	var ray_len: float = stats.suspension_rest_dist_m + stats.wheel_radius_m + 0.15
@@ -293,10 +409,7 @@ func _emit_telemetry(delta: float) -> void:
 	var accel: Vector3 = dv / maxf(delta, 0.001)
 	var right: Vector3 = global_transform.basis.x
 	SignalBus.vehicle_dynamics.emit(accel.dot(right) / 9.8, accel.dot(fwd) / 9.8, absf(dv.y))
-	# A sudden horizontal speed change far beyond braking ability = we hit something.
-	var horizontal_dv: float = Vector2(dv.x, dv.z).length()
-	if horizontal_dv > 2.5:
-		SignalBus.player_collision.emit(horizontal_dv)
+	# Impacts are detected from real contacts in _integrate_forces.
 	_telemetry_timer += delta
 	if _telemetry_timer < TELEMETRY_INTERVAL_S:
 		return

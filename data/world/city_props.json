@@ -1,0 +1,58 @@
+{
+ "_note": "made by tools/osm/place_city_props.py",
+ "props": [
+  {
+   "model": "chennai_central",
+   "x": 1811.0,
+   "z": -3725.2,
+   "yaw": 1.571,
+   "skyline": true
+  },
+  {
+   "model": "water_tower",
+   "x": 2234.6,
+   "z": -95.5,
+   "yaw": 1.75,
+   "zone": "marina"
+  },
+  {
+   "model": "water_tower",
+   "x": 1182.5,
+   "z": 1932.4,
+   "yaw": 1.15,
+   "zone": "mylapore"
+  },
+  {
+   "model": "water_tower",
+   "x": -296.4,
+   "z": -867.1,
+   "yaw": 1.45,
+   "zone": "anna_salai"
+  },
+  {
+   "model": "water_tower",
+   "x": -2800.0,
+   "z": 1107.3,
+   "yaw": 1.95,
+   "zone": "t_nagar"
+  },
+  {
+   "model": "slum_cluster",
+   "x": 1558.2,
+   "z": 756.6,
+   "yaw": -0.287
+  },
+  {
+   "model": "slum_cluster",
+   "x": -870.3,
+   "z": -206.8,
+   "yaw": -1.642
+  },
+  {
+   "model": "slum_cluster",
+   "x": 2185.0,
+   "z": -2410.0,
+   "yaw": 2.357
+  }
+ ]
+}

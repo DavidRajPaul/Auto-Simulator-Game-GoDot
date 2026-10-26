@@ -51,6 +51,12 @@ const GAME_MIN_PER_SECOND: float = (SHIFT_END_MIN - SHIFT_START_MIN) / SHIFT_REA
 
 ## Driver level (XP) + daily shift goals — see scripts/progression/DriverProgress.gd.
 var progress: DriverProgress = DriverProgress.new()
+## Ledger, daily login calendar, achievements, rewarded-ad payouts (scripts/progression/RewardsEngine.gd).
+var rewards: RewardsEngine = RewardsEngine.new()
+## Bought "No Ads" (Play Billing SKU no_ads_forever): no interstitials/banners; rewarded stays opt-in.
+var no_ads: bool = false
+var _crashed_this_ride: bool = false
+const CLEAN_RIDE_CRASH_MPS: float = 3.0
 var wallet_inr: int = 500
 var stand_respect_xp: int = 100
 var star_rating: float = 4.5
@@ -101,6 +107,15 @@ func _ready() -> void:
 		_advance_goal("signal", 1))
 	SignalBus.near_miss.connect(func(_c: float) -> void: _advance_goal("gethu", 1))
 	SignalBus.ride_completed.connect(_on_ride_progress)
+	SignalBus.ride_completed.connect(_on_ride_rewards)
+	SignalBus.passenger_boarded.connect(func(_c: int, _l: float) -> void: _crashed_this_ride = false)
+	SignalBus.player_collision.connect(func(i: float) -> void:
+		if i >= CLEAN_RIDE_CRASH_MPS:
+			_crashed_this_ride = true)
+	SignalBus.near_miss.connect(func(_c: float) -> void:
+		rewards.add_stat("near_misses", 1)
+		_check_achievements())
+	SignalBus.rewarded_ad_completed.connect(_on_rewarded_ad)
 	if progress.goals_day != day:
 		progress.roll_goals(day)
 	SignalBus.fuel_changed.connect(func(level: float, _cap: float) -> void: fuel_level = level)
@@ -109,6 +124,7 @@ func _ready() -> void:
 		day_stats["rides"] = int(day_stats["rides"]) + 1
 		save_game())
 	_install_tamil_font()
+	_auto_graphics_once()
 	_apply_settings.call_deferred()
 
 func _process(delta: float) -> void:
@@ -178,6 +194,82 @@ func _advance_goal(kind: String, amount: int) -> void:
 		SignalBus.all_goals_completed.emit(DriverProgress.ALL_GOALS_BONUS_INR)
 	if not done.is_empty() or amount > 0:
 		SignalBus.goals_updated.emit(progress.goals)
+
+# --- Rewards engine ----------------------------------------------------------------
+
+## The one entry point for bonus rewards (daily, achievements, ads). Idempotent by `id`.
+func grant_reward(source: String, inr: int, xp: int, id: String = "") -> Dictionary:
+	var g: Dictionary = rewards.grant(source, inr, xp, id, RewardsEngine.today_string())
+	if str(g["refused"]) == "":
+		if int(g["inr"]) > 0:
+			add_inr(int(g["inr"]))
+		if int(g["xp"]) > 0:
+			add_driver_xp(int(g["xp"]))
+		SignalBus.reward_granted.emit(source, int(g["inr"]), int(g["xp"]))
+		save_game()
+	return g
+
+func daily_reward_status() -> Dictionary:
+	return rewards.daily_status(RewardsEngine.today_string())
+
+func claim_daily_reward() -> Dictionary:
+	var today: String = RewardsEngine.today_string()
+	var st: Dictionary = rewards.daily_status(today)
+	if not bool(st["available"]):
+		return {"inr": 0, "xp": 0, "refused": "claimed"}
+	var g: Dictionary = rewards.claim_daily(today)
+	if str(g["refused"]) == "":
+		add_inr(int(g["inr"]))
+		add_driver_xp(int(g["xp"]))
+		SignalBus.reward_granted.emit("daily_login", int(g["inr"]), int(g["xp"]))
+		_check_achievements()
+		save_game()
+	SignalBus.daily_reward_status.emit(rewards.daily_status(today))
+	return g
+
+func _on_ride_rewards(b: Dictionary) -> void:
+	rewards.add_stat("rides", 1)
+	rewards.add_stat("earned", int(b.get("total", 0)))
+	if int(b.get("offer", -1)) == 0:
+		rewards.add_stat("meter_rides", 1)
+	if float(b.get("comfort", 0.0)) >= DriverProgress.SMOOTH_COMFORT:
+		rewards.add_stat("smooth_rides", 1)
+	if is_raining:
+		rewards.add_stat("rain_rides", 1)
+	if is_night():
+		rewards.add_stat("night_rides", 1)
+	if _crashed_this_ride:
+		rewards.set_stat("clean_streak", 0)
+	else:
+		rewards.add_stat("clean_streak", 1)
+		rewards.bump_stat_max("best_clean_streak", int(rewards.stats.get("clean_streak", 0)))
+	_check_achievements()
+
+func _check_achievements() -> void:
+	var today: String = RewardsEngine.today_string()
+	for id: String in rewards.check_achievements(today):
+		var a: Dictionary = RewardsEngine.ACHIEVEMENTS[id]
+		grant_reward("achievement", int(a["inr"]), int(a["xp"]), "ach:" + id)
+		SignalBus.achievement_unlocked.emit(id, a)
+
+## Rewarded ad finished and the provider confirmed the reward. Context carries what to pay.
+func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
+	match placement:
+		"ad_double_fare":
+			grant_reward(placement, int(ctx.get("inr", 0)), 0, "%s:%s" % [placement, str(ctx.get("ride_id", ""))])
+		"ad_fuel_rescue":
+			var s: VehicleStats = base_stats(active_vehicle)
+			var g: Dictionary = grant_reward(placement, 0, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			if str(g["refused"]) == "":
+				fuel_level = maxf(fuel_level, s.fuel_capacity * 0.5)
+				SignalBus.refueled.emit(fuel_level)
+		"ad_tow":
+			# Credit the tow fee, then tow: the ad makes the tow free.
+			var g2: Dictionary = grant_reward(placement, ServicePoints.TOW_COST_INR, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			if str(g2["refused"]) == "":
+				SignalBus.tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
+		_:
+			grant_reward(placement, int(ctx.get("inr", 0)), int(ctx.get("xp", 0)), "%s:%s" % [placement, str(ctx.get("id", Time.get_ticks_msec()))])
 
 # --- Money, respect, rating ------------------------------------------------------
 
@@ -416,6 +508,15 @@ func set_setting(key: String, value: Variant) -> void:
 	save_game()
 
 ## Tamil glyphs: add Noto Sans Tamil (OFL) as a fallback to the default UI font.
+## First launch on a phone: pick the graphics preset from device RAM (3–4 GB budget phones
+## like Helio G85 / SD 680 start on Low: no shadows, 70 % 3D resolution). Player can change it.
+func _auto_graphics_once() -> void:
+	if settings.has("graphics_auto") or OS.get_name() != "Android":
+		return
+	var ram_gb: float = float(OS.get_memory_info().get("physical", 0)) / 1073741824.0
+	settings["graphics"] = 0 if ram_gb > 0.0 and ram_gb < 4.5 else (1 if ram_gb < 7.0 else 2)
+	settings["graphics_auto"] = true
+
 func _install_tamil_font() -> void:
 	var tamil: Font = load("res://assets/fonts/NotoSansTamil-Regular.ttf") as Font
 	if tamil != null and ThemeDB.fallback_font != null:
@@ -448,6 +549,7 @@ func to_dict() -> Dictionary:
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
 		"fuel": fuel_level, "condition": condition, "day": day, "minute": shift_minute, "day_stats": day_stats,
 		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
+		"rewards": rewards.to_dict(), "no_ads": no_ads,
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -473,6 +575,9 @@ func from_dict(d: Dictionary) -> void:
 	rain_window = Vector2(float(rw[0]), float(rw[1]))
 	progress = DriverProgress.new()
 	progress.from_dict(d.get("progress", {}))
+	rewards = RewardsEngine.new()
+	rewards.from_dict(d.get("rewards", {}))
+	no_ads = bool(d.get("no_ads", false))
 	if progress.goals_day != day:
 		progress.roll_goals(day)
 	var s: Dictionary = d.get("settings", {})

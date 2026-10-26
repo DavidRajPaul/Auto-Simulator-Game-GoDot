@@ -5,6 +5,8 @@ extends Resource
 @export var id: String = "singara_classic"
 @export var display_name: String = "Singara Classic"
 @export_enum("LPG", "Petrol", "EV") var fuel_type: int = 0
+## Engine loop for this model (empty = the stock LPG putter; EVs synthesise a whine).
+@export_file("*.ogg") var engine_loop: String = ""
 @export var passenger_capacity: int = 3
 
 @export_group("Mass")

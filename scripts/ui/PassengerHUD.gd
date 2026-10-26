@@ -62,6 +62,10 @@ var _toast_timer: float = 0.0
 var minimap: MiniMap
 var _hint: Label
 var _hint_timer: float = 0.0
+var nav_banner: NavBanner
+var full_map: FullMap
+var _double_btn: Button
+var _last_ride: Dictionary = {}
 
 ## 5-second haggle timer ring with the seconds in the middle (4G "0s" badge).
 class CountdownRing:
@@ -106,6 +110,9 @@ func _ready() -> void:
 	minimap.position = Vector2(16.0, 16.0)
 	_root.add_child(minimap)
 	_build_chips()
+	nav_banner = NavBanner.new()
+	nav_banner.name = "NavBanner"
+	_root.add_child(nav_banner)
 	_build_ride_card()
 	_build_haggle()
 	_build_fare_card()
@@ -118,6 +125,15 @@ func _ready() -> void:
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(_hint)
+	# Full-screen map on its own layer above every HUD (opened by tapping the mini-map).
+	var map_layer: CanvasLayer = CanvasLayer.new()
+	map_layer.name = "FullMapLayer"
+	map_layer.layer = 40
+	map_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(map_layer)
+	full_map = FullMap.new()
+	full_map.name = "FullMap"
+	map_layer.add_child(full_map)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	_refresh_wallet()
@@ -131,11 +147,23 @@ func _ready() -> void:
 		_hint.text = text
 		_hint_timer = seconds)
 	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
+	SignalBus.pedestrian_startled.connect(func(_p: Vector3) -> void:
+		if _toast_timer <= 0.0:
+			toast(tr("WATCH_OUT"), 1.2))
 	SignalBus.driver_xp_changed.connect(func(_x: int, _l: int, _p: float) -> void: _refresh_level())
 	SignalBus.driver_level_up.connect(_on_level_up)
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
 		toast("%s: %s  +₹%d" % [tr("GOAL_DONE"), goal_text(g), DriverProgress.GOAL_INR], 3.0))
 	SignalBus.all_goals_completed.connect(func(bonus: int) -> void: toast("%s  +₹%d" % [tr("ALL_GOALS_DONE"), bonus], 4.0))
+	SignalBus.achievement_unlocked.connect(func(_id: String, a: Dictionary) -> void:
+		toast("%s — %s  +₹%d" % [str(a["title"]), str(a["desc"]), int(a["inr"])], 4.5))
+	SignalBus.reward_granted.connect(func(source: String, inr: int, _xp: int) -> void:
+		if source == "ad_double_fare" and inr > 0:
+			toast("2× fare!  +₹%d" % inr, 3.0)
+			_fare_card.visible = false)
+	SignalBus.rewarded_ad_failed.connect(func(p: String, _why: String) -> void:
+		if p == "ad_double_fare" and _double_btn != null:
+			_double_btn.disabled = false)
 	_refresh_level()
 	SignalBus.ui_modal_changed.connect(func(open: bool) -> void: _root.visible = not open)
 
@@ -150,6 +178,8 @@ func _process(delta: float) -> void:
 		_fare_timer -= delta
 		if _fare_timer <= 0.0:
 			_fare_card.visible = false
+			# Natural break: the policy decides (usually "no" — cooldowns, grace, ride spacing).
+			AdMonetizationManager.maybe_show_interstitial("after_fare_summary")
 	if _level_up.visible:
 		_level_timer -= delta
 		if _level_timer <= 0.0:
@@ -381,6 +411,14 @@ func _build_fare_card() -> void:
 	var next: Button = UIKit.button(tr("NEXT_SAVARI") + "  ▶▶", UIKit.Tone.GREEN, func() -> void: _fare_card.visible = false, 26)
 	next.custom_minimum_size = Vector2(300, 76)
 	foot.add_child(next)
+	# Opt-in rewarded video: double this fare. Never forced, hidden when no ad is ready.
+	_double_btn = UIKit.button(tr("DOUBLE_FARE"), UIKit.Tone.YELLOW, func() -> void:
+		_double_btn.disabled = true
+		AdMonetizationManager.show_rewarded("ad_double_fare", {"ride_id": str(_last_ride.get("ride_id", "")), "inr": int(_last_ride.get("total", 0))}), 22, "coins")
+	_double_btn.custom_minimum_size = Vector2(240, 76)
+	_double_btn.visible = false
+	foot.add_child(_double_btn)
+	foot.move_child(_double_btn, foot.get_child_count() - 2)
 
 func _build_level_up() -> void:
 	_level_up = Control.new()
@@ -430,6 +468,8 @@ func _layout() -> void:
 	_xp_bar.size = Vector2(160.0, 10.0)
 	_ride_card.custom_minimum_size = Vector2(420.0, 0.0)
 	_ride_card.position = Vector2(vp.x * 0.5 - 210.0, 12.0)
+	# Sat-nav turn prompt: left, under the top button row (clear of the ride card).
+	nav_banner.position = Vector2(20.0, 118.0)
 	var hw: float = minf(960.0, vp.x - 40.0)
 	_haggle.custom_minimum_size = Vector2(hw, 0.0)
 	_haggle.position = Vector2((vp.x - hw) * 0.5, vp.y * 0.08)
@@ -452,6 +492,22 @@ func _layout() -> void:
 	_hint.size = Vector2(vp.x * 0.6, 60.0)
 
 # --- Behaviour -----------------------------------------------------------------
+
+## Tap the mini-map to open the full Chennai map (TouchHUD ignores that spot).
+func _input(event: InputEvent) -> void:
+	if full_map == null or full_map.visible or not _root.visible:
+		return
+	var tapped: bool = false
+	var pos: Vector2 = Vector2.ZERO
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		pos = (event as InputEventScreenTouch).position
+		tapped = true
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not DisplayServer.is_touchscreen_available():
+		pos = (event as InputEventMouseButton).position
+		tapped = true
+	if tapped and minimap.get_global_rect().has_point(pos) and pos.distance_to(minimap.get_global_rect().get_center()) <= MINIMAP_SIZE * 0.5:
+		SignalBus.full_map_requested.emit(true)
+		get_viewport().set_input_as_handled()
 
 func toast(text: String, seconds: float) -> void:
 	_toast.text = text
@@ -549,6 +605,13 @@ func _on_ride_completed(b: Dictionary) -> void:
 	_fare_xp.value = GameState.progress.level_progress()
 	_fare_card.visible = true
 	_fare_timer = FARE_SECONDS
+	_last_ride = b
+	var can_double: bool = AdMonetizationManager.can_offer_rewarded("ad_double_fare") and total > 0
+	_double_btn.visible = can_double
+	_double_btn.disabled = false
+	_double_btn.text = "%s  +₹%d" % [tr("DOUBLE_FARE"), total]
+	if can_double:
+		_fare_timer = FARE_SECONDS + 2.0 # a little longer to decide
 	UIKit.pop_in(_fare_card, 0.0, 0.25)
 	for i: int in 5:
 		UIKit.pop_in(_fare_stars[i], 0.15 + i * 0.12, 0.3)

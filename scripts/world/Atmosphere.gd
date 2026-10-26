@@ -8,6 +8,11 @@ const SUNRISE_MIN: float = 360.0 # 6:00
 const SUNSET_MIN: float = 1110.0 # 18:30
 const MAX_ELEVATION_DEG: float = 72.0
 const UPDATE_INTERVAL_S: float = 0.25
+## The sun only moves in coarse steps, eased over SUN_EASE_S. A sun that creeps every frame
+## (or every 0.25 s) makes shadow-map texels crawl — the "fast moving shadows" seen from the
+## cockpit. Stepping it rarely keeps shadows rock-steady between steps.
+const SUN_STEP_DEG: float = 3.0
+const SUN_EASE_S: float = 2.5
 
 @export var environment_path: NodePath
 @export var sun_path: NodePath
@@ -18,6 +23,8 @@ var _sky: ProceduralSkyMaterial
 var _timer: float = 0.0
 var _rain_blend: float = 0.0
 var _base_fog_density: float = 0.0028
+var _sun_target: Vector3 = Vector3.ZERO
+var _sun_dir: Vector3 = Vector3.ZERO
 
 func _ready() -> void:
 	var we: WorldEnvironment = get_node_or_null(environment_path) as WorldEnvironment
@@ -36,6 +43,20 @@ func _process(delta: float) -> void:
 	if _timer >= UPDATE_INTERVAL_S:
 		_timer = 0.0
 		apply(GameState.shift_minute, _rain_blend)
+	_ease_sun(delta)
+
+func _ease_sun(delta: float) -> void:
+	if _sun == null or _sun_target == Vector3.ZERO:
+		return
+	if _sun_dir == Vector3.ZERO:
+		_sun_dir = _sun_target
+	elif _sun_dir.is_equal_approx(_sun_target):
+		return
+	else:
+		_sun_dir = _sun_dir.slerp(_sun_target, clampf(delta / SUN_EASE_S * 3.0, 0.0, 1.0)).normalized()
+		if _sun_dir.angle_to(_sun_target) < 0.002:
+			_sun_dir = _sun_target
+	_sun.global_transform = Transform3D(Basis.looking_at(-_sun_dir, Vector3.UP if absf(_sun_dir.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
 
 ## 0 at the horizon → 1 at noon; negative at night.
 static func sun_height(minute: float) -> float:
@@ -53,7 +74,12 @@ func apply(minute: float, rain: float) -> void:
 		var to_sun: Vector3 = Vector3(cos(PI * t), maxf(h, 0.08) * sin(deg_to_rad(MAX_ELEVATION_DEG)), 0.35).normalized()
 		if day < 0.01:
 			to_sun = Vector3(-0.3, 0.8, -0.4).normalized() # moonlight
-		_sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
+		if _sun_target == Vector3.ZERO or _sun_target.angle_to(to_sun) >= deg_to_rad(SUN_STEP_DEG) or day < 0.01:
+			var first: bool = _sun_target == Vector3.ZERO
+			_sun_target = to_sun
+			if first or not is_inside_tree():
+				_sun_dir = to_sun
+				_sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
 		var sun_col: Color = Color(1.0, 0.97, 0.9).lerp(Color(1.0, 0.62, 0.35), golden)
 		_sun.light_color = sun_col.lerp(Color(0.55, 0.62, 0.85), 1.0 - day)
 		_sun.light_energy = lerpf(0.28, 0.8, day) * lerpf(1.0, 0.35, rain)

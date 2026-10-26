@@ -16,8 +16,8 @@ const SPAWN_MAX_AHEAD_M: float = 110.0
 const GREYBOX_LENGTH_M: float = 3000.0
 const GREYBOX_WIDTH_M: float = 13.2
 ## Mix for TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW (Chennai: lots of two-wheelers).
-const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 0]
-const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84)]
+const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 0]
+const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84), Color(0.9, 0.9, 0.92)]
 ## Zones (manifest ids) where stray cattle wander onto the road.
 const MARKET_ZONES: PackedStringArray = ["mylapore", "t_nagar"]
 
@@ -26,6 +26,9 @@ const MARKET_ZONES: PackedStringArray = ["mylapore", "t_nagar"]
 ## res:// path of road_graph.json. Empty = greybox straight road.
 @export var graph_path: String = ""
 @export var active_count: int = 12
+## Stray cattle are parked for now (design call, Oct 2026). Their slots become two-wheelers
+## and hatchbacks; flip this back on to bring the Mylapore/T. Nagar cows back.
+@export var stray_cattle_enabled: bool = false
 
 var graph: RoadGraph
 var pool: Array[TrafficVehicleAI] = []
@@ -36,6 +39,15 @@ var _respawn_queue: Array[TrafficVehicleAI] = []
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
 var _near_miss_cooldown: Dictionary = {} # vehicle -> seconds left
+## Time-of-day traffic (TrafficDensity). Off = fixed `active_count` (greybox + old tests).
+@export var dynamic_density: bool = true
+const DENSITY_UPDATE_S: float = 2.0
+var _zones: Array[Dictionary] = [] # {id, x, z, r}
+var _density_timer: float = DENSITY_UPDATE_S
+var density: float = 0.5
+var zone_id: String = ""
+var target_active: int = 12
+var speed_factor: float = 1.0
 const NEAR_MISS_CLEARANCE_M: float = 0.6
 const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
 const PLAYER_HALF_WIDTH_M: float = 0.65
@@ -65,10 +77,14 @@ func _ready() -> void:
 		v.name = "Traffic_%02d" % i
 		v.position = Vector3(0.0, -200.0, float(i) * 15.0) # parked far below the map
 		add_child(v)
-		var kind: TrafficVehicleAI.Archetype = ARCHETYPE_MIX[i % ARCHETYPE_MIX.size()] as TrafficVehicleAI.Archetype
+		var mix: int = ARCHETYPE_MIX[i % ARCHETYPE_MIX.size()]
+		if mix == TrafficVehicleAI.Archetype.STRAY_COW and not stray_cattle_enabled:
+			mix = TrafficVehicleAI.Archetype.LORRY if i % 3 == 0 else (TrafficVehicleAI.Archetype.TWO_WHEELER if i % 2 == 0 else TrafficVehicleAI.Archetype.HATCHBACK)
+		var kind: TrafficVehicleAI.Archetype = mix as TrafficVehicleAI.Archetype
 		v.setup(self, kind, materials[kind])
 		pool.append(v)
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
+	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
 	_initial_spawn.call_deferred()
 
@@ -80,6 +96,7 @@ func _load_market_zones() -> void:
 		return
 	var m: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
 	for z: Dictionary in m.get("zones", []):
+		_zones.append({"id": str(z["id"]), "x": float(z["x"]), "z": float(z["z"]), "r": float(z["r"])})
 		if MARKET_ZONES.has(str(z["id"])):
 			_market_zones.append(Vector3(float(z["x"]), float(z["z"]), float(z["r"])))
 
@@ -97,9 +114,39 @@ func _build_greybox_graph() -> RoadGraph:
 	return g
 
 func _initial_spawn() -> void:
+	target_active = active_count
+	if dynamic_density and graph_path != "":
+		_update_density()
 	for i: int in pool.size():
-		if i < active_count or pool[i].archetype == TrafficVehicleAI.Archetype.STRAY_COW:
+		if i < target_active or pool[i].archetype == TrafficVehicleAI.Archetype.STRAY_COW:
 			_respawn(pool[i])
+
+## Zone the player is in (nearest centre inside its radius), "" outside the three MVP zones.
+func zone_at(p: Vector3) -> String:
+	var best: String = ""
+	var best_d: float = INF
+	for z: Dictionary in _zones:
+		var d: float = Vector2(p.x - float(z["x"]), p.z - float(z["z"])).length()
+		if d <= float(z["r"]) and d < best_d:
+			best_d = d
+			best = str(z["id"])
+	return best
+
+func _update_density() -> void:
+	var minute: float = GameState.shift_minute
+	var weekday: int = (GameState.day - 1) % 7
+	zone_id = zone_at(_player.global_position) if _player != null else ""
+	density = TrafficDensity.density(minute, weekday, zone_id)
+	target_active = mini(TrafficDensity.active_vehicles(density, MAX_POOL), MAX_POOL)
+	speed_factor = TrafficDensity.speed_factor(minute, weekday, density)
+	SignalBus.traffic_density_changed.emit(density, zone_id, TrafficDensity.is_peak(minute, weekday))
+
+func active_vehicle_count() -> int:
+	var n: int = 0
+	for v: TrafficVehicleAI in pool:
+		if v.active and v.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
+			n += 1
+	return n
 
 func _physics_process(delta: float) -> void:
 	if _player == null:
@@ -111,6 +158,19 @@ func _physics_process(delta: float) -> void:
 		if v.active and v.global_position.distance_to(_player.global_position) > RECYCLE_RADIUS_M:
 			_respawn_queue.append(v)
 	_detect_near_misses(delta)
+	if dynamic_density and graph_path != "":
+		_density_timer += delta
+		if _density_timer >= DENSITY_UPDATE_S:
+			_density_timer = 0.0
+			_update_density()
+			# Rush hour builds up: wake parked pool vehicles (≤ 2 per update, frame time stays flat).
+			var woken: int = 0
+			for v: TrafficVehicleAI in pool:
+				if active_vehicle_count() + _respawn_queue.size() >= target_active or woken >= 2:
+					break
+				if not v.active and v.archetype != TrafficVehicleAI.Archetype.STRAY_COW and not _respawn_queue.has(v):
+					_respawn_queue.append(v)
+					woken += 1
 	# Parked cattle retry every few seconds (they only appear in market zones).
 	_cow_retry_timer += delta
 	if _cow_retry_timer > 3.0 and not _market_zones.is_empty():
@@ -121,7 +181,13 @@ func _physics_process(delta: float) -> void:
 	# Respawn at most 2 per tick to keep frame time flat.
 	var n: int = 0
 	while not _respawn_queue.is_empty() and n < 2:
-		_respawn(_respawn_queue.pop_front())
+		var rv: TrafficVehicleAI = _respawn_queue.pop_front()
+		# Traffic thinning out after the rush: recycled vehicles park instead of respawning.
+		if dynamic_density and graph_path != "" and rv.archetype != TrafficVehicleAI.Archetype.STRAY_COW \
+				and active_vehicle_count() > target_active:
+			rv.deactivate()
+		else:
+			_respawn(rv)
 		n += 1
 
 ## "Gap-la Gethu": the player squeezes past a moving vehicle with < 0.6 m to spare
@@ -154,7 +220,7 @@ func honk_at(v: TrafficVehicleAI) -> void:
 	if _honk == null or v.archetype == TrafficVehicleAI.Archetype.STRAY_COW:
 		return
 	_honk.global_position = v.global_position
-	_honk.pitch_scale = 0.8 if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS else rng.randf_range(1.15, 1.45)
+	_honk.pitch_scale = 0.8 if v.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)
 	_honk.play()
 
 func request_respawn(v: TrafficVehicleAI) -> void:
@@ -210,8 +276,28 @@ func gap_ahead(me: TrafficVehicleAI) -> float:
 			best = minf(best, along - me.half_length() - 1.4)
 	return best
 
+## Player hit this vehicle: it stops and leans on the horn ("Enna pa, kannu theriyala?").
+func _on_bumped(v: Node3D, impact_mps: float) -> void:
+	var tv: TrafficVehicleAI = v as TrafficVehicleAI
+	if tv == null or not pool.has(tv):
+		return
+	tv.bumped(impact_mps)
+	if _honk != null and tv.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
+		_honk.global_position = tv.global_position
+		_honk.pitch_scale = 0.8 if tv.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)
+		_honk.play()
+
 func is_sub_lane_free(me: TrafficVehicleAI, lane: int) -> bool:
 	var lat: float = graph.sub_lane_offset(me.edge, me.dir, lane)
+	# Never side-step into the player's auto (a kinematic body would shove it sideways).
+	if _player != null:
+		var fwd: Vector3 = -me.global_transform.basis.z
+		var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+		var to_p: Vector3 = _player.global_position - me.global_position
+		var along: float = to_p.dot(fwd)
+		var p_lat: float = me.lateral + to_p.dot(left)
+		if absf(along) < me.half_length() + 2.5 and absf(p_lat - lat) < me.half_width() + PLAYER_HALF_WIDTH_M + 0.4:
+			return false
 	for o: TrafficVehicleAI in pool:
 		if o == me or not o.active or o.edge != me.edge or o.dir != me.dir:
 			continue

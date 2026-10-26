@@ -9,7 +9,8 @@ config/name="Namma Auto: Chennai Rickshaw Simulator 3D"
 config/description="Culturally authentic Chennai auto rickshaw 3D driving and economy simulator."
 config/version="0.5.0-mvp"
 config/quit_on_go_back=false
-run/main_scene="res://scenes/main_menu.tscn"
+run/main_scene="res://scenes/splash.tscn"
+run/max_fps=60
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.png"
 boot_splash/bg_color=Color(0.118, 0.098, 0.129, 1)
@@ -22,6 +23,7 @@ boot_splash/show_image=true
 
 SignalBus="*res://autoloads/SignalBus.gd"
 GameState="*res://autoloads/GameState.gd"
+AdMonetizationManager="*res://autoloads/AdMonetizationManager.gd"
 
 [debug]
 
@@ -109,6 +111,7 @@ locale/fallback="en"
 
 3d/physics_engine="Jolt Physics"
 common/physics_ticks_per_second=60
+common/physics_interpolation=true
 common/max_physics_steps_per_frame=8
 3d/default_gravity=9.8
 3d/default_linear_damp=0.05
