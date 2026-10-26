@@ -8,6 +8,11 @@ extends Node3D
 ## Phase 5 can swap in an artist's GLTF; this keeps the silhouette honest until then.
 
 const GROUND_Y: float = -0.80 # road height relative to the chassis origin at rest
+## The downloaded Chennai auto (rSquare, CC BY 4.0) replaces the procedural body while the paint
+## is stock yellow. Its texture can't be repainted, so garage paints and the green EV keep the
+## procedural body. The file's wheels are baked into the body, so the WheelModel nodes are hidden.
+const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
+const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
 @export var trim: Color = Color(0.07, 0.07, 0.07) # black canopy / skirts
@@ -15,6 +20,8 @@ const GROUND_Y: float = -0.80 # road height relative to the chassis origin at re
 @export var chrome: Color = Color(0.82, 0.83, 0.86)
 
 var body_mesh: MeshInstance3D
+var real_body: Node3D
+var uses_real_model: bool = false
 
 func _ready() -> void:
 	build()
@@ -57,6 +64,29 @@ func build() -> void:
 	body_mesh.name = "BodyMesh"
 	body_mesh.mesh = mesh
 	add_child(body_mesh)
+	_attach_real_model()
+
+## Stock Chennai yellow (Singara Classic, King Deluxe) with a dark canopy.
+func is_stock_yellow() -> bool:
+	return paint.h > 0.09 and paint.h < 0.17 and paint.s > 0.7 and paint.v > 0.8 and trim.v < 0.25
+
+func _attach_real_model() -> void:
+	if real_body != null:
+		real_body.queue_free()
+		real_body = null
+	uses_real_model = false
+	if Engine.is_editor_hint() or not is_stock_yellow() or not is_inside_tree():
+		return
+	var holder: Node3D = Node3D.new()
+	holder.name = "RealBody"
+	holder.position.y = GROUND_Y
+	add_child(holder)
+	if TrafficModelFit.attach(holder, REAL_MODEL, REAL_SIZE, true):
+		real_body = holder
+		uses_real_model = true
+		body_mesh.visible = false
+	else:
+		holder.queue_free()
 
 func triangle_count() -> int:
 	var n: int = 0

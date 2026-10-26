@@ -103,7 +103,8 @@ the way to get the "Madras Soul" sounds.
 | Hatchback | `hatchback.glb` | Kenney Car Kit (official GLB) | CC0 |
 | Share auto | `share_auto.glb` | Auto Rickshaw, rSquare (Sketchfab), the yellow Chennai auto | CC BY 4.0 |
 | Stray cow | `stray_cow.glb` | Cow, Quaternius (poly.pizza), converted from FBX | CC0 |
-| Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). Stray cows pick either cow at random | CC BY 4.0 |
+| Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). The file holds two cows; the pipeline keeps "cow 2" only. Stray cows pick either cow at random | CC BY 4.0 |
+| Player auto | `vehicles/player_auto.glb` | Same rSquare auto at higher detail (6.3k tris, 1024 px). Used while the paint is stock yellow; other paints keep the procedural body | CC BY 4.0 |
 | MTC bus | none yet | The free bus models are about 4 m long and cannot be stretched to 11 m. It keeps its box until a real bus model is found | |
 
 Run `python3 tools/assets/process_models.py` to rebuild these from `assets_src/incoming/models/`. Credits are in `assets/models/CREDITS_models.md`.
@@ -163,3 +164,18 @@ python3 tools/assets/process_incoming.py
 
 It cuts each clip to the part the game uses, makes engine loops seamless with a crossfade, peak-normalises,
 and encodes mono Vorbis at 96 kbps. It also writes `assets/audio/CREDITS_vehicle.md`.
+
+## Game art (Stitch, made by the project owner)
+
+Prompts: the "Namma Auto Game Art Prompt Pack" doc (1A-2I). Raw PNGs go in `assets_src/incoming/art/` (git-ignored);
+`python3 tools/art/import_game_art.py` builds:
+
+| Output | From |
+|---|---|
+| `assets/ui/controls_v2.png` (driving buttons, pause, touch ripple; 1536x768 atlas) | 2B-2I |
+| `assets/ui/logo.png` (menu logo) | 1G |
+| `assets/ui/loading_bg.jpg` (loading screen) | 1F |
+| `icon.png`, `assets/icon/icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
+| `assets/icon/boot_splash.png` | 1E |
+
+Not used yet: 1A and 1C (alternative icons) and 2A (the full sheet; the single-button images are sharper).

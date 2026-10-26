@@ -77,7 +77,7 @@ var shift_minute: float = SHIFT_START_MIN
 var shift_running: bool = true
 var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 
-var settings: Dictionary = {"control_scheme": 0, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
+var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
 	"vibration": true, "guidance_arrow": true, "tutorial_step": 0, "auto_reverse": true}
 
 ## Saving is disabled for test runs so suites never read or clobber a real profile.
@@ -478,6 +478,10 @@ func from_dict(d: Dictionary) -> void:
 	var s: Dictionary = d.get("settings", {})
 	for k: String in s:
 		settings[k] = s[k]
+	# Controls v2 (steer buttons + pedals) became the default; move old saves onto it once.
+	if not bool(s.get("controls_v2", false)):
+		settings["control_scheme"] = 1
+		settings["controls_v2"] = true
 
 func save_game() -> bool:
 	if not persistence_enabled:

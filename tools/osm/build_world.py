@@ -407,7 +407,10 @@ def build_real_buildings(elements: list[dict], raster: streets.Raster, clear_pts
             continue
         cx, cz = sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
         on_road = sum(1 for x, z in pts if raster.get(x, z) == R_ROAD)
-        if raster.get(cx, cz) in (R_ROAD, R_WATER) or on_road * 2 > len(pts):
+        # Any wall standing in a carriageway reads as "a building on the road" in game, so count
+        # every 2 m cell under the footprint, not just its corners (big footprints used to slip by).
+        road_cells, _cells = raster.count_in_polygon(pts, (R_ROAD,))
+        if raster.get(cx, cz) in (R_ROAD, R_WATER) or on_road * 2 > len(pts) or road_cells > 0:
             dropped += 1
             continue
         if any(math.hypot(cx - x, cz - z) < r for x, z, r in clear_pts):
@@ -470,6 +473,7 @@ def build_fill_buildings(edges: list[dict], areas: dict, raster: streets.Raster,
                                for sx, sz in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
                     probe = corners + [(cx, cz)] + [((p[0] + q[0]) / 2, (p[1] + q[1]) / 2) for p, q in zip(corners, corners[1:] + corners[:1])]
                     ok = all(raster.get(x, z) == 0 for x, z in probe)
+                    ok = ok and raster.count_in_polygon(corners, (R_ROAD, R_WALK, R_BUILDING, R_WATER), grow=1.0)[0] == 0
                     ok = ok and cx < coast_x_at(areas["sea"], cz) - SEA_CLEAR_M
                     ok = ok and all(math.hypot(cx - x, cz - z) > r + math.hypot(w, d) / 2 for x, z, r in clear_pts)
                     if ok:

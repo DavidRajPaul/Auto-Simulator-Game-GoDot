@@ -37,7 +37,10 @@ SPECS = [
     ("traffic/stray_cow.glb", "traffic/quaternius_Cow_converted.glb", 0.4, 256, True,
      "Cow by Quaternius (poly.pizza), CC0"),
     ("traffic/stray_cow_fadly.glb", "traffic/fadly_cow/scene.gltf", 0.03, 256, False,
-     "Cow - LowPoly by Fadly.W (Sketchfab), CC BY 4.0"),
+     "Cow - LowPoly by Fadly.W (Sketchfab), CC BY 4.0", "cow 2"),
+    # The player's own auto: same rSquare model at higher detail (seen up close all the time).
+    ("vehicles/player_auto.glb", "traffic/rsquare_auto_rickshaw/scene.gltf", 0.5, 1024, False,
+     "Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0"),
 ]
 
 
@@ -59,13 +62,17 @@ def run(args: list[str]) -> None:
     subprocess.run([str(c) for c in args], check=True, capture_output=True)
 
 
-def optimise(src: Path, dest: Path, simplify: float | None, texture_px: int, static: bool) -> None:
+def optimise(src: Path, dest: Path, simplify: float | None, texture_px: int, static: bool, keep: str = "") -> None:
     """Static props first (drop skins and animations), then the standard optimiser, then textures."""
     work = dest.with_suffix(".work.glb")
     step = src
     if static:
         run(["node", TOOLS / "static_prop.mjs", src, work])
         step = work
+    if keep:
+        picked = dest.with_suffix(".keep.glb")
+        run(["node", TOOLS / "keep_mesh.mjs", step, picked, keep])
+        step = picked
     opt = ["optimize", step, dest, "--compress", "false", "--texture-compress", "false", "--prune", "true"]
     if simplify is None:
         opt += ["--simplify", "false"]
@@ -75,16 +82,19 @@ def optimise(src: Path, dest: Path, simplify: float | None, texture_px: int, sta
     run([GLTF, "resize", "--width", texture_px, "--height", texture_px, dest, work])
     run(["node", TOOLS / "fix_materials.mjs", work, dest])
     work.unlink(missing_ok=True)
+    dest.with_suffix(".keep.glb").unlink(missing_ok=True)
 
 
 def main() -> int:
     if not GLTF.exists():
         print("gltf-transform missing: run `npm i` in tools/assets first")
         return 2
-    credits = ["# Traffic models (optimised by tools/assets/process_models.py)", "",
+    credits = ["# Vehicle and traffic models (optimised by tools/assets/process_models.py)", "",
                "| File | Source | Licence |", "|---|---|---|"]
     failed = 0
-    for out_rel, src_rel, simplify, texture_px, static, credit in SPECS:
+    for spec in SPECS:
+        out_rel, src_rel, simplify, texture_px, static, credit = spec[:6]
+        keep = spec[6] if len(spec) > 6 else ""
         src = SRC / src_rel
         if not src.exists():
             print(f"MISSING {src_rel}")
@@ -92,7 +102,7 @@ def main() -> int:
             continue
         dest = OUT / out_rel
         dest.parent.mkdir(parents=True, exist_ok=True)
-        optimise(src, dest, simplify, texture_px, static)
+        optimise(src, dest, simplify, texture_px, static, keep)
         print(f"OK   {out_rel}: {triangles(dest)} tris, {dest.stat().st_size // 1024} KB")
         credits.append(f"| `assets/models/{out_rel}` | {src_rel} | {credit} |")
     (OUT / "CREDITS_models.md").write_text("\n".join(credits) + "\n")

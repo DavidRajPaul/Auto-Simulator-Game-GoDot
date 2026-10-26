@@ -43,7 +43,7 @@ res://
 │       ├── manifest.json, road_graph.json, areas.json   # manifest: map_scale 1.0, stands, services, flood_spots
 │       └── chunks/c_<i>_<j>.json    # 250 m chunks: "surf" (pre-triangulated lanes/walks/junctions/markings) + "blds" (footprints + heights)
 ├── tools/osm/                       # fetch_osm.py, run_osm2streets.py, build_world.py, streets.py, preview_map.py, config.py
-├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py (Pillow + raqm for Tamil)
+├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py, import_game_art.py (Stitch art → atlas, icons, logo)
 ├── tools/assets/fetch_assets.py     # CC0 downloads for the Fetch Assets workflow (BigSoundBank)
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
 ├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
@@ -86,7 +86,9 @@ res://
 │   │   └── GreyboxDressing.gd       # MultiMesh lane dashes & placeholder buildings
 │   └── ui/
 │       ├── MainMenu.gd              # Continue / New career / Settings / Credits; back button
-│       ├── TouchHUD.gd              # Driving controls (icon atlas, D/R gear, indicators) + meter flag
+│       ├── TouchHUD.gd              # Driving controls v2: steer buttons, pedals, per-finger touch, dials
+│       ├── LoadingScreen.gd         # Threaded scene load, progress + tips, survives the scene change
+│       ├── ChennaiBackdrop.gd       # Drawn sunset skyline shared by menu and loading screen
 │       ├── UISfx.gd                 # Click sound on every Button + fare/level/goal sounds
 │       ├── PassengerHUD.gd          # Haggle card, passenger card, fare screen, wallet
 │       ├── MiniMap.gd               # Heading-up circular mini-map
@@ -154,6 +156,12 @@ res://
 * In tests, `await get_tree().physics_frame` resumes **before** nodes' `_physics_process` that frame: wait 2 frames after `Input.action_press` before asserting `is_action_just_pressed` effects.
 * Real audio files override the synth automatically when present (`VehicleAudio.stream_or()`); keep the synth fallback so tests and builds never depend on downloads.
 * Never gate core play (free roam, Savari, the King Deluxe) behind Driver Level — only cosmetics and the EV.
+* Traffic and the player move along **-Z**; glTF files face **+Z**. Every model needs its facing flag (`TrafficVehicleAI.MODEL_FLIP` / `COW_FLIP`, `TrafficModelFit.attach(..., flip)`) checked with a side render, or traffic drives tail-first.
+* Touch controls handle `InputEventScreenTouch/Drag` per finger in `TouchHUD._input` (press on touch-down, padded hit areas, slide between held controls). Don't go back to `TouchScreenButton` actions; they felt late and missed thumbs between buttons.
+* Buildings are dropped if **any** 2 m raster cell under the footprint is carriageway (`Raster.count_in_polygon`); checking corners only let large footprints stand on roads.
+* A Control placed straight under a `CanvasLayer` may get size 0 from anchors here; size it from the viewport (see `ChennaiBackdrop._fit`).
+* Don't measure "stuck" on a frozen auto with a stale speed; settle it first (phase 5 was flaky).
+* Painted UI art lives in ONE atlas (`assets/ui/controls_v2.png`, `TouchHUD.ART_CELLS`); keep new button art in it so the HUD stays one 2D batch. The Stitch PNGs are flat RGB with painted checkerboards: `import_game_art.py` cuts them out, never ship the raw files.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

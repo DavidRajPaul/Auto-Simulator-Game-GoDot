@@ -9,7 +9,7 @@ const CARD_BG: Color = Color(0.06, 0.06, 0.07, 0.86)
 const OFFER_COLOURS: Array[Color] = [Color(0.12, 0.55, 0.22), Color(0.85, 0.55, 0.05), Color(0.75, 0.15, 0.15)]
 const OFFER_TAGS: PackedStringArray = ["safe", "bargain", "greedy"]
 const OFFER_SHORT: PackedStringArray = ["Correct Meter", "Meter Mela", "Fixed Rate"]
-const MINIMAP_SIZE: float = 190.0
+const MINIMAP_SIZE: float = 170.0
 
 var _root: Control
 var _wallet: Label
@@ -203,6 +203,8 @@ func _build_fare_card() -> void:
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
+	# Bottom centre, between the TouchHUD speedometer and LPG dial.
+	minimap.position = Vector2(vp.x * 0.5 - MINIMAP_SIZE * 0.5, vp.y - 22.0 - MINIMAP_SIZE)
 	_wallet.position = Vector2(vp.x - 24.0 - 260.0, 104.0) # under the CAM button, clear of the meter
 	_wallet.size = Vector2(260.0, 40.0)
 	_wallet.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

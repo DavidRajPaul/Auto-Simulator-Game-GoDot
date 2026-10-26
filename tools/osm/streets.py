@@ -167,6 +167,33 @@ class Raster:
             return self.grid[j * self.w + i]
         return 255
 
+    def count_in_polygon(self, poly: list[tuple[float, float]], values: tuple[int, ...], grow: float = 0.0) -> tuple[int, int]:
+        """(matching cells, total cells) whose centre lies inside poly grown by `grow` m."""
+        if len(poly) < 3:
+            return 0, 0
+        zs = [p[1] for p in poly]
+        j0 = max(0, int((min(zs) - grow - self.z0) / self.cell))
+        j1 = min(self.h - 1, int((max(zs) + grow - self.z0) / self.cell))
+        n = len(poly)
+        hit = total = 0
+        for j in range(j0, j1 + 1):
+            zc = self.z0 + (j + 0.5) * self.cell
+            xs = []
+            for k in range(n):
+                (xa, za), (xb, zb) = poly[k], poly[k - 1]
+                if (za > zc) != (zb > zc):
+                    xs.append(xa + (zc - za) * (xb - xa) / (zb - za))
+            xs.sort()
+            row = j * self.w
+            for a, b in zip(xs[0::2], xs[1::2]):
+                i0 = max(0, int((a - grow - self.x0) / self.cell))
+                i1 = min(self.w - 1, int((b + grow - self.x0) / self.cell))
+                for i in range(i0, i1 + 1):
+                    total += 1
+                    if self.grid[row + i] in values:
+                        hit += 1
+        return hit, total
+
     def fill_polygon(self, poly: list[tuple[float, float]], value: int, grow: float = 0.0) -> None:
         """Scan-line fill of cells whose centre lies inside poly (optionally grown by `grow` m)."""
         if len(poly) < 3:

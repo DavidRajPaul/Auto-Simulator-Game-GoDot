@@ -7,7 +7,8 @@ extends Node3D
 ##  • Haptic feedback (horn, crashes, near misses, deals).
 ## Talks to the rest of the game through SignalBus; finds the player via its group.
 
-const FLIP_UP_Y: float = 0.35
+## Below this the auto is on its side or roof (cos 53°). Side-tilt stunts peak near 18°, far above it.
+const FLIP_UP_Y: float = 0.6
 const FLIP_RESET_S: float = 2.0
 const STUCK_S: float = 4.0
 const ARROW_HEIGHT_M: float = 2.6
@@ -63,7 +64,9 @@ func _physics_process(delta: float) -> void:
 # --- Recovery ----------------------------------------------------------------------------
 
 func _watch_flip_and_stuck(delta: float) -> void:
-	if _player.global_transform.basis.y.y < FLIP_UP_Y:
+	# A frozen body (tow, scripted pose) is never "flipped": recovering it would also cancel the stuck offer.
+	var frozen: bool = _player is RigidBody3D and (_player as RigidBody3D).freeze
+	if not frozen and _player.global_transform.basis.y.y < FLIP_UP_Y:
 		_flip_timer += delta
 		if _flip_timer >= FLIP_RESET_S:
 			recover()

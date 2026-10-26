@@ -127,6 +127,10 @@ func _test_flip_recovery(auto: AutoRickshawController) -> void:
 
 func _test_stuck_offer(auto: AutoRickshawController) -> void:
 	# Pin the auto in place and hold the throttle: after a few seconds a Reset button is offered.
+	# Settle first: a frozen auto stops reporting speed, so freezing it mid-roll left a stale
+	# speed above the "stuck" limit and made this check flaky.
+	await _brake_to_stop(auto)
+	await _physics(10)
 	auto.freeze = true
 	_events.erase("recover_available")
 	Input.action_press("accelerate")

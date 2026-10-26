@@ -41,6 +41,7 @@ func _ready() -> void:
 	_pause_btn = _button("⏸", Color(0.2, 0.2, 0.25, 0.85), func() -> void: open_pause())
 	_pause_btn.custom_minimum_size = Vector2(72, 56)
 	_root.add_child(_pause_btn)
+	_paint_pause_button()
 	_build_modal()
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -93,8 +94,11 @@ func _button(text: String, colour: Color, on_press: Callable) -> Button:
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
-	_clock.position = Vector2(214.0, 22.0)
-	_pause_btn.position = Vector2(214.0, 54.0)
+	# Top-right corner (the top-left belongs to the gear / horn / camera buttons).
+	_pause_btn.position = Vector2(vp.x - 26.0 - _pause_btn.custom_minimum_size.x, 16.0)
+	_clock.size = Vector2(240.0, 30.0)
+	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_clock.position = Vector2(vp.x - 26.0 - 72.0 - 14.0 - 240.0, 34.0)
 	_service_bar.position = Vector2(vp.x * 0.5 - 220.0, vp.y * 0.58)
 	_service_msg.position = Vector2(0.0, vp.y * 0.52)
 	_service_msg.size = Vector2(vp.x, 30.0)
@@ -426,3 +430,27 @@ func _on_shift_ended(summary: Dictionary) -> void:
 	_row("", tr("NEXT_DAY"), true, func() -> void:
 		GameState.start_next_day()
 		close_modal())
+
+## The painted gold pause coin from the game-art atlas (same atlas as the driving buttons).
+func _paint_pause_button() -> void:
+	if not ResourceLoader.exists(TouchHUD.ART_ATLAS):
+		return
+	var tex: Texture2D = load(TouchHUD.ART_ATLAS) as Texture2D
+	var cells: Array[String] = ["pause", "pause_p"]
+	var icons: Array[AtlasTexture] = []
+	for c: String in cells:
+		var idx: int = int(TouchHUD.ART_CELLS[c])
+		var at: AtlasTexture = AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2((idx % TouchHUD.ART_COLS) * TouchHUD.ART_CELL, (idx / TouchHUD.ART_COLS) * TouchHUD.ART_CELL, TouchHUD.ART_CELL, TouchHUD.ART_CELL)
+		icons.append(at)
+	_pause_btn.text = ""
+	_pause_btn.icon = icons[0]
+	_pause_btn.expand_icon = true
+	_pause_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_btn.custom_minimum_size = Vector2(80, 80)
+	_pause_btn.size = Vector2(80, 80)
+	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
+		_pause_btn.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	_pause_btn.button_down.connect(func() -> void: _pause_btn.icon = icons[1])
+	_pause_btn.button_up.connect(func() -> void: _pause_btn.icon = icons[0])

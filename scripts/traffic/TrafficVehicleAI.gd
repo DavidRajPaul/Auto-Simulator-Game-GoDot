@@ -27,8 +27,11 @@ const COW_FILES: Array[String] = [
 	"res://assets/models/traffic/stray_cow.glb",
 	"res://assets/models/traffic/stray_cow_fadly.glb",
 ]
-## The scooter model is authored facing -Z; the cars, autos and cow face +Z.
-const MODEL_FLIP: Array[bool] = [true, false, false, false, false]
+## Traffic drives along -Z (Basis.looking_at). Most glTF files face +Z, so they need a half turn;
+## the scooter already faces -Z. Checked with side renders: forgetting this drives them tail-first.
+const MODEL_FLIP: Array[bool] = [false, true, true, false, true]
+## Per-file flip for the cow variants (same order as COW_FILES).
+const COW_FLIP: Array[bool] = [true, true]
 
 var manager: ChennaiTrafficManager
 var archetype: Archetype = Archetype.HATCHBACK
@@ -66,8 +69,10 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	_mesh.scale = size
 	_mesh.position.y = size.y * 0.5
 	_mesh.material_override = material
-	var model_path: String = COW_FILES[randi() % COW_FILES.size()] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
-	if TrafficModelFit.attach(self, model_path, size, MODEL_FLIP[kind]):
+	var cow: int = randi() % COW_FILES.size()
+	var model_path: String = COW_FILES[cow] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
+	var flip: bool = COW_FLIP[cow] if kind == Archetype.STRAY_COW else MODEL_FLIP[kind]
+	if TrafficModelFit.attach(self, model_path, size, flip):
 		_mesh.visible = false
 	deactivate()
 
