@@ -15,7 +15,8 @@ const CREDITS: String = """Namma Auto — Chennai Rickshaw Simulator 3D
 Map data © OpenStreetMap contributors, available under the Open Database Licence (ODbL).
 Road and lane geometry: osm2streets by the A/B Street project (Apache-2.0).
 Game engine: Godot Engine (MIT). Physics: Jolt Physics (MIT).
-Fonts: Noto Sans Tamil and Baloo Thambi 2, SIL Open Font License 1.1.
+Fonts: Bricolage Grotesque, Rubik, Noto Sans Tamil and Baloo Thambi 2, SIL Open Font License 1.1.
+Game art and screens designed with Google Stitch for Namma Auto.
 UI sounds: Kenney Interface Sounds (CC0). Ambience and horns: BigSoundBank, Joseph Sardin (CC0).
 Auto engine and kick-start sounds: kalhan, Freesound (CC BY 4.0). Bulb horn: alex_jauk, Pixabay.
 Indicator tick: ProductionNow, Freesound (CC0). Air horn: goose278, Freesound (CC0).
@@ -31,6 +32,11 @@ var _panel: PanelContainer
 var _panel_title: Label
 var _panel_body: VBoxContainer
 var _buttons: Dictionary = {}
+var _stats_card: PanelContainer
+var _ticker: Label
+var _tip_index: int = 0
+var _top_chips: HBoxContainer
+const TIP_KEYS: Array[String] = ["TIP_1", "TIP_2", "TIP_3", "TIP_4", "TIP_5", "TIP_6"]
 
 func _ready() -> void:
 	GameState.shift_running = false
@@ -62,7 +68,7 @@ func new_career() -> void:
 	if GameState.has_save():
 		_open_panel(tr("NEW_GAME"))
 		_panel_text(tr("NEW_GAME_CONFIRM"))
-		_panel_body.add_child(_button(tr("YES_START"), Color(0.6, 0.25, 0.15), func() -> void:
+		_panel_body.add_child(UIKit.button(tr("YES_START"), UIKit.Tone.RED, func() -> void:
 			GameState.new_career()
 			start_game()))
 		return
@@ -92,6 +98,7 @@ func open_credits() -> void:
 func close_panel() -> void:
 	_panel.visible = false
 	_menu.visible = true
+	_stats_card.visible = true
 
 func _on_back() -> void:
 	if _panel.visible:
@@ -138,10 +145,31 @@ func _build_scene() -> void:
 	ground.mesh = disc
 	ground.position = Vector3(0, -0.03, 0)
 	add_child(ground)
+	# Glowing turntable rim (4A "pulse-ring").
+	var rim: MeshInstance3D = MeshInstance3D.new()
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = 2.53
+	torus.outer_radius = 2.6
+	torus.rings = 48
+	torus.ring_segments = 6
+	var rm: StandardMaterial3D = StandardMaterial3D.new()
+	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rm.albedo_color = Color(0.95, 0.5, 0.1)
+	torus.material = rm
+	rim.mesh = torus
+	rim.position = Vector3(0, 0.01, 0)
+	add_child(rim)
+	var glow: Tween = create_tween().set_loops()
+	glow.tween_property(rm, "albedo_color", Color(1.0, 0.75, 0.25), 1.25).set_trans(Tween.TRANS_SINE)
+	glow.tween_property(rm, "albedo_color", Color(0.95, 0.5, 0.1), 1.25).set_trans(Tween.TRANS_SINE)
 	# The auto the player drives: the real Chennai model in stock yellow, else the procedural one.
 	_auto = Node3D.new()
 	_auto.position = Vector3(0, 0.8, 0)
 	add_child(_auto)
+	# Hover bob (4A "arcade-bob", 3.2 s).
+	var bob: Tween = create_tween().set_loops()
+	bob.tween_property(_auto, "position:y", 0.86, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	bob.tween_property(_auto, "position:y", 0.8, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var body: Node3D = Node3D.new()
 	body.set_script(load("res://scripts/vehicle/AutoRickshawModel.gd"))
 	var st: VehicleStats = GameState.active_stats()
@@ -165,9 +193,14 @@ func _build_ui() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.theme = UIKit.theme()
 	layer.add_child(_root)
+	var has_save: bool = GameState.has_save()
+	var lvl: int = GameState.progress.level()
+
+	# Left column (4A): logo, tagline, driver card, PLAY, secondary row.
 	_menu = VBoxContainer.new()
-	_menu.add_theme_constant_override("separation", 12)
+	_menu.add_theme_constant_override("separation", 14)
 	_root.add_child(_menu)
 	if ResourceLoader.exists(LOGO):
 		var logo: TextureRect = TextureRect.new()
@@ -175,54 +208,64 @@ func _build_ui() -> void:
 		logo.texture = load(LOGO) as Texture2D
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-		logo.custom_minimum_size = Vector2(0, 200)
+		logo.custom_minimum_size = Vector2(0, 170)
 		_menu.add_child(logo)
 	else:
-		_menu.add_child(_label("NAMMA AUTO", 80, AMBER, 12))
-		_menu.add_child(_label("நம்ம ஆட்டோ", 36, Color(1, 1, 1), 8))
-	_buttons["tagline"] = _label(tr("TAGLINE"), 22, Color(1.0, 0.92, 0.82))
+		_menu.add_child(UIKit.label("NAMMA AUTO", 72, UIKit.YELLOW, true, 10))
+	_buttons["tagline"] = UIKit.label(tr("TAGLINE"), 20, UIKit.JASMINE, true, 6)
 	_menu.add_child(_buttons["tagline"])
-	var gap: Control = Control.new()
-	gap.custom_minimum_size = Vector2(0, 8)
-	_menu.add_child(gap)
-	var has_save: bool = GameState.has_save()
-	if has_save:
-		_menu.add_child(_profile_card())
-		_buttons["continue"] = _button("▶  " + tr("CONTINUE"), AMBER, continue_game, 34, Color(0.08, 0.05, 0.02))
-		_buttons["continue"].custom_minimum_size = Vector2(0, 88)
-		_menu.add_child(_buttons["continue"])
-		_buttons["new"] = _button(tr("NEW_GAME"), Color(0.22, 0.2, 0.24, 0.92), new_career)
-	else:
-		_buttons["new"] = _button("▶  " + tr("NEW_GAME"), AMBER, new_career, 34, Color(0.08, 0.05, 0.02))
-		_buttons["new"].custom_minimum_size = Vector2(0, 88)
-		_menu.add_child(_buttons["new"])
+	_menu.add_child(_driver_card(lvl, has_save))
+	var primary_key: String = "continue" if has_save else "new"
+	var primary: Button = UIKit.button("▶  " + tr("CONTINUE" if has_save else "NEW_GAME"), UIKit.Tone.YELLOW,
+		continue_game if has_save else new_career, 36)
+	primary.custom_minimum_size = Vector2(0, 92)
+	_buttons[primary_key] = primary
+	_menu.add_child(primary)
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	_menu.add_child(row)
-	_buttons["settings"] = _button(tr("SETTINGS"), Color(0.22, 0.2, 0.24, 0.92), open_settings)
-	_buttons["credits"] = _button(tr("CREDITS"), Color(0.22, 0.2, 0.24, 0.92), open_credits)
-	var secondary: Array[String] = ["settings", "credits"]
 	if has_save:
-		secondary.push_front("new")
-	for k: String in secondary:
+		_buttons["new"] = UIKit.button(tr("NEW_GAME"), UIKit.Tone.ORANGE, new_career, 20)
+	_buttons["settings"] = UIKit.button(tr("SETTINGS"), UIKit.Tone.PURPLE, open_settings, 20)
+	_buttons["credits"] = UIKit.button(tr("CREDITS"), UIKit.Tone.PURPLE, open_credits, 20)
+	for k: String in (["new", "settings", "credits"] if has_save else ["settings", "credits"]):
 		(_buttons[k] as Button).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(_buttons[k])
-	_buttons["hint"] = _label(tr("MENU_HINT"), 18, Color(1.0, 0.92, 0.82))
+	_buttons["hint"] = UIKit.label(tr("MENU_HINT"), 16, UIKit.MUTED)
 	_buttons["hint"].autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_menu.add_child(_buttons["hint"])
-	# Quit sits in the corner, away from the thumb's path to Play.
-	_buttons["quit"] = _button(tr("QUIT"), Color(0.3, 0.12, 0.12, 0.85), func() -> void: get_tree().quit(), 20)
-	_buttons["quit"].custom_minimum_size = Vector2(120, 52)
-	_root.add_child(_buttons["quit"])
 
-	_panel = PanelContainer.new()
-	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = PANEL_BG
-	sb.set_corner_radius_all(18)
-	sb.set_content_margin_all(22.0)
-	sb.border_color = AMBER
-	sb.set_border_width_all(2)
-	_panel.add_theme_stylebox_override("panel", sb)
+	# Top-right currency / rating / rank chips + quit.
+	_top_chips = HBoxContainer.new()
+	_top_chips.add_theme_constant_override("separation", 22)
+	_root.add_child(_top_chips)
+	_top_chips.add_child(UIKit.chip("coin", "₹" + UIKit.inr(GameState.wallet_inr)))
+	_top_chips.add_child(UIKit.chip("star", "%.1f" % GameState.star_rating))
+	_top_chips.add_child(UIKit.chip(UIKit.badge_for_level(lvl), "%s %d" % [tr("LV"), lvl]))
+	_buttons["quit"] = UIKit.button(tr("QUIT"), UIKit.Tone.RED, func() -> void: get_tree().quit(), 18)
+	_buttons["quit"].custom_minimum_size = Vector2(110, 56)
+	_top_chips.add_child(_buttons["quit"])
+
+	# Right: the auto's card above the turntable.
+	_stats_card = _vehicle_card()
+	_root.add_child(_stats_card)
+
+	# Bottom ticker with rotating tips (4A footer).
+	var bar: PanelContainer = PanelContainer.new()
+	bar.name = "Ticker"
+	bar.add_theme_stylebox_override("panel", UIKit.pill_box(Color(UIKit.PLUM, 0.9), UIKit.PLUM))
+	_root.add_child(bar)
+	_ticker = UIKit.label("", 17, UIKit.JASMINE)
+	_ticker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bar.add_child(_ticker)
+	_next_tip()
+	var t: Timer = Timer.new()
+	t.wait_time = 4.5
+	t.autostart = true
+	t.timeout.connect(_next_tip)
+	add_child(t)
+
+	_panel = UIKit.card()
 	_panel.visible = false
 	_root.add_child(_panel)
 	var outer: VBoxContainer = VBoxContainer.new()
@@ -230,10 +273,10 @@ func _build_ui() -> void:
 	_panel.add_child(outer)
 	var head: HBoxContainer = HBoxContainer.new()
 	outer.add_child(head)
-	_panel_title = _label("", 30, AMBER)
+	_panel_title = UIKit.label("", 32, UIKit.YELLOW, true, 6)
 	_panel_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_panel_title)
-	_buttons["back"] = _button(tr("BACK"), Color(0.3, 0.3, 0.34), close_panel)
+	_buttons["back"] = UIKit.button(tr("BACK"), UIKit.Tone.PURPLE, close_panel, 20)
 	_buttons["back"].custom_minimum_size = Vector2(140, 56)
 	head.add_child(_buttons["back"])
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -244,14 +287,73 @@ func _build_ui() -> void:
 	_panel_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_panel_body.add_theme_constant_override("separation", 12)
 	scroll.add_child(_panel_body)
+	# Breathing PLAY button once it has a size.
+	(func() -> void: UIKit.pulse(primary, 0.035, 1.4)).call_deferred()
+
+## Driver card: rank badge, title, rating stars, day / rides (4A "Thala Murugan" card).
+func _driver_card(lvl: int, has_save: bool) -> PanelContainer:
+	var card: PanelContainer = UIKit.card()
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	card.add_child(row)
+	row.add_child(UIKit.reward_icon(UIKit.badge_for_level(lvl), 92))
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	row.add_child(col)
+	col.add_child(UIKit.label(DriverProgress.title(lvl), 26, UIKit.JASMINE, true))
+	var stars: HBoxContainer = HBoxContainer.new()
+	stars.add_theme_constant_override("separation", 2)
+	col.add_child(stars)
+	var rating: float = GameState.star_rating
+	for i: int in 5:
+		var cell: String = "star" if rating >= i + 0.75 else ("star_half" if rating >= i + 0.25 else "star_empty")
+		stars.add_child(UIKit.reward_icon(cell, 26))
+	stars.add_child(UIKit.label("  %.1f" % rating, 18, UIKit.YELLOW, true))
+	var sub: String = "%s %d · %s %d" % [tr("LV"), lvl, tr("DAY"), GameState.day]
+	if not has_save:
+		sub = tr("TAGLINE")
+	col.add_child(UIKit.label(sub, 16, UIKit.MUTED))
+	var xp: ProgressBar = UIKit.bar(GameState.progress.level_progress(), UIKit.GREEN, 260, 12)
+	col.add_child(xp)
+	_buttons["profile"] = card
+	return card
+
+## The auto on the turntable: name + stat bars (4A "Classic Chennai 200cc" card).
+func _vehicle_card() -> PanelContainer:
+	var st: VehicleStats = GameState.active_stats()
+	var card: PanelContainer = UIKit.card()
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	card.add_child(col)
+	col.add_child(UIKit.label(st.display_name, 28, UIKit.YELLOW, true, 4))
+	col.add_child(UIKit.stat_bar(tr("STAT_SPEED"), st.max_speed_kmh / 80.0, UIKit.YELLOW, 200))
+	col.add_child(UIKit.stat_bar(tr("STAT_COMFORT"), clampf(st.comfort_damping / 1.5, 0.0, 1.0), UIKit.GREEN, 200))
+	col.add_child(UIKit.stat_bar(tr("STAT_TANK"), clampf(st.fuel_capacity / 12.0, 0.0, 1.0), UIKit.ORANGE, 200))
+	return card
+
+func _next_tip() -> void:
+	if _ticker == null:
+		return
+	_ticker.text = tr(TIP_KEYS[_tip_index % TIP_KEYS.size()])
+	_tip_index += 1
+	_ticker.modulate.a = 0.0
+	create_tween().tween_property(_ticker, "modulate:a", 1.0, 0.4)
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
-	_menu.position = Vector2(maxf(40.0, vp.x * 0.06), maxf(20.0, vp.y * 0.06))
-	_menu.custom_minimum_size = Vector2(minf(520.0, vp.x * 0.42), 0)
+	var m: float = maxf(28.0, vp.x * 0.04)
+	_menu.position = Vector2(m, maxf(16.0, vp.y * 0.03))
+	_menu.custom_minimum_size = Vector2(minf(520.0, vp.x * 0.4), 0)
 	_menu.size = _menu.custom_minimum_size
-	(_buttons["quit"] as Button).position = Vector2(vp.x - 24.0 - 120.0, 20.0)
-	_panel.custom_minimum_size = Vector2(minf(820.0, vp.x - 40.0), minf(560.0, vp.y - 40.0))
+	_top_chips.reset_size()
+	_top_chips.position = Vector2(vp.x - m - _top_chips.get_combined_minimum_size().x, 18.0)
+	_stats_card.reset_size()
+	var sc: Vector2 = _stats_card.get_combined_minimum_size()
+	_stats_card.position = Vector2(vp.x - m - sc.x, vp.y * 0.17)
+	var bar: Control = _root.get_node("Ticker") as Control
+	bar.position = Vector2(m, vp.y - 58.0)
+	bar.size = Vector2(vp.x - m * 2.0, 44.0)
+	_panel.custom_minimum_size = Vector2(minf(860.0, vp.x - 40.0), minf(580.0, vp.y - 40.0))
 	_panel.position = (vp - _panel.custom_minimum_size) * 0.5
 
 func _refresh_texts() -> void:
@@ -267,68 +369,23 @@ func _open_panel(title: String) -> void:
 	for c: Node in _panel_body.get_children():
 		c.queue_free()
 	_menu.visible = false
+	_stats_card.visible = false
 	_panel.visible = true
+	UIKit.pop_in(_panel, 0.0, 0.25)
 
 func _panel_text(text: String) -> void:
-	var l: Label = _label(text, 20, Color(0.92, 0.92, 0.92))
+	var l: Label = UIKit.label(text, 19, UIKit.JASMINE)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_panel_body.add_child(l)
 
 func _choice(title: String, options: PackedStringArray, selected: int, on_pick: Callable) -> void:
-	_panel_body.add_child(_label(title, 22, AMBER))
+	_panel_body.add_child(UIKit.label(title, 22, UIKit.YELLOW, true))
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	for i: int in options.size():
 		var idx: int = i
-		var b: Button = _button(options[i], Color(0.15, 0.45, 0.2) if i == selected else Color(0.25, 0.25, 0.28), func() -> void: on_pick.call(idx))
-		b.custom_minimum_size = Vector2(170, 58)
+		var b: Button = UIKit.button(options[i], UIKit.Tone.GREEN if i == selected else UIKit.Tone.PURPLE, func() -> void: on_pick.call(idx), 20)
+		b.custom_minimum_size = Vector2(170, 60)
 		row.add_child(b)
 	_panel_body.add_child(row)
-
-## Wallet, rating and driver level from the save, above the Continue button.
-func _profile_card() -> PanelContainer:
-	var card: PanelContainer = PanelContainer.new()
-	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.03, 0.06, 0.72)
-	sb.border_color = Color(1.0, 0.72, 0.1, 0.6)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(14.0)
-	card.add_theme_stylebox_override("panel", sb)
-	var lvl: int = GameState.progress.level()
-	var text: String = "₹%d   ★%.1f   %s %d · %s   %s %d" % [GameState.wallet_inr, GameState.star_rating, tr("LEVEL"), lvl,
-		DriverProgress.title(lvl), tr("DAY"), GameState.day]
-	var l: Label = _label(text, 22, Color.WHITE, 0)
-	card.add_child(l)
-	_buttons["profile"] = card
-	return card
-
-func _label(text: String, size: int, colour: Color, outline: int = 6) -> Label:
-	var l: Label = Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_color_override("font_outline_color", Color(0.06, 0.02, 0.05))
-	l.add_theme_constant_override("outline_size", outline)
-	return l
-
-func _button(text: String, colour: Color, on_press: Callable, font_size: int = 24, font_colour: Color = Color.WHITE) -> Button:
-	var b: Button = Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(0, 64)
-	b.add_theme_font_size_override("font_size", font_size)
-	for st: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(st, font_colour)
-	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var sb: StyleBoxFlat = StyleBoxFlat.new()
-		sb.bg_color = colour.lightened(0.2) if state == "pressed" else (colour.darkened(0.5) if state == "disabled" else colour)
-		if state == "focus":
-			sb.draw_center = false
-			sb.border_color = AMBER
-			sb.set_border_width_all(2)
-		sb.set_corner_radius_all(14)
-		sb.set_content_margin_all(12.0)
-		b.add_theme_stylebox_override(state, sb)
-	b.pressed.connect(on_press)
-	return b

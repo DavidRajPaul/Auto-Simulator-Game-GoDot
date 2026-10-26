@@ -23,6 +23,8 @@ var _fuel_level: float = 1.0
 var _speed_kmh: float = 0.0
 var _out_of_fuel_shown: bool = false
 var _current_tab: String = "TAB_REPAIR"
+var _dim: ColorRect
+var _modal_ribbon: PanelContainer
 
 func _ready() -> void:
 	layer = 15
@@ -30,6 +32,7 @@ func _ready() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.theme = UIKit.theme()
 	add_child(_root)
 	_clock = _label("", 20, Color.WHITE)
 	_service_bar = HBoxContainer.new()
@@ -69,28 +72,27 @@ func _ready() -> void:
 # --- Helpers ------------------------------------------------------------------------------
 
 func _label(text: String, size: int, colour: Color) -> Label:
-	var l: Label = Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", colour)
-	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 5)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l: Label = UIKit.label(text, size, colour, true, 6)
 	_root.add_child(l)
 	return l
 
+## Arcade button from the shared kit; the old colour argument picks the closest tone.
 func _button(text: String, colour: Color, on_press: Callable) -> Button:
-	var b: Button = Button.new()
-	b.text = text
-	b.add_theme_font_size_override("font_size", 22)
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var sb: StyleBoxFlat = StyleBoxFlat.new()
-		sb.bg_color = colour.lightened(0.2) if state == "pressed" else (colour.darkened(0.5) if state == "disabled" else colour)
-		sb.set_corner_radius_all(12)
-		sb.set_content_margin_all(12.0)
-		b.add_theme_stylebox_override(state, sb)
-	b.pressed.connect(on_press)
-	return b
+	return UIKit.button(text, _tone_for(colour), on_press, 22)
+
+static func _tone_for(c: Color) -> UIKit.Tone:
+	if c.s < 0.3:
+		return UIKit.Tone.PURPLE
+	var h: float = c.h
+	if h < 0.035 or h > 0.93:
+		return UIKit.Tone.RED
+	if h < 0.095:
+		return UIKit.Tone.ORANGE
+	if h < 0.19:
+		return UIKit.Tone.YELLOW
+	if h < 0.5:
+		return UIKit.Tone.GREEN
+	return UIKit.Tone.PURPLE
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
@@ -102,8 +104,11 @@ func _layout() -> void:
 	_service_bar.position = Vector2(vp.x * 0.5 - 220.0, vp.y * 0.58)
 	_service_msg.position = Vector2(0.0, vp.y * 0.52)
 	_service_msg.size = Vector2(vp.x, 30.0)
-	_modal.custom_minimum_size = Vector2(minf(820.0, vp.x - 40.0), minf(560.0, vp.y - 40.0))
+	_modal.custom_minimum_size = Vector2(minf(880.0, vp.x - 40.0), minf(600.0, vp.y - 40.0))
 	_modal.position = (vp - _modal.custom_minimum_size) * 0.5
+	if _dim != null:
+		_dim.position = Vector2.ZERO
+		_dim.size = vp
 
 # --- Service prompts ------------------------------------------------------------------------
 
@@ -177,14 +182,11 @@ func _last_player_pos() -> Vector3:
 # --- Modal framework -------------------------------------------------------------------------
 
 func _build_modal() -> void:
-	_modal = PanelContainer.new()
-	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = BG
-	sb.set_corner_radius_all(18)
-	sb.set_content_margin_all(20.0)
-	sb.border_color = AMBER
-	sb.set_border_width_all(2)
-	_modal.add_theme_stylebox_override("panel", sb)
+	_dim = UIKit.backdrop()
+	_dim.visible = false
+	_root.add_child(_dim)
+	_modal = UIKit.card()
+	_modal.add_theme_stylebox_override("panel", UIKit.card_box(UIKit.DUSK))
 	_modal.visible = false
 	_root.add_child(_modal)
 	var outer: VBoxContainer = VBoxContainer.new()
@@ -192,12 +194,12 @@ func _build_modal() -> void:
 	_modal.add_child(outer)
 	var head: HBoxContainer = HBoxContainer.new()
 	outer.add_child(head)
-	_modal_title = Label.new()
-	_modal_title.add_theme_font_size_override("font_size", 30)
-	_modal_title.add_theme_color_override("font_color", AMBER)
+	_modal_title = UIKit.label("", 32, UIKit.YELLOW, true, 6)
 	_modal_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_modal_title)
-	head.add_child(_button("✕", Color(0.3, 0.3, 0.32), close_modal))
+	var x: Button = UIKit.button("✕", UIKit.Tone.RED, close_modal, 22)
+	x.custom_minimum_size = Vector2(64, 60)
+	head.add_child(x)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -212,41 +214,58 @@ func _open_modal(title: String) -> void:
 	for c: Node in _modal_body.get_children():
 		c.queue_free()
 	_modal.visible = true
+	_dim.visible = true
+	SignalBus.ui_modal_changed.emit(true)
+	_layout()
+	UIKit.pop_in(_modal, 0.0, 0.22)
 	get_tree().paused = true
 
 func close_modal() -> void:
 	_modal.visible = false
+	_dim.visible = false
+	SignalBus.ui_modal_changed.emit(false)
 	get_tree().paused = false
 
 func is_open() -> bool:
 	return _modal.visible
 
+## One item tile (garage / pause / summary): text on the left, an arcade button on the right.
+## Prices get a coin, locked items the padlock, paints a swatch of their colour.
 func _row(text: String, button_text: String, enabled: bool, on_press: Callable, colour: Color = Color(0.15, 0.45, 0.2)) -> void:
+	var tile: PanelContainer = PanelContainer.new()
+	tile.add_theme_stylebox_override("panel", UIKit.card_box(UIKit.SURFACE_HI, 16))
 	var row: HBoxContainer = HBoxContainer.new()
-	var l: Label = Label.new()
-	l.text = text
+	row.add_theme_constant_override("separation", 14)
+	tile.add_child(row)
+	if _current_tab == "TAB_PAINT" and _modal_title.text == tr("GARAGE") and button_text != "":
+		var sw: Panel = Panel.new()
+		sw.custom_minimum_size = Vector2(46, 46)
+		sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var sb: StyleBoxFlat = UIKit.pill_box(colour).duplicate() as StyleBoxFlat
+		sw.add_theme_stylebox_override("panel", sb)
+		row.add_child(sw)
+	var l: Label = UIKit.label(text, 19, UIKit.JASMINE)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	l.add_theme_font_size_override("font_size", 20)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(l)
 	if button_text != "":
-		var b: Button = _button(button_text, colour, on_press)
-		b.custom_minimum_size = Vector2(180, 60)
+		var locked: bool = button_text.begins_with(tr("UNLOCKS_AT_LV"))
+		var icon: String = "lock" if locked else ("coin" if button_text.contains("₹") else "")
+		var tone: UIKit.Tone = UIKit.Tone.PURPLE if locked else (UIKit.Tone.YELLOW if _current_tab == "TAB_PAINT" and _modal_title.text == tr("GARAGE") else _tone_for(colour))
+		var b: Button = UIKit.button(button_text, tone, on_press, 20, icon)
+		b.custom_minimum_size = Vector2(200, 64)
 		b.disabled = not enabled
 		row.add_child(b)
-	_modal_body.add_child(row)
+	_modal_body.add_child(tile)
 
 func _choice_row(title: String, options: PackedStringArray, selected: int, on_pick: Callable) -> void:
-	var l: Label = Label.new()
-	l.text = title
-	l.add_theme_font_size_override("font_size", 22)
-	l.add_theme_color_override("font_color", AMBER)
-	_modal_body.add_child(l)
+	_modal_body.add_child(UIKit.label(title, 22, UIKit.YELLOW, true))
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	for i: int in options.size():
 		var idx: int = i
-		var b: Button = _button(options[i], Color(0.15, 0.45, 0.2) if i == selected else Color(0.25, 0.25, 0.28), func() -> void: on_pick.call(idx))
+		var b: Button = UIKit.button(options[i], UIKit.Tone.GREEN if i == selected else UIKit.Tone.PURPLE, func() -> void: on_pick.call(idx), 20)
 		b.custom_minimum_size = Vector2(160, 58)
 		row.add_child(b)
 	_modal_body.add_child(row)
@@ -254,30 +273,53 @@ func _choice_row(title: String, options: PackedStringArray, selected: int, on_pi
 # --- Pause & settings ------------------------------------------------------------------------
 
 func open_pause() -> void:
-	_open_modal(tr("PAUSE"))
-	_row("₹%d   ★%.1f   %s %d · %s" % [GameState.wallet_inr, GameState.star_rating, tr("DAY"), GameState.day, GameState.clock_text()], tr("RESUME"), true, close_modal)
+	_open_modal(tr("GAME_PAUSED"))
+	# 4E: status chips, then the big RESUME and EXIT buttons, then progress and settings.
+	var chips: HBoxContainer = HBoxContainer.new()
+	chips.add_theme_constant_override("separation", 22)
+	chips.add_child(UIKit.chip("coin", "₹" + UIKit.inr(GameState.wallet_inr)))
+	chips.add_child(UIKit.chip("star", "%.1f" % GameState.star_rating))
+	chips.add_child(UIKit.chip(UIKit.badge_for_level(GameState.driver_level()), "%s %d · %s" % [tr("DAY"), GameState.day, GameState.clock_text()]))
+	_modal_body.add_child(chips)
+	var resume: Button = UIKit.button("▶  " + tr("RESUME"), UIKit.Tone.GREEN, close_modal, 30)
+	resume.custom_minimum_size = Vector2(0, 84)
+	_modal_body.add_child(resume)
 	_render_progress()
 	_render_settings()
-	_row(tr("SAVED_AUTOMATICALLY"), tr("MAIN_MENU"), true, func() -> void:
+	var exit: Button = UIKit.button(tr("MAIN_MENU"), UIKit.Tone.RED, func() -> void:
 		GameState.save_game()
 		close_modal()
-		get_tree().change_scene_to_file(MAIN_MENU_SCENE), Color(0.35, 0.25, 0.4))
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE), 24)
+	_modal_body.add_child(exit)
+	_modal_body.add_child(UIKit.label(tr("SAVED_AUTOMATICALLY"), 16, UIKit.MUTED))
 
 ## Driver level + today's shift goals (pause menu and shift summary).
 func _render_progress() -> void:
 	var lvl: int = GameState.driver_level()
 	var nxt: String = "" if lvl >= DriverProgress.MAX_LEVEL else "   (%d / %d XP)" % [GameState.progress.xp, DriverProgress.xp_for_level(lvl + 1)]
-	var head: Label = Label.new()
-	head.text = "%s %d · %s%s" % [tr("LV"), lvl, DriverProgress.title(lvl), nxt]
-	head.add_theme_font_size_override("font_size", 22)
-	head.add_theme_color_override("font_color", AMBER)
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
+	head.add_child(UIKit.reward_icon(UIKit.badge_for_level(lvl), 56))
+	var hv: VBoxContainer = VBoxContainer.new()
+	hv.add_child(UIKit.label("%s %d · %s%s" % [tr("LV"), lvl, DriverProgress.title(lvl), nxt], 22, UIKit.YELLOW, true))
+	hv.add_child(UIKit.bar(GameState.progress.level_progress(), UIKit.GREEN, 320, 12))
+	head.add_child(hv)
 	_modal_body.add_child(head)
 	for g: Dictionary in GameState.progress.goals:
-		var l: Label = Label.new()
-		l.text = "%s  %s   %d / %d" % ["[x]" if bool(g["done"]) else "[ ]", PassengerHUD.goal_text(g), int(g["progress"]), int(g["target"])]
-		l.add_theme_font_size_override("font_size", 20)
-		l.add_theme_color_override("font_color", Color(0.6, 1.0, 0.65) if bool(g["done"]) else Color(0.9, 0.9, 0.9))
-		_modal_body.add_child(l)
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var done: bool = bool(g["done"])
+		if done:
+			row.add_child(UIKit.reward_icon("tick", 34))
+		else:
+			var ring: Panel = Panel.new()
+			ring.custom_minimum_size = Vector2(30, 30)
+			ring.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			ring.add_theme_stylebox_override("panel", UIKit.pill_box(Color(0, 0, 0, 0), UIKit.GREEN))
+			row.add_child(ring)
+		row.add_child(UIKit.label("%s   %d / %d" % [PassengerHUD.goal_text(g), int(g["progress"]), int(g["target"])], 19,
+			Color(0.6, 1.0, 0.65) if done else UIKit.JASMINE))
+		_modal_body.add_child(row)
 
 func _render_settings() -> void:
 	var s: Dictionary = GameState.settings
@@ -337,16 +379,13 @@ func _render_garage() -> void:
 	tabs.add_theme_constant_override("separation", 8)
 	for key: String in ["TAB_REPAIR", "TAB_UPGRADES", "TAB_HORN", "TAB_PAINT", "TAB_AUTOS"]:
 		var k: String = key
-		var b: Button = _button(tr(key), AMBER.darkened(0.3) if key == _current_tab else Color(0.25, 0.25, 0.28), func() -> void:
+		var b: Button = UIKit.button(tr(key), UIKit.Tone.ORANGE if key == _current_tab else UIKit.Tone.PURPLE, func() -> void:
 			_current_tab = k
-			_render_garage())
-		b.custom_minimum_size = Vector2(130, 54)
+			_render_garage(), 18)
+		b.custom_minimum_size = Vector2(140, 58)
 		tabs.add_child(b)
 	_modal_body.add_child(tabs)
-	var wallet: Label = Label.new()
-	wallet.text = "%s ₹%d" % [tr("WALLET"), GameState.wallet_inr]
-	wallet.add_theme_font_size_override("font_size", 22)
-	_modal_body.add_child(wallet)
+	_modal_body.add_child(UIKit.chip("coin", "%s ₹%s" % [tr("WALLET"), UIKit.inr(GameState.wallet_inr)]))
 	match _current_tab:
 		"TAB_REPAIR":
 			var cost: int = GameState.repair_cost()

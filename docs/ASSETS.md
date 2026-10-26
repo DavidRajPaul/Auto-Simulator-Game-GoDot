@@ -174,9 +174,15 @@ Prompts: the "Namma Auto Game Art Prompt Pack" doc (1A-2I). Raw PNGs go in `asse
 |---|---|
 | `assets/ui/controls_v2.png` (driving buttons, pause, touch ripple; 1536x768 atlas) | 2B-2I |
 | `assets/ui/hud_v2.png` (speedometer, LPG dial, needle, mini-map ring and pins, fare meter, ribbons, stunt burst; 2048x1024 atlas) | 3A-3E |
+| `assets/ui/rewards.png` (coins, stars, XP, LPG, tick, gift, padlock, 5 rank badges) | 5A, 5B |
+| `assets/ui/portraits.png` (rider portraits) | cropped from 4G and 4F |
 | `assets/ui/logo.png` (menu logo) | 1G |
 | `assets/ui/loading_bg.jpg` (loading screen) | 1F |
 | `icon.png`, `assets/icon/icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
 | `assets/icon/boot_splash.png` | 1E |
 
 Not used yet: 1A and 1C (alternative icons), 2A (the full sheet; the single-button images are sharper) and the LPG bunk pin from 3B (the mini-map doesn't show bunks yet).
+
+Screens 4A-4H (Stitch HTML + DESIGN.md "Namma Auto Arcade") are rebuilt in Godot by `scripts/ui/UIKit.gd` and the
+screen scripts; the HTML animations are reproduced as tweens (pulse, bob, pop-in, count-up, rays, stripes, flicker).
+Fonts from the design: Bricolage Grotesque and Rubik (Google Fonts, SIL OFL 1.1) in `assets/fonts/ui/`.

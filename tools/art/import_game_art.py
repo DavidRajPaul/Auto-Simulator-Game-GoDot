@@ -7,6 +7,8 @@ have dark outlines that stop the fill). Outputs are small and packed for mobile:
   assets/ui/controls_v2.png      one 1536x768 atlas, 192 px cells (order = CELLS below)
   assets/ui/hud_v2.png           dashboard dials, needle, map frame + pins, fare meter, banners, burst
                                  (2048x1024; regions = HUD_SLOTS below, mirrored in TouchHUD.HUD_REGIONS)
+  assets/ui/rewards.png          coins, stars, XP, LPG, tick, gift, padlock + 5 driver badges (5A, 5B)
+                                 (1024x1024, 256 px cells; order = REWARD_CELLS, mirrored in UIKit.REWARD_CELLS)
   assets/ui/logo.png             game logo cut out, 1024 px wide
   assets/ui/loading_bg.jpg       loading screen backdrop (1F night street), 1280x720
   icon.png, assets/icon/*        launcher + adaptive icons (1B / 1D), boot splash (1E)
@@ -271,7 +273,69 @@ def hud() -> None:
     atlas.save(UI / "hud_v2.png", optimize=True)
 
 
+REWARD_CELLS = ["coin", "coins", "coin_pile", "star", "star_half", "star_empty", "xp", "lpg",
+                "tick", "gift", "lock", "badge_bronze", "badge_silver", "badge_gold", "badge_ruby", "badge_diamond"]
+
+
+def flat_cut(path: Path, bg: tuple[int, int, int], tol: int = 11) -> np.ndarray:
+    """Art on one flat colour: flood that colour in from the border."""
+    im = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
+    near = np.abs(im - np.array(bg)).max(2) <= tol
+    near[:4], near[-4:], near[:, :4], near[:, -4:] = True, True, True, True
+    lab, _ = ndimage.label(near)
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+    keep = ndimage.binary_opening(~np.isin(lab, list(edge)), iterations=1)
+    alpha = np.clip(ndimage.gaussian_filter(keep.astype(np.float32), 0.8), 0, 1)
+    return np.dstack([im.astype(np.uint8), (alpha * 255).astype(np.uint8)])
+
+
+def split_rows(img: Image.Image) -> list[Image.Image]:
+    """Two icons stacked in one piece: cut at the emptiest row near the middle."""
+    a = np.asarray(img.getchannel("A")) > 64
+    rows = a.sum(1)
+    h = len(rows)
+    mid = int(np.argmin(rows[h // 4: 3 * h // 4])) + h // 4
+    top, bot = img.crop((0, 0, img.width, mid)), img.crop((0, mid, img.width, h))
+    return [top.crop(top.getbbox()), bot.crop(bot.getbbox())]
+
+
+def rewards() -> None:
+    r = pieces(flat_cut(SRC / "5A.Reward_icon_sheet.png", (33, 36, 41)), 0.003)
+    # Reading order on the sheet: coin, stack, pile, small stars, big empty star, bolt+gift, LPG,
+    # big full / half / empty stars, tick, padlock.
+    bolt, gift = split_rows(r[5])
+    got = {"coin": r[0], "coins": r[1], "coin_pile": r[2], "star": r[7], "star_half": r[8], "star_empty": r[9],
+           "xp": bolt, "lpg": r[6], "tick": r[10], "gift": gift, "lock": r[11]}
+    badges = pieces(cutout(SRC / "5B.Driver_level_badges.png", val_min=100), 0.02)
+    for name, im in zip(["badge_bronze", "badge_silver", "badge_gold", "badge_ruby", "badge_diamond"], badges):
+        got[name] = im
+    atlas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    for i, name in enumerate(REWARD_CELLS):
+        atlas.alpha_composite(fit(got[name], 256, pad=10), ((i % 4) * 256, (i // 4) * 256))
+    atlas.save(UI / "rewards.png", optimize=True)
+
+
+def portraits() -> None:
+    """Rider portraits shown inside the Stitch screens (4G haggle, 4F fare). Cropped, rounded."""
+    from PIL import ImageDraw
+    crops = [(SRC / "screens/4G.Haggle_card/screen.png", (1056, 852, 1400, 1226)),
+             (SRC / "screens/4F.Ride_complete-fare_result/screen.png", (132, 1000, 282, 1150))]
+    atlas = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
+    for i, (path, box) in enumerate(crops):
+        im = Image.open(path).convert("RGB").crop(box)
+        side = min(im.size)
+        im = im.crop(((im.width - side) // 2, (im.height - side) // 2, (im.width + side) // 2, (im.height + side) // 2))
+        im = im.resize((248, 248), Image.LANCZOS).convert("RGBA")
+        m = Image.new("L", (248, 248), 0)
+        ImageDraw.Draw(m).rounded_rectangle([0, 0, 247, 247], radius=40, fill=255)
+        im.putalpha(m)
+        atlas.alpha_composite(im, (i * 256 + 4, 4))
+    atlas.save(UI / "portraits.png", optimize=True)
+
+
 if __name__ == "__main__":
+    portraits()
+    rewards()
     hud()
     controls()
     branding()
