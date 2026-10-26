@@ -1,0 +1,35 @@
+name: Fetch FX Textures
+
+# Downloads Kenney's CC0 particle textures (tools/assets/fetch_fx.py) into assets/fx/ and commits
+# them to the branch it runs on. Run manually: Actions → Fetch FX Textures → Run workflow.
+
+on:
+  workflow_dispatch:
+  # Also runs when the fetch script itself changes (workflow_dispatch only works from the
+  # default branch, so this lets a feature branch fetch its own textures).
+  push:
+    paths:
+      - tools/assets/fetch_fx.py
+      - .github/workflows/fetch-fx.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - run: pip install pillow
+      - name: Fetch + convert
+        run: python3 tools/assets/fetch_fx.py
+      - name: Commit results
+        run: |
+          git config user.name "fetch-assets[bot]"
+          git config user.email "fetch-assets@users.noreply.github.com"
+          git add -A assets/fx
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "assets: Kenney CC0 particle textures for impact FX"
+          git pull --rebase
+          git push
