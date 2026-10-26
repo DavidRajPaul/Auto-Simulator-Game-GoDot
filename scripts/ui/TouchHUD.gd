@@ -44,6 +44,20 @@ const BUTTON_ART: Dictionary = {"SteerLeft": "steer_left", "SteerRight": "steer_
 	"Brake": "brake", "Gear": "gear_d", "Handbrake": "handbrake", "Horn": "horn", "Camera": "camera",
 	"KickStart": "kick", "Wiper": "wiper", "IndicatorLeft": "ind_left", "IndicatorRight": "ind_right"}
 const RIPPLE_SECONDS: float = 0.28
+## Dashboard / meter / banner art (3 series), one 2048x1024 atlas. Mirrors HUD_SLOTS in
+## tools/art/import_game_art.py.
+const HUD_ATLAS: String = "res://assets/ui/hud_v2.png"
+const HUD_REGIONS: Dictionary = {
+	"speedo": Rect2(0, 0, 512, 512), "lpg": Rect2(512, 0, 384, 384), "map_frame": Rect2(896, 0, 512, 512),
+	"burst": Rect2(1408, 0, 512, 512), "needle": Rect2(0, 512, 128, 512), "meter_hire": Rect2(128, 512, 512, 256),
+	"meter_fare": Rect2(640, 512, 512, 256), "pin_player": Rect2(1152, 512, 128, 128), "pin_rider": Rect2(1280, 512, 128, 128),
+	"pin_lpg": Rect2(1408, 512, 128, 128), "banner_yellow": Rect2(128, 784, 640, 120), "banner_red": Rect2(768, 784, 640, 120),
+	"banner_green": Rect2(1408, 784, 640, 120)}
+## Needle sweep measured on the painted dials: 0 km/h / Empty at -122°, 80 km/h / Full at +122°.
+const NEEDLE_SWEEP_DEG: float = 122.0
+## Where the meter's dark display sits inside the meter_fare cell (fractions of the cell).
+const METER_DISPLAY: Rect2 = Rect2(0.36, 0.36, 0.46, 0.40)
+enum Tone { BONUS, WARN, GOOD }
 
 var steer_value: float = 0.0
 var wiper_on: bool = false
@@ -78,6 +92,15 @@ var _dash: Dashboard
 var _art_tex: Texture2D
 var _art_cache: Dictionary = {} # cell name -> AtlasTexture
 var _ripple: TextureRect
+var _hud_tex: Texture2D
+var _speed_face: TextureRect
+var _speed_needle: TextureRect
+var _lpg_face: TextureRect
+var _lpg_needle: TextureRect
+var _meter: TextureRect
+var _banner: NinePatchRect
+var _burst: TextureRect
+var _burst_tween: Tween
 var _ripple_tween: Tween
 ## Quick taps can press and release inside one frame, and readers that poll
 ## is_action_just_pressed (camera, gear, indicators) would miss them. Every press is held for
@@ -137,6 +160,7 @@ func _ready() -> void:
 	_build_dashboard()
 	_build_controls()
 	_apply_art()
+	_apply_hud_art()
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	SignalBus.telemetry_updated.connect(_on_telemetry)
@@ -144,17 +168,17 @@ func _ready() -> void:
 	SignalBus.kick_start_attempt.connect(_on_kick_attempt)
 	SignalBus.kick_timed.connect(func(good: bool) -> void:
 		if not good:
-			_flash("Too fast/slow — kick... kick... kick", 1.2))
-	SignalBus.engine_restarted.connect(func() -> void: _flash("Engine started — vaanga po!", 2.0))
-	SignalBus.gethu_stunt_bonus_earned.connect(func(stunt: String, inr: int) -> void: _flash("%s! +₹%d" % [stunt, inr], 2.0))
+			_flash("Too fast/slow — kick... kick... kick", 1.2, Tone.WARN))
+	SignalBus.engine_restarted.connect(func() -> void: _flash("Engine started — vaanga po!", 2.0, Tone.GOOD))
+	SignalBus.gethu_stunt_bonus_earned.connect(func(stunt: String, inr: int) -> void: _stunt(stunt, inr))
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void: _flash("Camera: " + mode_name, 1.2))
 	SignalBus.settings_changed.connect(func(st: Dictionary) -> void: set_control_scheme(int(st.get("control_scheme", 1))))
 	set_control_scheme(int(GameState.settings.get("control_scheme", 1)))
 	SignalBus.ride_updated.connect(func(info: Dictionary) -> void: _ride_fare = int(info["fare"]))
 	SignalBus.ride_completed.connect(func(_b: Dictionary) -> void: _ride_fare = -1)
-	SignalBus.lpg_empty.connect(func() -> void: _flash("LPG khaali! Find a bunk.", 3.0))
+	SignalBus.lpg_empty.connect(func() -> void: _flash("LPG khaali! Find a bunk.", 3.0, Tone.WARN))
 	SignalBus.gear_changed.connect(_on_gear_changed)
-	SignalBus.gear_change_refused.connect(func() -> void: _flash(tr("STOP_TO_SHIFT"), 1.5))
+	SignalBus.gear_change_refused.connect(func() -> void: _flash(tr("STOP_TO_SHIFT"), 1.5, Tone.WARN))
 	SignalBus.indicator_blink.connect(_on_indicator_blink)
 	SignalBus.indicator_changed.connect(func(d: int) -> void:
 		indicator = d
@@ -175,6 +199,8 @@ func _process(delta: float) -> void:
 		_status_timer -= delta
 		if _status_timer <= 0.0:
 			_status_label.text = ""
+			if _banner != null:
+				_banner.visible = false
 	if control_scheme == 2:
 		_tilt_steer()
 	if Input.is_action_just_pressed("wiper_toggle"):
@@ -358,7 +384,8 @@ func _layout() -> void:
 	_place_button("Wiper", Rect2(ml, gear_r.end.y + g, s, s * 0.8))
 
 	# Bottom centre: speedometer | mini-map (PassengerHUD) | LPG dial.
-	var map_half: float = PassengerHUD.MINIMAP_SIZE * 0.5
+	# The painted ring (MiniMap) reaches ~17% past the map edge; keep the dials clear of it.
+	var map_half: float = PassengerHUD.MINIMAP_SIZE * 0.5 * 1.17
 	var cx: float = vp.x * 0.5
 	var r_speed: float = clampf(b * 0.62, 56.0, 84.0)
 	var r_fuel: float = r_speed * 0.68
@@ -381,6 +408,7 @@ func _layout() -> void:
 	_meter_label.size = Vector2(240.0, 64.0)
 	_status_label.position = Vector2(0.0, vp.y * 0.22)
 	_status_label.size = Vector2(vp.x, 50.0)
+	_layout_hud_art()
 
 func _place(c: Control, r: Rect2) -> void:
 	c.position = r.position
@@ -595,14 +623,21 @@ func _on_telemetry(data: Dictionary) -> void:
 	var cap: float = maxf(data.get("lpg_capacity", 1.0), 0.001)
 	_lpg_bar.value = float(data.get("lpg_liters", cap)) / cap
 	_dash.lpg = _lpg_bar.value
-	_dash.queue_redraw()
+	if _speed_needle != null:
+		_speed_needle.rotation = deg_to_rad(lerpf(-NEEDLE_SWEEP_DEG, NEEDLE_SWEEP_DEG, clampf(_dash.speed_kmh / _dash.max_kmh, 0.0, 1.0)))
+		_lpg_needle.rotation = deg_to_rad(lerpf(-NEEDLE_SWEEP_DEG, NEEDLE_SWEEP_DEG, clampf(_dash.lpg, 0.0, 1.0)))
+		_meter.texture = _hud("meter_hire" if _ride_fare < 0 else "meter_fare")
+		_meter_label.text = "" if _ride_fare < 0 else "₹%d" % _ride_fare
+	else:
+		_dash.queue_redraw()
 	if data.get("is_stalled", false):
 		_set_button_visible("KickStart", true)
 		if _status_timer <= 0.0:
 			_status_label.text = "Engine flooded! Tap KICK"
+			_show_banner(_status_label.text, Tone.WARN)
 
 func _on_stalled(_pos: Vector3) -> void:
-	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0)
+	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0, Tone.WARN)
 	_set_button_visible("KickStart", true)
 
 func _on_gear_changed(g: int) -> void:
@@ -641,9 +676,10 @@ func _toggle_wiper() -> void:
 	_flash("Wiper " + ("ON" if wiper_on else "OFF"), 1.0)
 	_refresh_wiper_visibility()
 
-func _flash(text: String, seconds: float) -> void:
+func _flash(text: String, seconds: float, tone: Tone = Tone.BONUS) -> void:
 	_status_label.text = text
 	_status_timer = seconds
+	_show_banner(text, tone)
 
 # --- Game art ----------------------------------------------------------------
 
@@ -726,3 +762,122 @@ func _play_ripple(pos: Vector2) -> void:
 	_ripple_tween.tween_property(_ripple, "scale", Vector2.ONE * 2.4, RIPPLE_SECONDS)
 	_ripple_tween.tween_property(_ripple, "modulate:a", 0.0, RIPPLE_SECONDS)
 	_ripple_tween.chain().tween_callback(func() -> void: _ripple.visible = false)
+
+# --- Dashboard / meter / banner art ---------------------------------------------
+
+func _hud(cell: String) -> AtlasTexture:
+	var key: String = "hud:" + cell
+	if _art_cache.has(key):
+		return _art_cache[key] as AtlasTexture
+	var at: AtlasTexture = AtlasTexture.new()
+	at.atlas = _hud_tex
+	at.region = HUD_REGIONS[cell] as Rect2
+	_art_cache[key] = at
+	return at
+
+func _hud_rect(cell: String, parent: Control) -> TextureRect:
+	var t: TextureRect = TextureRect.new()
+	t.name = cell.capitalize().replace(" ", "")
+	t.texture = _hud(cell)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(t)
+	return t
+
+## Painted dials with rotating needles, the meter flag, the map ring and message ribbons.
+## All from one atlas (one 2D batch); the drawn Dashboard stays as the fallback.
+func _apply_hud_art() -> void:
+	if not ResourceLoader.exists(HUD_ATLAS):
+		return
+	_hud_tex = load(HUD_ATLAS) as Texture2D
+	_dash.visible = false
+	_speed_face = _hud_rect("speedo", _icons)
+	_speed_needle = _hud_rect("needle", _icons)
+	_lpg_face = _hud_rect("lpg", _icons)
+	_lpg_needle = _hud_rect("needle", _icons)
+	_meter = _hud_rect("meter_hire", _icons)
+	_burst = _hud_rect("burst", _icons)
+	_burst.visible = false
+	_banner = NinePatchRect.new()
+	_banner.name = "Banner"
+	_banner.texture = _hud("banner_yellow")
+	_banner.patch_margin_left = 110
+	_banner.patch_margin_right = 110
+	_banner.patch_margin_top = 10
+	_banner.patch_margin_bottom = 10
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	_icons.add_child(_banner)
+	for n: String in ["KmhCaption", "LpgCaption"]:
+		(_texts.get_node(n) as Label).visible = false
+	_meter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_meter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_meter_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.2))
+	_meter_label.add_theme_font_size_override("font_size", 26)
+	_meter_label.text = ""
+	_layout()
+
+func _layout_hud_art() -> void:
+	if _speed_face == null:
+		return
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var rs: float = _dash.speed_radius * 1.12
+	_place(_speed_face, Rect2(_dash.speed_centre - Vector2(rs, rs), Vector2(rs, rs) * 2.0))
+	_place_needle(_speed_needle, _dash.speed_centre, rs * 0.78)
+	var rf: float = _dash.fuel_radius * 1.15
+	_place(_lpg_face, Rect2(_dash.fuel_centre - Vector2(rf, rf), Vector2(rf, rf) * 2.0))
+	_place_needle(_lpg_needle, _dash.fuel_centre + Vector2(0, rf * 0.12), rf * 0.62)
+	_speed_label.position = _dash.speed_centre + Vector2(-rs, rs * 0.14)
+	_speed_label.size = Vector2(rs * 2.0, 22.0)
+	_speed_label.add_theme_font_size_override("font_size", 18)
+	# Meter flag top-right, under the wallet; the fare prints on its dark display.
+	var mw: float = 220.0
+	var meter_r: Rect2 = Rect2(Vector2(vp.x - 26.0 - mw, 176.0), Vector2(mw, mw * 0.5))
+	_place(_meter, meter_r)
+	_meter_label.position = meter_r.position + meter_r.size * METER_DISPLAY.position
+	_meter_label.size = meter_r.size * METER_DISPLAY.size
+
+## A needle image points up with its pivot at the hub; scale it to `length` and pivot there.
+func _place_needle(n: TextureRect, centre: Vector2, length: float) -> void:
+	var w: float = length * 0.25
+	n.size = Vector2(w, length)
+	n.pivot_offset = Vector2(w * 0.5, length * 0.80) # hub sits ~80% down the needle art
+	n.position = centre - n.pivot_offset
+
+func _show_banner(text: String, tone: Tone) -> void:
+	if _banner == null:
+		return
+	if text == "":
+		_banner.visible = false
+		return
+	_banner.texture = _hud(["banner_yellow", "banner_red", "banner_green"][int(tone)])
+	var font: Font = _status_label.get_theme_font("font")
+	var fs: int = _status_label.get_theme_font_size("font_size")
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 260.0
+	var h: float = 74.0
+	var y: float = _status_label.position.y + _status_label.size.y * 0.5
+	_banner.position = Vector2((_status_label.size.x - w) * 0.5, y - h * 0.5)
+	_banner.size = Vector2(w, h)
+	_banner.visible = true
+
+## Stunt bonus: yellow ribbon plus a quick pop of the burst behind it.
+func _stunt(stunt: String, inr: int) -> void:
+	_flash("%s! +₹%d" % [stunt, inr], 2.0, Tone.BONUS)
+	if _burst == null:
+		return
+	if _burst_tween != null and _burst_tween.is_valid():
+		_burst_tween.kill()
+	var side: float = 200.0
+	var c: Vector2 = Vector2(_status_label.size.x * 0.5, _status_label.position.y + _status_label.size.y * 0.5)
+	_burst.size = Vector2(side, side)
+	_burst.pivot_offset = _burst.size * 0.5
+	_burst.position = c - _burst.pivot_offset
+	_burst.visible = true
+	_burst.scale = Vector2.ONE * 0.3
+	_burst.modulate = Color.WHITE
+	_burst_tween = create_tween()
+	_burst_tween.tween_property(_burst, "scale", Vector2.ONE * 1.15, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_burst_tween.tween_interval(0.9)
+	_burst_tween.tween_property(_burst, "modulate:a", 0.0, 0.35)
+	_burst_tween.tween_callback(func() -> void: _burst.visible = false)

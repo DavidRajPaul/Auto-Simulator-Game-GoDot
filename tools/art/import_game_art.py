@@ -5,6 +5,8 @@ so backgrounds are removed by flood-filling low-saturation pixels from the image
 have dark outlines that stop the fill). Outputs are small and packed for mobile:
 
   assets/ui/controls_v2.png      one 1536x768 atlas, 192 px cells (order = CELLS below)
+  assets/ui/hud_v2.png           dashboard dials, needle, map frame + pins, fare meter, banners, burst
+                                 (2048x1024; regions = HUD_SLOTS below, mirrored in TouchHUD.HUD_REGIONS)
   assets/ui/logo.png             game logo cut out, 1024 px wide
   assets/ui/loading_bg.jpg       loading screen backdrop (1F night street), 1280x720
   icon.png, assets/icon/*        launcher + adaptive icons (1B / 1D), boot splash (1E)
@@ -38,6 +40,8 @@ def cutout(path: Path, sat_max: int = 28, val_min: int = 150) -> np.ndarray:
     im = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
     mx, mn = im.max(2), im.min(2)
     bgish = ((mx - mn) <= sat_max) & (mx >= val_min)
+    # Some exports have a thin black frame; count the outer 6 px as background so the fill gets in.
+    bgish[:6], bgish[-6:], bgish[:, :6], bgish[:, -6:] = True, True, True, True
     lab, _ = ndimage.label(bgish)
     edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
     keep = ~np.isin(lab, list(edge))
@@ -162,7 +166,113 @@ def branding() -> None:
     mono.save(ICON / "adaptive_mono_432.png", optimize=True)
 
 
+# name -> (x, y, w, h) in assets/ui/hud_v2.png. Keep in sync with TouchHUD.HUD_REGIONS.
+HUD_SLOTS = {
+    "speedo": (0, 0, 512, 512), "lpg": (512, 0, 384, 384), "map_frame": (896, 0, 512, 512),
+    "burst": (1408, 0, 512, 512), "needle": (0, 512, 128, 512), "meter_hire": (128, 512, 512, 256),
+    "meter_fare": (640, 512, 512, 256), "pin_player": (1152, 512, 128, 128), "pin_rider": (1280, 512, 128, 128),
+    "pin_lpg": (1408, 512, 128, 128), "banner_yellow": (128, 784, 640, 120), "banner_red": (768, 784, 640, 120),
+    "banner_green": (1408, 784, 640, 120),
+}
+
+
+def fit_rect(img: Image.Image, w: int, h: int, pad: int = 4) -> Image.Image:
+    s = min((w - pad * 2) / img.width, (h - pad * 2) / img.height)
+    t = img.resize((max(1, round(img.width * s)), max(1, round(img.height * s))), Image.LANCZOS)
+    cell = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    cell.alpha_composite(t, ((w - t.width) // 2, (h - t.height) // 2))
+    return cell
+
+
+def cut_black(path: Path) -> np.ndarray:
+    """Ring on a black background: drop near-black regions touching the border or the centre."""
+    im = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
+    dark = im.max(2) < 40
+    lab, _ = ndimage.label(dark)
+    h, w = dark.shape
+    seeds = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) | {lab[h // 2, w // 2]}
+    keep = ~np.isin(lab, list(seeds - {0}))
+    alpha = np.clip(ndimage.gaussian_filter(keep.astype(np.float32), 0.8), 0, 1)
+    return np.dstack([im.astype(np.uint8), (alpha * 255).astype(np.uint8)])
+
+
+def largest(parts: list[Image.Image], n: int) -> list[Image.Image]:
+    return sorted(parts, key=lambda im: im.width * im.height, reverse=True)[:n]
+
+
+def blank_display(img: Image.Image) -> Image.Image:
+    """Paint over the baked "Rs 125 / 3.2 km" digits so the game can print the live fare:
+    the dark glass + red digits under the digits' centre become one flat dark panel."""
+    a = np.asarray(img).copy()
+    rgb = a[..., :3].astype(int)
+    h = a.shape[0]
+    red = (rgb[..., 0] > 140) & (rgb[..., 1] < 120) & (rgb[..., 2] < 120) & (a[..., 3] > 0)
+    red[: h // 3] = False  # the red flag on top stays
+    ys, xs = np.nonzero(red)
+    cy, cx = int(ys.mean()), int(xs.mean())
+    glass = (rgb.max(2) < 95) | red
+    lab, _ = ndimage.label(ndimage.binary_closing(glass, iterations=2))
+    region = ndimage.binary_fill_holes(lab == lab[cy, cx])
+    region = ndimage.binary_erosion(region, iterations=2)
+    a[region, 0], a[region, 1], a[region, 2] = 22, 8, 12
+    ry, rx = np.nonzero(region)
+    print(f"  meter display rect (fraction): {rx.min() / a.shape[1]:.3f} {ry.min() / h:.3f} "
+          f"{(rx.max() - rx.min()) / a.shape[1]:.3f} {(ry.max() - ry.min()) / h:.3f}")
+    return Image.fromarray(a, "RGBA")
+
+
+def colour_key(path: Path, sat_min: int = 45, grow: int = 6) -> np.ndarray:
+    """For art on a dark two-tone checker: keep saturated shapes, fill their holes, and grow a few
+    pixels so the dark outline stays. Grey caption text is dropped."""
+    im = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
+    sat = im.max(2) - im.min(2)
+    m = ndimage.binary_opening(sat > sat_min, iterations=2)
+    m = ndimage.binary_fill_holes(ndimage.binary_dilation(m, iterations=grow))
+    alpha = np.clip(ndimage.gaussian_filter(m.astype(np.float32), 1.0), 0, 1)
+    return np.dstack([im.astype(np.uint8), (alpha * 255).astype(np.uint8)])
+
+
+def big_parts(parts: list[Image.Image], n: int) -> list[Image.Image]:
+    """The n main pieces in reading order, ignoring small caption text the generator added."""
+    top = max(im.width * im.height for im in parts)
+    return [im for im in parts if im.width * im.height >= 0.4 * top][:n]
+
+
+def hud() -> None:
+    got: dict[str, Image.Image] = {}
+    got["speedo"] = largest(pieces(cutout(SRC / "3A.Dashboard_set_speedometer.png")), 1)[0]
+    got["needle"] = largest(pieces(cutout(SRC / "3A.Dashboard_set_speedometer_needle.png", sat_max=20, val_min=225)), 1)[0]
+    got["lpg"] = largest(pieces(cutout(SRC / "3A.Dashboard_set_LPG_dial.png", sat_max=20, val_min=225)), 1)[0]
+    rgba = cut_black(SRC / "3A.Dashboard_set_mini-map_frame.png")
+    ys, xs = np.nonzero(rgba[..., 3] > 128)
+    got["map_frame"] = Image.fromarray(rgba, "RGBA").crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    # Three pins side by side with captions under them: crop each column above the captions.
+    keyed = Image.fromarray(colour_key(src("3B")), "RGBA")
+    w, h = keyed.size
+    cols = {"pin_player": (0.0, 0.34), "pin_rider": (0.35, 0.65), "pin_lpg": (0.66, 1.0)}
+    for name, (c0, c1) in cols.items():
+        part = keyed.crop((round(w * c0), round(h * 0.22), round(w * c1), round(h * 0.66)))
+        got[name] = part.crop(part.getbbox())
+    meters = big_parts(pieces(cutout(src("3C"), val_min=90), 0.05), 2)
+    got["meter_hire"], got["meter_fare"] = meters[0], blank_display(meters[1])
+    banners = big_parts(pieces(cutout(src("3D"), val_min=90), 0.02), 3)
+    got.update(banner_yellow=banners[0], banner_red=banners[1], banner_green=banners[2])
+    burst_a = colour_key(src("3E"), sat_min=60, grow=3)
+    # The rays were painted see-through, so grey checker squares sit between them: drop light,
+    # unsaturated pixels inside the mask (dark outlines stay).
+    rgb = burst_a[..., :3].astype(np.int16)
+    grey = ((rgb.max(2) - rgb.min(2)) < 40) & (rgb.max(2) > 70)
+    burst_a[..., 3] = np.where(grey, 0, burst_a[..., 3])
+    burst = Image.fromarray(burst_a, "RGBA")
+    got["burst"] = burst.crop(burst.getbbox())
+    atlas = Image.new("RGBA", (2048, 1024), (0, 0, 0, 0))
+    for name, (x, y, w, h) in HUD_SLOTS.items():
+        atlas.alpha_composite(fit_rect(got[name], w, h, 0 if name.startswith("banner") else 4), (x, y))
+    atlas.save(UI / "hud_v2.png", optimize=True)
+
+
 if __name__ == "__main__":
+    hud()
     controls()
     branding()
     print("art imported")
