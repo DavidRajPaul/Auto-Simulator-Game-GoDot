@@ -23,7 +23,12 @@ func _run() -> void:
 	_test_traffic(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_hails(city.get_node("SavariManager") as SavariManager)
 	await _test_cockpit(city)
+	_test_street_names_and_signs(city)
+	await _test_gps(city)
+	await _test_full_map(city)
 	city.queue_free()
+	await _physics(2)
+	await _test_collisions()
 	await _physics(2)
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
@@ -103,6 +108,113 @@ func _test_cockpit(city: Node) -> void:
 	_check("Cockpit soaks up sudden roll (eye moves < 30 % of the body)", absf(after - before) < deg_to_rad(8.0) * 0.3, "%.2f°" % rad_to_deg(after - before))
 	while rig.mode != CameraRig.Mode.CHASE:
 		rig.cycle_mode()
+
+func _test_street_names_and_signs(city: Node) -> void:
+	var g: RoadGraph = SignalBus.current_road_graph
+	var named: int = 0
+	var tamil: int = 0
+	for e: RoadGraph.Edge in g.edges:
+		named += 1 if e.road_name != "" else 0
+		tamil += 1 if e.road_name_ta != "" else 0
+	_check("Real OSM street names on the road graph (≥ 60 % of edges)", float(named) / g.edges.size() >= 0.6, "%d/%d" % [named, g.edges.size()])
+	_check("Tamil street names attached from OSM name:ta", tamil >= 500, "%d" % tamil)
+	var ss: StreetSigns = city.get_node("StreetSigns") as StreetSigns
+	ss._player = (city.get_node("AutoRickshaw") as Node3D).global_position
+	ss.refresh()
+	var shown: int = 0
+	var real: bool = true
+	for n: Node3D in ss._pool:
+		if n.visible:
+			shown += 1
+			if (n.get_node("English") as Label3D).text == "":
+				real = false
+	_check("Street-name boards stand at nearby junctions", shown >= 2 and real, "%d boards" % shown)
+	_check("Board pool capped (draw-call budget)", ss._pool.size() <= 8)
+
+func _test_gps(city: Node) -> void:
+	var g: RoadGraph = SignalBus.current_road_graph
+	var auto: Node3D = city.get_node("AutoRickshaw") as Node3D
+	var dest: Vector3 = auto.global_position + Vector3(900, 0, 400)
+	var r: Dictionary = g.find_route(auto.global_position, dest)
+	var gps: GpsRoute = GpsRoute.build(g, r)
+	_check("GPS route builds a smooth guide path", gps.path.size() > r["points"].size() and gps.length > 100.0, "%d pts, %.0f m" % [gps.path.size(), gps.length])
+	var max_kink: float = 0.0
+	for i: int in range(2, gps.path.size()):
+		var a: Vector3 = (gps.path[i - 1] - gps.path[i - 2])
+		var b: Vector3 = (gps.path[i] - gps.path[i - 1])
+		if a.length() > 0.3 and b.length() > 0.3:
+			max_kink = maxf(max_kink, rad_to_deg(a.angle_to(b)))
+	_check("Guide line has rounded corners (no sharp kinks)", max_kink < 50.0, "max %.0f°" % max_kink)
+	_check("Turn-by-turn ends with Arrive", not gps.maneuvers.is_empty() and int(gps.maneuvers[-1]["turn"]) == GpsRoute.Turn.ARRIVE)
+	var info: Array = []
+	var cb: Callable = func(d: Dictionary) -> void: info.append(d)
+	SignalBus.nav_instruction.connect(cb)
+	SignalBus.gps_route_changed.emit(gps)
+	await _physics(15)
+	SignalBus.nav_instruction.disconnect(cb)
+	_check("Nav prompt published (distance + turn text)", not info.is_empty() and (info[-1] as Dictionary).has("distance_m") and str((info[-1] as Dictionary)["text"]) != "")
+	var rl: RouteLine = city.get_node("RouteLine") as RouteLine
+	_check("Guide ribbon is one shader mesh", rl.mesh != null and rl.mesh.get_surface_count() == 1 and rl.material_override is ShaderMaterial)
+	var banner: NavBanner = (city.get_node("PassengerHUD") as PassengerHUD).nav_banner
+	_check("Nav banner shows", banner.visible)
+	SignalBus.gps_route_changed.emit(null)
+
+func _test_full_map(city: Node) -> void:
+	var fm: FullMap = (city.get_node("PassengerHUD") as PassengerHUD).full_map
+	SignalBus.full_map_requested.emit(true)
+	await get_tree().process_frame
+	_check("Full map opens and pauses the game", fm.visible and get_tree().paused)
+	var before: float = fm.scale_px
+	fm._zoom_at(1.5, fm.size * 0.5)
+	_check("Full map zooms", fm.scale_px > before)
+	SignalBus.full_map_requested.emit(false)
+	await get_tree().process_frame
+	_check("Full map closes and resumes", not fm.visible and not get_tree().paused)
+
+func _test_collisions() -> void:
+	var main: Node = (load("res://scenes/main_phase1_greybox.tscn") as PackedScene).instantiate()
+	add_child(main)
+	var auto: AutoRickshawController = main.get_node("AutoRickshaw") as AutoRickshawController
+	var traffic: ChennaiTrafficManager = main.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	for v: TrafficVehicleAI in traffic.pool:
+		v.deactivate()
+	await _physics(30)
+	_check("Chassis has low-friction bounce material + chamfered hull", auto.physics_material_override != null and auto.physics_material_override.friction <= 0.2 \
+		and (auto.get_node("ChassisCollision") as CollisionShape3D).shape is ConvexPolygonShape3D)
+	var fwd: Vector3 = -auto.global_basis.z
+	var wall: StaticBody3D = StaticBody3D.new()
+	var cs: CollisionShape3D = CollisionShape3D.new()
+	var bx: BoxShape3D = BoxShape3D.new()
+	bx.size = Vector3(14, 4, 1)
+	cs.shape = bx
+	wall.add_child(cs)
+	main.add_child(wall)
+	wall.global_position = auto.global_position + fwd * 40.0 + Vector3(0, 1.5, 0)
+	wall.look_at(wall.global_position + fwd.rotated(Vector3.UP, deg_to_rad(35.0)), Vector3.UP)
+	var impacts: Array[Dictionary] = []
+	var cb: Callable = func(i: Dictionary) -> void: impacts.append(i)
+	SignalBus.player_impact.connect(cb)
+	Input.action_press("accelerate")
+	var hit_frame: int = -1
+	var slide: float = 0.0
+	for i: int in 400:
+		await get_tree().physics_frame
+		if hit_frame < 0 and not impacts.is_empty():
+			hit_frame = i
+		if hit_frame >= 0 and i == hit_frame + 30:
+			slide = Vector2(auto.linear_velocity.x, auto.linear_velocity.z).length()
+			break
+	Input.action_release("accelerate")
+	SignalBus.player_impact.disconnect(cb)
+	_check("Wall impact detected from contacts with severity", not impacts.is_empty() and float(impacts[0]["severity"]) > 0.3, str(impacts.slice(0, 1)))
+	_check("Glancing hit slides along the wall (doesn't glue to it)", slide > 1.5, "%.1f m/s" % slide)
+	_check("Impact never flips the auto", auto.global_basis.y.dot(Vector3.UP) > 0.8)
+	var v: TrafficVehicleAI = traffic.pool[3]
+	traffic.place_vehicle(v, 0, 300.0, 1, 1)
+	SignalBus.traffic_bumped.emit(v, 6.0)
+	_check("Bumped AI stops (no bulldozing)", v.bumped_timer > 1.0 and is_zero_approx(v.current_speed_mps))
+	main.queue_free()
+	await _physics(2)
 
 func _test_splash() -> void:
 	var s: SplashScreen = (load("res://scenes/splash.tscn") as PackedScene).instantiate() as SplashScreen

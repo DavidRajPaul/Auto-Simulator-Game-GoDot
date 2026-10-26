@@ -84,6 +84,7 @@ func _ready() -> void:
 		v.setup(self, kind, materials[kind])
 		pool.append(v)
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
+	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
 	_initial_spawn.call_deferred()
 
@@ -275,8 +276,28 @@ func gap_ahead(me: TrafficVehicleAI) -> float:
 			best = minf(best, along - me.half_length() - 1.4)
 	return best
 
+## Player hit this vehicle: it stops and leans on the horn ("Enna pa, kannu theriyala?").
+func _on_bumped(v: Node3D, impact_mps: float) -> void:
+	var tv: TrafficVehicleAI = v as TrafficVehicleAI
+	if tv == null or not pool.has(tv):
+		return
+	tv.bumped(impact_mps)
+	if _honk != null and tv.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
+		_honk.global_position = tv.global_position
+		_honk.pitch_scale = 0.8 if tv.archetype == TrafficVehicleAI.Archetype.MTC_BUS else rng.randf_range(1.15, 1.45)
+		_honk.play()
+
 func is_sub_lane_free(me: TrafficVehicleAI, lane: int) -> bool:
 	var lat: float = graph.sub_lane_offset(me.edge, me.dir, lane)
+	# Never side-step into the player's auto (a kinematic body would shove it sideways).
+	if _player != null:
+		var fwd: Vector3 = -me.global_transform.basis.z
+		var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+		var to_p: Vector3 = _player.global_position - me.global_position
+		var along: float = to_p.dot(fwd)
+		var p_lat: float = me.lateral + to_p.dot(left)
+		if absf(along) < me.half_length() + 2.5 and absf(p_lat - lat) < me.half_width() + PLAYER_HALF_WIDTH_M + 0.4:
+			return false
 	for o: TrafficVehicleAI in pool:
 		if o == me or not o.active or o.edge != me.edge or o.dir != me.dir:
 			continue

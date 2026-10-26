@@ -89,7 +89,8 @@ func _draw() -> void:
 			if clipped.size() == 2:
 				route_lines.append_array(clipped)
 		if not route_lines.is_empty():
-			draw_multiline(route_lines, Color(0.25, 1.0, 0.45), 4.0)
+			draw_multiline(route_lines, Color(1, 1, 1, 0.9), 6.0) # casing, like a sat-nav
+			draw_multiline(route_lines, Color(0.16, 0.55, 1.0), 4.0)
 		var dest: Vector2 = _to_map(Vector2(_route[_route.size() - 1].x, _route[_route.size() - 1].z), centre, scale_px, rot)
 		draw_circle(_clamp_to(dest, centre, r - 7.0), 6.0, Color(0.25, 1.0, 0.45))
 	# Hails.

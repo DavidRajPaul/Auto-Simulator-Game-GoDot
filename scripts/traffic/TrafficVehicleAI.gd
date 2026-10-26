@@ -54,6 +54,9 @@ var lateral: float = 0.0 # current left offset (m) — eases toward the sub-lane
 
 var _enable_collision_next_tick: bool = false
 var courtesy_timer: float = 0.0
+## After the player hits us: stop dead, honk, then pull away (instead of a kinematic body
+## bulldozing the auto). Seconds left.
+var bumped_timer: float = 0.0
 var _horn_timer: float = -1.0
 var _horn_dir: int = 0
 var _gap_seek_timer: float = 0.0
@@ -135,6 +138,11 @@ func reacts_to_horn(horn_tier: int) -> bool:
 func give_way(seconds: float) -> void:
 	courtesy_timer = maxf(courtesy_timer, seconds)
 
+func bumped(impact_mps: float) -> void:
+	bumped_timer = clampf(1.5 + impact_mps * 0.35, 1.5, 4.5)
+	current_speed_mps = 0.0
+	_horn_timer = -1.0
+
 func hear_horn(away_dir: int) -> void:
 	if _horn_timer >= 0.0:
 		return
@@ -150,6 +158,10 @@ func tick(delta: float) -> void:
 	if _enable_collision_next_tick:
 		_enable_collision_next_tick = false
 		_shape.disabled = false
+	if bumped_timer > 0.0:
+		bumped_timer -= delta
+		current_speed_mps = 0.0
+		return # stands still (kinematic body stays put, no shove)
 	if _horn_timer >= 0.0:
 		_horn_timer -= delta
 		if _horn_timer < 0.0:

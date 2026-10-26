@@ -21,6 +21,7 @@ class Edge:
 	var lanes_back: int
 	var road_class: String
 	var road_name: String
+	var road_name_ta: String = ""
 
 var nodes: PackedVector3Array = PackedVector3Array()
 var edges: Array[Edge] = []
@@ -41,7 +42,8 @@ static func from_json_file(path: String) -> RoadGraph:
 		var pts: PackedVector3Array = PackedVector3Array()
 		for p: Array in e["pts"]:
 			pts.append(Vector3(float(p[0]), 0.0, float(p[1])))
-		g.add_edge(int(e["a"]), int(e["b"]), pts, float(e["w"]), int(e["lf"]), int(e["lb"]), str(e["c"]), str(e.get("n", "")))
+		var ei: int = g.add_edge(int(e["a"]), int(e["b"]), pts, float(e["w"]), int(e["lf"]), int(e["lb"]), str(e["c"]), str(e.get("n", "")))
+		g.edges[ei].road_name_ta = str(e.get("nt", ""))
 	return g
 
 func add_node(pos: Vector3) -> int:
@@ -224,7 +226,7 @@ func find_route(from_pos: Vector3, to_pos: Vector3) -> Dictionary:
 		var d: int = 1 if g0 >= s0 else -1
 		if (d > 0 and se.lanes_fwd > 0) or (d < 0 and se.lanes_back > 0):
 			return {"ok": true, "length": absf(g0 - s0), "steps": [[int(start["edge"]), d]],
-				"points": _slice(int(start["edge"]), s0, g0)}
+				"points": _slice(int(start["edge"]), s0, g0), "step_starts": PackedInt32Array([0])}
 	# Seed: leave the start edge toward whichever endpoint(s) are legal.
 	var dist: Dictionary = {}
 	var prev: Dictionary = {} # node -> [prev_node, edge, dir]
@@ -269,14 +271,16 @@ func find_route(from_pos: Vector3, to_pos: Vector3) -> Dictionary:
 			break
 	# Polyline.
 	var pts: PackedVector3Array = PackedVector3Array()
+	var step_starts: PackedInt32Array = PackedInt32Array()
 	for i: int in steps.size():
+		step_starts.append(pts.size())
 		var ei: int = int(steps[i][0])
 		var d: int = int(steps[i][1])
 		var e: Edge = edges[ei]
 		var from_s: float = (s0 if i == 0 else (0.0 if d > 0 else e.length))
 		var to_s: float = (g0 if i == steps.size() - 1 else (e.length if d > 0 else 0.0))
 		pts.append_array(_slice(ei, from_s, to_s))
-	return {"ok": true, "length": best_total, "steps": steps, "points": pts}
+	return {"ok": true, "length": best_total, "steps": steps, "points": pts, "step_starts": step_starts}
 
 func _relax(node: int, cost: float, from_node: int, edge_idx: int, dir: int, dist: Dictionary, prev: Dictionary, heap: Array[Array], target: Vector3) -> void:
 	if dist.has(node) and float(dist[node]) <= cost:

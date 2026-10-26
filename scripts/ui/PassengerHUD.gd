@@ -33,6 +33,8 @@ var _toast_timer: float = 0.0
 var minimap: MiniMap
 var _hint: Label
 var _hint_timer: float = 0.0
+var nav_banner: NavBanner
+var full_map: FullMap
 
 func _ready() -> void:
 	layer = 11
@@ -61,11 +63,23 @@ func _ready() -> void:
 	_xp_bar.add_theme_stylebox_override("background", bg)
 	_root.add_child(_xp_bar)
 	_level = _label("", 18, Color(1.0, 0.85, 0.45))
+	nav_banner = NavBanner.new()
+	nav_banner.name = "NavBanner"
+	_root.add_child(nav_banner)
 	_build_ride_card()
 	_build_haggle()
 	_build_fare_card()
 	_toast = _label("", 26, Color(1.0, 0.92, 0.5))
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Full-screen map on its own layer above every HUD (opened by tapping the mini-map).
+	var map_layer: CanvasLayer = CanvasLayer.new()
+	map_layer.name = "FullMapLayer"
+	map_layer.layer = 40
+	map_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(map_layer)
+	full_map = FullMap.new()
+	full_map.name = "FullMap"
+	map_layer.add_child(full_map)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	_refresh_wallet()
@@ -214,6 +228,8 @@ func _layout() -> void:
 	_xp_bar.position = Vector2(vp.x - 24.0 - 160.0, 166.0)
 	_xp_bar.size = Vector2(160.0, 8.0)
 	_ride_card.position = Vector2(vp.x * 0.5 - 200.0, 12.0)
+	# Sat-nav turn prompt: left, under the top button row (clear of the ride card).
+	nav_banner.position = Vector2(20.0, 118.0)
 	_ride_card.custom_minimum_size = Vector2(400.0, 0.0)
 	_haggle.custom_minimum_size = Vector2(minf(680.0, vp.x - 40.0), 0.0)
 	_haggle.position = Vector2((vp.x - _haggle.custom_minimum_size.x) * 0.5, vp.y * 0.22)
@@ -226,6 +242,22 @@ func _layout() -> void:
 	_toast.size = Vector2(vp.x, 40.0)
 
 # --- Behaviour -----------------------------------------------------------------
+
+## Tap the mini-map to open the full Chennai map (TouchHUD ignores that spot).
+func _input(event: InputEvent) -> void:
+	if full_map == null or full_map.visible:
+		return
+	var tapped: bool = false
+	var pos: Vector2 = Vector2.ZERO
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		pos = (event as InputEventScreenTouch).position
+		tapped = true
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not DisplayServer.is_touchscreen_available():
+		pos = (event as InputEventMouseButton).position
+		tapped = true
+	if tapped and minimap.get_global_rect().has_point(pos) and pos.distance_to(minimap.get_global_rect().get_center()) <= MINIMAP_SIZE * 0.5:
+		SignalBus.full_map_requested.emit(true)
+		get_viewport().set_input_as_handled()
 
 func toast(text: String, seconds: float) -> void:
 	_toast.text = text

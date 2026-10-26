@@ -616,6 +616,9 @@ def main() -> int:
     (OUT / "road_graph.json").write_text(json.dumps(graph, separators=(",", ":")))
     (OUT / "areas.json").write_text(json.dumps(areas, separators=(",", ":")))
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    # Street names (English + Tamil) for signboards, the map and GPS turn prompts.
+    import attach_road_names
+    attach_road_names.main()
     span = (manifest["bounds"][2] - manifest["bounds"][0], manifest["bounds"][3] - manifest["bounds"][1])
     print(f"World: {span[0]:.0f} m × {span[1]:.0f} m | {manifest['stats']} | "
           f"water {len(areas['water'])} beach {len(areas['beach'])} park {len(areas['park'])} sea {len(areas['sea'])}")

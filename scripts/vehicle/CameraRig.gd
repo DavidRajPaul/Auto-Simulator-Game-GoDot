@@ -24,6 +24,11 @@ var _target: Node3D
 var _camera: Camera3D
 var _cockpit_basis: Basis = Basis.IDENTITY
 var _cockpit_pos: Vector3 = Vector3.ZERO
+## Impact shake: decaying, smooth (noise-free sine mix) so it reads as a jolt, not jitter.
+const SHAKE_DECAY: float = 5.0
+const SHAKE_MAX_M: float = 0.12
+var _shake: float = 0.0
+var _shake_t: float = 0.0
 
 func _ready() -> void:
 	_target = get_node_or_null(target_path) as Node3D
@@ -39,6 +44,7 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	SignalBus.teleport_requested.connect(func(_x: Transform3D) -> void: _snap.call_deferred())
+	SignalBus.camera_shake.connect(func(s: float) -> void: _shake = clampf(maxf(_shake, s), 0.0, 1.0))
 	_snap()
 
 func _process(delta: float) -> void:
@@ -48,6 +54,8 @@ func _process(delta: float) -> void:
 		return
 	# Interpolated pose: physics runs at 60 Hz but phones render at uneven 30–120 Hz; reading
 	# the raw physics transform here is what made the auto judder on screen.
+	_shake = maxf(0.0, _shake - _shake * SHAKE_DECAY * delta - delta * 0.2)
+	_shake_t += delta
 	var xf: Transform3D = _target_xform()
 	var basis_flat: Basis = _flat_basis(xf)
 	var desired: Vector3
@@ -67,6 +75,12 @@ func _process(delta: float) -> void:
 	var look_at_pt: Vector3 = xf.origin + Vector3(0.0, 0.4, 0.0)
 	if _camera.global_position.distance_to(look_at_pt) > 0.1:
 		_camera.look_at(look_at_pt, Vector3.UP if mode != Mode.TOP_DOWN else -basis_flat.z)
+	if _shake > 0.001:
+		_camera.global_position += _shake_offset() * 1.6
+
+func _shake_offset() -> Vector3:
+	var a: float = _shake * _shake * SHAKE_MAX_M
+	return Vector3(sin(_shake_t * 37.0) + 0.5 * sin(_shake_t * 61.0), sin(_shake_t * 43.0 + 1.3), 0.0) * a
 
 ## Head-stabilised cockpit: yaw tracks the handlebar tightly, pitch/roll are partly
 ## levelled and low-pass filtered so road buzz and suspension bounce don't shake the view.
@@ -91,7 +105,7 @@ func _update_cockpit(xf: Transform3D, delta: float) -> void:
 	_cockpit_pos.y = lerpf(_cockpit_pos.y, seat.y, 1.0 - exp(-14.0 * delta))
 	if _cockpit_pos.distance_squared_to(seat) > 1.0:
 		_cockpit_pos = seat
-	_camera.global_transform = Transform3D(_cockpit_basis, _cockpit_pos).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout
+	_camera.global_transform = Transform3D(_cockpit_basis, _cockpit_pos + _cockpit_basis * _shake_offset()).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout
 	_camera.fov = 78.0
 
 func _target_xform() -> Transform3D:

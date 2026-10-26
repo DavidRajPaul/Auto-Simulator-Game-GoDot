@@ -336,7 +336,7 @@ func _resolve_haggle(offer: int) -> void:
 	state = State.RIDING
 	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "line": a.line_accept})
 	SignalBus.passenger_boarded.emit(a.party_size, a.luggage_kg)
-	SignalBus.route_updated.emit(route["points"])
+	_publish_route(route)
 	_dest_marker.global_position = destination["pos"]
 	_dest_marker.visible = true
 
@@ -356,7 +356,7 @@ func _tick_ride(delta: float) -> void:
 			var r: Dictionary = graph.find_route(_player_pos, dest)
 			if bool(r.get("ok", false)):
 				route = r
-				SignalBus.route_updated.emit(route["points"])
+				_publish_route(route)
 	_ride_update_timer -= delta
 	if _ride_update_timer <= 0.0:
 		_ride_update_timer = RIDE_UPDATE_INTERVAL_S
@@ -365,6 +365,17 @@ func _tick_ride(delta: float) -> void:
 			"time_left_s": time_left_s, "comfort": comfort, "fare": agreed_fare,
 			"near_misses": near_misses, "archetype": rider.archetype_name,
 		})
+
+## Sat-nav: the lane-offset, corner-rounded guide line + turn-by-turn for the GPS (RouteLine),
+## the mini-map and the full map. An empty route clears them.
+func _publish_route(r: Dictionary) -> void:
+	if r.is_empty():
+		SignalBus.route_updated.emit(PackedVector3Array())
+		SignalBus.gps_route_changed.emit(null)
+		return
+	var gps: GpsRoute = GpsRoute.build(graph, r)
+	SignalBus.route_updated.emit(gps.path)
+	SignalBus.gps_route_changed.emit(gps)
 
 func complete_ride() -> void:
 	var on_time: bool = time_left_s >= 0.0
@@ -381,7 +392,7 @@ func complete_ride() -> void:
 	GameState.add_respect(FareCalculator.RESPECT_XP[agreed_offer])
 	GameState.record_ride_rating(float(b["stars"]))
 	SignalBus.passenger_alighted.emit()
-	SignalBus.route_updated.emit(PackedVector3Array())
+	_publish_route({})
 	SignalBus.ride_completed.emit(b)
 	_dest_marker.visible = false
 	rider = null

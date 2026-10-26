@@ -7,3 +7,6 @@
 | `assets/audio/vehicle/horn_bulb.ogg` | horns/2ac72971-alex_jauk-bulb-horn-honk-221702.mp3 | alex_jauk (Pixabay Content Licence) |
 | `assets/audio/vehicle/horn_air.ogg` | horns/ed77d235-174819__goose278__air-horn-close-and-loud.wav | goose278 (Freesound #174819), CC0 |
 | `assets/audio/vehicle/indicator_tick.ogg` | indicator/22008cfc-195994__productionnow__car-turn-signal-blinker-left-and-right.wav | ProductionNow (Freesound #195994), CC0 |
+| `assets/audio/vehicle/crash_hard.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
+| `assets/audio/vehicle/crash_light.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
+| `assets/audio/vehicle/scrape_loop.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
