@@ -124,6 +124,7 @@ func _ready() -> void:
 		day_stats["rides"] = int(day_stats["rides"]) + 1
 		save_game())
 	_install_tamil_font()
+	_auto_graphics_once()
 	_apply_settings.call_deferred()
 
 func _process(delta: float) -> void:
@@ -507,6 +508,15 @@ func set_setting(key: String, value: Variant) -> void:
 	save_game()
 
 ## Tamil glyphs: add Noto Sans Tamil (OFL) as a fallback to the default UI font.
+## First launch on a phone: pick the graphics preset from device RAM (3–4 GB budget phones
+## like Helio G85 / SD 680 start on Low: no shadows, 70 % 3D resolution). Player can change it.
+func _auto_graphics_once() -> void:
+	if settings.has("graphics_auto") or OS.get_name() != "Android":
+		return
+	var ram_gb: float = float(OS.get_memory_info().get("physical", 0)) / 1073741824.0
+	settings["graphics"] = 0 if ram_gb > 0.0 and ram_gb < 4.5 else (1 if ram_gb < 7.0 else 2)
+	settings["graphics_auto"] = true
+
 func _install_tamil_font() -> void:
 	var tamil: Font = load("res://assets/fonts/NotoSansTamil-Regular.ttf") as Font
 	if tamil != null and ThemeDB.fallback_font != null:

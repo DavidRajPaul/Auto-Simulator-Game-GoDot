@@ -44,6 +44,7 @@ static func from_json_file(path: String) -> RoadGraph:
 			pts.append(Vector3(float(p[0]), 0.0, float(p[1])))
 		var ei: int = g.add_edge(int(e["a"]), int(e["b"]), pts, float(e["w"]), int(e["lf"]), int(e["lb"]), str(e["c"]), str(e.get("n", "")))
 		g.edges[ei].road_name_ta = str(e.get("nt", ""))
+	g._build_seg_grid() # once, behind the loading screen
 	return g
 
 func add_node(pos: Vector3) -> int:
@@ -70,6 +71,7 @@ func add_edge(a: int, b: int, pts: PackedVector3Array, width: float, lanes_fwd: 
 		e.cum[i] = total
 	e.length = total
 	edges.append(e)
+	_seg_grid_built = false
 	var idx: int = edges.size() - 1
 	while node_edges.size() < nodes.size():
 		node_edges.append(PackedInt32Array())
@@ -138,8 +140,61 @@ func next_edge(edge_idx: int, dir: int, rng: RandomNumberGenerator) -> Dictionar
 		return {}
 	return options[rng.randi() % options.size()]
 
-## Closest point on the network: {edge, s, dist}.
+## Closest point on the network: {edge, s, dist}. Uses a segment grid (was a scan of all
+## ~30k segments: ~10 ms on desktop, a 60 ms+ hitch on a budget phone at every haggle/reroute).
+const SEG_CELL_M: float = 40.0
+var _seg_grid: Dictionary = {} # Vector2i -> PackedInt32Array of (edge << 12 | segment)
+var _seg_grid_built: bool = false
+
 func closest_point(pos: Vector3) -> Dictionary:
+	if not _seg_grid_built:
+		_build_seg_grid()
+	var best: Dictionary = {"edge": -1, "s": 0.0, "dist": INF}
+	var c: Vector2i = Vector2i(floori(pos.x / SEG_CELL_M), floori(pos.z / SEG_CELL_M))
+	var seen: Dictionary = {}
+	# Grow rings until something is found and the ring is farther than the best hit.
+	for ring: int in 40:
+		if float(best["dist"]) < float(ring - 1) * SEG_CELL_M:
+			break
+		for dx: int in range(-ring, ring + 1):
+			for dz: int in range(-ring, ring + 1):
+				if maxi(absi(dx), absi(dz)) != ring:
+					continue
+				for code: int in _seg_grid.get(c + Vector2i(dx, dz), PackedInt32Array()):
+					if seen.has(code):
+						continue
+					seen[code] = true
+					var ei: int = code >> 12
+					var i: int = code & 4095
+					var e: Edge = edges[ei]
+					var q: Vector3 = Geometry3D.get_closest_point_to_segment(pos, e.points[i - 1], e.points[i])
+					var d: float = Vector2(q.x - pos.x, q.z - pos.z).length()
+					if d < float(best["dist"]):
+						best = {"edge": ei, "s": e.cum[i - 1] + q.distance_to(e.points[i - 1]), "dist": d}
+	if int(best["edge"]) < 0:
+		return _closest_point_scan(pos) # far outside the network
+	return best
+
+func _build_seg_grid() -> void:
+	_seg_grid_built = true
+	_seg_grid.clear()
+	for ei: int in edges.size():
+		var e: Edge = edges[ei]
+		for i: int in range(1, mini(e.points.size(), 4096)):
+			var a: Vector3 = e.points[i - 1]
+			var b: Vector3 = e.points[i]
+			var x0: int = floori(minf(a.x, b.x) / SEG_CELL_M)
+			var x1: int = floori(maxf(a.x, b.x) / SEG_CELL_M)
+			var z0: int = floori(minf(a.z, b.z) / SEG_CELL_M)
+			var z1: int = floori(maxf(a.z, b.z) / SEG_CELL_M)
+			for gx: int in range(x0, x1 + 1):
+				for gz: int in range(z0, z1 + 1):
+					var k: Vector2i = Vector2i(gx, gz)
+					var arr: PackedInt32Array = _seg_grid.get(k, PackedInt32Array())
+					arr.append((ei << 12) | i)
+					_seg_grid[k] = arr
+
+func _closest_point_scan(pos: Vector3) -> Dictionary:
 	var best: Dictionary = {"edge": -1, "s": 0.0, "dist": INF}
 	for ei: int in edges.size():
 		var e: Edge = edges[ei]

@@ -10,6 +10,7 @@ config/description="Culturally authentic Chennai auto rickshaw 3D driving and ec
 config/version="0.5.0-mvp"
 config/quit_on_go_back=false
 run/main_scene="res://scenes/splash.tscn"
+run/max_fps=60
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.png"
 boot_splash/bg_color=Color(0.118, 0.098, 0.129, 1)

@@ -10,7 +10,7 @@ extends RefCounted
 
 enum Turn { STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, U_TURN, ARRIVE }
 
-const RESAMPLE_M: float = 2.0
+const RESAMPLE_M: float = 3.0
 const SMOOTH_PASSES: int = 2
 ## Heading change (deg) that counts as a turn worth announcing.
 const SLIGHT_DEG: float = 22.0
@@ -65,9 +65,13 @@ static func build(graph: RoadGraph, route: Dictionary) -> GpsRoute:
 	g._rebuild_cum()
 	# 3. Maneuvers at step boundaries where the heading really changes.
 	if graph != null:
+		var search_from: int = 0
 		for k: int in range(1, starts.size()):
 			var at: Vector3 = raw[clampi(starts[k], 0, raw.size() - 1)]
-			var s_at: float = g.distance_at(at)
+			# Boundaries come in order along the path: search forward from the last one.
+			var hit: Array = g.progress_from(at, search_from, 400)
+			search_from = int(hit[0])
+			var s_at: float = float(hit[1])
 			var turn: Turn = g._turn_at(s_at)
 			if turn == Turn.STRAIGHT:
 				continue

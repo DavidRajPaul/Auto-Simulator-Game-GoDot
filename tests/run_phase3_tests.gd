@@ -183,6 +183,9 @@ func _test_full_ride(savari: SavariManager, auto: AutoRickshawController, main: 
 	_check("Passengers add mass to the auto", auto.mass > auto.stats.base_mass_kg)
 	_check("GPS route published and drawn on the road", _events.has("route_updated") and (main.get_node("RouteLine") as MeshInstance3D).mesh != null)
 	var dest: Vector3 = savari.destination["pos"]
+	var bonus: Array[int] = [0]
+	SignalBus.reward_granted.connect(func(_src: String, inr: int, _xp: int) -> void: bonus[0] += inr)
+	SignalBus.driver_level_up.connect(func(_l: int, _t: String, inr: int, _u: String) -> void: bonus[0] += inr)
 	# Teleport next to the destination (skips the drive) and stop.
 	auto.global_transform = Transform3D(Basis.IDENTITY, dest + Vector3(0.0, 1.0, 0.0))
 	_stop(auto)
@@ -191,7 +194,7 @@ func _test_full_ride(savari: SavariManager, auto: AutoRickshawController, main: 
 	_check("Stopping at the destination completes the ride", _events.has("ride_completed") and savari.state == SavariManager.State.PAYOUT)
 	if _events.has("ride_completed"):
 		var b: Dictionary = _events["ride_completed"]
-		_check("Wallet credited with fare + tips", GameState.wallet_inr == wallet_before + int(b["total"]) and int(b["total"]) >= int(b["fare"]), "₹%d" % int(b["total"]))
+		_check("Wallet credited with fare + tips", GameState.wallet_inr - bonus[0] == wallet_before + int(b["total"]) and int(b["total"]) >= int(b["fare"]), "₹%d" % int(b["total"]))
 	_check("Ride counted for the stand rating", GameState.completed_savaris == rides_before + 1)
 	_check("Passengers alight (mass restored)", is_equal_approx(auto.mass, auto.stats.base_mass_kg))
 	savari._state_timer = 0.0
