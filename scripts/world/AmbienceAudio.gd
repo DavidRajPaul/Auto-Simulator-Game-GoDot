@@ -1,6 +1,6 @@
 class_name AmbienceAudio
 extends Node
-## Zone ambience: Marina sea waves near the coast, market crowd in Mylapore / T. Nagar /
+## Zone ambience: a city-traffic bed everywhere (real Indian road recording), Marina sea waves near the coast, market crowd in Mylapore / T. Nagar /
 ## Anna Salai, rain on the canopy during the monsoon. Loops fade with distance / weather.
 ## Files are optional (fetched by the Fetch Assets workflow); missing ones are just silent.
 
@@ -8,11 +8,12 @@ const FILES: Dictionary = {
 	"sea": "res://assets/audio/ambience/sea_waves_loop.ogg",
 	"market": "res://assets/audio/ambience/market_loop.ogg",
 	"rain": "res://assets/audio/ambience/rain_roof_loop.ogg",
+	"city": "res://assets/audio/ambience/city_traffic_loop.ogg",
 }
 const MARKET_ZONES: PackedStringArray = ["mylapore", "t_nagar", "anna_salai"]
 const SEA_ZONE: String = "marina"
 const SILENT_DB: float = -60.0
-const FULL_DB: Dictionary = {"sea": -8.0, "market": -12.0, "rain": -6.0}
+const FULL_DB: Dictionary = {"sea": -8.0, "market": -12.0, "rain": -6.0, "city": -15.0}
 const FADE_PER_S: float = 0.6
 
 @export var world_dir: String = "res://data/world"
@@ -20,7 +21,7 @@ const FADE_PER_S: float = 0.6
 var players: Dictionary = {} # kind -> AudioStreamPlayer
 var _zones: Array[Dictionary] = []
 var _player_pos: Vector3 = Vector3.ZERO
-var _level: Dictionary = {"sea": 0.0, "market": 0.0, "rain": 0.0}
+var _level: Dictionary = {"sea": 0.0, "market": 0.0, "rain": 0.0, "city": 0.0}
 
 func _ready() -> void:
 	for kind: String in FILES:
@@ -55,8 +56,10 @@ func targets() -> Dictionary:
 		elif MARKET_ZONES.has(str(z["id"])):
 			market = maxf(market, near)
 	var night: bool = GameState.is_night()
+	# The city traffic bed is everywhere, thinner on the beach front, at night and in heavy rain.
+	var city: float = (1.0 - 0.5 * sea) * (0.4 if night else 1.0) * (0.6 if GameState.is_raining else 1.0)
 	return {"sea": sea, "market": market * (0.35 if night else 1.0) * (0.5 if GameState.is_raining else 1.0),
-		"rain": 1.0 if GameState.is_raining else 0.0}
+		"rain": 1.0 if GameState.is_raining else 0.0, "city": city}
 
 func _process(delta: float) -> void:
 	var t: Dictionary = targets()

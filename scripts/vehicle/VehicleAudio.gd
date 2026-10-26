@@ -73,7 +73,8 @@ func _process(delta: float) -> void:
 ## EV autos get a quiet electric whine instead of the LPG putter.
 func _apply_drivetrain(s: VehicleStats) -> void:
 	var is_ev: bool = s.fuel_type == 2
-	_engine.stream = _build_ev_whine() if is_ev else stream_or(ENGINE_FILE, _build_engine_loop())
+	var loop_file: String = s.engine_loop if s.engine_loop != "" and ResourceLoader.exists(s.engine_loop) else ENGINE_FILE
+	_engine.stream = _build_ev_whine() if is_ev else stream_or(loop_file, _build_engine_loop())
 	_engine.volume_db = engine_volume_db - (8.0 if is_ev else 0.0)
 	if _engine_running:
 		_engine.play()

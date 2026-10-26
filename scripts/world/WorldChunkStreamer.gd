@@ -35,6 +35,11 @@ const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1)
 	Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(3, 2), Vector2(4, 2), Vector2(5, 2), Vector2(6, 2), Vector2(7, 2)]
 const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
+const CITY_MODEL_DIR: String = "res://assets/models/city/"
+const LANDMARK_VISIBLE_M: float = 420.0
+const SKYLINE_DIST_M: float = 370.0
+## Collision boxes for baked landmarks (the visual models carry no colliders).
+const CITY_FOOTPRINT: Dictionary = {"water_tower": Vector3(8.0, 18.0, 6.5), "slum_cluster": Vector3(30.0, 4.0, 18.0)}
 const KIND_PALETTES: Dictionary = {
 	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
 	"office": [Color(0.6, 0.68, 0.74), Color(0.75, 0.78, 0.8), Color(0.55, 0.6, 0.62)],
@@ -42,13 +47,37 @@ const KIND_PALETTES: Dictionary = {
 	"shed": [Color(0.55, 0.58, 0.62), Color(0.45, 0.5, 0.6), Color(0.62, 0.55, 0.48)],
 }
 const ROOF_COLOUR: Color = Color(0.7, 0.68, 0.64)
+## Chennai paint: sun-faded pastels (pink, mint, sky blue, lemon, peach, lavender) between whites
+## and creams, terracotta and ochre on older streets.
 const ZONE_PALETTES: Dictionary = {
-	"marina": [Color(0.93, 0.9, 0.82), Color(0.85, 0.82, 0.7), Color(0.75, 0.82, 0.86)],
-	"mylapore": [Color(0.95, 0.85, 0.6), Color(0.9, 0.72, 0.55), Color(0.8, 0.85, 0.7), Color(0.95, 0.93, 0.85)],
-	"anna_salai": [Color(0.72, 0.72, 0.75), Color(0.85, 0.83, 0.78), Color(0.6, 0.66, 0.72)],
-	"t_nagar": [Color(0.95, 0.75, 0.55), Color(0.85, 0.55, 0.5), Color(0.95, 0.9, 0.6), Color(0.7, 0.75, 0.85)],
-	"": [Color(0.85, 0.8, 0.7), Color(0.78, 0.74, 0.66), Color(0.9, 0.86, 0.78)],
+	"marina": [Color(0.93, 0.9, 0.82), Color(0.85, 0.82, 0.7), Color(0.75, 0.82, 0.86), Color(0.96, 0.95, 0.92), Color(0.7, 0.85, 0.88)],
+	"mylapore": [Color(0.95, 0.85, 0.6), Color(0.9, 0.72, 0.55), Color(0.8, 0.85, 0.7), Color(0.95, 0.93, 0.85),
+		Color(0.93, 0.72, 0.72), Color(0.82, 0.5, 0.38), Color(0.72, 0.86, 0.78)],
+	"anna_salai": [Color(0.72, 0.72, 0.75), Color(0.85, 0.83, 0.78), Color(0.6, 0.66, 0.72), Color(0.93, 0.92, 0.88)],
+	"t_nagar": [Color(0.95, 0.75, 0.55), Color(0.85, 0.55, 0.5), Color(0.95, 0.9, 0.6), Color(0.7, 0.75, 0.85),
+		Color(0.93, 0.7, 0.78), Color(0.72, 0.88, 0.74), Color(0.8, 0.74, 0.92)],
+	"": [Color(0.85, 0.8, 0.7), Color(0.78, 0.74, 0.66), Color(0.9, 0.86, 0.78), Color(0.93, 0.74, 0.76),
+		Color(0.7, 0.87, 0.76), Color(0.68, 0.8, 0.92), Color(0.95, 0.9, 0.58), Color(0.96, 0.8, 0.62),
+		Color(0.8, 0.75, 0.92), Color(0.95, 0.94, 0.9)],
 }
+## 3D detail layer (all merged into the chunk's one building mesh — no extra draw calls).
+## Plain surfaces sample the blank plaster cell and take their colour from the vertex paint.
+const PLAIN_CELL: Vector2 = Vector2(7, 0)
+const PLAIN_UV: Vector2 = Vector2(0.3, 0.5)
+const PARAPET_M: float = 0.9
+const LEDGE_MAX_FLOORS: int = 5
+const PARAPET_T: float = 0.18
+const LEDGE_AT_M: float = 2.6
+const LEDGE_OUT_M: float = 0.5
+const LEDGE_T: float = 0.1
+const DETAIL_MAX_H: float = 30.0
+const MUMTY: Vector3 = Vector3(2.4, 2.4, 2.4)
+const TANK_COLOURS: Array[Color] = [Color(0.07, 0.07, 0.08), Color(0.07, 0.07, 0.08), Color(0.07, 0.07, 0.08), Color(0.12, 0.3, 0.6), Color(0.92, 0.92, 0.9)]
+const AWNING_COLOURS: Array[Color] = [Color(0.13, 0.35, 0.78), Color(0.1, 0.5, 0.3), Color(0.8, 0.18, 0.15),
+	Color(0.95, 0.75, 0.1), Color(0.9, 0.9, 0.88), Color(0.15, 0.55, 0.75), Color(0.55, 0.2, 0.5)]
+const AC_COLOUR: Color = Color(0.9, 0.9, 0.87)
+const POLE_H: float = 8.5
+const POLE_ARM_Y: float = 7.9
 
 @export var world_dir: String = "res://data/world"
 @export var player_path: NodePath
@@ -68,6 +97,11 @@ var _road_mat: StandardMaterial3D
 var _bld_mat: ShaderMaterial
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
+var skyline: Node3D
+## Detail layer switches (tests / profiling).
+static var details_enabled: bool = true
+static var dressing_enabled: bool = true
+var skyline_home: Transform3D = Transform3D.IDENTITY
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
@@ -98,6 +132,7 @@ func _process(delta: float) -> void:
 	_attach_finished()
 	_update_wetness(delta)
 	_bld_mat.set_shader_parameter("night", 1.0 - smoothstep(-0.05, 0.2, Atmosphere.sun_height(GameState.shift_minute)))
+	_update_skyline()
 	_timer += delta
 	if _timer >= CHECK_INTERVAL_S:
 		_timer = 0.0
@@ -212,8 +247,12 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(mi)
 	var blds: Array = data.get("blds", [])
-	if not blds.is_empty():
-		root.add_child(_buildings(blds))
+	var dress: Dictionary = {}
+	var df: FileAccess = FileAccess.open(world_dir.path_join("dress/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
+	if df != null:
+		dress = JSON.parse_string(df.get_as_text()) as Dictionary
+	if not blds.is_empty() or not dress.is_empty():
+		root.add_child(_buildings(blds, dress))
 	return root
 
 ## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
@@ -304,7 +343,7 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 ## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
 ## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
 ## One mesh + one trimesh wall collider per chunk.
-func _buildings(blds: Array) -> Node3D:
+func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
@@ -330,6 +369,7 @@ func _buildings(blds: Array) -> Node3D:
 			area2 += pts[i - 1].cross(pts[i])
 		var outward_sign: float = 1.0 if area2 > 0.0 else -1.0
 		var floors: float = h / FLOOR_M
+		var detailed: bool = details_enabled and h <= DETAIL_MAX_H and not (kind in ["office", "shed"])
 		for i: int in pts.size():
 			var a: Vector2 = pts[i - 1]
 			var c: Vector2 = pts[i]
@@ -358,10 +398,14 @@ func _buildings(blds: Array) -> Node3D:
 				var ucells: Array = skin["upper"]
 				var ucell: Vector2 = ucells[absi(seed_i * 3 + (i % 2)) % ucells.size()]
 				_quad(m, a, c, FLOOR_M, h, n, tint, Vector2(0.0, 1.0), Vector2(bays, floors), ucell)
+			if detailed:
+				_wall_details(m, a, c, n2, h, colour, skin, seed_i * 17 + i)
 			var top: float = minf(h, COLLIDER_MAX_H)
 			faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
 				Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
 		var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
+		if detailed and kind != "temple":
+			_roof_details(m, pts, tri, h, colour, seed_i, absf(area2) * 0.5, outward_sign)
 		var roof: Color = ROOF_COLOUR.lerp(colour, 0.35).darkened(fposmod(float(seed_i) * 0.13, 0.12))
 		var rcell: Vector2 = ROOF_CELLS[seed_i % ROOF_CELLS.size()]
 		for t: int in range(0, tri.size(), 3):
@@ -374,6 +418,8 @@ func _buildings(blds: Array) -> Node3D:
 				q2 = tmp
 			for p: Vector2 in [q0, q1, q2]:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
+	if dressing_enabled:
+		_street_dressing(m, dress)
 	if m.verts.is_empty():
 		return holder
 	var arrays: Array = []
@@ -423,6 +469,292 @@ static func facade_skin(kind: String, zone: String, h: float, seed_i: int) -> Di
 	if shop:
 		return {"upper": CELLS_HOME, "ground": CELLS_SHOPS, "per_bay": true}
 	return {"upper": CELLS_HOME, "ground": CELLS_HOUSE_GROUND, "per_bay": false}
+
+# --- Chennai detail layer -----------------------------------------------------------------------
+
+## Per wall: a concrete sunshade ledge over every floor's windows (the Chennai chajja), shop
+## awnings over ground-floor bays, the odd AC outdoor unit. n2 = outward normal on the ground plane.
+func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, paint: Color, skin: Dictionary, seed_i: int) -> void:
+	var e: Vector2 = c - a
+	var length: float = e.length()
+	if length < 4.0:
+		return
+	var along: Vector2 = e / length
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var concrete: Color = paint.lerp(Color(0.92, 0.91, 0.88), 0.55)
+	var a2: Vector2 = a + along * 0.15
+	var c2: Vector2 = c - along * 0.15
+	var floors: int = maxi(1, floori(h / FLOOR_M + 0.01))
+	var shop: bool = bool(skin["per_bay"])
+	for k: int in mini(floors, LEDGE_MAX_FLOORS):
+		if k == 0 and shop:
+			continue
+		var y: float = float(k) * FLOOR_M + LEDGE_AT_M
+		if y > h - 0.25:
+			break
+		_ledge(m, a2, c2, n2, y, LEDGE_OUT_M, LEDGE_T, concrete, k == 0)
+	if shop:
+		var nb: int = maxi(1, int(roundf(length / BAY_M)))
+		for k: int in nb:
+			if absi(seed_i * 7 + k * 5) % 10 >= 6:
+				continue
+			var p0: Vector2 = a.lerp(c, float(k) / float(nb)) + along * 0.12
+			var p1: Vector2 = a.lerp(c, float(k + 1) / float(nb)) - along * 0.12
+			var col: Color = AWNING_COLOURS[absi(seed_i * 3 + k * 11) % AWNING_COLOURS.size()]
+			_awning(m, p0, p1, n2, 2.95, 2.5, 1.35, col)
+	# AC outdoor units: a few per building on upper floors.
+	if floors >= 2 and absi(seed_i) % 3 == 0:
+		var k2: int = 1 + absi(seed_i) % (floors - 1)
+		var t: float = 0.2 + fposmod(float(seed_i) * 0.37, 0.6)
+		var p: Vector2 = a.lerp(c, t) + n2 * 0.17
+		_dbox(m, Vector3(p.x, float(k2) * FLOOR_M + 1.05, p.y), Vector3(0.85, 0.6, 0.32), along, AC_COLOUR)
+
+## Terrace: parapet wall round the roof, the staircase head-room (mumty) with the black Sintex
+## water tank on top of it — the most Chennai roofline there is.
+func _roof_details(m: MeshBuf, pts: PackedVector2Array, tri: PackedInt32Array, h: float, paint: Color, seed_i: int, area: float, outward_sign: float) -> void:
+	var cap: Color = paint.lerp(Color(0.95, 0.94, 0.9), 0.5)
+	for i: int in pts.size():
+		var a: Vector2 = pts[i - 1]
+		var c: Vector2 = pts[i]
+		var e: Vector2 = c - a
+		if e.length() < 0.3:
+			continue
+		var n2: Vector2 = Vector2(e.y, -e.x).normalized() * outward_sign
+		var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+		var ai: Vector2 = a - n2 * PARAPET_T
+		var ci: Vector2 = c - n2 * PARAPET_T
+		var top: float = h + PARAPET_M
+		_face(m, [Vector3(a.x, h, a.y), Vector3(c.x, h, c.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)], n, paint)
+		_face(m, [Vector3(a.x, top, a.y), Vector3(c.x, top, c.y), Vector3(ci.x, top, ci.y), Vector3(ai.x, top, ai.y)], Vector3.UP, cap)
+	if area < 60.0 or tri.size() < 3:
+		return
+	# Head-room in the largest roof triangle (always inside the footprint), aligned to that triangle's long side.
+	var best: int = 0
+	var best_area: float = 0.0
+	for t: int in range(0, tri.size(), 3):
+		var ar: float = absf((pts[tri[t + 1]] - pts[tri[t]]).cross(pts[tri[t + 2]] - pts[tri[t]]))
+		if ar > best_area:
+			best_area = ar
+			best = t
+	var q0: Vector2 = pts[tri[best]]
+	var q1: Vector2 = pts[tri[best + 1]]
+	var q2: Vector2 = pts[tri[best + 2]]
+	var centre: Vector2 = (q0 + q1 + q2) / 3.0
+	var side: Vector2 = q1 - q0
+	if (q2 - q1).length() > side.length():
+		side = q2 - q1
+	if (q0 - q2).length() > side.length():
+		side = q0 - q2
+	var along: Vector2 = side.normalized()
+	if best_area * 0.5 < 12.0:
+		return
+	var mumty_col: Color = paint.darkened(0.06)
+	var has_mumty: bool = absi(seed_i) % 5 != 0
+	var base_y: float = h
+	if has_mumty:
+		_dbox(m, Vector3(centre.x, h + MUMTY.y * 0.5, centre.y), MUMTY, along, mumty_col)
+		base_y = h + MUMTY.y
+	var tanks: int = 1 if area < 220.0 else 2
+	for k: int in tanks:
+		var off: Vector2 = along * (0.0 if tanks == 1 else (float(k) - 0.5) * 1.5)
+		var r: float = 0.55 + fposmod(float(seed_i) * 0.21, 0.25)
+		var th: float = 1.1 + fposmod(float(seed_i) * 0.17, 0.35)
+		var col: Color = TANK_COLOURS[absi(seed_i + k) % TANK_COLOURS.size()]
+		var p: Vector2 = centre + off
+		_dbox(m, Vector3(p.x, base_y + 0.15, p.y), Vector3(r * 2.1, 0.3, r * 2.1), along, Color(0.62, 0.6, 0.57))
+		_tank(m, Vector3(p.x, base_y + 0.3, p.y), r, th, col)
+
+## EB poles with sagging overhead wires and roadside trees (data/world/dress, made by
+## tools/osm/build_street_dressing.py), merged into the chunk mesh like everything else.
+func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
+	var concrete: Color = Color(0.66, 0.65, 0.62)
+	for p: Array in dress.get("poles", []):
+		var base: Vector3 = Vector3(float(p[0]), 0.0, float(p[1]))
+		var along: Vector2 = Vector2(sin(float(p[2])), cos(float(p[2])))
+		_pole(m, base, along, concrete)
+	for w: Array in dress.get("wires", []):
+		var a: Vector3 = Vector3(float(w[0]), 0.0, float(w[1]))
+		var b: Vector3 = Vector3(float(w[2]), 0.0, float(w[3]))
+		var d: Vector3 = b - a
+		var across: Vector3 = Vector3(-d.z, 0.0, d.x).normalized()
+		for k: int in 2:
+			var off: Vector3 = across * (float(k) - 0.5) * 1.1 + Vector3(0.0, POLE_ARM_Y + 0.05, 0.0)
+			_wire(m, a + off, b + off, 0.35 + 0.12 * float(k))
+	for t: Array in dress.get("trees", []):
+		var base2: Vector3 = Vector3(float(t[0]), 0.0, float(t[1]))
+		if int(t[2]) == 1:
+			_palm(m, base2, float(t[3]), int(t[4]))
+		else:
+			_shade_tree(m, base2, float(t[3]), int(t[4]))
+
+func _pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
+	var u: Vector3 = Vector3(along.x, 0.0, along.y)
+	var w: Vector3 = Vector3(-along.y, 0.0, along.x)
+	var top: Vector3 = base + Vector3(0.0, POLE_H, 0.0)
+	var r0: float = 0.13
+	var r1: float = 0.07
+	var c0: Array[Vector3] = [base - u * r0 - w * r0, base + u * r0 - w * r0, base + u * r0 + w * r0, base - u * r0 + w * r0]
+	var c1: Array[Vector3] = [top - u * r1 - w * r1, top + u * r1 - w * r1, top + u * r1 + w * r1, top - u * r1 + w * r1]
+	for k: int in 4:
+		var j: int = (k + 1) % 4
+		var mid: Vector3 = (c0[k] + c0[j]) * 0.5 - base
+		_face(m, [c0[k], c0[j], c1[j], c1[k]], mid.normalized(), col if k % 2 == 0 else col.darkened(0.12))
+	_face(m, [c1[0], c1[1], c1[2], c1[3]], Vector3.UP, col)
+	# Cross-arm across the road direction.
+	_dbox(m, base + Vector3(0.0, POLE_ARM_Y, 0.0), Vector3(0.1, 0.1, 1.5), along, Color(0.3, 0.3, 0.32))
+
+## Overhead wire: a thin dark ribbon sagging between two points (both faces).
+func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
+	var col: Color = Color(0.08, 0.08, 0.08)
+	var segs: int = 3
+	var d: Vector3 = b - a
+	var side: Vector3 = Vector3(-d.z, 0.0, d.x).normalized()
+	var prev: Vector3 = a
+	for k: int in range(1, segs + 1):
+		var t: float = float(k) / float(segs)
+		var p: Vector3 = a.lerp(b, t) - Vector3(0.0, sag * 4.0 * t * (1.0 - t), 0.0)
+		var q: Array[Vector3] = [prev, p, p + Vector3(0.0, 0.035, 0.0), prev + Vector3(0.0, 0.035, 0.0)]
+		_face(m, q, side, col)
+		_face(m, q, -side, col)
+		prev = p
+
+## Neem / rain tree: tapered trunk and a cluster of leafy blobs.
+func _shade_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.36, 0.28, 0.2)
+	_trunk(m, base, base + Vector3(0.0, 3.2 * s, 0.0), 0.22 * s, 0.14 * s, bark)
+	var greens: Array[Color] = [Color(0.28, 0.48, 0.2), Color(0.22, 0.42, 0.18), Color(0.34, 0.52, 0.22), Color(0.25, 0.45, 0.25)]
+	var top: Vector3 = base + Vector3(0.0, 3.2 * s, 0.0)
+	for k: int in 3:
+		var a: float = float(seed_i % 7) + float(k) * 2.4
+		var off: Vector3 = Vector3(cos(a) * 1.1, 0.6 + float(k % 2) * 0.9, sin(a) * 1.1) * s if k > 0 else Vector3(0.0, 1.3 * s, 0.0)
+		_blob(m, top + off, Vector3(2.0, 1.4, 2.0) * s * (1.0 if k == 0 else 0.75), greens[(seed_i + k) % greens.size()])
+
+## Coconut palm: leaning trunk, drooping fronds.
+func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var lean_a: float = float(seed_i % 360) * 0.0174533
+	var lean: Vector3 = Vector3(cos(lean_a), 0.0, sin(lean_a)) * 0.9 * s
+	var h: float = 7.5 * s
+	var mid: Vector3 = base + Vector3(0.0, h * 0.5, 0.0) + lean * 0.3
+	var top: Vector3 = base + Vector3(0.0, h, 0.0) + lean
+	var bark: Color = Color(0.5, 0.42, 0.32)
+	_trunk(m, base, mid, 0.2 * s, 0.17 * s, bark)
+	_trunk(m, mid, top, 0.17 * s, 0.14 * s, bark.darkened(0.08))
+	var frond: Color = Color(0.3, 0.52, 0.2)
+	for k: int in 6:
+		var a: float = TAU * float(k) / 6.0 + float(seed_i % 10) * 0.1
+		var dir: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var tip: Vector3 = top + dir * 2.6 * s - Vector3(0.0, 1.3 * s, 0.0)
+		var mid2: Vector3 = top + dir * 1.4 * s + Vector3(0.0, 0.35 * s, 0.0)
+		var wv: Vector3 = Vector3(-dir.z, 0.0, dir.x) * 0.45 * s
+		var col: Color = frond if k % 2 == 0 else frond.darkened(0.15)
+		var q: Array[Vector3] = [top, mid2 - wv, tip, mid2 + wv]
+		_face(m, q, Vector3.UP, col)
+		_face(m, q, Vector3.DOWN, col.darkened(0.25))
+	_blob(m, top - Vector3(0.0, 0.25 * s, 0.0), Vector3(0.6, 0.5, 0.6) * s, Color(0.45, 0.4, 0.15))
+
+func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color) -> void:
+	var sides: int = 5
+	for k: int in sides:
+		var a0: float = TAU * float(k) / float(sides)
+		var a1: float = TAU * float(k + 1) / float(sides)
+		var d0: Vector3 = Vector3(cos(a0), 0.0, sin(a0))
+		var d1: Vector3 = Vector3(cos(a1), 0.0, sin(a1))
+		var out: Vector3 = (d0 + d1).normalized()
+		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, col.lightened(0.06 * out.x))
+
+## Hexagonal bipyramid "leaf blob" (12 faces).
+func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
+	var ring: Array[Vector3] = []
+	for k: int in 6:
+		var a: float = TAU * float(k) / 6.0 + 0.3
+		ring.append(c + Vector3(cos(a) * size.x * 0.5, 0.0, sin(a) * size.z * 0.5))
+	var top: Vector3 = c + Vector3(0.0, size.y * 0.55, 0.0)
+	var bot: Vector3 = c - Vector3(0.0, size.y * 0.45, 0.0)
+	for k: int in 6:
+		var p0: Vector3 = ring[k]
+		var p1: Vector3 = ring[(k + 1) % 6]
+		_tri_out(m, p0, p1, top, c, col.lightened(0.08))
+		_tri_out(m, p0, p1, bot, c, col.darkened(0.12))
+
+## Triangle wound to face away from `centre`.
+func _tri_out(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, centre: Vector3, col: Color) -> void:
+	var n: Vector3 = (b - a).cross(c - a)
+	if n.dot((a + b + c) / 3.0 - centre) < 0.0:
+		var t: Vector3 = b
+		b = c
+		c = t
+		n = -n
+	var nn: Vector3 = n.normalized()
+	for v: Vector3 in [a, c, b]:
+		m.add(v, nn, col, PLAIN_UV, PLAIN_CELL)
+
+## Horizontal concrete slab sticking out of a wall (top, underside, front edge).
+## The street camera sees ledges from below, so only the ground-floor one gets a top face.
+func _ledge(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, y: float, out: float, t: float, col: Color, with_top: bool) -> void:
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var ao: Vector2 = a + n2 * out
+	var co: Vector2 = c + n2 * out
+	if with_top:
+		_face(m, [Vector3(a.x, y, a.y), Vector3(c.x, y, c.y), Vector3(co.x, y, co.y), Vector3(ao.x, y, ao.y)], Vector3.UP, col)
+	_face(m, [Vector3(a.x, y - t, a.y), Vector3(c.x, y - t, c.y), Vector3(co.x, y - t, co.y), Vector3(ao.x, y - t, ao.y)], Vector3.DOWN, col.darkened(0.2))
+	_face(m, [Vector3(ao.x, y - t, ao.y), Vector3(co.x, y - t, co.y), Vector3(co.x, y, co.y), Vector3(ao.x, y, ao.y)], n, col)
+
+## Sloped shop awning (tarpaulin / tin) with a front valance.
+func _awning(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, y_wall: float, y_out: float, out: float, col: Color) -> void:
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var ao: Vector2 = a + n2 * out
+	var co: Vector2 = c + n2 * out
+	var up: Vector3 = (Vector3.UP * out + n * (y_wall - y_out)).normalized()
+	var top: Array[Vector3] = [Vector3(a.x, y_wall, a.y), Vector3(c.x, y_wall, c.y), Vector3(co.x, y_out, co.y), Vector3(ao.x, y_out, ao.y)]
+	_face(m, top, up, col)
+	_face(m, top, -up, col.darkened(0.35))
+	_face(m, [Vector3(ao.x, y_out - 0.28, ao.y), Vector3(co.x, y_out - 0.28, co.y), Vector3(co.x, y_out, co.y), Vector3(ao.x, y_out, ao.y)], n, col.darkened(0.1))
+
+## Box centred at `c` (size x along `along`, z across), five faces (no bottom).
+func _dbox(m: MeshBuf, c: Vector3, size: Vector3, along: Vector2, col: Color) -> void:
+	var u: Vector3 = Vector3(along.x, 0.0, along.y) * size.x * 0.5
+	var w: Vector3 = Vector3(-along.y, 0.0, along.x) * size.z * 0.5
+	var hy: Vector3 = Vector3(0.0, size.y * 0.5, 0.0)
+	var un: Vector3 = u.normalized()
+	var wn: Vector3 = w.normalized()
+	var shade: Color = col.darkened(0.12)
+	_face(m, [c - u - w + hy, c + u - w + hy, c + u + w + hy, c - u + w + hy], Vector3.UP, col)
+	_face(m, [c - u - w - hy, c + u - w - hy, c + u - w + hy, c - u - w + hy], -wn, shade)
+	_face(m, [c - u + w - hy, c + u + w - hy, c + u + w + hy, c - u + w + hy], wn, col)
+	_face(m, [c + u - w - hy, c + u + w - hy, c + u + w + hy, c + u - w + hy], un, shade)
+	_face(m, [c - u - w - hy, c - u + w - hy, c - u + w + hy, c - u - w + hy], -un, col)
+
+## Rooftop water tank: 8-sided drum with a lid.
+func _tank(m: MeshBuf, base: Vector3, r: float, h: float, col: Color) -> void:
+	var sides: int = 8
+	var lid: Vector3 = base + Vector3(0.0, h + 0.12, 0.0)
+	for k: int in sides:
+		var a0: float = TAU * float(k) / float(sides)
+		var a1: float = TAU * float(k + 1) / float(sides)
+		var p0: Vector3 = base + Vector3(cos(a0) * r, 0.0, sin(a0) * r)
+		var p1: Vector3 = base + Vector3(cos(a1) * r, 0.0, sin(a1) * r)
+		var mid: Vector3 = Vector3(cos((a0 + a1) * 0.5), 0.0, sin((a0 + a1) * 0.5))
+		_face(m, [p0, p1, p1 + Vector3(0.0, h, 0.0), p0 + Vector3(0.0, h, 0.0)], mid, col.lightened(0.08 * mid.x))
+		var t0: Vector3 = p0 + Vector3(0.0, h, 0.0)
+		var t1: Vector3 = p1 + Vector3(0.0, h, 0.0)
+		_tri(m, t0, t1, lid, col.lightened(0.12))
+
+## Quad given in any order: wound so its front faces `want_n`.
+func _face(m: MeshBuf, q: Array[Vector3], want_n: Vector3, col: Color) -> void:
+	var n: Vector3 = (q[1] - q[0]).cross(q[3] - q[0])
+	if n.dot(want_n) < 0.0:
+		q = [q[3], q[2], q[1], q[0]]
+		n = -n
+	var nn: Vector3 = n.normalized() if n.length() > 0.0001 else want_n
+	for k: int in [0, 2, 1, 0, 3, 2]:
+		m.add(q[k], nn, col, PLAIN_UV, PLAIN_CELL)
+
+func _tri(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, col: Color) -> void:
+	var n: Vector3 = (b - a).cross(c - a)
+	var up: bool = n.y >= 0.0
+	var nn: Vector3 = n.normalized() * (1.0 if up else -1.0)
+	for v: Vector3 in ([a, c, b] if up else [a, b, c]):
+		m.add(v, nn, col, PLAIN_UV, PLAIN_CELL)
 
 ## One wall quad a→c between heights y0..y1 facing n. uv0/uv1 = bay/floor coordinates at the
 ## bottom-left/top-right corners (they repeat inside `cell` in the shader).
@@ -536,6 +868,7 @@ func _build_landmarks() -> void:
 	holder.collision_layer = 1
 	holder.collision_mask = 0
 	add_child(holder)
+	_build_city_props(holder)
 	for l: Dictionary in manifest.get("landmarks", []):
 		var pos: Vector3 = Vector3(float(l["x"]), 0.0, float(l["z"]))
 		var yaw: float = float(l.get("yaw", 0.0))
@@ -545,13 +878,9 @@ func _build_landmarks() -> void:
 		holder.add_child(node)
 		match str(l["kind"]):
 			"lighthouse":
-				_part(node, holder, _cyl(3.2, 4.2, 42.0), Vector3(0, 21, 0), Color(0.85, 0.2, 0.15), true)
-				_part(node, holder, _cyl(3.0, 3.0, 4.0), Vector3(0, 44, 0), Color(0.95, 0.95, 0.9), false)
+				_kit_part(node, holder, LandmarkKit.lighthouse(), Vector3(14.0, 9.0, 14.0))
 			"gopuram":
-				for tier: int in 6:
-					var w: float = 16.0 - tier * 2.2
-					_part(node, holder, _box(Vector3(w, 5.0, w * 0.6)), Vector3(0, 2.5 + tier * 5.0, 0),
-						Color.from_hsv(0.05 + tier * 0.1, 0.55, 0.92), tier == 0)
+				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
 			"tower":
 				_part(node, holder, _box(Vector3(18, 54, 18)), Vector3(0, 27, 0), Color(0.82, 0.8, 0.74), true)
 			"bridge":
@@ -567,6 +896,77 @@ func _build_landmarks() -> void:
 				pass # drawn by the water / park areas
 			_:
 				_part(node, holder, _box(Vector3(10, 10, 10)), Vector3(0, 5, 0), Color.MAGENTA, true)
+
+## A procedural LandmarkKit mesh with a box collider round its base.
+func _kit_part(node: Node3D, holder: StaticBody3D, mesh: ArrayMesh, base: Vector3) -> void:
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.visibility_range_end = LANDMARK_VISIBLE_M
+	node.add_child(mi)
+	_base_collider(node, holder, base)
+
+func _base_collider(node: Node3D, holder: StaticBody3D, base: Vector3) -> void:
+	var cs: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = base
+	cs.shape = box
+	cs.transform = node.transform * Transform3D(Basis.IDENTITY, Vector3(0.0, base.y * 0.5, 0.0))
+	holder.add_child(cs)
+
+## Baked landmark models (assets/models/city, placed by tools/osm/place_city_props.py):
+## TWAD water towers, canal-side settlements, and Chennai Central on the northern skyline.
+func _build_city_props(holder: StaticBody3D) -> void:
+	var f: FileAccess = FileAccess.open(world_dir.path_join("city_props.json"), FileAccess.READ)
+	if f == null:
+		return
+	var props: Array = (JSON.parse_string(f.get_as_text()) as Dictionary).get("props", [])
+	var cache: Dictionary = {}
+	var index: int = 0
+	for p: Dictionary in props:
+		index += 1
+		var model: String = str(p["model"])
+		var path: String = CITY_MODEL_DIR + model + ".glb"
+		if not cache.has(model):
+			cache[model] = load(path) if ResourceLoader.exists(path) else null
+		var scene: PackedScene = cache[model] as PackedScene
+		if scene == null:
+			continue
+		var inst: Node3D = scene.instantiate() as Node3D
+		inst.name = "%s_%d" % [model, index]
+		var xf: Transform3D = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
+		if bool(p.get("skyline", false)):
+			skyline = inst
+			skyline_home = xf
+			add_child(inst)
+			_set_cast_shadow(inst, false)
+			continue
+		inst.transform = xf
+		holder.add_child(inst)
+		var size: Vector3 = CITY_FOOTPRINT.get(model, Vector3.ZERO)
+		if size != Vector3.ZERO:
+			var node: Node3D = Node3D.new()
+			node.transform = xf
+			_base_collider(node, holder, size)
+			node.free()
+		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).visibility_range_end = LANDMARK_VISIBLE_M
+
+func _set_cast_shadow(n: Node, on: bool) -> void:
+	for mi: Node in n.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## Skyline objects live far outside the camera's 400 m range; keep them at the same bearing and
+## apparent size inside it (moved in and shrunk in proportion), like a painted backdrop.
+func _update_skyline() -> void:
+	if skyline == null or _player == null:
+		return
+	var to: Vector3 = skyline_home.origin - _player.global_position
+	to.y = 0.0
+	var dist: float = to.length()
+	var k: float = minf(1.0, SKYLINE_DIST_M / maxf(dist, 1.0))
+	var pos: Vector3 = _player.global_position + to * k
+	pos.y = 0.0
+	skyline.transform = Transform3D(skyline_home.basis.scaled(Vector3.ONE * k), pos)
 
 func _part(node: Node3D, holder: StaticBody3D, mesh: PrimitiveMesh, offset: Vector3, colour: Color, collide: bool) -> void:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()

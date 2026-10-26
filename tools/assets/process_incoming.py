@@ -7,7 +7,7 @@ Raw sources (WAV/MP3, tens of MB) stay local and are gitignored. Only the proces
 Each clip is cut to the part the game needs, looped with a crossfade where needed, peak-normalised
 (VehicleAudio sets the actual volume), and encoded as mono Vorbis at about 96 kbps.
 
-Usage: python3 tools/assets/process_incoming.py
+Usage: python3 tools/assets/process_incoming.py [output file names to rebuild]
 Needs: ffmpeg, numpy. Writes assets/audio/vehicle/*.ogg and assets/audio/CREDITS_vehicle.md.
 """
 from __future__ import annotations
@@ -36,6 +36,12 @@ SPECS = [
      "trim", "goose278 (Freesound #174819), CC0"),
     ("indicator_tick.ogg", "indicator/22008cfc-195994__productionnow__car-turn-signal-blinker-left-and-right.wav",
      "first_click", "ProductionNow (Freesound #195994), CC0"),
+    # Madras King Deluxe: the diesel auto's heavier knock (VehicleStats.engine_loop).
+    ("engine_diesel_loop.ogg", "vehicle/recordx_media-diesel-auto-rickshaw-sound-199866.mp3",
+     "steady_loop", "recordx_media (Pixabay #199866), Pixabay Content Licence"),
+    # Everywhere-bed of Indian city traffic under the zone ambiences (AmbienceAudio "city").
+    ("../ambience/city_traffic_loop.ogg", "ambience/soundque-indian-city-road-ambience-446354.mp3",
+     "ambience_loop", "SoundQue field recording (Pixabay #446354), Pixabay Content Licence"),
 ]
 
 
@@ -94,6 +100,22 @@ def first_click(x: np.ndarray, length_s: float = 0.25) -> np.ndarray:
     return seg
 
 
+def ambience_window(x: np.ndarray, seconds: float) -> np.ndarray:
+    """A lively but even stretch: skip the first seconds, avoid the loudest/quietest extremes."""
+    frame = int(0.5 * SR)
+    n = len(x) // frame
+    db = 20 * np.log10(np.sqrt((x[: n * frame].reshape(n, frame) ** 2).mean(axis=1) + 1e-12))
+    w = int(seconds / 0.5)
+    target = np.median(db)
+    best, best_score = 4, float("inf")
+    for i in range(4, n - w):
+        seg = db[i: i + w]
+        score = abs(seg.mean() - target) + 0.5 * seg.std() + 0.3 * max(0.0, seg.max() - target - 9.0)
+        if score < best_score:
+            best, best_score = i, score
+    return x[best * frame: (best + w) * frame]
+
+
 def fade_edges(x: np.ndarray, ms: float = 8.0) -> np.ndarray:
     n = min(len(x) // 2, int(ms / 1000 * SR))
     x = x.copy()
@@ -118,7 +140,19 @@ def main() -> int:
     credits = ["# Vehicle sounds (processed from assets_src/incoming)", "",
                "| File | Source | Licence |", "|---|---|---|"]
     failed = 0
+    only = sys.argv[1:]
+    # Keep credit rows for files this script does not make (synthesised SFX etc.).
+    keep_rows: dict[str, str] = {}
+    credits_path = ROOT / "assets" / "audio" / "CREDITS_vehicle.md"
+    if credits_path.exists():
+        for line in credits_path.read_text().splitlines():
+            if line.startswith("| `assets/"):
+                keep_rows[line.split("`")[1]] = line
     for out_name, rel, mode, credit in SPECS:
+        dest_rel = f"assets/audio/vehicle/{out_name}" if "/" not in out_name else "assets/audio/" + out_name.split("../")[-1]
+        keep_rows[dest_rel] = f"| `{dest_rel}` | {rel} | {credit} |"
+        if only and Path(out_name).name not in only:
+            continue
         src = SRC / rel
         if not src.exists():
             print(f"MISSING {rel}")
@@ -127,17 +161,20 @@ def main() -> int:
         x = load_mono(src)
         if mode == "steady_loop":
             y = make_loop(steady_window(x, 8.0))
+        elif mode == "ambience_loop":
+            y = make_loop(ambience_window(x, 46.0), 2.0)
         elif mode == "first_click":
             y = fade_edges(first_click(x))
         else:
             y = fade_edges(trim_silence(x))
         y = normalise(y)
-        dest = OUT / out_name
+        dest = (OUT / out_name).resolve()
+        dest.parent.mkdir(parents=True, exist_ok=True)
         encode(y, dest)
         kb = dest.stat().st_size // 1024
         print(f"OK   {out_name}: {len(y) / SR:.2f} s, {kb} KB, peak {20 * np.log10(np.abs(y).max()):.1f} dBFS")
-        credits.append(f"| `assets/audio/vehicle/{out_name}` | {rel} | {credit} |")
-    (ROOT / "assets" / "audio" / "CREDITS_vehicle.md").write_text("\n".join(credits) + "\n")
+    credits.extend(keep_rows.values())
+    credits_path.write_text("\n".join(credits) + "\n")
     return 1 if failed else 0
 
 

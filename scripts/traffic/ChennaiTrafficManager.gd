@@ -16,8 +16,8 @@ const SPAWN_MAX_AHEAD_M: float = 110.0
 const GREYBOX_LENGTH_M: float = 3000.0
 const GREYBOX_WIDTH_M: float = 13.2
 ## Mix for TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW (Chennai: lots of two-wheelers).
-const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 0]
-const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84)]
+const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 0]
+const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84), Color(0.9, 0.9, 0.92)]
 ## Zones (manifest ids) where stray cattle wander onto the road.
 const MARKET_ZONES: PackedStringArray = ["mylapore", "t_nagar"]
 
@@ -79,7 +79,7 @@ func _ready() -> void:
 		add_child(v)
 		var mix: int = ARCHETYPE_MIX[i % ARCHETYPE_MIX.size()]
 		if mix == TrafficVehicleAI.Archetype.STRAY_COW and not stray_cattle_enabled:
-			mix = TrafficVehicleAI.Archetype.TWO_WHEELER if i % 2 == 0 else TrafficVehicleAI.Archetype.HATCHBACK
+			mix = TrafficVehicleAI.Archetype.LORRY if i % 3 == 0 else (TrafficVehicleAI.Archetype.TWO_WHEELER if i % 2 == 0 else TrafficVehicleAI.Archetype.HATCHBACK)
 		var kind: TrafficVehicleAI.Archetype = mix as TrafficVehicleAI.Archetype
 		v.setup(self, kind, materials[kind])
 		pool.append(v)
@@ -220,7 +220,7 @@ func honk_at(v: TrafficVehicleAI) -> void:
 	if _honk == null or v.archetype == TrafficVehicleAI.Archetype.STRAY_COW:
 		return
 	_honk.global_position = v.global_position
-	_honk.pitch_scale = 0.8 if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS else rng.randf_range(1.15, 1.45)
+	_honk.pitch_scale = 0.8 if v.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)
 	_honk.play()
 
 func request_respawn(v: TrafficVehicleAI) -> void:
@@ -284,7 +284,7 @@ func _on_bumped(v: Node3D, impact_mps: float) -> void:
 	tv.bumped(impact_mps)
 	if _honk != null and tv.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
 		_honk.global_position = tv.global_position
-		_honk.pitch_scale = 0.8 if tv.archetype == TrafficVehicleAI.Archetype.MTC_BUS else rng.randf_range(1.15, 1.45)
+		_honk.pitch_scale = 0.8 if tv.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)
 		_honk.play()
 
 func is_sub_lane_free(me: TrafficVehicleAI, lane: int) -> bool:

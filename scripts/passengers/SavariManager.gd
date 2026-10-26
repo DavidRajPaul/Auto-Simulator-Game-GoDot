@@ -35,6 +35,16 @@ const ARCHETYPE_STYLE: Dictionary = {
 	"monsoon_rider": PersonMesh.Style.VESHTI,
 	"college_student": PersonMesh.Style.TSHIRT_JEANS,
 }
+## The textured, animated character each archetype is played by (assets/models/people). They
+## stand in their idle with a WaveModifier raising the arm. Archetypes not listed (tourist)
+## keep the low-poly PersonMesh.
+const ARCHETYPE_PEOPLE: Dictionary = {
+	"it_commuter": ["young_man"],
+	"tnagar_shopper": ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet"],
+	"monsoon_rider": ["old_man_veshti"],
+	"college_student": ["girl_churidar", "girl_pavadai"],
+}
+const PEOPLE_DIR: String = "res://assets/models/people/"
 
 @export var world_dir: String = "res://data/world"
 @export var archetypes: Array[PassengerArchetype] = []
@@ -175,6 +185,9 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	var variant: int = rng.randi() % 12
 	body.mesh = PersonMesh.standing(style, variant, true)
 	(node.get_node("WaveArm") as MeshInstance3D).mesh = PersonMesh.wave_arm(style, variant)
+	var animated: bool = _set_character(node, archetype.id, variant)
+	body.visible = not animated
+	(node.get_node("WaveArm") as Node3D).visible = not animated
 	# Face the road / the approaching auto.
 	var to_player: Vector3 = _player_pos - pos
 	to_player.y = 0.0
@@ -185,6 +198,40 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	hails.append(h)
 	_publish_hails()
 	return h
+
+## Puts the archetype's animated character on a hail node (reusing it when it already is one).
+func _set_character(node: Node3D, archetype_id: String, variant: int) -> bool:
+	var ids: Array = ARCHETYPE_PEOPLE.get(archetype_id, [])
+	var old: Node3D = node.get_node_or_null("Character") as Node3D
+	if ids.is_empty():
+		if old != null:
+			old.visible = false
+		return false
+	var id: String = str(ids[variant % ids.size()])
+	if old != null and str(old.get_meta("person_id", "")) == id:
+		old.visible = true
+		return true
+	var path: String = PEOPLE_DIR + id + ".glb"
+	if not ResourceLoader.exists(path):
+		return false
+	if old != null:
+		node.remove_child(old)
+		old.queue_free()
+	var ch: Node3D = (load(path) as PackedScene).instantiate() as Node3D
+	ch.name = "Character"
+	ch.set_meta("person_id", id)
+	ch.rotation.y = PI # characters face +Z; the hail node looks down -Z at the auto
+	node.add_child(ch)
+	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if ap != null and ap.has_animation("idle"):
+		ap.get_animation("idle").loop_mode = Animation.LOOP_LINEAR
+		ap.play("idle")
+		ap.seek(rng.randf() * ap.get_animation("idle").length, true)
+	for sk: Node in ch.find_children("*", "Skeleton3D", true, false):
+		var wave: WaveModifier = WaveModifier.new()
+		wave.name = "Wave"
+		sk.add_child(wave)
+	return true
 
 func _maintain_hails() -> void:
 	if hails.size() >= MAX_HAILS:

@@ -74,7 +74,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in Chenna
 ├── assets/ui/        controls_atlas.png (tools/art/make_ui_icons.py)
 ├── assets/audio/     ui/ (Kenney), ambience/ + traffic/ (BigSoundBank, Fetch Assets workflow)
 ├── assets_src/incoming/  downloads waiting to be integrated (not imported, not exported)
-└── tests/            run_phase1_tests (50), phase2 (32), phase3 (41), phase4 (51), phase5 (35), phase6 (48), run_perf_probe
+└── tests/            run_phase1_tests (50), phase2 (32), phase3 (45), phase4 (51), phase5 (35), phase6 (66), phase7 UI (22), phase8 play-test (55), phase9 city & people (35), run_perf_probe
 ```
 
 ### Controls
@@ -271,7 +271,10 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started · **Android only**: no 
 | `tests/run_phase6_tests.tscn`: 48 checks (gears, indicators, give-way, levels, goals, save, facades, sounds); perf probe 125 / 150 | ✅ |
 | `tests/run_phase5_tests.tscn`: 35 checks; perf probe 120 / 150 draw calls in the city | ✅ |
 | **Audio** replacing the synth placeholders (engine loops per auto, 5 horns, rain/wiper/splash/kick, zone ambience, UI SFX, audio buses; ≤ 5 MB) | ⬜ needs the assets you download |
-| Art pass: traffic/cattle/landmark models, shopfront & signboard atlases, building facades, lane-arrow decals | ⬜ UX phase |
+| **Chennai city pass** (`tests/run_phase9_tests.tscn`, 35 checks): concrete sunshades on every floor, parapets, stair head-rooms with black Sintex tanks, AC units and shop awnings on every building; EB poles with sagging wires, neem trees and coconut palms on the kerbs (all merged into each chunk's one building mesh — no extra draw calls); TWAD water towers, canal-side settlements and Chennai Central on the northern skyline; procedural Marina lighthouse and Kapaleeshwarar-style gopuram | ✅ |
+| **Chennai people:** 6 textured characters (veshti, two sarees, churidar, pavadai-davani, young man) on a clean 22-bone rig with a retargeted walk + idle (`tools/assets/process_people.py`); 14 walk the kerbs, turn at junctions, wait at the roadside and jump out of the way of a fast auto; walk pace and animation rate are locked together so feet don't slide | ✅ |
+| **Traffic:** TNSTC town bus and SETC coach on the bus slot, Tamil Nadu goods lorry added; King Deluxe gets a diesel engine; a real Indian road ambience bed under the zone sounds | ✅ |
+| Art pass: lane-arrow decals; animated hail riders | ⬜ |
 | 60 FPS 20-minute thermal soak on the budget phone; AAB < 85 MB | ⬜ **needs you + a phone** (CI reports AAB size) |
 
 #### Levels

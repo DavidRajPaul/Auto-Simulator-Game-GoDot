@@ -5,7 +5,7 @@ Raw downloads stay local (gitignored). Only the optimised .glb files go into the
 Each model is kept light for mobile: textures capped at 512 px, geometry trimmed where it helps,
 and no animation or Draco/meshopt compression (Godot 4 handles plain glTF best).
 
-Usage: python3 tools/assets/process_models.py
+Usage: python3 tools/assets/process_models.py [out paths to rebuild, e.g. traffic/lorry.glb]
 Needs: Node.js and @gltf-transform/cli 4.5.1 in tools/assets/node_modules (npm i in tools/assets).
 Writes assets/models/traffic/*.glb and assets/models/CREDITS_models.md.
 """
@@ -26,7 +26,6 @@ GLTF = TOOLS / "node_modules" / ".bin" / "gltf-transform"
 
 # out path, raw source (under assets_src/incoming/models), simplify ratio or None,
 # texture size in px, static prop (drop skins/animations), credit
-# The MTC bus is not here: the free bus models are 4 m long, far from the 11 m box, so it keeps its box.
 SPECS = [
     ("traffic/hatchback.glb", "traffic/kenney_hatchback-sports.glb", 0.4, 512, False,
      "Kenney Car Kit (hatchback-sports), kenney.nl, CC0"),
@@ -38,6 +37,13 @@ SPECS = [
      "Cow by Quaternius (poly.pizza), CC0"),
     ("traffic/stray_cow_fadly.glb", "traffic/fadly_cow/scene.gltf", 0.03, 256, False,
      "Cow - LowPoly by Fadly.W (Sketchfab), CC BY 4.0", "cow 2"),
+    # Tamil Nadu buses (fitted to the 11 m MTC_BUS box) and the mini goods carrier.
+    ("traffic/bus_tnstc.glb", "traffic/tamilnadu_tnstc_bus_2009-2014/scene.gltf", None, 512, False,
+     "Tamilnadu TNSTC Bus 2009-2014 by Nobel Tech (Sketchfab), CC BY 4.0"),
+    ("traffic/bus_setc.glb", "traffic/tamilnadu_setc_bus_2017-2026/scene.gltf", None, 512, False,
+     "Tamilnadu SETC Bus 2017-2026 by Nobel Tech (Sketchfab), CC BY 4.0"),
+    ("traffic/lorry.glb", "traffic/tamilnadu_lorry/scene.gltf", None, 512, False,
+     "Tamilnadu Lorry by Oren garage (Sketchfab), CC BY 4.0"),
     # The player's own auto: same rSquare model at higher detail (seen up close all the time).
     ("vehicles/player_auto.glb", "traffic/rsquare_auto_rickshaw/scene.gltf", 0.5, 1024, False,
      "Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0"),
@@ -92,8 +98,12 @@ def main() -> int:
     credits = ["# Vehicle and traffic models (optimised by tools/assets/process_models.py)", "",
                "| File | Source | Licence |", "|---|---|---|"]
     failed = 0
+    only = sys.argv[1:]  # optional: output paths to (re)build; the others keep their committed .glb
     for spec in SPECS:
         out_rel, src_rel, simplify, texture_px, static, credit = spec[:6]
+        if only and out_rel not in only:
+            credits.append(f"| `assets/models/{out_rel}` | {src_rel} | {credit} |")
+            continue
         keep = spec[6] if len(spec) > 6 else ""
         src = SRC / src_rel
         if not src.exists():

@@ -10,3 +10,5 @@
 | `assets/audio/vehicle/crash_hard.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
 | `assets/audio/vehicle/crash_light.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
 | `assets/audio/vehicle/scrape_loop.ogg` | Procedurally synthesised (numpy/scipy) for this project, Oct 2026 | Namma Auto team, CC0 |
+| `assets/audio/vehicle/engine_diesel_loop.ogg` | vehicle/recordx_media-diesel-auto-rickshaw-sound-199866.mp3 | recordx_media (Pixabay #199866), Pixabay Content Licence |
+| `assets/audio/ambience/city_traffic_loop.ogg` | ambience/soundque-indian-city-road-ambience-446354.mp3 | SoundQue field recording (Pixabay #446354), Pixabay Content Licence |

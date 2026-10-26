@@ -147,6 +147,9 @@ func _ready() -> void:
 		_hint.text = text
 		_hint_timer = seconds)
 	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
+	SignalBus.pedestrian_startled.connect(func(_p: Vector3) -> void:
+		if _toast_timer <= 0.0:
+			toast(tr("WATCH_OUT"), 1.2))
 	SignalBus.driver_xp_changed.connect(func(_x: int, _l: int, _p: float) -> void: _refresh_level())
 	SignalBus.driver_level_up.connect(_on_level_up)
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:

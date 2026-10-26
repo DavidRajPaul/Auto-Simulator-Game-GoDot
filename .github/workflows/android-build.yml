@@ -51,11 +51,11 @@ jobs:
           ${GODOT_BIN} --headless --path . --quit-after 120 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
 
-      - name: Run test suites (phases 1–8)
+      - name: Run test suites (phases 1–9)
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          for suite in run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests; do
+          for suite in run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests; do
             echo "::group::$suite"
             timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
             echo "::endgroup::"
