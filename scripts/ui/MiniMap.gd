@@ -15,8 +15,13 @@ var _route: PackedVector3Array = PackedVector3Array()
 var _hails: Array = []
 var _timer: float = 0.0
 
+## Painted ring and pins (TouchHUD.HUD_ATLAS). The ring turns with north, so its "N" stays true.
+var _hud_tex: Texture2D
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if ResourceLoader.exists(TouchHUD.HUD_ATLAS):
+		_hud_tex = load(TouchHUD.HUD_ATLAS) as Texture2D
 	SignalBus.road_graph_ready.connect(_build_grid)
 	if SignalBus.current_road_graph != null:
 		_build_grid(SignalBus.current_road_graph)
@@ -91,8 +96,20 @@ func _draw() -> void:
 	for h: Dictionary in _hails:
 		var p: Vector3 = h["position"]
 		var m: Vector2 = _to_map(Vector2(p.x, p.z), centre, scale_px, rot)
-		draw_circle(_clamp_to(m, centre, r - 6.0), 5.0, Color(1.0, 0.82, 0.1))
+		var hp: Vector2 = _clamp_to(m, centre, r - 6.0)
+		if _hud_tex != null:
+			# Pin tip on the rider's spot.
+			draw_texture_rect_region(_hud_tex, Rect2(hp - Vector2(11, 26), Vector2(22, 26)), TouchHUD.HUD_REGIONS["pin_rider"] as Rect2)
+		else:
+			draw_circle(hp, 5.0, Color(1.0, 0.82, 0.1))
 	# Player arrow + north tick + rim.
+	if _hud_tex != null:
+		draw_texture_rect_region(_hud_tex, Rect2(centre - Vector2(13, 15), Vector2(26, 30)), TouchHUD.HUD_REGIONS["pin_player"] as Rect2)
+		var ring: float = r * 2.0 / 0.84
+		draw_set_transform(centre, rot, Vector2.ONE)
+		draw_texture_rect_region(_hud_tex, Rect2(-Vector2(ring, ring) * 0.5, Vector2(ring, ring)), TouchHUD.HUD_REGIONS["map_frame"] as Rect2)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
 	draw_colored_polygon(PackedVector2Array([centre + Vector2(0, -9), centre + Vector2(6, 7), centre + Vector2(-6, 7)]), Color(1.0, 0.85, 0.0))
 	var north: Vector2 = centre + Vector2(0, -1).rotated(rot) * (r - 9.0)
 	draw_string(ThemeDB.fallback_font, north - Vector2(5, -6), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.4, 0.35))

@@ -269,6 +269,11 @@ func _test_touch_controls(hud: TouchHUD) -> void:
 	_touch(hud, 0, gas, true)
 	_check("Gas acts on touch-down (no wait for release)", Input.is_action_pressed("accelerate"))
 	var gas_icon: TextureRect = hud._buttons["Accelerate"]["icon"] as TextureRect
+	_check("Painted dials, needles and meter flag are in use (drawn dashboard hidden)", hud._speed_needle != null and hud._meter != null and not hud._dash.visible)
+	SignalBus.telemetry_updated.emit({"speed_kmh": 40.0, "lpg_liters": 1.0, "lpg_capacity": 1.0})
+	_check("Speed needle points straight up at 40 km/h (half of the 80 dial)", absf(hud._speed_needle.rotation) < 0.01, "%.3f rad" % hud._speed_needle.rotation)
+	hud._flash("test", 1.0, TouchHUD.Tone.WARN)
+	_check("Warnings show on the red ribbon", hud._banner.visible and hud._banner.texture == hud._hud("banner_red"))
 	_check("Painted game art drives the buttons (pressed pedal art while held)", hud._buttons["Accelerate"].has("art")
 		and (gas_icon.texture as AtlasTexture).atlas.resource_path == TouchHUD.ART_ATLAS and gas_icon.texture == hud._art("gas_p"))
 	_drag(hud, 0, _centre(hud, "Brake"))
