@@ -386,7 +386,7 @@ func _render_garage() -> void:
 				var unlocked: bool = owned or GameState.is_unlocked("paint:%d" % i)
 				if not unlocked:
 					label = _locked_label("paint:%d" % i)
-				_row("%s  (+%d%% Meter Mela odds)" % [p["name"], roundi(10.0 * float(p["prestige"]))], label,
+				_row("%s  (+%d%% Meter Mela odds)" % [p["name"], roundi(8.0 * float(p["prestige"]))], label,
 					unlocked and GameState.paint_equipped != i and (owned or GameState.wallet_inr >= int(p["cost"])), func() -> void:
 						GameState.buy_paint(idx)
 						_render_garage(), p["body"] as Color)

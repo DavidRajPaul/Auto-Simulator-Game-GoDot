@@ -32,20 +32,36 @@ static func quote(offer: Offer, game_km: float, rider: PassengerArchetype) -> in
 		_:
 			return meter
 
-## Probability the rider accepts. Rain makes riders less picky; Alangaram prestige
-## (0–1, cosmetic upgrades in Phase 4) sweetens the Meter Mela ask.
-static func acceptance_chance(offer: Offer, rider: PassengerArchetype, raining: bool = false, prestige: float = 0.0) -> float:
-	var p: float
-	match offer:
-		Offer.METER_MELA:
-			p = rider.accept_meter_mela_chance + 0.1 * clampf(prestige, 0.0, 1.0)
-		Offer.FIXED:
-			p = rider.accept_fixed_rate_chance
-		_:
-			p = rider.accept_meter_chance
-	if raining and offer != Offer.METER:
-		p += 0.1
-	return clampf(p, 0.0, 1.0)
+## Context for a haggle beyond the rider's archetype odds (all optional, neutral defaults).
+##   meter_inr    — the honest meter fare; markups are judged against it (₹30 extra on a ₹40
+##                  hop is outrageous, on a ₹150 trip it's normal Chennai bargaining)
+##   demand       — 0–1 from TrafficDensity.rider_demand: rush hour/rain → riders need you
+##   stars        — the driver's stand rating; a 3★ auto doesn't get to ask for extra
+##   greed_streak — recent greedy asks; word spreads at the stand
+const STRICT_MARKUP_FREE: float = 0.2 # markup up to 20 % of the meter costs nothing extra
+const STRICT_MARKUP_SLOPE: float = 0.9 # each +100 % markup beyond that removes 90 % of the odds
+const GREED_PENALTY: float = 0.06
+const MAX_GREED_STREAK: int = 5
+
+## Probability the rider accepts. Strict by design (GDD Meter Mela 65–85 % was too easy):
+## base odds come from the archetype .tres, then scale down with the markup ratio, the
+## driver's rating and recent greed, and up a little with rain, rush-hour demand and
+## Alangaram prestige (0–1). The honest meter is always accepted.
+static func acceptance_chance(offer: Offer, rider: PassengerArchetype, raining: bool = false, prestige: float = 0.0,
+		meter_inr: int = 0, demand: float = 0.5, stars: float = 4.5, greed_streak: int = 0) -> float:
+	if offer == Offer.METER:
+		return clampf(rider.accept_meter_chance, 0.0, 1.0)
+	var p: float = rider.accept_meter_mela_chance + 0.08 * clampf(prestige, 0.0, 1.0) if offer == Offer.METER_MELA else rider.accept_fixed_rate_chance
+	if meter_inr > 0:
+		var asked: int = meter_inr + METER_MELA_EXTRA_INR if offer == Offer.METER_MELA else maxi(FIXED_RATE_INR, meter_inr + METER_MELA_EXTRA_INR)
+		var markup: float = float(asked - meter_inr) / float(meter_inr)
+		p *= clampf(1.0 - STRICT_MARKUP_SLOPE * maxf(0.0, markup - STRICT_MARKUP_FREE), 0.05, 1.0)
+	if raining:
+		p += 0.06
+	p += 0.12 * (clampf(demand, 0.0, 1.0) - 0.5) # off-peak riders shop around, peak riders don't
+	p *= clampf(0.55 + 0.1 * stars, 0.75, 1.0) # 4.5★ = 1.0, 3★ = 0.85, 2★ = 0.75
+	p -= GREED_PENALTY * float(clampi(greed_streak, 0, MAX_GREED_STREAK))
+	return clampf(p, 0.02, 0.95)
 
 ## Drive-time allowance for a route (m) at a realistic city pace plus the rider's slack.
 static func ride_time_limit_s(route_m: float, rider: PassengerArchetype) -> float:

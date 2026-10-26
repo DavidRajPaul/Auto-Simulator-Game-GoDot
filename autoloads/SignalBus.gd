@@ -36,6 +36,9 @@ signal player_pose_updated(position: Vector3, heading: Vector3)
 signal route_updated(points: PackedVector3Array)
 ## Gap-la Gethu: passed a moving vehicle with < 0.6 m clearance above 35 km/h.
 signal near_miss(clearance_m: float)
+## Traffic model (TrafficDensity) around the player: 0–1 density, current zone id, rush hour?
+## Also drives rider demand in haggling.
+signal traffic_density_changed(density: float, zone_id: String, is_peak: bool)
 signal player_collision(impulse: float)
 ## Per-physics-frame ride dynamics for the comfort meter (g units; jolt = vertical speed change).
 signal vehicle_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)

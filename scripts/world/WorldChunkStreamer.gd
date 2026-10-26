@@ -151,6 +151,7 @@ func _spawn_player() -> void:
 	if _player == null or spawn_stand_id == "":
 		return
 	_player.global_transform = stand_transform(spawn_stand_id)
+	_player.reset_physics_interpolation()
 	if _player is RigidBody3D:
 		(_player as RigidBody3D).linear_velocity = Vector3.ZERO
 		(_player as RigidBody3D).angular_velocity = Vector3.ZERO

@@ -32,6 +32,11 @@ const COW_FILES: Array[String] = [
 const MODEL_FLIP: Array[bool] = [false, true, true, false, true]
 ## Per-file flip for the cow variants (same order as COW_FILES).
 const COW_FLIP: Array[bool] = [true, true]
+## Two-wheelers: the scooter model is fitted to this height (the collision box stays 1.3 m tall
+## so it covers the rider too) and a seated rider sits on the seat.
+const SCOOTER_MODEL_HEIGHT_M: float = 1.0
+const RIDER_SEAT_POS: Vector3 = Vector3(0.0, 0.72, 0.22)
+static var _rider_variant: int = 0
 
 var manager: ChennaiTrafficManager
 var archetype: Archetype = Archetype.HATCHBACK
@@ -72,9 +77,21 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	var cow: int = randi() % COW_FILES.size()
 	var model_path: String = COW_FILES[cow] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
 	var flip: bool = COW_FLIP[cow] if kind == Archetype.STRAY_COW else MODEL_FLIP[kind]
-	if TrafficModelFit.attach(self, model_path, size, flip):
+	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
+	if TrafficModelFit.attach(self, model_path, fit_size, flip):
 		_mesh.visible = false
+	if kind == Archetype.TWO_WHEELER:
+		_add_rider()
 	deactivate()
+
+## Nobody rides a scooter by remote control in Chennai: one helmeted rider per two-wheeler.
+func _add_rider() -> void:
+	var rider: MeshInstance3D = MeshInstance3D.new()
+	rider.name = "Rider"
+	rider.mesh = PersonMesh.seated_rider(_rider_variant)
+	_rider_variant += 1
+	rider.position = RIDER_SEAT_POS
+	add_child(rider)
 
 func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	edge = edge_idx
@@ -90,6 +107,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	active = true
 	visible = true
 	_apply_transform()
+	reset_physics_interpolation() # a recycled vehicle must not smear across the map
 	# Teleport with collision off; re-enable next tick so Jolt never sweeps a
 	# kinematic body through the world (that launched the player auto).
 	_enable_collision_next_tick = true
@@ -100,6 +118,8 @@ func deactivate() -> void:
 	_enable_collision_next_tick = false
 	_shape.disabled = true
 	global_position = Vector3(0.0, -200.0, float(get_index()) * 15.0)
+	if is_inside_tree():
+		reset_physics_interpolation()
 
 func half_width() -> float:
 	return SIZES[archetype].x * 0.5
@@ -137,7 +157,7 @@ func tick(delta: float) -> void:
 
 	var lead_gap: float = manager.gap_ahead(self)
 	var safe_gap: float = current_speed_mps * 1.1 + 3.0
-	var target_speed: float = cruise_speed_mps
+	var target_speed: float = cruise_speed_mps * manager.speed_factor # rush hour crawl
 	var remaining: float = manager.graph.edges[edge].length - t
 	if remaining < TURN_SLOWDOWN_M:
 		target_speed *= 0.7 # ease off into junctions

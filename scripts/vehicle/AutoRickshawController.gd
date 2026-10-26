@@ -67,6 +67,9 @@ var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
+## Off in the cockpit view: the canopy/frame shadows sweeping over the dash as the auto turns
+## read as flickering dark bands right in the driver's eyes.
+var _self_shadows: bool = true
 
 func _ready() -> void:
 	if use_player_profile:
@@ -84,6 +87,7 @@ func _ready() -> void:
 	SignalBus.refueled.connect(func(level: float) -> void: fuel_level = minf(level, stats.fuel_capacity))
 	SignalBus.teleport_requested.connect(func(xform: Transform3D) -> void:
 		global_transform = xform
+		reset_physics_interpolation()
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
 		_prev_velocity = Vector3.ZERO)
@@ -91,6 +95,9 @@ func _ready() -> void:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
 	_recolour.call_deferred()
 	_build_lamps()
+	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void:
+		_self_shadows = mode_name != "Cockpit"
+		_apply_self_shadows())
 
 ## Swap to new effective stats at runtime (garage purchase/upgrade/paint).
 func apply_stats(new_stats: VehicleStats) -> void:
@@ -105,11 +112,21 @@ func _recolour() -> void:
 		model.paint = stats.body_colour
 		model.trim = stats.canopy_colour
 		model.build()
+	_apply_self_shadows()
 	var procedural_wheels: bool = model == null or not model.uses_real_model
 	for wheel_name: String in ["FrontWheelMesh", "RearLeftWheelMesh", "RearRightWheelMesh"]:
 		var w: Node3D = get_node_or_null(wheel_name) as Node3D
 		if w != null:
 			w.visible = procedural_wheels
+
+func _apply_self_shadows() -> void:
+	var setting: GeometryInstance3D.ShadowCastingSetting = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _self_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var stack: Array[Node] = [self]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is GeometryInstance3D and n.name not in ["BrakeLamps", "IndicatorLeft", "IndicatorRight"]:
+			(n as GeometryInstance3D).cast_shadow = setting
+		stack.append_array(n.get_children())
 
 func _setup_wheel_rays() -> void:
 	var ray_len: float = stats.suspension_rest_dist_m + stats.wheel_radius_m + 0.15

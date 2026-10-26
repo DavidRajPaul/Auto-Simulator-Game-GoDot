@@ -51,10 +51,10 @@ func _test_archetypes() -> void:
 	var ok: bool = true
 	for id: String in ARCHETYPE_IDS:
 		var a: PassengerArchetype = _rider(id)
-		if a == null or a.accept_meter_chance < 0.99 or a.accept_meter_mela_chance < 0.65 or a.accept_meter_mela_chance > 0.85 \
-				or a.accept_fixed_rate_chance < 0.25 or a.accept_fixed_rate_chance > 0.40:
+		if a == null or a.accept_meter_chance < 0.99 or a.accept_meter_mela_chance < 0.4 or a.accept_meter_mela_chance > 0.65 \
+				or a.accept_fixed_rate_chance < 0.08 or a.accept_fixed_rate_chance > 0.25:
 			ok = false
-	_check("5 archetypes load with GDD odds (meter 100%, mela 65–85%, fixed 25–40%)", ok)
+	_check("5 archetypes load with strict odds (meter 100%, mela 40–65%, fixed 8–25%)", ok)
 	_check("T. Nagar shopper carries +45 kg luggage", is_equal_approx(_rider("tnagar_shopper").luggage_kg, 45.0))
 	_check("Monsoon rider pays 1.5× surge", _rider("monsoon_rider").surge_multiplier >= 1.5)
 
@@ -71,6 +71,12 @@ func _test_odds() -> void:
 	_check("Correct Meter always accepted", is_equal_approx(FareCalculator.acceptance_chance(FareCalculator.Offer.METER, shopper), 1.0))
 	_check("Rain makes bargains likelier", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, true) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper))
 	_check("Alangaram prestige sweetens Meter Mela", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 1.0) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper))
+	var mela_short: float = FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 40)
+	var mela_long: float = FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 160)
+	_check("Strict: +₹30 on a ₹40 hop is much harder than on a ₹160 trip", mela_short < mela_long * 0.6, "%.2f vs %.2f" % [mela_short, mela_long])
+	_check("Strict: fixed ₹200 on a short trip almost never accepted", FareCalculator.acceptance_chance(FareCalculator.Offer.FIXED, shopper, false, 0.0, 40) < 0.05)
+	_check("Rush-hour demand helps a bargain", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 1.0) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 0.0))
+	_check("Greed streak and low stars cut the odds", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 0.5, 3.0, 3) < FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120))
 	# Monte Carlo against the same RNG the game uses.
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 42
