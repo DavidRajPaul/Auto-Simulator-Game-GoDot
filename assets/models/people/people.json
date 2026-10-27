@@ -13,11 +13,23 @@
    "walk_seconds": 4.333,
    "walk_speed": 1.274
   },
+  "man_casual": {
+   "credit": "\"Dhanush 3d model\" by Peter Charles (Sketchfab), CC BY 4.0 \u2014 face repainted as a generic character",
+   "height": 1.72,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.319
+  },
   "old_man_veshti": {
    "credit": "\"Indian Old man walking\" by anandmohan662 (Sketchfab), CC BY 4.0",
    "height": 1.66,
    "walk_seconds": 4.333,
    "walk_speed": 1.329
+  },
+  "woman_modern": {
+   "credit": "\"Modern Indian Woman\" by Pixel_Monster (Sketchfab), CC BY 4.0",
+   "height": 1.58,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.255
   },
   "woman_saree_green": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",

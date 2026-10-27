@@ -1,0 +1,176 @@
+particle: Preview.png
+particle: PNG/circle_01.png
+particle: PNG/circle_02.png
+particle: PNG/circle_03.png
+particle: PNG/circle_04.png
+particle: PNG/circle_05.png
+particle: PNG/dirt_01.png
+particle: PNG/dirt_02.png
+particle: PNG/dirt_03.png
+particle: PNG/fire_01.png
+particle: PNG/fire_02.png
+particle: PNG/flame_01.png
+particle: PNG/flame_02.png
+particle: PNG/flame_03.png
+particle: PNG/flame_04.png
+particle: PNG/flame_05.png
+particle: PNG/flame_06.png
+particle: PNG/flare_01.png
+particle: PNG/light_01.png
+particle: PNG/light_02.png
+particle: PNG/light_03.png
+particle: PNG/magic_01.png
+particle: PNG/magic_02.png
+particle: PNG/magic_03.png
+particle: PNG/magic_04.png
+particle: PNG/magic_05.png
+particle: PNG/muzzle_01.png
+particle: PNG/muzzle_02.png
+particle: PNG/muzzle_03.png
+particle: PNG/muzzle_04.png
+particle: PNG/muzzle_05.png
+particle: PNG/Rotated/flame_05_rotated.png
+particle: PNG/Rotated/flame_06_rotated.png
+particle: PNG/Rotated/muzzle_01_rotated.png
+particle: PNG/Rotated/muzzle_02_rotated.png
+particle: PNG/Rotated/muzzle_03_rotated.png
+particle: PNG/Rotated/muzzle_04_rotated.png
+particle: PNG/Rotated/muzzle_05_rotated.png
+particle: PNG/Rotated/spark_05_rotated.png
+particle: PNG/Rotated/spark_06_rotated.png
+particle: PNG/Rotated/trace_01_rotated.png
+particle: PNG/Rotated/trace_02_rotated.png
+particle: PNG/Rotated/trace_03_rotated.png
+particle: PNG/Rotated/trace_04_rotated.png
+particle: PNG/Rotated/trace_05_rotated.png
+particle: PNG/Rotated/trace_06_rotated.png
+particle: PNG/Rotated/trace_07_rotated.png
+particle: PNG/scorch_01.png
+particle: PNG/scorch_02.png
+particle: PNG/scorch_03.png
+particle: PNG/scratch_01.png
+particle: PNG/slash_01.png
+particle: PNG/slash_02.png
+particle: PNG/slash_03.png
+particle: PNG/slash_04.png
+particle: PNG/smoke_01.png
+particle: PNG/smoke_02.png
+particle: PNG/smoke_03.png
+particle: PNG/smoke_04.png
+particle: PNG/smoke_05.png
+particle: PNG/smoke_06.png
+particle: PNG/smoke_07.png
+particle: PNG/smoke_08.png
+particle: PNG/smoke_09.png
+particle: PNG/smoke_10.png
+particle: PNG/spark_01.png
+particle: PNG/spark_02.png
+particle: PNG/spark_03.png
+particle: PNG/spark_04.png
+particle: PNG/spark_05.png
+particle: PNG/spark_06.png
+particle: PNG/spark_07.png
+particle: PNG/star_01.png
+particle: PNG/star_02.png
+particle: PNG/star_03.png
+particle: PNG/star_04.png
+particle: PNG/star_05.png
+particle: PNG/star_06.png
+particle: PNG/star_07.png
+particle: PNG/star_08.png
+particle: PNG/star_09.png
+particle: PNG/symbol_01.png
+particle: PNG/symbol_02.png
+particle: PNG/trace_01.png
+particle: PNG/trace_02.png
+particle: PNG/trace_03.png
+particle: PNG/trace_04.png
+particle: PNG/trace_05.png
+particle: PNG/trace_06.png
+particle: PNG/trace_07.png
+particle: PNG/twirl_01.png
+particle: PNG/twirl_02.png
+particle: PNG/twirl_03.png
+particle: PNG/window_01.png
+particle: PNG/window_02.png
+particle: PNG/window_03.png
+particle: PNG/window_04.png
+smoke: preview.png
+smoke: sample.png
+smoke: PNG/Black smoke/blackSmoke00.png
+smoke: PNG/Black smoke/blackSmoke01.png
+smoke: PNG/Black smoke/blackSmoke02.png
+smoke: PNG/Black smoke/blackSmoke03.png
+smoke: PNG/Black smoke/blackSmoke04.png
+smoke: PNG/Black smoke/blackSmoke05.png
+smoke: PNG/Black smoke/blackSmoke06.png
+smoke: PNG/Black smoke/blackSmoke07.png
+smoke: PNG/Black smoke/blackSmoke08.png
+smoke: PNG/Black smoke/blackSmoke09.png
+smoke: PNG/Black smoke/blackSmoke10.png
+smoke: PNG/Black smoke/blackSmoke11.png
+smoke: PNG/Black smoke/blackSmoke12.png
+smoke: PNG/Black smoke/blackSmoke13.png
+smoke: PNG/Black smoke/blackSmoke14.png
+smoke: PNG/Black smoke/blackSmoke15.png
+smoke: PNG/Black smoke/blackSmoke16.png
+smoke: PNG/Black smoke/blackSmoke17.png
+smoke: PNG/Black smoke/blackSmoke18.png
+smoke: PNG/Black smoke/blackSmoke19.png
+smoke: PNG/Black smoke/blackSmoke20.png
+smoke: PNG/Black smoke/blackSmoke21.png
+smoke: PNG/Black smoke/blackSmoke22.png
+smoke: PNG/Black smoke/blackSmoke23.png
+smoke: PNG/Black smoke/blackSmoke24.png
+smoke: PNG/Explosion/explosion00.png
+smoke: PNG/Explosion/explosion01.png
+smoke: PNG/Explosion/explosion02.png
+smoke: PNG/Explosion/explosion03.png
+smoke: PNG/Explosion/explosion04.png
+smoke: PNG/Explosion/explosion05.png
+smoke: PNG/Explosion/explosion06.png
+smoke: PNG/Explosion/explosion07.png
+smoke: PNG/Explosion/explosion08.png
+smoke: PNG/Fart/fart00.png
+smoke: PNG/Fart/fart01.png
+smoke: PNG/Fart/fart02.png
+smoke: PNG/Fart/fart03.png
+smoke: PNG/Fart/fart04.png
+smoke: PNG/Fart/fart05.png
+smoke: PNG/Fart/fart06.png
+smoke: PNG/Fart/fart07.png
+smoke: PNG/Fart/fart08.png
+smoke: PNG/Flash/flash00.png
+smoke: PNG/Flash/flash01.png
+smoke: PNG/Flash/flash02.png
+smoke: PNG/Flash/flash03.png
+smoke: PNG/Flash/flash04.png
+smoke: PNG/Flash/flash05.png
+smoke: PNG/Flash/flash06.png
+smoke: PNG/Flash/flash07.png
+smoke: PNG/Flash/flash08.png
+smoke: PNG/White puff/whitePuff00.png
+smoke: PNG/White puff/whitePuff01.png
+smoke: PNG/White puff/whitePuff02.png
+smoke: PNG/White puff/whitePuff03.png
+smoke: PNG/White puff/whitePuff04.png
+smoke: PNG/White puff/whitePuff05.png
+smoke: PNG/White puff/whitePuff06.png
+smoke: PNG/White puff/whitePuff07.png
+smoke: PNG/White puff/whitePuff08.png
+smoke: PNG/White puff/whitePuff09.png
+smoke: PNG/White puff/whitePuff10.png
+smoke: PNG/White puff/whitePuff11.png
+smoke: PNG/White puff/whitePuff12.png
+smoke: PNG/White puff/whitePuff13.png
+smoke: PNG/White puff/whitePuff14.png
+smoke: PNG/White puff/whitePuff15.png
+smoke: PNG/White puff/whitePuff16.png
+smoke: PNG/White puff/whitePuff17.png
+smoke: PNG/White puff/whitePuff18.png
+smoke: PNG/White puff/whitePuff19.png
+smoke: PNG/White puff/whitePuff20.png
+smoke: PNG/White puff/whitePuff21.png
+smoke: PNG/White puff/whitePuff22.png
+smoke: PNG/White puff/whitePuff23.png
+smoke: PNG/White puff/whitePuff24.png

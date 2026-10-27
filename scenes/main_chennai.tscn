@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://scripts/ui/UISfx.gd" id="17"]
 [ext_resource type="Script" path="res://scripts/world/StreetSigns.gd" id="18"]
 [ext_resource type="Script" path="res://scripts/world/PedestrianManager.gd" id="19"]
+[ext_resource type="Script" path="res://scripts/world/TrafficPolice.gd" id="20"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -100,6 +101,9 @@ script = ExtResource("8")
 
 [node name="PedestrianManager" type="Node3D" parent="."]
 script = ExtResource("19")
+
+[node name="TrafficPolice" type="Node3D" parent="."]
+script = ExtResource("20")
 
 [node name="StreetSigns" type="Node3D" parent="."]
 script = ExtResource("18")

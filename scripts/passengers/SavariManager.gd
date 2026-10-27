@@ -39,10 +39,10 @@ const ARCHETYPE_STYLE: Dictionary = {
 ## stand in their idle with a WaveModifier raising the arm. Archetypes not listed (tourist)
 ## keep the low-poly PersonMesh.
 const ARCHETYPE_PEOPLE: Dictionary = {
-	"it_commuter": ["young_man"],
+	"it_commuter": ["young_man", "man_casual", "woman_modern"],
 	"tnagar_shopper": ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet"],
 	"monsoon_rider": ["old_man_veshti"],
-	"college_student": ["girl_churidar", "girl_pavadai"],
+	"college_student": ["girl_churidar", "girl_pavadai", "woman_modern"],
 }
 const PEOPLE_DIR: String = "res://assets/models/people/"
 

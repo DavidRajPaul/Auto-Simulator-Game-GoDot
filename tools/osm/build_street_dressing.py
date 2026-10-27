@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Street dressing for every world chunk: EB electric poles with sagging overhead wires, and
-roadside trees (neem / rain trees, coconut palms near the coast and in Mylapore).
+roadside trees (rain trees, neem, Ashoka mast trees, copper-pod; coconut palms mainly by the beach).
 
 Placed along the real road graph on the kerb, kept out of junction mouths and building
 footprints. Written per chunk to data/world/dress/c_<i>_<j>.json and merged by the chunk
@@ -24,7 +24,15 @@ TREE_STEP = {"primary": 26.0, "secondary": 24.0, "tertiary": 22.0, "residential"
 JUNCTION_CLEAR = 11.0
 POLE_KERB = 0.55
 TREE_KERB = 1.7
-PALM_ZONES = {"marina": 0.75, "mylapore": 0.4}
+# Chennai's street trees are mostly rain trees, neem, Ashoka (mast) trees and copper-pod /
+# gulmohar; coconut palms belong to the beach front and the odd temple/house compound.
+# Palms: 30 % within BEACH_PALM_M of the sand, 5 % in Mylapore, 2 % everywhere else.
+PALM_ZONES = {"mylapore": 0.05}
+PALM_DEFAULT = 0.02
+PALM_BEACH = 0.3
+BEACH_PALM_M = 200.0
+# Non-palm species mix: 0 rain tree / neem, 2 Ashoka (mast tree), 3 copper-pod / gulmohar.
+SPECIES = [(0, 0.55), (2, 0.25), (3, 0.20)]
 
 
 def point_in(px, pz, poly) -> bool:
@@ -70,6 +78,24 @@ def main() -> int:
             if d < zz["r"] and d < bd:
                 best, bd = zz["id"], d
         return best
+
+    areas = json.loads((WORLD / "areas.json").read_text())
+    beach_pts = [p for poly in areas.get("beach", []) for p in poly]
+
+    def near_beach(x: float, z: float) -> bool:
+        return any(abs(x - p[0]) < BEACH_PALM_M and abs(z - p[1]) < BEACH_PALM_M and math.hypot(x - p[0], z - p[1]) < BEACH_PALM_M
+                   for p in beach_pts)
+
+    def species(x: float, z: float) -> int:
+        chance = PALM_BEACH if near_beach(x, z) else PALM_ZONES.get(zone_of(x, z), PALM_DEFAULT)
+        if rng.random() < chance:
+            return 1
+        r = rng.random()
+        for kind, w in SPECIES:
+            if r < w:
+                return kind
+            r -= w
+        return 0
 
     graph = json.loads((WORLD / "road_graph.json").read_text())
     rng = random.Random(600017)
@@ -128,8 +154,7 @@ def main() -> int:
             off = half + TREE_KERB + rng.uniform(0.0, 0.8)
             tx, tz = x + lx * off, z + lz * off
             if rng.random() < 0.8 and not blocked(tx, tz, 1.4):
-                palm = rng.random() < PALM_ZONES.get(zone_of(tx, tz), 0.12)
-                put("trees", tx, tz, [round(tx, 2), round(tz, 2), 1 if palm else 0, round(rng.uniform(0.8, 1.25), 2),
+                put("trees", tx, tz, [round(tx, 2), round(tz, 2), species(tx, tz), round(rng.uniform(0.8, 1.25), 2),
                                       rng.randrange(1000)])
             s += tstep * rng.uniform(0.7, 1.3)
 

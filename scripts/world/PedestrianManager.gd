@@ -37,7 +37,7 @@ const STARTLE_SPEED_MPS: float = 2.0
 const PACE: Dictionary = {"old_man_veshti": Vector2(0.85, 1.0)}
 const DEFAULT_PACE: Vector2 = Vector2(1.1, 1.35)
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
-const SHARE: Dictionary = {"young_man": 4, "old_man_veshti": 3, "girl_churidar": 2}
+const SHARE: Dictionary = {"young_man": 4, "man_casual": 3, "old_man_veshti": 3, "girl_churidar": 2, "woman_modern": 2}
 
 var graph: RoadGraph
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()

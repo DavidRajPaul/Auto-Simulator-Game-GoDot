@@ -44,15 +44,79 @@
   },
   {
    "model": "slum_cluster",
-   "x": -870.3,
-   "z": -206.8,
-   "yaw": -1.642
+   "x": 1830.7,
+   "z": 695.2,
+   "yaw": 1.223
   },
   {
    "model": "slum_cluster",
-   "x": 2185.0,
-   "z": -2410.0,
-   "yaw": 2.357
+   "x": 1041.0,
+   "z": 1437.1,
+   "yaw": -2.681
+  },
+  {
+   "model": "slum_cluster",
+   "x": -884.0,
+   "z": -166.8,
+   "yaw": -2.259
+  },
+  {
+   "model": "slum_cluster",
+   "x": 2178.2,
+   "z": -2478.7,
+   "yaw": -0.585
+  },
+  {
+   "model": "slum_cluster",
+   "x": 2386.5,
+   "z": -2301.0,
+   "yaw": -3.127
+  },
+  {
+   "model": "slum_cluster",
+   "x": -502.2,
+   "z": -73.5,
+   "yaw": 1.219
+  },
+  {
+   "model": "gas_station",
+   "x": 555.4,
+   "z": -604.1,
+   "yaw": -1.856,
+   "scale": 1.0,
+   "service": "lpg_royapettah",
+   "fx": 561.0,
+   "fz": -602.5
+  },
+  {
+   "model": "gas_station",
+   "x": 652.1,
+   "z": 1390.8,
+   "yaw": 2.967,
+   "scale": 1.0,
+   "service": "lpg_mylapore",
+   "fx": 651.1,
+   "fz": 1396.6
+  },
+  {
+   "model": "gas_station",
+   "x": -868.1,
+   "z": 439.2,
+   "yaw": -2.951,
+   "scale": 0.65,
+   "service": "lpg_teynampet",
+   "fx": -867.4,
+   "fz": 442.9
+  },
+  {
+   "model": "gas_station",
+   "x": -2038.8,
+   "z": 600.5,
+   "yaw": 0.424,
+   "scale": 0.65,
+   "service": "lpg_tnagar",
+   "fx": -2040.4,
+   "fz": 597.1
   }
  ]
 }

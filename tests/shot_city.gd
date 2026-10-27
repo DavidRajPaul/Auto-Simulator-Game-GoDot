@@ -6,11 +6,26 @@ func _ready() -> void:
 
 func _run() -> void:
 	GameState.reset_profile()
+	if OS.has_environment("SHOT_MIN"):
+		GameState.shift_minute = float(OS.get_environment("SHOT_MIN"))
 	var city: Node = (load("res://scenes/main_chennai.tscn") as PackedScene).instantiate()
 	add_child(city)
 	for i: int in 30:
 		await get_tree().physics_frame
 	var rig: CameraRig = city.get_node("CameraRig") as CameraRig
+	if OS.has_environment("SHOT_LOOK"):
+		# "x,z,cx,cy,cz": park the camera at cam pos looking at (x, 2, z).
+		var v: PackedFloat64Array = PackedFloat64Array(Array(OS.get_environment("SHOT_LOOK").split(",")).map(func(t: String) -> float: return float(t)))
+		var auto0: Node3D = city.get_node("AutoRickshaw") as Node3D
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, Vector3(v[2], 1.0, v[4])))
+		SignalBus.player_pose_updated.emit(Vector3(v[2], 0, v[4]), Vector3.FORWARD)
+		for i: int in 90:
+			await get_tree().physics_frame
+		rig.set_process(false)
+		var cam0: Camera3D = rig.get_node("Camera") as Camera3D
+		cam0.global_position = Vector3(v[2], v[3], v[4])
+		cam0.look_at(Vector3(v[0], 3.0, v[1]))
+		auto0.visible = false
 	var cam_mode: int = int(OS.get_environment("SHOT_CAM")) if OS.has_environment("SHOT_CAM") else 0
 	while int(rig.mode) != cam_mode:
 		rig.cycle_mode()
@@ -36,10 +51,24 @@ func _run() -> void:
 			if n.visible:
 				rig.set_process(false)
 				var cam: Camera3D = rig.get_node("Camera") as Camera3D
-				cam.global_position = n.global_position + n.global_basis * Vector3(0.6, 1.9, -5.5)
+				cam.global_position = n.global_position + n.global_basis * Vector3(float(OS.get_environment("SHOT_SX")) if OS.has_environment("SHOT_SX") else 0.6, 1.9, -5.5)
 				cam.look_at(n.global_position + Vector3(0, 2.2, 0))
 				print("SIGN ", (n.get_node("English") as Label3D).text)
 				break
+	if OS.has_environment("SHOT_SVC"):
+		# Put the service-vehicle slot, showing variant SHOT_SVC, on the road just ahead.
+		var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+		var auto2: Node3D = city.get_node("AutoRickshaw") as Node3D
+		for v: TrafficVehicleAI in tm.pool:
+			if v.archetype == TrafficVehicleAI.Archetype.SERVICE:
+				var c: Dictionary = tm.graph.closest_point(auto2.global_position + (-auto2.global_basis.z) * 16.0)
+				tm.place_vehicle(v, int(c["edge"]), float(c["s"]), 1, 0)
+				var want: int = int(OS.get_environment("SHOT_SVC"))
+				for i: int in v._service_models.size():
+					v._service_models[i].visible = i == want
+				v.cruise_speed_mps = 0.0
+				v.current_speed_mps = 0.0
+				v.bumped_timer = 999.0
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
 	for i: int in 20:

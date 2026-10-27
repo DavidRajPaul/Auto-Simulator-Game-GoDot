@@ -21,9 +21,21 @@ func _ready() -> void:
 	if f == null:
 		return
 	var m: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	# LPG bunks with a real station model (city_props.json, tools/osm/place_city_props.py): the
+	# refuelling spot moves onto that station's forecourt and the box placeholder is not built.
+	var stations: Dictionary = {}
+	var pf: FileAccess = FileAccess.open(world_dir.path_join("city_props.json"), FileAccess.READ)
+	if pf != null:
+		for pr: Dictionary in (JSON.parse_string(pf.get_as_text()) as Dictionary).get("props", []):
+			if str(pr.get("model", "")) == "gas_station" and pr.has("service"):
+				stations[str(pr["service"])] = pr
 	for s: Dictionary in m.get("services", []):
 		var sv: Dictionary = {"id": str(s["id"]), "name": str(s["name"]), "kind": str(s["kind"]),
 			"pos": Vector3(float(s["x"]), 0.0, float(s["z"])), "yaw": float(s.get("yaw", 0.0))}
+		if stations.has(sv["id"]):
+			var st: Dictionary = stations[sv["id"]]
+			sv["pos"] = Vector3(float(st["fx"]), 0.0, float(st["fz"]))
+			sv["station"] = true
 		services.append(sv)
 		_build_marker(sv)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player_pos = p)
@@ -84,6 +96,9 @@ func _build_marker(s: Dictionary) -> void:
 	label.visibility_range_end = VIS_RANGE_M
 	root.add_child(label)
 	match str(s["kind"]):
+		"lpg" when bool(s.get("station", false)):
+			label.text = "LPG AUTOGAS  ₹62/L"
+			label.position.y = 7.5
 		"lpg":
 			_part(root, Vector3(10, 0.4, 7), Vector3(0, 5.2, 0), Color(0.95, 0.95, 0.95))
 			_part(root, Vector3(10.2, 0.6, 7.2), Vector3(0, 5.7, 0), Color(0.95, 0.45, 0.05))

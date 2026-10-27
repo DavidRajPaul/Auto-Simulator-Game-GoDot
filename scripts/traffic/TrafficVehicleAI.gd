@@ -4,13 +4,13 @@ extends AnimatableBody3D
 ## Keeps a gap to whatever is ahead, seeks open sub-lanes (two-wheelers aggressively),
 ## turns at junctions and dodges horns. Spawned once, recycled — never freed while driving.
 
-enum Archetype { TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW, LORRY }
+enum Archetype { TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW, LORRY, SERVICE }
 
-const SIZES: Array[Vector3] = [Vector3(0.8, 1.3, 2.0), Vector3(1.7, 1.5, 3.8), Vector3(1.4, 1.8, 3.0), Vector3(2.5, 3.2, 11.0), Vector3(0.7, 1.4, 2.0), Vector3(1.6, 2.0, 4.2)]
-const SPEED_RANGES_KMH: Array[Vector2] = [Vector2(32.0, 46.0), Vector2(28.0, 42.0), Vector2(22.0, 32.0), Vector2(20.0, 30.0), Vector2(0.0, 3.0), Vector2(22.0, 34.0)]
+const SIZES: Array[Vector3] = [Vector3(0.8, 1.3, 2.0), Vector3(1.7, 1.5, 3.8), Vector3(1.4, 1.8, 3.0), Vector3(2.5, 3.2, 11.0), Vector3(0.7, 1.4, 2.0), Vector3(1.6, 2.0, 4.2), Vector3(2.2, 2.2, 5.9)]
+const SPEED_RANGES_KMH: Array[Vector2] = [Vector2(32.0, 46.0), Vector2(28.0, 42.0), Vector2(22.0, 32.0), Vector2(20.0, 30.0), Vector2(0.0, 3.0), Vector2(22.0, 34.0), Vector2(24.0, 38.0)]
 ## Lowest horn tier this archetype reacts to (0 bulb, 1 twin electric, 2 musical air-horn).
-const MIN_HORN_TIER: Array[int] = [1, 1, 2, 2, 2, 1]
-const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0, 4.0]
+const MIN_HORN_TIER: Array[int] = [1, 1, 2, 2, 2, 1, 2]
+const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0, 4.0, 3.5]
 const LATERAL_SPEED_MPS: float = 2.6
 const HORN_REACTION_DELAY_S: float = 0.35
 const TURN_SLOWDOWN_M: float = 12.0
@@ -22,6 +22,18 @@ const MODEL_FILES: Array[String] = [
 	"res://assets/models/traffic/bus_tnstc.glb",
 	"res://assets/models/traffic/stray_cow.glb",
 	"res://assets/models/traffic/lorry.glb",
+	"", # SERVICE picks from SERVICE_VARIANTS
+]
+## Civil service vehicles (tools/assets/process_city.py, all baked front-to-+Z at real size):
+## [file, footprint (w, h, l) m, spawn weight]. One pool slot carries all of them and shows a
+## different one each time it respawns (ambulances and fire tenders rarer than the rest).
+const SERVICE_VARIANTS: Array = [
+	["res://assets/models/traffic/svc_garbage_truck.glb", Vector3(2.4, 2.66, 7.2), 3],
+	["res://assets/models/traffic/svc_school_bus.glb", Vector3(2.6, 3.2, 9.5), 3],
+	["res://assets/models/traffic/svc_police_car.glb", Vector3(1.78, 1.67, 4.6), 3],
+	["res://assets/models/traffic/svc_tow_truck.glb", Vector3(2.19, 2.21, 6.4), 2],
+	["res://assets/models/traffic/svc_ambulance.glb", Vector3(2.2, 2.2, 5.9), 2],
+	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],
 ]
 ## Tamil Nadu buses: the green-and-yellow town bus and the white SETC coach.
 const BUS_FILES: Array[String] = [
@@ -36,7 +48,7 @@ const COW_FILES: Array[String] = [
 ]
 ## Traffic drives along -Z (Basis.looking_at). Most glTF files face +Z, so they need a half turn;
 ## the scooter already faces -Z. Checked with side renders: forgetting this drives them tail-first.
-const MODEL_FLIP: Array[bool] = [false, true, true, true, true, true]
+const MODEL_FLIP: Array[bool] = [false, true, true, true, true, true, true]
 ## Per-file flip for the cow variants (same order as COW_FILES).
 const COW_FLIP: Array[bool] = [true, true]
 ## Two-wheelers: the scooter model is fitted to this height (the collision box stays 1.3 m tall
@@ -70,6 +82,10 @@ var _horn_dir: int = 0
 var _gap_seek_timer: float = 0.0
 var _mesh: MeshInstance3D
 var _shape: CollisionShape3D
+## Footprint of what is shown now (SERVICE swaps it per variant).
+var body: Vector3 = Vector3.ONE
+var service_variant: int = -1
+var _service_models: Array[Node3D] = []
 
 func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Material) -> void:
 	manager = owner_manager
@@ -78,6 +94,7 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	_shape = $Collision as CollisionShape3D
 	_shape.disabled = true
 	var size: Vector3 = SIZES[kind]
+	body = size
 	var box: BoxShape3D = BoxShape3D.new()
 	box.size = size
 	_shape.shape = box
@@ -97,7 +114,39 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		_mesh.visible = false
 	if kind == Archetype.TWO_WHEELER:
 		_add_rider()
+	if kind == Archetype.SERVICE:
+		_mesh.visible = false
+		for v: Array in SERVICE_VARIANTS:
+			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true):
+				var holder: Node3D = get_node("Model") as Node3D
+				holder.name = "Service_%s" % str(v[0]).get_file().get_basename()
+				holder.visible = false
+				_service_models.append(holder)
+			else:
+				_service_models.append(null)
 	deactivate()
+
+## SERVICE: show one variant (weighted pick) and size the collision box to it.
+func pick_service_variant(rng: RandomNumberGenerator) -> void:
+	if archetype != Archetype.SERVICE or _service_models.is_empty():
+		return
+	var total: int = 0
+	for v: Array in SERVICE_VARIANTS:
+		total += int(v[2])
+	var roll: int = rng.randi() % total
+	var pick: int = 0
+	for i: int in SERVICE_VARIANTS.size():
+		roll -= int(SERVICE_VARIANTS[i][2])
+		if roll < 0:
+			pick = i
+			break
+	service_variant = pick
+	for i: int in _service_models.size():
+		if _service_models[i] != null:
+			_service_models[i].visible = i == pick
+	body = SERVICE_VARIANTS[pick][1] as Vector3
+	(_shape.shape as BoxShape3D).size = body
+	_shape.position.y = body.y * 0.5
 
 ## Nobody rides a scooter by remote control in Chennai: one helmeted rider per two-wheeler.
 func _add_rider() -> void:
@@ -114,6 +163,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	t = travelled
 	sub_lane = clampi(lane, 0, maxi(manager.graph.sub_lane_count(edge, dir) - 1, 0))
 	lateral = manager.graph.sub_lane_offset(edge, dir, sub_lane)
+	pick_service_variant(manager.rng)
 	var r: Vector2 = SPEED_RANGES_KMH[archetype]
 	cruise_speed_mps = randf_range(r.x, r.y) / 3.6
 	current_speed_mps = cruise_speed_mps
@@ -137,10 +187,10 @@ func deactivate() -> void:
 		reset_physics_interpolation()
 
 func half_width() -> float:
-	return SIZES[archetype].x * 0.5
+	return body.x * 0.5
 
 func half_length() -> float:
-	return SIZES[archetype].z * 0.5
+	return body.z * 0.5
 
 func reacts_to_horn(horn_tier: int) -> bool:
 	return horn_tier >= MIN_HORN_TIER[archetype]
@@ -223,7 +273,7 @@ func _apply_transform() -> void:
 func _try_shift(step: int, from_horn: bool) -> bool:
 	if step == 0:
 		return false
-	if (archetype == Archetype.MTC_BUS or archetype == Archetype.STRAY_COW) and not from_horn:
+	if (archetype == Archetype.MTC_BUS or archetype == Archetype.STRAY_COW or archetype == Archetype.SERVICE) and not from_horn:
 		return false
 	var target: int = sub_lane + step
 	if target < 0 or target >= manager.graph.sub_lane_count(edge, dir):
