@@ -52,6 +52,8 @@ RESET_PROGRESS,"Reset progress","முன்னேற்றத்தை மீ�
 RESET_AUTO,"Reset auto","ஆட்டோவை மீட்டமை"
 VIBRATION,"Vibration","அதிர்வு"
 GUIDE_ARROW,"Guide arrow","வழிகாட்டி அம்பு"
+GUIDE_RIDER,"Rider","சவாரி"
+GUIDE_DROP,"Drop","இறக்கம்"
 ON,"On","ஆன்"
 OFF,"Off","ஆஃப்"
 MAIN_MENU,"Main menu","முதன்மை மெனு"

@@ -7,7 +7,12 @@ extends Node3D
 ## after _ready.
 
 const MAX_POOL: int = 18
+## Recycle far vehicles only where the camera can't see them; on screen they stay until much
+## further away (no vanishing in front of the player).
 const RECYCLE_RADIUS_M: float = 120.0
+const RECYCLE_ON_SCREEN_M: float = 200.0
+## A vehicle may only appear in view beyond this distance (else it spawns off screen).
+const SPAWN_ON_SCREEN_MIN_M: float = 115.0
 const INDICATOR_YIELD_RANGE_M: float = 25.0
 const HONK_FILE: String = "res://assets/audio/traffic/truck_horn.ogg"
 const INDICATOR_YIELD_S: float = 3.0
@@ -45,6 +50,7 @@ var _near_miss_cooldown: Dictionary = {} # vehicle -> seconds left
 @export var tutorial_max_active: int = 4
 ## Speed of a scripted "blocker" (tutorial horn step): slow enough that the player catches it.
 const SCRIPTED_BLOCKER_KMH: float = 9.0
+const SCRIPTED_MIN_AHEAD_M: float = 45.0
 const DENSITY_UPDATE_S: float = 2.0
 var _zones: Array[Dictionary] = [] # {id, x, z, r}
 var _density_timer: float = DENSITY_UPDATE_S
@@ -118,13 +124,17 @@ func _build_greybox_graph() -> RoadGraph:
 	g.add_edge(a, b, PackedVector3Array([g.nodes[a], g.nodes[b]]), GREYBOX_WIDTH_M, 2, 0, "trunk", "Anna Salai test strip")
 	return g
 
+var _initial: bool = false
+
 func _initial_spawn() -> void:
+	_initial = true # behind the loading screen: traffic may start anywhere, in view too
 	target_active = active_count
 	if dynamic_density and graph_path != "":
 		_update_density()
 	for i: int in pool.size():
 		if i < target_active or pool[i].archetype == TrafficVehicleAI.Archetype.STRAY_COW:
 			_respawn(pool[i])
+	_initial = false
 
 ## Zone the player is in (nearest centre inside its radius), "" outside the three MVP zones.
 func zone_at(p: Vector3) -> String:
@@ -162,7 +172,7 @@ func _physics_process(delta: float) -> void:
 		if not v.active:
 			continue
 		v.tick(delta)
-		if v.active and v.global_position.distance_to(_player.global_position) > RECYCLE_RADIUS_M:
+		if v.active and not _respawn_queue.has(v) and should_recycle(v):
 			_respawn_queue.append(v)
 	_detect_near_misses(delta)
 	if dynamic_density and graph_path != "":
@@ -240,10 +250,17 @@ func place_scripted_vehicle(kind: String, ahead_m: float) -> TrafficVehicleAI:
 	if _player == null or graph == null:
 		return null
 	var want: TrafficVehicleAI.Archetype = TrafficVehicleAI.Archetype.TWO_WHEELER if kind == "two_wheeler" else TrafficVehicleAI.Archetype.HATCHBACK
+	# Never steal a vehicle the player can see (it would vanish and pop up ahead):
+	# parked first, then one out of view, an on-screen one only as a last resort.
 	var pick: TrafficVehicleAI = null
+	var pick_rank: int = 99
 	for v: TrafficVehicleAI in pool:
-		if v.archetype == want and (pick == null or (pick.active and not v.active)):
+		if v.archetype != want:
+			continue
+		var rank: int = 0 if not v.active else (1 if not ViewCheck.on_screen(get_viewport(), v.global_position + Vector3(0, 1, 0), v.half_length() + 1.0) else 2)
+		if rank < pick_rank:
 			pick = v
+			pick_rank = rank
 	if pick == null:
 		return null
 	var fwd: Vector3 = -_player.global_transform.basis.z
@@ -255,7 +272,8 @@ func place_scripted_vehicle(kind: String, ahead_m: float) -> TrafficVehicleAI:
 	var dir: int = 1 if tangent.dot(fwd) >= 0.0 else -1
 	if graph.lanes_in_dir(e, dir) <= 0:
 		dir = -dir
-	var s_ahead: float = clampf(float(here["s"]) + ahead_m * float(dir), 0.0, graph.edges[e].length)
+	# It appears in view, so not right under the player's nose: at least SCRIPTED_MIN_AHEAD_M.
+	var s_ahead: float = clampf(float(here["s"]) + maxf(ahead_m, SCRIPTED_MIN_AHEAD_M) * float(dir), 0.0, graph.edges[e].length)
 	place_vehicle(pick, e, s_ahead, dir, sub_lane_at(e, dir, _player.global_position))
 	pick.cruise_speed_mps = SCRIPTED_BLOCKER_KMH / 3.6
 	pick.current_speed_mps = pick.cruise_speed_mps
@@ -301,6 +319,15 @@ func gap_ahead(me: TrafficVehicleAI) -> float:
 		var gap: float = (o.t - o.half_length()) - (me.t + me.half_length())
 		if gap > -0.5 and gap < best:
 			best = gap
+	# Mid-junction: whoever is already on the road we are turning into.
+	var nx: Dictionary = me.turn_next_edge()
+	if not nx.is_empty():
+		for o: TrafficVehicleAI in pool:
+			if o == me or not o.active or o.turning or o.edge != int(nx["edge"]) or o.dir != int(nx["dir"]):
+				continue
+			var gap2: float = me.turn_remaining() - me._turn_t_after + o.t - o.half_length() - me.half_length()
+			if gap2 > -0.5 and gap2 < best:
+				best = gap2
 	if _player != null:
 		var fwd: Vector3 = -me.global_transform.basis.z
 		var to_p: Vector3 = _player.global_position - me.global_position
@@ -341,12 +368,46 @@ func is_sub_lane_free(me: TrafficVehicleAI, lane: int) -> bool:
 			return false
 	return true
 
+## Far away, and either out of view or really far.
+func should_recycle(v: TrafficVehicleAI) -> bool:
+	var d: float = v.global_position.distance_to(_player.global_position)
+	if d <= RECYCLE_RADIUS_M:
+		return false
+	return d > RECYCLE_ON_SCREEN_M or not ViewCheck.on_screen(get_viewport(), v.global_position + Vector3(0, 1, 0), v.half_length() + 1.0)
+
+## Spawn spots ordered so nothing pops into view: off-screen ahead, off-screen behind, then
+## on-screen spots only when they are far away.
+func _visible_safe_candidates() -> Array[Dictionary]:
+	var heading: Vector3 = -_player.global_transform.basis.z
+	heading.y = 0.0
+	heading = heading.normalized()
+	if _initial:
+		return graph.spawn_candidates(_player.global_position, heading, SPAWN_MIN_AHEAD_M, SPAWN_MAX_AHEAD_M)
+	var all: Array[Dictionary] = graph.spawn_candidates(_player.global_position, Vector3.ZERO, SPAWN_MIN_AHEAD_M, SPAWN_MAX_AHEAD_M + 40.0)
+	var ahead_off: Array[Dictionary] = []
+	var behind_off: Array[Dictionary] = []
+	var far_on: Array[Dictionary] = []
+	for c: Dictionary in all:
+		var p: Vector3 = graph.sample(int(c["edge"]), float(c["s"]), 1)[0]
+		var to_p: Vector3 = Vector3(p.x - _player.global_position.x, 0.0, p.z - _player.global_position.z)
+		if ViewCheck.on_screen(get_viewport(), p + Vector3(0, 1, 0), 6.0):
+			if to_p.length() >= SPAWN_ON_SCREEN_MIN_M:
+				far_on.append(c)
+		elif to_p.length() <= SPAWN_MAX_AHEAD_M and to_p.normalized().dot(heading) > -0.2:
+			ahead_off.append(c)
+		else:
+			behind_off.append(c)
+	if not ahead_off.is_empty():
+		return ahead_off
+	if not far_on.is_empty():
+		return far_on
+	return behind_off
+
 func _respawn(v: TrafficVehicleAI) -> void:
 	if _player == null:
 		v.deactivate()
 		return
-	var heading: Vector3 = -_player.global_transform.basis.z
-	var candidates: Array[Dictionary] = graph.spawn_candidates(_player.global_position, heading, SPAWN_MIN_AHEAD_M, SPAWN_MAX_AHEAD_M)
+	var candidates: Array[Dictionary] = _visible_safe_candidates()
 	var is_cow: bool = v.archetype == TrafficVehicleAI.Archetype.STRAY_COW
 	if is_cow:
 		# Cattle only wander in market zones, ambling along the kerb.

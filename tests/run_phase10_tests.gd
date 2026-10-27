@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_police_service_gas(city)
 	_test_building_boards(city)
 	_test_touch_layout()
+	await _test_traffic_smooth(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -211,6 +212,62 @@ func _test_touch_layout() -> void:
 		ok = ok and left_end + 14.0 <= dash_l and b <= 128.0
 		detail += "%dx%d b=%.0f  " % [vp.x, vp.y, b]
 	_check("Touch controls fit tablets (4:3, 16:10) without overlapping", ok, detail)
+
+func _test_traffic_smooth(city: Node) -> void:
+	# Drive for 25 s with the camera on; watch every vehicle and pedestrian frame by frame.
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var pm: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
+	var auto: Node3D = city.get_node("AutoRickshaw") as Node3D
+	var prev: Dictionary = {}
+	var prev_turn: Dictionary = {}
+	var seen_prev: Dictionary = {}
+	var jumps: int = 0
+	var vanished: int = 0
+	var turns: int = 0
+	var worst: float = 0.0
+	var vp: Viewport = get_viewport()
+	var ped_prev: Dictionary = {}
+	var ped_popped: int = 0
+	var ped_vanished: int = 0
+	Input.action_press("accelerate")
+	for f: int in 1500:
+		if f == 400:
+			Input.action_release("accelerate")
+		await get_tree().physics_frame
+		for v: TrafficVehicleAI in tm.pool:
+			var was: Variant = prev.get(v)
+			var on_now: bool = v.active and ViewCheck.on_screen(vp, v.global_position + Vector3(0, 1, 0), 0.0)
+			if v.turning:
+				turns += 1
+			if was != null and v.active:
+				var step: float = (v.global_position - (was as Vector3)).length()
+				var allowed: float = v.current_speed_mps / 60.0 * 1.6 + 0.08
+				if step > 5.0:
+					# Recycled: it must not have been on screen and close.
+					if bool(seen_prev.get(v, false)) and (was as Vector3).distance_to(auto.global_position) < ChennaiTrafficManager.RECYCLE_ON_SCREEN_M:
+						vanished += 1
+				elif step > allowed and v.bumped_timer <= 0.0:
+					jumps += 1
+					print("JUMP f=%d arch=%d step=%.2f speed=%.2f turning=%s edge=%d t=%.2f bumped=%.2f was_turn=%s" % [f, v.archetype, step, v.current_speed_mps, v.turning, v.edge, v.t, v.bumped_timer, str(prev_turn.get(v, false))])
+					worst = maxf(worst, step - allowed)
+			elif was != null and not v.active and bool(seen_prev.get(v, false)):
+				vanished += 1
+			prev[v] = v.global_position if v.active else null
+			prev_turn[v] = v.turning
+			seen_prev[v] = on_now
+		for w: PedestrianManager.Walker in pm.people:
+			var on_w: bool = w.active and ViewCheck.on_screen(vp, w.pos + Vector3(0, 0.9, 0), 0.0)
+			var st: Variant = ped_prev.get(w)
+			if st != null:
+				var d: float = w.pos.distance_to(auto.global_position)
+				if not bool(st[0]) and w.active and on_w and d < PedestrianManager.SPAWN_ON_SCREEN_M - 2.0:
+					ped_popped += 1 # became active in view, close by
+				if bool(st[0]) and bool(st[1]) and not w.active and (st[2] as Vector3).distance_to(auto.global_position) < PedestrianManager.DESPAWN_FAR_M - 2.0:
+					ped_vanished += 1
+			ped_prev[w] = [w.active, w.active and on_w, w.pos]
+	_check("Traffic turns through junctions on a smooth curve (no sideways jumps)", jumps == 0 and turns > 0, "%d jumps (worst +%.2f m), %d turning frames" % [jumps, worst, turns])
+	_check("No vehicle vanishes on screen", vanished == 0, "%d" % vanished)
+	_check("Pedestrians never pop in or vanish in view", ped_popped == 0 and ped_vanished == 0, "%d popped, %d vanished" % [ped_popped, ped_vanished])
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:

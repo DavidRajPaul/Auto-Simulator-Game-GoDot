@@ -14,6 +14,10 @@ const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0, 4.0, 3.5]
 const LATERAL_SPEED_MPS: float = 2.6
 const HORN_REACTION_DELAY_S: float = 0.35
 const TURN_SLOWDOWN_M: float = 12.0
+## Junctions are driven as a smooth curve from TURN_BLEND_M before the node to TURN_BLEND_M
+## after it (was: a snap from one road's lane offset to the next, a sideways jump of several
+## metres on a right-angle turn, plus an instant change of heading).
+const TURN_BLEND_M: float = 7.0
 ## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
 	"res://assets/models/traffic/two_wheeler.glb",
@@ -86,6 +90,20 @@ var _shape: CollisionShape3D
 var body: Vector3 = Vector3.ONE
 var service_variant: int = -1
 var _service_models: Array[Node3D] = []
+
+# Junction curve (cubic Hermite from the old lane to the new lane).
+var turning: bool = false
+var _turn_s: float = 0.0
+var _turn_len: float = 1.0
+var _turn_p0: Vector3
+var _turn_p1: Vector3
+var _turn_m0: Vector3
+var _turn_m1: Vector3
+var _turn_next: Dictionary = {}
+var _turn_lut: PackedFloat32Array = PackedFloat32Array()
+const TURN_LUT_N: int = 16
+var _turn_t_after: float = 0.0
+var _turn_lat_after: float = 0.0
 
 func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Material) -> void:
 	manager = owner_manager
@@ -163,6 +181,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	t = travelled
 	sub_lane = clampi(lane, 0, maxi(manager.graph.sub_lane_count(edge, dir) - 1, 0))
 	lateral = manager.graph.sub_lane_offset(edge, dir, sub_lane)
+	turning = false
 	pick_service_variant(manager.rng)
 	var r: Vector2 = SPEED_RANGES_KMH[archetype]
 	cruise_speed_mps = randf_range(r.x, r.y) / 3.6
@@ -179,6 +198,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 
 func deactivate() -> void:
 	active = false
+	turning = false
 	visible = false
 	_enable_collision_next_tick = false
 	_shape.disabled = true
@@ -247,31 +267,148 @@ func tick(delta: float) -> void:
 				_try_shift(-1, false)
 	current_speed_mps = move_toward(current_speed_mps, target_speed, 6.0 * delta)
 
-	t += current_speed_mps * delta
+	var step: float = current_speed_mps * delta
+	if turning:
+		_turn_s += step
+		t = minf(t + step, manager.graph.edges[edge].length) # followers on this road see us move on
+		if _turn_s >= _turn_len:
+			_finish_turn(_turn_s - _turn_len)
+		else:
+			_apply_turn_transform()
+			return
+	else:
+		t += step
 	var length: float = manager.graph.edges[edge].length
-	if t >= length:
-		var nxt: Dictionary = manager.graph.next_edge(edge, dir, manager.rng)
-		if nxt.is_empty():
+	if not turning and t >= length - _blend_before(length):
+		if not _start_turn():
 			manager.request_respawn(self)
 			return
-		t -= length
-		edge = int(nxt["edge"])
-		dir = int(nxt["dir"])
-		sub_lane = clampi(sub_lane, 0, maxi(manager.graph.sub_lane_count(edge, dir) - 1, 0))
+		_apply_turn_transform()
+		return
 	var target_lat: float = manager.graph.sub_lane_offset(edge, dir, sub_lane)
 	lateral = move_toward(lateral, target_lat, LATERAL_SPEED_MPS * 2.0 * delta)
 	_apply_transform()
 
-func _apply_transform() -> void:
-	var pd: Array[Vector3] = manager.graph.sample(edge, edge_param(), dir)
-	var fwd: Vector3 = pd[1]
+func _blend_before(length: float) -> float:
+	return minf(TURN_BLEND_M, length * 0.45)
+
+## Pick the next road and build the curve from here (current lane) to TURN_BLEND_M into it.
+func _start_turn() -> bool:
+	var g: RoadGraph = manager.graph
+	var nxt: Dictionary = g.next_edge(edge, dir, manager.rng)
+	if nxt.is_empty():
+		return false
+	var ne: int = int(nxt["edge"])
+	var nd: int = int(nxt["dir"])
+	var nlen: float = g.edges[ne].length
+	var after: float = minf(TURN_BLEND_M, nlen * 0.45)
+	var lane_after: int = clampi(sub_lane, 0, maxi(g.sub_lane_count(ne, nd) - 1, 0))
+	var lat_after: float = g.sub_lane_offset(ne, nd, lane_after)
+	var here: Array[Vector3] = _pose_on(edge, dir, edge_param(), lateral)
+	var e_param: float = after if nd > 0 else nlen - after
+	var there: Array[Vector3] = _pose_on(ne, nd, e_param, lat_after)
+	var chord: float = here[0].distance_to(there[0])
+	if chord < 0.05:
+		chord = 0.05
+	# A U-turn at a dead end: swing out wide instead of reversing on the spot.
+	var tangent_scale: float = chord * (1.6 if here[1].dot(there[1]) < -0.5 else 1.0)
+	_turn_p0 = here[0]
+	_turn_p1 = there[0]
+	_turn_m0 = here[1] * tangent_scale
+	_turn_m1 = there[1] * tangent_scale
+	# Arc-length table so the vehicle keeps a constant speed along the curve.
+	_turn_lut = PackedFloat32Array([0.0])
+	var last: Vector3 = _turn_p0
+	for k: int in range(1, TURN_LUT_N + 1):
+		var q: Vector3 = _hermite(float(k) / float(TURN_LUT_N))
+		_turn_lut.append(_turn_lut[k - 1] + q.distance_to(last))
+		last = q
+	_turn_len = maxf(_turn_lut[TURN_LUT_N], 0.05)
+	_turn_s = 0.0
+	_turn_next = {"edge": ne, "dir": nd, "lane": lane_after}
+	_turn_t_after = after
+	_turn_lat_after = lat_after
+	turning = true
+	return true
+
+## Metres still to drive on the curve before reaching the next road at its TURN_BLEND_M mark.
+func turn_remaining() -> float:
+	return maxf(_turn_len - _turn_s, 0.0)
+
+func turn_next_edge() -> Dictionary:
+	return _turn_next if turning else {}
+
+func _finish_turn(overshoot: float) -> void:
+	turning = false
+	edge = int(_turn_next["edge"])
+	dir = int(_turn_next["dir"])
+	sub_lane = int(_turn_next["lane"])
+	t = _turn_t_after + overshoot
+	lateral = _turn_lat_after
+	_apply_transform()
+
+func _apply_turn_transform() -> void:
+	# Distance along the curve -> curve parameter u (linear inside each table step).
+	var u: float = 1.0
+	for k: int in range(1, _turn_lut.size()):
+		if _turn_lut[k] >= _turn_s:
+			var seg: float = maxf(_turn_lut[k] - _turn_lut[k - 1], 1e-5)
+			u = (float(k - 1) + (_turn_s - _turn_lut[k - 1]) / seg) / float(TURN_LUT_N)
+			break
+	u = clampf(u, 0.0, 1.0)
+	var u2: float = u * u
+	var pos: Vector3 = _hermite(u)
+	var vel: Vector3 = (6.0 * u2 - 6.0 * u) * _turn_p0 + (3.0 * u2 - 4.0 * u + 1.0) * _turn_m0 \
+		+ (-6.0 * u2 + 6.0 * u) * _turn_p1 + (3.0 * u2 - 2.0 * u) * _turn_m1
+	vel.y = 0.0
+	if vel.length_squared() < 0.0001:
+		vel = -global_transform.basis.z
+	global_transform = Transform3D(Basis.looking_at(vel.normalized(), Vector3.UP), pos)
+
+func _hermite(u: float) -> Vector3:
+	var u2: float = u * u
+	var u3: float = u2 * u
+	return (2.0 * u3 - 3.0 * u2 + 1.0) * _turn_p0 + (u3 - 2.0 * u2 + u) * _turn_m0 \
+		+ (-2.0 * u3 + 3.0 * u2) * _turn_p1 + (u3 - u2) * _turn_m1
+
+## [position, forward] on an edge at edge parameter `s`, offset `lat` m to the left.
+func _pose_on(e: int, d: int, s: float, lat: float) -> Array[Vector3]:
+	var g: RoadGraph = manager.graph
+	var length: float = g.edges[e].length
+	var pd: Array[Vector3] = g.sample(e, s, d)
+	var fwd: Vector3 = g.sample(e, clampf(s + SMOOTH_M * float(d), 0.0, length), d)[0] - g.sample(e, clampf(s - SMOOTH_M * float(d), 0.0, length), d)[0]
+	if fwd.length_squared() < 0.0001:
+		fwd = pd[1]
+	fwd.y = 0.0
 	if fwd.length_squared() < 0.0001:
 		fwd = Vector3.FORWARD
+	fwd = fwd.normalized()
+	var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+	return [pd[0] + left * lat, fwd]
+
+## Heading is smoothed over ±SMOOTH_M along the road: at a bend in the road polyline the raw
+## segment direction flips, which made the lane offset (and the body) step sideways.
+const SMOOTH_M: float = 2.5
+
+func _apply_transform() -> void:
+	var g: RoadGraph = manager.graph
+	var length: float = g.edges[edge].length
+	var ep: float = edge_param()
+	var pd: Array[Vector3] = g.sample(edge, ep, dir)
+	var a: Vector3 = g.sample(edge, clampf(ep - SMOOTH_M * float(dir), 0.0, length), dir)[0]
+	var b: Vector3 = g.sample(edge, clampf(ep + SMOOTH_M * float(dir), 0.0, length), dir)[0]
+	var fwd: Vector3 = b - a
+	fwd.y = 0.0
+	if fwd.length_squared() < 0.0001:
+		fwd = pd[1]
+	if fwd.length_squared() < 0.0001:
+		fwd = Vector3.FORWARD
+	fwd = fwd.normalized()
 	var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
 	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), pd[0] + left * lateral)
 
 func _try_shift(step: int, from_horn: bool) -> bool:
-	if step == 0:
+	if step == 0 or turning:
 		return false
 	if (archetype == Archetype.MTC_BUS or archetype == Archetype.STRAY_COW or archetype == Archetype.SERVICE) and not from_horn:
 		return false
