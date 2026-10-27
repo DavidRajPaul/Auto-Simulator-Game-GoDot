@@ -109,6 +109,9 @@ func _ready() -> void:
 	minimap.size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
 	minimap.position = Vector2(16.0, 16.0)
 	_root.add_child(minimap)
+	SignalBus.tutorial_highlight.connect(func(id: String) -> void:
+		if id == "minimap":
+			SignalBus.tutorial_spotlight.emit(minimap.get_global_rect()))
 	_build_chips()
 	nav_banner = NavBanner.new()
 	nav_banner.name = "NavBanner"

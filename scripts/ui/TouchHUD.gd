@@ -82,6 +82,8 @@ var _status_label: Label
 var _status_timer: float = 0.0
 var _buttons: Dictionary = {} # name -> {panel, touch, label, icon, action}
 var _ride_fare: int = -1 # -1 = meter flag up (FOR HIRE)
+## Banner repeated while the engine is stopped: flooded (water) or switched off (tutorial).
+var _stall_text: String = "Engine flooded! Tap KICK"
 ## 0 handlebar drag, 1 arrow buttons (default), 2 tilt (GameState.settings.control_scheme).
 var control_scheme: int = 1
 ## finger index -> button name it is holding.
@@ -185,6 +187,11 @@ func _ready() -> void:
 		_on_indicator_blink(d, d != 0))
 	SignalBus.signalled_turn.connect(func(_d: int) -> void: _flash(tr("SIGNAL_SIR"), 1.4))
 	SignalBus.engine_restarted.connect(func() -> void: _set_button_visible("KickStart", false))
+	SignalBus.engine_switched_off.connect(func() -> void:
+		_stall_text = tr("ENGINE_OFF_KICK")
+		_flash(_stall_text, 3.0, Tone.WARN)
+		_set_button_visible("KickStart", true))
+	SignalBus.tutorial_highlight.connect(_on_tutorial_highlight)
 	SignalBus.weather_changed.connect(func(_r: bool) -> void: _refresh_wiper_visibility())
 	_set_button_visible("KickStart", false)
 	_refresh_wiper_visibility()
@@ -637,12 +644,20 @@ func _on_telemetry(data: Dictionary) -> void:
 	if data.get("is_stalled", false):
 		_set_button_visible("KickStart", true)
 		if _status_timer <= 0.0:
-			_status_label.text = "Engine flooded! Tap KICK"
+			_status_label.text = _stall_text
 			_show_banner(_status_label.text, Tone.WARN)
 
 func _on_stalled(_pos: Vector3) -> void:
+	_stall_text = "Engine flooded! Tap KICK"
 	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0, Tone.WARN)
 	_set_button_visible("KickStart", true)
+
+## Tutorial spotlight: report where the named control sits so the overlay can cut a hole for it.
+func _on_tutorial_highlight(control_id: String) -> void:
+	if not _buttons.has(control_id):
+		return # not ours (mini-map lives in PassengerHUD; "" is handled by the overlay)
+	var panel: Panel = _buttons[control_id]["panel"] as Panel
+	SignalBus.tutorial_spotlight.emit(panel.get_global_rect())
 
 func _on_gear_changed(g: int) -> void:
 	gear = g

@@ -88,6 +88,8 @@ func interstitial_block_reason(placement: String) -> String:
 		return "no_ads_purchased"
 	if not config.allowed_placements.has(placement):
 		return "placement_not_allowed"
+	if GameState.tutorial_active:
+		return "tutorial"
 	if install_play_s < config.first_session_grace_s:
 		return "first_session_grace"
 	if _speed_kmh > config.max_speed_kmh:

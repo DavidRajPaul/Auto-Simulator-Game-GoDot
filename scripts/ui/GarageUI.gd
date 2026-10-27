@@ -293,6 +293,10 @@ func open_pause() -> void:
 	var resume: Button = UIKit.button("▶  " + tr("RESUME"), UIKit.Tone.GREEN, close_modal, 30)
 	resume.custom_minimum_size = Vector2(0, 84)
 	_modal_body.add_child(resume)
+	if GameState.tutorial_active:
+		_modal_body.add_child(UIKit.button(tr("SKIP_TUTORIAL"), UIKit.Tone.ORANGE, func() -> void:
+			close_modal()
+			SignalBus.tutorial_skip_requested.emit(), 22))
 	_render_progress()
 	_render_settings()
 	var exit: Button = UIKit.button(tr("MAIN_MENU"), UIKit.Tone.RED, func() -> void:
@@ -369,6 +373,10 @@ func _render_settings() -> void:
 	slider.custom_minimum_size = Vector2(300, 40)
 	slider.value_changed.connect(func(v: float) -> void: GameState.set_setting("master_volume", v))
 	_modal_body.add_child(slider)
+	if not GameState.tutorial_active:
+		_row(tr("REPLAY_TUTORIAL"), tr("REPLAY"), true, func() -> void:
+			close_modal()
+			SignalBus.tutorial_replay_requested.emit())
 
 func _refresh_texts() -> void:
 	_clock.text = "%s %d · %s" % [tr("DAY"), GameState.day, GameState.clock_text()]

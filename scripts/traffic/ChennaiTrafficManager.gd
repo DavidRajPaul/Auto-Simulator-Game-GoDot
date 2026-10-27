@@ -41,6 +41,10 @@ var _cow_retry_timer: float = 0.0
 var _near_miss_cooldown: Dictionary = {} # vehicle -> seconds left
 ## Time-of-day traffic (TrafficDensity). Off = fixed `active_count` (greybox + old tests).
 @export var dynamic_density: bool = true
+## Traffic cap while the guided first ride runs (TutorialScript.max_traffic overrides it).
+@export var tutorial_max_active: int = 4
+## Speed of a scripted "blocker" (tutorial horn step): slow enough that the player catches it.
+const SCRIPTED_BLOCKER_KMH: float = 9.0
 const DENSITY_UPDATE_S: float = 2.0
 var _zones: Array[Dictionary] = [] # {id, x, z, r}
 var _density_timer: float = DENSITY_UPDATE_S
@@ -86,6 +90,7 @@ func _ready() -> void:
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
 	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
+	SignalBus.scripted_traffic_requested.connect(place_scripted_vehicle)
 	_initial_spawn.call_deferred()
 
 func _load_market_zones() -> void:
@@ -138,6 +143,8 @@ func _update_density() -> void:
 	zone_id = zone_at(_player.global_position) if _player != null else ""
 	density = TrafficDensity.density(minute, weekday, zone_id)
 	target_active = mini(TrafficDensity.active_vehicles(density, MAX_POOL), MAX_POOL)
+	if GameState.tutorial_active:
+		target_active = mini(target_active, tutorial_max_active) # first ride: quiet streets
 	speed_factor = TrafficDensity.speed_factor(minute, weekday, density)
 	SignalBus.traffic_density_changed.emit(density, zone_id, TrafficDensity.is_peak(minute, weekday))
 
@@ -226,6 +233,33 @@ func honk_at(v: TrafficVehicleAI) -> void:
 func request_respawn(v: TrafficVehicleAI) -> void:
 	if not _respawn_queue.has(v):
 		_respawn_queue.append(v)
+
+## Tutorial / mission hook: put a slow vehicle of `kind` in the player's lane, `ahead_m` metres
+## in front, travelling the same way. Reuses a pool vehicle (no instantiate). Returns it or null.
+func place_scripted_vehicle(kind: String, ahead_m: float) -> TrafficVehicleAI:
+	if _player == null or graph == null:
+		return null
+	var want: TrafficVehicleAI.Archetype = TrafficVehicleAI.Archetype.TWO_WHEELER if kind == "two_wheeler" else TrafficVehicleAI.Archetype.HATCHBACK
+	var pick: TrafficVehicleAI = null
+	for v: TrafficVehicleAI in pool:
+		if v.archetype == want and (pick == null or (pick.active and not v.active)):
+			pick = v
+	if pick == null:
+		return null
+	var fwd: Vector3 = -_player.global_transform.basis.z
+	var here: Dictionary = graph.closest_point(_player.global_position)
+	if int(here["edge"]) < 0:
+		return null
+	var e: int = int(here["edge"])
+	var tangent: Vector3 = graph.sample(e, float(here["s"]), 1)[1]
+	var dir: int = 1 if tangent.dot(fwd) >= 0.0 else -1
+	if graph.lanes_in_dir(e, dir) <= 0:
+		dir = -dir
+	var s_ahead: float = clampf(float(here["s"]) + ahead_m * float(dir), 0.0, graph.edges[e].length)
+	place_vehicle(pick, e, s_ahead, dir, sub_lane_at(e, dir, _player.global_position))
+	pick.cruise_speed_mps = SCRIPTED_BLOCKER_KMH / 3.6
+	pick.current_speed_mps = pick.cruise_speed_mps
+	return pick
 
 func active_vehicles() -> Array[TrafficVehicleAI]:
 	var out: Array[TrafficVehicleAI] = []

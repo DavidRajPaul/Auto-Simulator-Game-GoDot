@@ -20,6 +20,8 @@
 [ext_resource type="Script" path="res://scripts/world/StreetSigns.gd" id="18"]
 [ext_resource type="Script" path="res://scripts/world/PedestrianManager.gd" id="19"]
 [ext_resource type="Script" path="res://scripts/world/TrafficPolice.gd" id="20"]
+[ext_resource type="Script" path="res://scripts/tutorial/TutorialDirector.gd" id="21"]
+[ext_resource type="Script" path="res://scripts/ui/TutorialOverlay.gd" id="22"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -99,6 +101,9 @@ script = ExtResource("13")
 [node name="SavariManager" type="Node3D" parent="."]
 script = ExtResource("8")
 
+[node name="TutorialDirector" type="Node3D" parent="."]
+script = ExtResource("21")
+
 [node name="PedestrianManager" type="Node3D" parent="."]
 script = ExtResource("19")
 
@@ -114,6 +119,9 @@ script = ExtResource("9")
 [node name="TouchHUD" parent="." instance=ExtResource("5")]
 
 [node name="PassengerHUD" parent="." instance=ExtResource("10")]
+
+[node name="TutorialOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("22")
 
 [node name="DebugOverlay" type="CanvasLayer" parent="."]
 script = ExtResource("7")

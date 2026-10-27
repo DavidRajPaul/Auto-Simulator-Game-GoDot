@@ -168,6 +168,13 @@ func open_settings() -> void:
 		func(i: int) -> void:
 			GameState.set_setting("graphics", i)
 			open_settings())
+	# Replay the guided first ride next time the city loads.
+	var done: bool = bool(s.get("first_ride_done", false))
+	_panel_body.add_child(UIKit.button(tr("REPLAY_TUTORIAL") if done else tr("TUTORIAL_QUEUED"),
+		UIKit.Tone.ORANGE if done else UIKit.Tone.PURPLE, func() -> void:
+			GameState.set_setting("first_ride_step", 0)
+			GameState.set_setting("first_ride_done", false)
+			open_settings(), 22))
 
 func open_credits() -> void:
 	_open_panel(tr("CREDITS"))
