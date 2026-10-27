@@ -9,18 +9,21 @@ ORIGIN = ((BBOX[0] + BBOX[2]) / 2.0, (BBOX[1] + BBOX[3]) / 2.0)
 MAP_SCALE = 1.0
 CHUNK_SIZE_M = 250.0
 
-# Zone cores (real lat/lon, radius in real metres). Residential streets are only kept inside these.
+# Zone cores (real lat/lon, radius in real metres). Density is the deterministic
+# probability of adding a procedural infill plot, NOT a multiplier on real OSM
+# footprints. Preserve Marina's open beach character and avoid 100% citywide.
+# Raster checks in build_world.py still reject roads, walks and water.
 ZONES = {
     "marina":     {"name": "Marina Beach & Kamarajar Salai", "center": (13.0520, 80.2800), "radius": 900.0,
                    "bld_height": (5.0, 14.0), "bld_density": 0.45},
     "mylapore":   {"name": "Mylapore Heritage Tank", "center": (13.0335, 80.2690), "radius": 700.0,
-                   "bld_height": (5.0, 11.0), "bld_density": 0.95},
+                   "bld_height": (5.0, 11.0), "bld_density": 0.98},
     "anna_salai": {"name": "Anna Salai (Mount Road)", "center": (13.0590, 80.2560), "radius": 900.0,
-                   "bld_height": (10.0, 34.0), "bld_density": 0.85},
+                   "bld_height": (10.0, 34.0), "bld_density": 0.95},
     "t_nagar":    {"name": "T. Nagar Usman Road", "center": (13.0410, 80.2340), "radius": 800.0,
                    "bld_height": (9.0, 26.0), "bld_density": 1.0},
 }
-DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.6}
+DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.72}
 
 # Real-world landmark positions (approximate, hand-checked against OSM). Placeholder shapes in Phase 2,
 # replaced with low-poly GLTF hero models in Phase 5.
