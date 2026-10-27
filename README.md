@@ -290,6 +290,16 @@ Asset sources with exact download links and licences: **[docs/ASSETS.md](docs/AS
 
 **Lessons:** Jolt clips `WorldBoundaryShape3D` to 2 km by default, so on the 7 km map the auto fell through the ground away from the origin; `project.godot` now sets it to 20 km. osm2streets' 540k lane-arrow polygons were too heavy as geometry and are left for decals.
 
+### First-ride tutorial (missions/tutorial/damage plan, step 2) ✅ code complete *(Oct 2026)*
+
+A new driver is walked through one real ride by **Murugan Anna** of the Mylapore stand: kick-start → pull out → stop on a painted STOP line → indicate → honk a scooter out of the lane → pick up a scripted IT commuter → haggle (she always agrees, no 5 s timeout) → follow the GPS → drop off (+₹100 first-savari bonus, paid once) → free roam. Each step waits for the player to actually do it and re-nudges if they are stuck.
+
+* Data-driven: `data/tutorial/first_ride.tres` (`TutorialScript` of `TutorialStep`s), run by `scripts/tutorial/TutorialDirector.gd`; UI in `scripts/ui/TutorialOverlay.gd` (mentor card + spotlight). Strings EN + Tamil in `translations/ui.csv`; voice files optional per step (subtitles until recorded).
+* While it runs (`GameState.tutorial_active`): no interstitials, no fuel burn, ≤ 4 traffic vehicles, no random riders, crashes floor at 80 % condition.
+* Pause menu **Skip tutorial**; Settings (pause and main menu) **Replay tutorial**; progress saved per step, ride steps resume at the pick-up. Old saves with a finished ride skip it.
+* Analytics hook: `SignalBus.tutorial_step_completed(step_id, seconds)`. Replaces the old 5 text hints in `ComfortAssist`.
+* Tests: phase 11 suite, 47/47 (a headless bot plays every step). Remaining: mentor portrait art and Tamil/English voice lines; play-test gate (5 first-time players, median < 5 min).
+
 **MVP exit gate:** feature-complete loop; `.aab` < 85 MB; 60 FPS sustained 20 min without thermal drop below 45 FPS; zero known crashers.
 
 ---

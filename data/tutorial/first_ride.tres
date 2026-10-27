@@ -1,0 +1,124 @@
+[gd_resource type="Resource" script_class="TutorialScript" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://data/tutorial/TutorialScript.gd" id="1"]
+[ext_resource type="Script" path="res://data/tutorial/TutorialStep.gd" id="2"]
+
+[sub_resource type="Resource" id="step_0"]
+script = ExtResource("2")
+id = "kick_start"
+line_key = "TUT_KICK"
+highlight = "KickStart"
+complete_on = "engine_restarted"
+params = {}
+hint_key = "TUT_KICK_HINT"
+hint_after_s = 10.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_1"]
+script = ExtResource("2")
+id = "pull_out"
+line_key = "TUT_PULL_OUT"
+highlight = "Accelerate"
+complete_on = "speed"
+params = {"kmh": 15.0}
+hint_key = "TUT_PULL_OUT_HINT"
+hint_after_s = 10.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_2"]
+script = ExtResource("2")
+id = "steer_brake"
+line_key = "TUT_STOP_LINE"
+highlight = "Brake"
+complete_on = "stop_marker"
+params = {"ahead_m": 70.0, "radius_m": 3.0}
+hint_key = "TUT_STOP_LINE_HINT"
+hint_after_s = 20.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_3"]
+script = ExtResource("2")
+id = "indicate"
+line_key = "TUT_INDICATE"
+highlight = "IndicatorLeft"
+complete_on = "signalled_turn"
+params = {"fallback_s": 45.0}
+hint_key = "TUT_INDICATE_HINT"
+hint_after_s = 18.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_4"]
+script = ExtResource("2")
+id = "horn"
+line_key = "TUT_HORN"
+highlight = "Horn"
+complete_on = "horn"
+params = {"spawn": "two_wheeler", "ahead_m": 22.0}
+hint_key = "TUT_HORN_HINT"
+hint_after_s = 8.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_5"]
+script = ExtResource("2")
+id = "pick_up"
+line_key = "TUT_PICK_UP"
+highlight = "Brake"
+complete_on = "haggle_started"
+params = {"ahead_m": 70.0, "archetype": "it_commuter", "trip_min_m": 500.0, "trip_max_m": 750.0}
+hint_key = "TUT_PICK_UP_HINT"
+hint_after_s = 20.0
+resume_to = -1
+
+[sub_resource type="Resource" id="step_6"]
+script = ExtResource("2")
+id = "haggle"
+line_key = "TUT_HAGGLE"
+highlight = ""
+complete_on = "haggle_accepted"
+params = {}
+hint_key = "TUT_HAGGLE_HINT"
+hint_after_s = 12.0
+resume_to = 5
+
+[sub_resource type="Resource" id="step_7"]
+script = ExtResource("2")
+id = "follow_gps"
+line_key = "TUT_GPS"
+highlight = "minimap"
+complete_on = "near_destination"
+params = {"remaining_m": 120.0}
+hint_key = "TUT_GPS_HINT"
+hint_after_s = 30.0
+resume_to = 5
+
+[sub_resource type="Resource" id="step_8"]
+script = ExtResource("2")
+id = "drop_off"
+line_key = "TUT_DROP_OFF"
+highlight = "Brake"
+complete_on = "ride_completed"
+params = {}
+hint_key = "TUT_DROP_OFF_HINT"
+hint_after_s = 15.0
+resume_to = 5
+
+[sub_resource type="Resource" id="step_9"]
+script = ExtResource("2")
+id = "free_roam"
+line_key = "TUT_FREE_ROAM"
+highlight = "minimap"
+complete_on = "timer"
+params = {"seconds": 7.0}
+hint_key = ""
+hint_after_s = 0.0
+resume_to = -1
+
+[resource]
+script = ExtResource("1")
+id = "first_ride"
+mentor_name_key = "TUT_MENTOR"
+steps = Array[ExtResource("2")]([SubResource("step_0"), SubResource("step_1"), SubResource("step_2"), SubResource("step_3"), SubResource("step_4"), SubResource("step_5"), SubResource("step_6"), SubResource("step_7"), SubResource("step_8"), SubResource("step_9")])
+completion_bonus_inr = 100
+completion_bonus_id = "first_savari"
+max_traffic = 4
+min_condition = 80.0

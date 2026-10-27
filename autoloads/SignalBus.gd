@@ -134,3 +134,30 @@ signal rewarded_ad_completed(placement: String, context: Dictionary)
 signal rewarded_ad_failed(placement: String, reason: String)
 signal interstitial_closed(placement: String)
 signal ad_state_changed(info: Dictionary)
+
+# --- First-ride tutorial (Plan Phase 2 · suite phase 11) --------------------------------------
+## A step began. info: {index, count, id, line, mentor, highlight, hint}.
+signal tutorial_step_started(info: Dictionary)
+## Analytics hook (Firebase later): how long the player took on each step.
+signal tutorial_step_completed(step_id: String, seconds: float)
+## Re-show the current line with its nudge (player is stuck).
+signal tutorial_hint(text: String)
+## The tutorial ended (skipped = true when the player skipped it).
+signal tutorial_finished(skipped: bool)
+## Spotlight a TouchHUD control ("" clears it).
+signal tutorial_highlight(control_id: String)
+## The HUD that owns the highlighted control answers with its screen rect (Rect2() = none).
+signal tutorial_spotlight(rect: Rect2)
+## Pause menu "Skip tutorial" / Settings "Replay tutorial".
+signal tutorial_skip_requested()
+signal tutorial_replay_requested()
+## Scripted world for guided rides and missions.
+## Switch the engine off so the player has to kick-start it.
+signal engine_switch_off_requested()
+## Engine stopped for a reason other than water (shows the KICK button).
+signal engine_switched_off()
+## Place a waiting rider: {near: Vector3, archetype: String, trip_min_m, trip_max_m}. Always
+## accepts the deal, never times out, rides to a fixed destination.
+signal scripted_hail_requested(info: Dictionary)
+## Put a slow vehicle of `kind` ("two_wheeler") in the player's lane `ahead_m` metres ahead.
+signal scripted_traffic_requested(kind: String, ahead_m: float)

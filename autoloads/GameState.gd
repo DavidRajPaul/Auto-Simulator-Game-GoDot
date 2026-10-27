@@ -84,7 +84,12 @@ var shift_running: bool = true
 var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 
 var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
-	"vibration": true, "guidance_arrow": true, "tutorial_step": 0, "auto_reverse": true}
+	"vibration": true, "guidance_arrow": true, "first_ride_step": 0, "first_ride_done": false, "auto_reverse": true}
+
+## First-ride tutorial running (TutorialDirector sets it). While true: no interstitials, no fuel
+## burn, thin traffic, no random riders, and crashes cannot wear the auto below tutorial_min_condition.
+var tutorial_active: bool = false
+var tutorial_min_condition: float = 0.0
 
 ## Saving is disabled for test runs so suites never read or clobber a real profile.
 var persistence_enabled: bool = true
@@ -439,7 +444,8 @@ func fuel_cost_to_fill() -> int:
 	return ceili(maxf(0.0, s.fuel_capacity - maxf(fuel_level, 0.0)) * s.fuel_price_inr)
 
 func _on_collision(impulse: float) -> void:
-	condition = maxf(0.0, condition - clampf(impulse * 1.2, 0.5, 15.0))
+	var floor_c: float = minf(tutorial_min_condition, condition) if tutorial_active else 0.0
+	condition = maxf(floor_c, condition - clampf(impulse * 1.2, 0.5, 15.0))
 	SignalBus.condition_changed.emit(condition)
 	if condition < 40.0 and condition + clampf(impulse * 1.2, 0.5, 15.0) >= 40.0:
 		_loadout_changed() # crossed into "worn out"
@@ -583,6 +589,11 @@ func from_dict(d: Dictionary) -> void:
 	var s: Dictionary = d.get("settings", {})
 	for k: String in s:
 		settings[k] = s[k]
+	# Saves from before the guided first ride: a driver who already earned a fare skips it.
+	if not d.is_empty() and not s.has("first_ride_done"):
+		settings["first_ride_done"] = completed_savaris > 0
+		settings["first_ride_step"] = 0
+	settings.erase("tutorial_step") # old 5-hint system (ComfortAssist), replaced by TutorialDirector
 	# Controls v2 (steer buttons + pedals) became the default; move old saves onto it once.
 	if not bool(s.get("controls_v2", false)):
 		settings["control_scheme"] = 1
@@ -631,7 +642,8 @@ func has_save() -> bool:
 func new_career() -> void:
 	var keep: Dictionary = settings.duplicate()
 	reset_profile()
-	keep["tutorial_step"] = 0
+	keep["first_ride_step"] = 0
+	keep["first_ride_done"] = false
 	settings = keep
 	day = 1
 	shift_minute = SHIFT_START_MIN

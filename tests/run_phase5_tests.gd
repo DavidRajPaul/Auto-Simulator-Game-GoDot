@@ -93,14 +93,11 @@ func _test_chunk_meshes(world: WorldChunkStreamer) -> void:
 # --- Comfort pack ------------------------------------------------------------------------------
 
 func _test_hints_and_arrow(main: Node, auto: AutoRickshawController) -> void:
-	GameState.settings["tutorial_step"] = 0
-	_events.erase("hint_requested")
-	await _physics(120)
-	_check("First-run hint explains driving", _events.has("hint_requested") and str(_events["hint_requested"]).contains("ACCEL"))
+	# First-run guidance is the guided first ride now (TutorialDirector, phase 11 suite).
+	_check("City has the first-ride tutorial", main.get_node_or_null("TutorialDirector") is TutorialDirector)
 	Input.action_press("accelerate")
 	await _physics(240)
 	Input.action_release("accelerate")
-	_check("Driving off advances the tutorial", int(GameState.settings["tutorial_step"]) >= 1)
 	var savari: SavariManager = main.get_node("SavariManager") as SavariManager
 	await _physics(90)
 	var assist: ComfortAssist = main.get_node("ComfortAssist") as ComfortAssist
@@ -233,7 +230,7 @@ func _test_menu() -> void:
 	menu.queue_free()
 	await _frames(2)
 	GameState.new_career()
-	_check("New career resets money but keeps settings", GameState.wallet_inr == 500 and str(GameState.settings["language"]) == "ta" and int(GameState.settings["tutorial_step"]) == 0)
+	_check("New career resets money but keeps settings", GameState.wallet_inr == 500 and str(GameState.settings["language"]) == "ta" and int(GameState.settings["first_ride_step"]) == 0 and not bool(GameState.settings["first_ride_done"]))
 	GameState.set_setting("language", "en")
 	GameState.shift_running = true
 

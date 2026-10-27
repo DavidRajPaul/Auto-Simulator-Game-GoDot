@@ -72,7 +72,8 @@ res://
 │   │   ├── MeshKit.gd               # Procedural low-poly modelling helpers (vertex colours)
 │   │   ├── AutoRickshawModel.gd     # Bajaj RE body, 3 surfaces; paint from loadout
 │   │   ├── WheelModel.gd            # Tyre/hub (+ front fork & mudguard)
-│   │   └── ComfortAssist.gd         # Flip/stuck recovery, guidance arrow, first-run hints, haptics
+│   │   └── ComfortAssist.gd         # Flip/stuck recovery, guidance arrow, haptics
+│   ├── tutorial/TutorialDirector.gd  # Guided first ride (data/tutorial/first_ride.tres): step machine, STOP line, scripted world
 │   ├── progression/DriverProgress.gd  # Driver Level 1–20, XP, unlocks, 3 daily shift goals
 │   ├── passengers/
 │   │   ├── SavariManager.gd         # Ride loop: hails → 5 s haggle → GPS ride → payout
@@ -103,6 +104,7 @@ res://
 │       ├── PassengerHUD.gd          # Haggle card, passenger card, fare screen, wallet
 │       ├── MiniMap.gd               # Heading-up circular mini-map
 │       ├── GarageUI.gd              # Service prompts, clock, pause/settings, garage, shift summary
+│       ├── TutorialOverlay.gd       # Mentor subtitle card + spotlight on the control to press
 │       └── DebugOverlay.gd          # FPS / draw calls, debug builds only
 └── tests/
     ├── run_phase1_tests.gd          # Headless verification suite (Node script)
@@ -113,6 +115,7 @@ res://
     ├── run_phase5_tests.gd/.tscn    # 1:1 world, comfort pack, day/night, monsoon, kick rhythm, menu, back button
     ├── run_phase6_tests.gd/.tscn    # Gears, indicators, give-way, driver levels, goals, facades, sounds
     ├── run_phase7_tests.gd/.tscn    # Game UI screens: kit, home, haggle, ride-complete, level-up, menus hide HUD
+    ├── run_phase11_tests.gd/.tscn   # First-ride tutorial: bot plays all 10 steps, skip, replay, resume, scripted world
     └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display); PROBE_SCENE env picks the scene
 ```
 
@@ -179,6 +182,8 @@ res://
 * Painted UI art lives in ONE atlas (`assets/ui/controls_v2.png`, `TouchHUD.ART_CELLS`); keep new button art in it so the HUD stays one 2D batch. The Stitch PNGs are flat RGB with painted checkerboards: `import_game_art.py` cuts them out, never ship the raw files.
 * Every screen builds from `UIKit` (one cached Theme, cached StyleBoxFlats, the rewards atlas). Don't hand-roll button styles; add a Tone instead. Full-screen menus emit `SignalBus.ui_modal_changed` so the HUDs hide underneath (pause dropped from 195 to 116 draws).
 * Stitch screens are layout references: they invent features (gems, races). Rebuild them in Godot with the game's real data; their hosted images (lh3.googleusercontent.com) can't be fetched here.
+* The first-ride tutorial never auto-starts in test runs (persistence off); suites call `TutorialDirector.start()`. Anything that must stay calm during it reads `GameState.tutorial_active`; scripted riders/traffic come from `SignalBus.scripted_hail_requested` / `scripted_traffic_requested`.
+* World markers (STOP line) sit at +0.1 m: road surfaces are at +0.045…+0.08, so anything lower is hidden under the road.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

@@ -22,6 +22,8 @@ const STOPPED_KMH: float = 6.0
 const HAGGLE_SECONDS: float = 5.0
 const REJECT_COOLDOWN_S: float = 10.0
 const PAYOUT_SECONDS: float = 3.0
+## Scripted (tutorial / mission) riders: plenty of time to read the card, and they always agree.
+const SCRIPTED_HAGGLE_SECONDS: float = 60.0
 ## Straight-line trip length (real metres, the map is 1 : 1): ~0.8–3 km by road, 2–5 min.
 const MIN_TRIP_M: float = 600.0
 const MAX_TRIP_M: float = 2400.0
@@ -103,6 +105,7 @@ func _ready() -> void:
 	SignalBus.player_collision.connect(_on_collision)
 	SignalBus.near_miss.connect(_on_near_miss)
 	SignalBus.road_graph_ready.connect(func(g: RoadGraph) -> void: graph = g)
+	SignalBus.scripted_hail_requested.connect(spawn_scripted_hail)
 	graph = SignalBus.current_road_graph
 	_comfort_damping = GameState.active_stats().comfort_damping
 	SignalBus.vehicle_loadout_changed.connect(func(s: VehicleStats) -> void: _comfort_damping = s.comfort_damping)
@@ -129,7 +132,10 @@ func _physics_process(delta: float) -> void:
 	_animate_hails()
 	match state:
 		State.CRUISING:
-			_maintain_hails()
+			if not GameState.tutorial_active:
+				_maintain_hails()
+			else:
+				_clear_unscripted_hails() # the guided first ride places its one rider itself
 			_check_pickup()
 		State.HAGGLING:
 			_haggle_timer -= delta
@@ -167,6 +173,56 @@ func pick_archetype(zone_id: String) -> PassengerArchetype:
 		if roll <= 0.0:
 			return archetypes[i]
 	return archetypes[archetypes.size() - 1]
+
+## Tutorial / mission rider (SignalBus.scripted_hail_requested). info: {near, archetype,
+## trip_min_m, trip_max_m}. Placed on the kerb nearest `near`, with a destination whose route
+## length falls in the trip window. Clears other waiting riders so this one is unmistakable.
+func spawn_scripted_hail(info: Dictionary) -> Dictionary:
+	if graph == null:
+		graph = SignalBus.current_road_graph
+		if graph == null:
+			return {}
+	var arch_id: String = str(info.get("archetype", "it_commuter"))
+	var a: PassengerArchetype = null
+	for x: PassengerArchetype in archetypes:
+		if x.id == arch_id:
+			a = x
+	if a == null and not archetypes.is_empty():
+		a = archetypes[0]
+	for old: Dictionary in hails.duplicate():
+		if old != _haggle_hail:
+			_remove_hail(old)
+	var pos: Vector3 = _kerb_point(info.get("near", _player_pos) as Vector3)
+	var dest: Dictionary = _scripted_destination(pos, float(info.get("trip_min_m", 500.0)), float(info.get("trip_max_m", 750.0)))
+	var h: Dictionary = spawn_hail_at(pos, a, false)
+	if h.is_empty():
+		return {}
+	h["scripted"] = true
+	h["destination"] = dest
+	return h
+
+## A road point whose driving route from `from` is within [min_m, max_m] (best effort).
+func _scripted_destination(from: Vector3, min_m: float, max_m: float) -> Dictionary:
+	var cands: Array[Dictionary] = graph.spawn_candidates(from, _player_fwd, min_m * 0.55, max_m * 0.85)
+	var best: Dictionary = {}
+	var best_err: float = INF
+	for i: int in mini(cands.size(), 10):
+		var c: Dictionary = cands[(i * 7919) % cands.size()] # deterministic spread, not rng (tests replay it)
+		var p: Vector3 = graph.sample(int(c["edge"]), float(c["s"]), 1)[0]
+		var r: Dictionary = graph.find_route(from, p)
+		if not bool(r.get("ok", false)):
+			continue
+		var length: float = float(r["length"])
+		var err: float = 0.0 if length >= min_m and length <= max_m else minf(absf(length - min_m), absf(length - max_m))
+		if err < best_err:
+			best_err = err
+			var nm: String = graph.edges[int(c["edge"])].road_name
+			best = {"name": nm if nm != "" else "Mylapore", "pos": p, "kind": "street"}
+			if err == 0.0:
+				break
+	if best.is_empty():
+		best = {"name": "Mylapore", "pos": from + _player_fwd * min_m, "kind": "street"}
+	return best
 
 ## Public so tests (and later, scripted missions) can place a hail exactly.
 func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool = false) -> Dictionary:
@@ -254,6 +310,15 @@ func _maintain_hails() -> void:
 	if not _hail_near(pos, 40.0):
 		spawn_hail_at(pos, pick_archetype(zone_at(pos)))
 
+func _clear_unscripted_hails() -> void:
+	var changed: bool = false
+	for i: int in range(hails.size() - 1, -1, -1):
+		if not bool(hails[i].get("scripted", false)):
+			_remove_hail(hails[i])
+			changed = true
+	if changed:
+		_publish_hails()
+
 func _kerb_point(p: Vector3) -> Vector3:
 	var cp: Dictionary = graph.closest_point(p)
 	if int(cp["edge"]) < 0:
@@ -274,7 +339,7 @@ func _age_hails(delta: float) -> void:
 	for i: int in range(hails.size() - 1, -1, -1):
 		var h: Dictionary = hails[i]
 		h["age"] = float(h["age"]) + delta
-		if h == _haggle_hail:
+		if h == _haggle_hail or bool(h.get("scripted", false)):
 			continue
 		var far: bool = (h["pos"] as Vector3).distance_to(_player_pos) > HAIL_DESPAWN_M
 		if far or float(h["age"]) > HAIL_LIFETIME_S:
@@ -305,7 +370,8 @@ func _check_pickup() -> void:
 
 func start_haggle(h: Dictionary) -> void:
 	var a: PassengerArchetype = h["archetype"]
-	destination = _choose_destination(a)
+	var scripted: bool = bool(h.get("scripted", false))
+	destination = h["destination"] if scripted else _choose_destination(a)
 	route = graph.find_route(_player_pos, destination["pos"])
 	if not bool(route.get("ok", false)):
 		_remove_hail(h)
@@ -313,18 +379,18 @@ func start_haggle(h: Dictionary) -> void:
 		return
 	state = State.HAGGLING
 	_haggle_hail = h
-	_haggle_timer = HAGGLE_SECONDS
+	_haggle_timer = SCRIPTED_HAGGLE_SECONDS if scripted else HAGGLE_SECONDS
 	_haggle_trip_km = float(route["length"]) / 1000.0
 	_haggle_quotes.clear()
 	var odds: Array[float] = []
 	for o: int in 3:
 		_haggle_quotes.append(FareCalculator.quote(o as FareCalculator.Offer, _haggle_trip_km, a))
-		odds.append(_odds(o, a))
+		odds.append(1.0 if scripted else _odds(o, a))
 	SignalBus.haggle_started.emit({
 		"archetype": a.id, "name": a.archetype_name, "line": a.line_hail,
 		"destination": destination["name"], "distance_km": _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM,
 		"quotes": _haggle_quotes.duplicate(), "odds": odds, "offers": FareCalculator.OFFER_NAMES,
-	}, HAGGLE_SECONDS)
+	}, _haggle_timer)
 
 func _choose_destination(a: PassengerArchetype) -> Dictionary:
 	var options: Array[Dictionary] = []
@@ -356,7 +422,9 @@ func _on_haggle_choice(offer: int) -> void:
 func _resolve_haggle(offer: int) -> void:
 	var a: PassengerArchetype = _haggle_hail["archetype"]
 	var accepted: bool = false
-	if offer >= 0:
+	if bool(_haggle_hail.get("scripted", false)):
+		accepted = offer >= 0 # the tutorial rider agrees to any fare (walks off only on timeout)
+	elif offer >= 0:
 		accepted = rng.randf() < _odds(offer, a)
 	# Greed memory: asking above meter raises the streak (more if refused); honest meter rides
 	# calm the stand down again.

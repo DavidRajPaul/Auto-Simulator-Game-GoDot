@@ -116,6 +116,7 @@ func _ready() -> void:
 		_prev_velocity = Vector3.ZERO)
 	if use_player_profile:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
+		SignalBus.engine_switch_off_requested.connect(switch_off_engine)
 	_recolour.call_deferred()
 	_build_lamps()
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void:
@@ -384,8 +385,8 @@ func _apply_stabilizer() -> void:
 func _update_fuel_and_odometer(delta: float) -> void:
 	var km: float = current_speed_kmh / 3600.0 * delta
 	odometer_km += km
-	if is_engine_stalled:
-		return
+	if is_engine_stalled or (use_player_profile and GameState.tutorial_active):
+		return # guided first ride: no fuel burn
 	var was_full: bool = fuel_level > 0.0
 	fuel_level = maxf(0.0, fuel_level - km * stats.fuel_burn_per_km)
 	if was_full and fuel_level <= 0.0:
@@ -527,6 +528,14 @@ func _lamp_mesh(lamp_name: String, centres: Array[Vector3], size: Vector3, mat: 
 	mi.visible = false
 	add_child(mi)
 	return mi
+
+## Engine off (tutorial start, later: key-off at a stand). The kick-starter brings it back.
+func switch_off_engine() -> void:
+	if is_engine_stalled:
+		return
+	is_engine_stalled = true
+	kick_start_pulls = 0
+	SignalBus.engine_switched_off.emit()
 
 func blow_horn() -> void:
 	SignalBus.horn_blasted.emit(global_position, -global_transform.basis.z, stats.horn_radius_m, stats.horn_tier)
