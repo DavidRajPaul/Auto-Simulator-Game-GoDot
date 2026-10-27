@@ -23,6 +23,8 @@ func _run() -> void:
 	_test_signs(city)
 	_test_fx(city)
 	_test_police_service_gas(city)
+	_test_building_boards(city)
+	_test_touch_layout()
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -166,6 +168,49 @@ func _test_police_service_gas(city: Node) -> void:
 	_check("Every LPG bunk is a real gas-station model with its forecourt as the pump spot", stations == 4, "%d" % stations)
 	var world: Node = city.get_node("World")
 	_check("Gas stations are in the world", world.find_children("gas_station_*", "", true, false).size() == 4)
+
+func _test_building_boards(city: Node) -> void:
+	var bb: BuildingBoards = city.get_node("BuildingBoards") as BuildingBoards
+	_check("Building name boards from OSM places", bb.spot_count() > 800, "%d" % bb.spot_count())
+	var real_public: int = 0
+	var bad_face: int = 0
+	var g: RoadGraph = SignalBus.current_road_graph
+	for i: int in range(0, bb.spot_count(), 11):
+		var s: Array = bb.spot(i)
+		var p: Vector3 = Vector3(float(s[0]), 0.0, float(s[1]))
+		var out: Vector3 = Vector3(sin(float(s[2])), 0.0, cos(float(s[2])))
+		# The board faces the street: stepping out from it gets closer to a road, not further.
+		if float(g.closest_point(p + out * 2.0)["dist"]) > float(g.closest_point(p - out * 2.0)["dist"]) + 0.6:
+			bad_face += 1
+		real_public += 1 if int(s[8]) >= 9 else 0
+	_check("Boards face the street", bad_face == 0, "%d facing away" % bad_face)
+	_check("Public places keep real names (some boards are public)", real_public > 5, "%d" % real_public)
+	var names: Dictionary = {}
+	for i: int in bb.spot_count():
+		names[str(bb.spot(i)[6]).to_lower()] = true
+	var leaked: Array = []
+	for brand: String in ["hdfc bank", "icici bank", "saravana bhavan", "pothys", "grt jewellers", "kfc", "domino's pizza"]:
+		if names.has(brand):
+			leaked.append(brand)
+	_check("Businesses carry parody names, no real brands", leaked.is_empty(), str(leaked))
+	bb._player = Vector3(bb.spot(0)[0], 0, bb.spot(0)[1])
+	bb.refresh()
+	_check("Boards pooled near the player (≤ MAX_BOARDS)", bb.active_boards() >= 1 and bb.active_boards() <= BuildingBoards.MAX_BOARDS, "%d" % bb.active_boards())
+
+func _test_touch_layout() -> void:
+	# Tablet aspect ratios: controls must not overlap each other or the dashboard.
+	var ok: bool = true
+	var detail: String = ""
+	for vp: Vector2 in [Vector2(1280, 960), Vector2(1280, 800), Vector2(1280, 720), Vector2(1560, 720)]:
+		var hud: TouchHUD = TouchHUD.new()
+		var b: float = hud.base_button_size(vp, 26.0, 26.0, 14.0)
+		hud.free()
+		var r_speed: float = clampf(b * 0.62, 48.0, 84.0)
+		var left_end: float = 26.0 + b * 2.6 + 14.0
+		var dash_l: float = vp.x * 0.5 - PassengerHUD.MINIMAP_SIZE * 0.585 - 14.0 - r_speed * 2.24
+		ok = ok and left_end + 14.0 <= dash_l and b <= 128.0
+		detail += "%dx%d b=%.0f  " % [vp.x, vp.y, b]
+	_check("Touch controls fit tablets (4:3, 16:10) without overlapping", ok, detail)
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:

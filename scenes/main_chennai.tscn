@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://scripts/world/TrafficPolice.gd" id="20"]
 [ext_resource type="Script" path="res://scripts/tutorial/TutorialDirector.gd" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/TutorialOverlay.gd" id="22"]
+[ext_resource type="Script" path="res://scripts/world/BuildingBoards.gd" id="23"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -112,6 +113,9 @@ script = ExtResource("20")
 
 [node name="StreetSigns" type="Node3D" parent="."]
 script = ExtResource("18")
+
+[node name="BuildingBoards" type="Node3D" parent="."]
+script = ExtResource("23")
 
 [node name="RouteLine" type="MeshInstance3D" parent="."]
 script = ExtResource("9")
