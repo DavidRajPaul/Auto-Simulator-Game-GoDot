@@ -60,9 +60,10 @@ EXTRA = [
     {"id": "police_f_khaki", "src": "female_police_officer_in_multiple_uniforms/scene.gltf", "out": "people", "under": "Female_002_1", "height_m": 1.62, "budget": 3000, "atlas": 512, "credit": POLICE_F},
     {"id": "police_m_ips", "src": "indian_ipsofficer/scene.gltf", "out": "people", "height_m": 1.76, "budget": 4000, "atlas": 512, "paint": "police_khaki", "scan": True, "no_cluster": True,
      "credit": '"Indian ipsOfficer" by @MgsGamer5 (Sketchfab), CC BY 4.0 — uniform painted (texture missing from the upload)'},
-    # LPG autogas station: brand logo removed, frontage scaled to a city lot.
-    {"id": "gas_station", "src": "gas_station/scene.gltf", "out": "city", "drop": ["total-3-logo"], "size_m": 34.0, "budget": 9000, "atlas": 1024,
-     "credit": '"GAS STATION" by Karim.Fares (Sketchfab), CC BY 4.0, brand logo removed'},
+    # LPG autogas station, frontage scaled to a city lot. The real brand's logo texture is redrawn
+    # first as the fictional "NAMMA GAS" (tools/art/make_station_brand.py; original kept as .orig.png).
+    {"id": "gas_station", "src": "gas_station/scene.gltf", "out": "city", "size_m": 34.0, "budget": 9000, "atlas": 1024,
+     "credit": '"GAS STATION" by Karim.Fares (Sketchfab), CC BY 4.0, rebranded as the fictional NAMMA GAS'},
 ]
 
 
