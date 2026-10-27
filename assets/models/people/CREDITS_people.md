@@ -8,6 +8,6 @@
 | `assets/models/people/woman_saree_green.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
 | `assets/models/people/woman_saree_maroon.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
 | `assets/models/people/woman_modern.glb` | modern_indian_woman | "Modern Indian Woman" by Pixel_Monster (Sketchfab), CC BY 4.0 |
-| `assets/models/people/man_casual.glb` | chennai_man_rpm | "Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 |
+| `assets/models/people/man_casual.glb` | chennai_man_rpm | "Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character |
 | `assets/models/people/girl_churidar.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_pavadai.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |

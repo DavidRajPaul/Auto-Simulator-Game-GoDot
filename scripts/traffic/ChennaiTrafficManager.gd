@@ -16,8 +16,8 @@ const SPAWN_MAX_AHEAD_M: float = 110.0
 const GREYBOX_LENGTH_M: float = 3000.0
 const GREYBOX_WIDTH_M: float = 13.2
 ## Mix for TWO_WHEELER, HATCHBACK, SHARE_AUTO, MTC_BUS, STRAY_COW (Chennai: lots of two-wheelers).
-const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 0]
-const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84), Color(0.9, 0.9, 0.92)]
+const ARCHETYPE_MIX: Array[int] = [0, 0, 0, 0, 0, 6, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 0]
+const ARCHETYPE_COLOURS: Array[Color] = [Color(0.15, 0.25, 0.75), Color(0.85, 0.85, 0.85), Color(0.2, 0.6, 0.25), Color(0.25, 0.45, 0.85), Color(0.93, 0.9, 0.84), Color(0.9, 0.9, 0.92), Color(0.95, 0.95, 0.95)]
 ## Zones (manifest ids) where stray cattle wander onto the road.
 const MARKET_ZONES: PackedStringArray = ["mylapore", "t_nagar"]
 

@@ -127,6 +127,33 @@ def free(cx, cz, yaw, hx, hz, bgrid, sgrid, water, road_gap=3.0) -> bool:
     return True
 
 
+def clear_buildings(manifest, cx, cz, yaw, hx, hz) -> int:
+    """Remove generated buildings overlapping a rotated rectangle from the chunk files."""
+    c, s = math.cos(-yaw), math.sin(-yaw)
+
+    def inside(x, z):
+        lx = (x - cx) * c + (z - cz) * s
+        lz = -(x - cx) * s + (z - cz) * c
+        return abs(lx) < hx and abs(lz) < hz
+    removed = 0
+    corners = rect_corners(cx, cz, yaw, hx, hz)
+    for ch in manifest["chunks"]:
+        path = WORLD / "chunks" / f"c_{ch[0]}_{ch[1]}.json"
+        d = json.loads(path.read_text())
+        keep = []
+        for b in d.get("blds", []):
+            pts = [(b["p"][i], b["p"][i + 1]) for i in range(0, len(b["p"]), 2)]
+            hit = any(inside(x, z) for x, z in pts) or any(point_in(x, z, pts) for x, z in corners)
+            if hit:
+                removed += 1
+            else:
+                keep.append(b)
+        if len(keep) != len(d.get("blds", [])):
+            d["blds"] = keep
+            path.write_text(json.dumps(d, separators=(",", ":")))
+    return removed
+
+
 def main() -> int:
     manifest, blds, segs, areas = load()
     bgrid = Grid(blds, lambda b: (b[0], b[1], b[2], b[3]))
@@ -187,6 +214,69 @@ def main() -> int:
                     props.append({"model": "slum_cluster", "x": round(px, 1), "z": round(pz, 1), "yaw": round(yaw, 3)})
                     placed.append((px, pz))
                     break
+    # LPG autogas stations: one per LPG service point, forecourt (model -Z side, with the sign
+    # tower) facing the road the bunk is on, set just back from the kerb on a free lot nearby.
+    if "gas_station" in meta:
+        gsz = meta["gas_station"]["size_m"]
+        ghx, ghz = gsz[0] * 0.5, gsz[2] * 0.5
+        for sv in manifest.get("services", []):
+            if sv["kind"] != "lpg":
+                continue
+            rx, rz = float(sv.get("road_x", sv["x"])), float(sv.get("road_z", sv["z"]))
+            best = None
+            for sg in sgrid.near(rx - 30, rz - 30, rx + 30, rz + 30):
+                d = seg_dist(rx, rz, sg)
+                if best is None or d < best[0]:
+                    best = (d, sg)
+            if best is None:
+                continue
+            ax, az, bx, bz, hw = best[1]
+            L = math.hypot(bx - ax, bz - az) or 1.0
+            dx, dz = (bx - ax) / L, (bz - az) / L
+            done = False
+            # Full size first; dense bazaars (T. Nagar) get the compact forecourt.
+            for scale in (1.0, 0.8, 0.65):
+                hx2, hz2 = ghx * scale, ghz * scale
+                for k in range(0, 31):
+                    slide = (k // 2) * 6.0 * (1 if k % 2 == 0 else -1)
+                    for side in (1.0, -1.0):
+                        nx, nz = -dz * side, dx * side
+                        off = hw + 2.0 + hz2
+                        px, pz = rx + dx * slide + nx * off, rz + dz * slide + nz * off
+                        yaw = math.atan2(nx, nz)  # local -Z (forecourt) faces the road
+                        if clear_of_marks(px, pz, 30.0) and free(px, pz, yaw, hx2, hz2, bgrid, sgrid, water, 0.5):
+                            fx, fz = px - nx * hz2 * 0.45, pz - nz * hz2 * 0.45
+                            props.append({"model": "gas_station", "x": round(px, 1), "z": round(pz, 1), "yaw": round(yaw, 3),
+                                          "scale": scale, "service": sv["id"], "fx": round(fx, 1), "fz": round(fz, 1)})
+                            done = True
+                            break
+                    if done:
+                        break
+                if done:
+                    break
+            if not done:
+                # Dense bazaar: no empty lot. Take the plot like a real bunk would: compact station
+                # on the frontage, generated buildings under it removed from the chunk data.
+                for k in range(0, 31):
+                    slide = (k // 2) * 6.0 * (1 if k % 2 == 0 else -1)
+                    for side in (1.0, -1.0):
+                        nx, nz = -dz * side, dx * side
+                        hx2, hz2 = ghx * 0.65, ghz * 0.65
+                        off = hw + 2.0 + hz2
+                        px, pz = rx + dx * slide + nx * off, rz + dz * slide + nz * off
+                        yaw = math.atan2(nx, nz)
+                        if clear_of_marks(px, pz, 30.0) and free(px, pz, yaw, hx2, hz2, Grid([], lambda b: b), sgrid, water, 0.5):
+                            fx, fz = px - nx * hz2 * 0.45, pz - nz * hz2 * 0.45
+                            props.append({"model": "gas_station", "x": round(px, 1), "z": round(pz, 1), "yaw": round(yaw, 3),
+                                          "scale": 0.65, "service": sv["id"], "fx": round(fx, 1), "fz": round(fz, 1)})
+                            cleared = clear_buildings(manifest, px, pz, yaw, hx2 + 1.0, hz2 + 1.0)
+                            print(f"  gas_station at {sv['id']}: compact, {cleared} buildings cleared for the lot")
+                            done = True
+                            break
+                    if done:
+                        break
+            if not done:
+                print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
         print(p)

@@ -312,7 +312,7 @@ func _test_player_model(auto: AutoRickshawController) -> void:
 	_check("Player auto uses the real Chennai auto model in stock yellow", model.uses_real_model and model.real_body != null and not model.body_mesh.visible)
 	_check("…and hides the procedural wheels (the model has its own)", not (auto.get_node("FrontWheelMesh") as Node3D).visible)
 	_check("Traffic models face their direction of travel (glTF +Z files are turned)",
-		TrafficVehicleAI.MODEL_FLIP == [false, true, true, true, true, true] and TrafficVehicleAI.COW_FLIP == [true, true] and TrafficVehicleAI.BUS_FLIP)
+		TrafficVehicleAI.MODEL_FLIP == [false, true, true, true, true, true, true] and TrafficVehicleAI.COW_FLIP == [true, true] and TrafficVehicleAI.BUS_FLIP)
 
 # --- Building skins ----------------------------------------------------------------------------
 

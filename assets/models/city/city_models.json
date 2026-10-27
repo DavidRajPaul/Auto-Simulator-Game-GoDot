@@ -7,6 +7,15 @@
    190.0
   ]
  },
+ "gas_station": {
+  "credit": "\"GAS STATION\" by Karim.Fares (Sketchfab), CC BY 4.0, brand logo removed",
+  "out": "city",
+  "size_m": [
+   34.0,
+   10.51,
+   25.96
+  ]
+ },
  "slum_cluster": {
   "credit": "\"Chennai Slum\" by aswin.baskaran (Sketchfab), CC BY 4.0",
   "size_m": [

@@ -22,6 +22,7 @@ func _run() -> void:
 		await get_tree().physics_frame
 	_test_signs(city)
 	_test_fx(city)
+	_test_police_service_gas(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -128,6 +129,43 @@ func _test_new_people_and_slum() -> void:
 	_check("Chennai slum placed along the canals (≥ 5 sites)", slums >= 5, "%d" % slums)
 	var img: Image = (load("res://assets/models/city/slum_cluster_0.png") as Texture2D).get_image()
 	_check("Slum keeps its colours (textured atlas)", img != null and img.get_width() >= 512)
+
+func _test_police_service_gas(city: Node) -> void:
+	var tp: TrafficPolice = city.get_node("TrafficPolice") as TrafficPolice
+	_check("Traffic-police junctions found (big roads, ≥ 3 arms)", tp.junctions.size() > 50, "%d" % tp.junctions.size())
+	var g: RoadGraph = SignalBus.current_road_graph
+	tp._player = g.nodes[tp.junctions[0]]
+	tp.refresh()
+	var post: Node3D = null
+	for p: Node3D in tp._posts:
+		if p.visible and p.global_position.distance_to(g.nodes[tp.junctions[0]]) < 0.1:
+			post = p
+	_check("A police post stands on the junction with an officer", post != null and post.get_node_or_null("Officer") != null and post.global_position.distance_to(g.nodes[tp.junctions[0]]) < 0.1)
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var svc: TrafficVehicleAI = null
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.SERVICE:
+			svc = v
+	_check("Service vehicle slot carries all 6 civil vehicles", svc != null and svc._service_models.size() == 6 and not svc._service_models.has(null))
+	var seen: Dictionary = {}
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 3
+	for i: int in 60:
+		svc.pick_service_variant(rng)
+		seen[svc.service_variant] = true
+		var shown: int = 0
+		for m: Node3D in svc._service_models:
+			shown += 1 if m.visible else 0
+		if shown != 1 or not is_equal_approx((svc._shape.shape as BoxShape3D).size.z, svc.body.z):
+			seen[-1] = true
+	_check("Respawns rotate through the variants, one shown, box sized to it", seen.size() >= 5 and not seen.has(-1), str(seen.keys()))
+	var sp: ServicePoints = city.get_node("ServicePoints") as ServicePoints
+	var stations: int = 0
+	for s: Dictionary in sp.services:
+		stations += 1 if bool(s.get("station", false)) else 0
+	_check("Every LPG bunk is a real gas-station model with its forecourt as the pump spot", stations == 4, "%d" % stations)
+	var world: Node = city.get_node("World")
+	_check("Gas stations are in the world", world.find_children("gas_station_*", "", true, false).size() == 4)
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:

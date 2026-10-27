@@ -55,6 +55,20 @@ func _run() -> void:
 				cam.look_at(n.global_position + Vector3(0, 2.2, 0))
 				print("SIGN ", (n.get_node("English") as Label3D).text)
 				break
+	if OS.has_environment("SHOT_SVC"):
+		# Put the service-vehicle slot, showing variant SHOT_SVC, on the road just ahead.
+		var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+		var auto2: Node3D = city.get_node("AutoRickshaw") as Node3D
+		for v: TrafficVehicleAI in tm.pool:
+			if v.archetype == TrafficVehicleAI.Archetype.SERVICE:
+				var c: Dictionary = tm.graph.closest_point(auto2.global_position + (-auto2.global_basis.z) * 16.0)
+				tm.place_vehicle(v, int(c["edge"]), float(c["s"]), 1, 0)
+				var want: int = int(OS.get_environment("SHOT_SVC"))
+				for i: int in v._service_models.size():
+					v._service_models[i].visible = i == want
+				v.cruise_speed_mps = 0.0
+				v.current_speed_mps = 0.0
+				v.bumped_timer = 999.0
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
 	for i: int in 20:

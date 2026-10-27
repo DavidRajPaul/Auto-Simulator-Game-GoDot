@@ -89,7 +89,9 @@ PEOPLE = [
     ("woman_modern", "modern_indian_woman", 1.58, 3800, 0,
      '"Modern Indian Woman" by Pixel_Monster (Sketchfab), CC BY 4.0'),
     ("man_casual", "chennai_man_rpm", 1.72, 3600, 0,
-     '"Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0'),
+     '"Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character'),
+    # ^ Before baking, the photo face on its head texture is replaced by tools/art/genericize_face.py
+    #   (the licence covers the model, not the actor's likeness). Keep the .orig.jpeg next to it.
     ("girl_churidar", "south_indian_women", 1.55, 3200, 0,
      '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0'),
     ("girl_pavadai", "south_indian_women", 1.52, 4000, 1,
@@ -289,6 +291,8 @@ def cluster_part(p: dict, cell: float) -> None:
 
 def material_image(g: Gltf, mat: dict) -> tuple[Image.Image, bool]:
     """Base colour (texture x factor) as RGBA, and whether it needs alpha testing."""
+    if "_image" in mat:  # synthetic palette (process_city paint)
+        return mat["_image"].convert("RGBA"), False
     pbr = mat.get("pbrMetallicRoughness", {})
     factor = np.array(pbr.get("baseColorFactor", [1, 1, 1, 1]), float)
     tex = pbr.get("baseColorTexture")

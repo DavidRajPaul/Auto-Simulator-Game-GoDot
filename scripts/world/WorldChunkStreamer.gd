@@ -968,7 +968,7 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			continue
 		var inst: Node3D = scene.instantiate() as Node3D
 		inst.name = "%s_%d" % [model, index]
-		var xf: Transform3D = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
+		var xf: Transform3D = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))).scaled(Vector3.ONE * float(p.get("scale", 1.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
 		if bool(p.get("skyline", false)):
 			skyline = inst
 			skyline_home = xf
