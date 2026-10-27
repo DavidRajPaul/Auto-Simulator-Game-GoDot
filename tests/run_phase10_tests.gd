@@ -23,6 +23,9 @@ func _run() -> void:
 	_test_signs(city)
 	_test_fx(city)
 	_test_police_service_gas(city)
+	_test_building_boards(city)
+	_test_touch_layout()
+	await _test_traffic_smooth(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -166,6 +169,105 @@ func _test_police_service_gas(city: Node) -> void:
 	_check("Every LPG bunk is a real gas-station model with its forecourt as the pump spot", stations == 4, "%d" % stations)
 	var world: Node = city.get_node("World")
 	_check("Gas stations are in the world", world.find_children("gas_station_*", "", true, false).size() == 4)
+
+func _test_building_boards(city: Node) -> void:
+	var bb: BuildingBoards = city.get_node("BuildingBoards") as BuildingBoards
+	_check("Building name boards from OSM places", bb.spot_count() > 800, "%d" % bb.spot_count())
+	var real_public: int = 0
+	var bad_face: int = 0
+	var g: RoadGraph = SignalBus.current_road_graph
+	for i: int in range(0, bb.spot_count(), 11):
+		var s: Array = bb.spot(i)
+		var p: Vector3 = Vector3(float(s[0]), 0.0, float(s[1]))
+		var out: Vector3 = Vector3(sin(float(s[2])), 0.0, cos(float(s[2])))
+		# The board faces the street: stepping out from it gets closer to a road, not further.
+		if float(g.closest_point(p + out * 2.0)["dist"]) > float(g.closest_point(p - out * 2.0)["dist"]) + 0.6:
+			bad_face += 1
+		real_public += 1 if int(s[8]) >= 9 else 0
+	_check("Boards face the street", bad_face == 0, "%d facing away" % bad_face)
+	_check("Public places keep real names (some boards are public)", real_public > 5, "%d" % real_public)
+	var names: Dictionary = {}
+	for i: int in bb.spot_count():
+		names[str(bb.spot(i)[6]).to_lower()] = true
+	var leaked: Array = []
+	for brand: String in ["hdfc bank", "icici bank", "saravana bhavan", "pothys", "grt jewellers", "kfc", "domino's pizza"]:
+		if names.has(brand):
+			leaked.append(brand)
+	_check("Businesses carry parody names, no real brands", leaked.is_empty(), str(leaked))
+	bb._player = Vector3(bb.spot(0)[0], 0, bb.spot(0)[1])
+	bb.refresh()
+	_check("Boards pooled near the player (≤ MAX_BOARDS)", bb.active_boards() >= 1 and bb.active_boards() <= BuildingBoards.MAX_BOARDS, "%d" % bb.active_boards())
+
+func _test_touch_layout() -> void:
+	# Tablet aspect ratios: controls must not overlap each other or the dashboard.
+	var ok: bool = true
+	var detail: String = ""
+	for vp: Vector2 in [Vector2(1280, 960), Vector2(1280, 800), Vector2(1280, 720), Vector2(1560, 720)]:
+		var hud: TouchHUD = TouchHUD.new()
+		var b: float = hud.base_button_size(vp, 26.0, 26.0, 14.0)
+		hud.free()
+		var r_speed: float = clampf(b * 0.62, 48.0, 84.0)
+		var left_end: float = 26.0 + b * 2.6 + 14.0
+		var dash_l: float = vp.x * 0.5 - PassengerHUD.MINIMAP_SIZE * 0.585 - 14.0 - r_speed * 2.24
+		ok = ok and left_end + 14.0 <= dash_l and b <= 128.0
+		detail += "%dx%d b=%.0f  " % [vp.x, vp.y, b]
+	_check("Touch controls fit tablets (4:3, 16:10) without overlapping", ok, detail)
+
+func _test_traffic_smooth(city: Node) -> void:
+	# Drive for 25 s with the camera on; watch every vehicle and pedestrian frame by frame.
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var pm: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
+	var auto: Node3D = city.get_node("AutoRickshaw") as Node3D
+	var prev: Dictionary = {}
+	var prev_turn: Dictionary = {}
+	var seen_prev: Dictionary = {}
+	var jumps: int = 0
+	var vanished: int = 0
+	var turns: int = 0
+	var worst: float = 0.0
+	var vp: Viewport = get_viewport()
+	var ped_prev: Dictionary = {}
+	var ped_popped: int = 0
+	var ped_vanished: int = 0
+	Input.action_press("accelerate")
+	for f: int in 1500:
+		if f == 400:
+			Input.action_release("accelerate")
+		await get_tree().physics_frame
+		for v: TrafficVehicleAI in tm.pool:
+			var was: Variant = prev.get(v)
+			var on_now: bool = v.active and ViewCheck.on_screen(vp, v.global_position + Vector3(0, 1, 0), 0.0)
+			if v.turning:
+				turns += 1
+			if was != null and v.active:
+				var step: float = (v.global_position - (was as Vector3)).length()
+				var allowed: float = v.current_speed_mps / 60.0 * 1.6 + 0.08
+				if step > 5.0:
+					# Recycled: it must not have been on screen and close.
+					if bool(seen_prev.get(v, false)) and (was as Vector3).distance_to(auto.global_position) < ChennaiTrafficManager.RECYCLE_ON_SCREEN_M:
+						vanished += 1
+				elif step > allowed and v.bumped_timer <= 0.0:
+					jumps += 1
+					print("JUMP f=%d arch=%d step=%.2f speed=%.2f turning=%s edge=%d t=%.2f bumped=%.2f was_turn=%s" % [f, v.archetype, step, v.current_speed_mps, v.turning, v.edge, v.t, v.bumped_timer, str(prev_turn.get(v, false))])
+					worst = maxf(worst, step - allowed)
+			elif was != null and not v.active and bool(seen_prev.get(v, false)):
+				vanished += 1
+			prev[v] = v.global_position if v.active else null
+			prev_turn[v] = v.turning
+			seen_prev[v] = on_now
+		for w: PedestrianManager.Walker in pm.people:
+			var on_w: bool = w.active and ViewCheck.on_screen(vp, w.pos + Vector3(0, 0.9, 0), 0.0)
+			var st: Variant = ped_prev.get(w)
+			if st != null:
+				var d: float = w.pos.distance_to(auto.global_position)
+				if not bool(st[0]) and w.active and on_w and d < PedestrianManager.SPAWN_ON_SCREEN_M - 2.0:
+					ped_popped += 1 # became active in view, close by
+				if bool(st[0]) and bool(st[1]) and not w.active and (st[2] as Vector3).distance_to(auto.global_position) < PedestrianManager.DESPAWN_FAR_M - 2.0:
+					ped_vanished += 1
+			ped_prev[w] = [w.active, w.active and on_w, w.pos]
+	_check("Traffic turns through junctions on a smooth curve (no sideways jumps)", jumps == 0 and turns > 0, "%d jumps (worst +%.2f m), %d turning frames" % [jumps, worst, turns])
+	_check("No vehicle vanishes on screen", vanished == 0, "%d" % vanished)
+	_check("Pedestrians never pop in or vanish in view", ped_popped == 0 and ped_vanished == 0, "%d popped, %d vanished" % [ped_popped, ped_vanished])
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:

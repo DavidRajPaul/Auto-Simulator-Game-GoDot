@@ -18,9 +18,13 @@ const META_FILE: String = "res://assets/models/people/people.json"
 const POOL: int = 14
 const IDLE_SHARE: float = 0.3
 const SPAWN_MIN_M: float = 22.0
-const SPAWN_MAX_M: float = 85.0
-const DESPAWN_M: float = 110.0
-const VISIBLE_M: float = 90.0
+const SPAWN_MAX_M: float = 95.0
+## People are recycled past DESPAWN_M only when off screen (on screen: past DESPAWN_FAR_M), and
+## only appear on screen beyond SPAWN_ON_SCREEN_M — nobody pops in or vanishes in view.
+const DESPAWN_M: float = 70.0
+const DESPAWN_FAR_M: float = 125.0
+const SPAWN_ON_SCREEN_M: float = 75.0
+const VISIBLE_M: float = 130.0
 const ANIMATE_M: float = 70.0
 const SHADOW_COUNT: int = 3
 const SHADOW_M: float = 28.0
@@ -142,8 +146,10 @@ func _process(delta: float) -> void:
 func _recycle() -> void:
 	var near: Array[Array] = []
 	for w: Walker in people:
-		if w.active and w.pos.distance_to(_player) > DESPAWN_M:
-			_deactivate(w)
+		if w.active:
+			var dd: float = w.pos.distance_to(_player)
+			if dd > DESPAWN_FAR_M or (dd > DESPAWN_M and not ViewCheck.on_screen(get_viewport(), w.pos + Vector3(0, 0.9, 0), 1.2)):
+				_deactivate(w)
 		if not w.active:
 			_spawn(w)
 		if w.active:
@@ -160,7 +166,8 @@ func _recycle() -> void:
 			w.mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func _spawn(w: Walker) -> bool:
-	var cands: Array[Dictionary] = graph.spawn_candidates(_player, _player_fwd, SPAWN_MIN_M, SPAWN_MAX_M)
+	# All around the player (not only ahead): off-screen spots are mostly to the sides / behind.
+	var cands: Array[Dictionary] = graph.spawn_candidates(_player, Vector3.ZERO, SPAWN_MIN_M, SPAWN_MAX_M)
 	if cands.is_empty():
 		return false
 	var c: Dictionary = cands[rng.randi() % cands.size()]
@@ -192,6 +199,9 @@ func _spawn(w: Walker) -> bool:
 	# Never pop into view right in front of the camera.
 	var to_p: Vector3 = w.pos - _player
 	if to_p.length() < SPAWN_MIN_M * 0.8:
+		return false
+	var seen: bool = ViewCheck.on_screen(get_viewport(), w.pos + Vector3(0, 0.9, 0), 1.2)
+	if (seen and to_p.length() < SPAWN_ON_SCREEN_M) or (not seen and to_p.length() > DESPAWN_M - 5.0):
 		return false
 	w.active = true
 	w.node.visible = true

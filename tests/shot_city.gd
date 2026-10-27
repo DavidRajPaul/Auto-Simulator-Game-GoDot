@@ -69,6 +69,28 @@ func _run() -> void:
 				v.cruise_speed_mps = 0.0
 				v.current_speed_mps = 0.0
 				v.bumped_timer = 999.0
+	if OS.has_environment("SHOT_BOARD"):
+		# Stand across the street from building board #SHOT_BOARD (SHOT_BD = distance, m).
+		var bb: BuildingBoards = city.get_node("BuildingBoards") as BuildingBoards
+		var s: Array = bb.spot(int(OS.get_environment("SHOT_BOARD")))
+		var at: Vector3 = Vector3(float(s[0]), float(s[4]), float(s[1]))
+		var out: Vector3 = Vector3(sin(float(s[2])), 0.0, cos(float(s[2])))
+		var dist: float = float(OS.get_environment("SHOT_BD")) if OS.has_environment("SHOT_BD") else 12.0
+		var eye: Vector3 = at + out * dist + out.cross(Vector3.UP) * dist * 0.35
+		eye.y = 1.7 if str(s[5]) == "shop" else maxf(2.0, at.y * 0.35)
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, Vector3(eye.x, 1.0, eye.z) + out * 3.0))
+		bb._player = at
+		bb.refresh()
+		for i: int in 90:
+			await get_tree().physics_frame
+		bb._player = at
+		bb.refresh()
+		rig.set_process(false)
+		var camb: Camera3D = rig.get_node("Camera") as Camera3D
+		camb.global_position = eye
+		camb.look_at(at)
+		(city.get_node("AutoRickshaw") as Node3D).visible = false
+		print("BOARD ", s)
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
 	for i: int in 20:

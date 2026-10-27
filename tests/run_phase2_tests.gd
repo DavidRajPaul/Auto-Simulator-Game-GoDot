@@ -117,13 +117,20 @@ func _test_traffic_on_roads(traffic: ChennaiTrafficManager, auto: AutoRickshawCo
 	var off_road: int = 0
 	var far: int = 0
 	for v: TrafficVehicleAI in active:
-		var centre: Vector3 = traffic.graph.sample(v.edge, v.edge_param(), v.dir)[0]
-		if Vector2(v.global_position.x - centre.x, v.global_position.z - centre.z).length() > traffic.graph.edges[v.edge].width * 0.5 + 0.5:
-			off_road += 1
-		if v.global_position.distance_to(auto.global_position) > ChennaiTrafficManager.RECYCLE_RADIUS_M + 5.0:
+		if v.turning:
+			# Mid-junction on its curve: must still be on some road.
+			var cp: Dictionary = traffic.graph.closest_point(v.global_position)
+			if float(cp["dist"]) > traffic.graph.edges[int(cp["edge"])].width * 0.5 + 0.5:
+				off_road += 1
+		else:
+			var centre: Vector3 = traffic.graph.sample(v.edge, v.edge_param(), v.dir)[0]
+			if Vector2(v.global_position.x - centre.x, v.global_position.z - centre.z).length() > traffic.graph.edges[v.edge].width * 0.5 + 0.5:
+				off_road += 1
+		# On screen, vehicles may stay out to RECYCLE_ON_SCREEN_M (they never vanish in view).
+		if v.global_position.distance_to(auto.global_position) > ChennaiTrafficManager.RECYCLE_ON_SCREEN_M + 5.0:
 			far += 1
 	_check("All traffic within its road width", off_road == 0, "%d off-road" % off_road)
-	_check("All traffic within 120 m", far == 0, "%d far" % far)
+	_check("All traffic within the recycle radius", far == 0, "%d far" % far)
 	_check("Pool still ≤ 18", traffic.pool.size() <= 18)
 
 func _test_traffic_follows_graph(traffic: ChennaiTrafficManager) -> void:

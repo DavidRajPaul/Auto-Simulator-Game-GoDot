@@ -1,0 +1,34 @@
+name: OSM Named Places
+
+# Downloads named shops / offices / public places (tools/osm/fetch_pois.py) into
+# data/osm/chennai_pois.json.gz and commits it to the branch it runs on.
+# Runs on workflow_dispatch, and when the fetch script changes (so a feature branch can fetch).
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - tools/osm/fetch_pois.py
+      - .github/workflows/osm-pois.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fetch named places (Overpass)
+        working-directory: tools/osm
+        run: python3 fetch_pois.py
+      - name: Commit results
+        run: |
+          git config user.name "osm-import[bot]"
+          git config user.email "osm-import@users.noreply.github.com"
+          git add -A data/osm/chennai_pois.json.gz
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "data(osm): named places for building boards (© OpenStreetMap contributors, ODbL)"
+          git pull --rebase
+          git push

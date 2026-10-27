@@ -357,7 +357,7 @@ func _layout() -> void:
 	var mr: float = 26.0 + safe.z
 	var mb: float = 22.0 + safe.w
 	var g: float = 14.0 # gap between controls
-	var b: float = clampf(vp.y * 0.165, 84.0, 140.0) # base button size
+	var b: float = base_button_size(vp, ml, mr, g)
 
 	# Bottom-left: two big steer buttons, indicators just above them.
 	var sl: Rect2 = Rect2(ml, vp.y - mb - b * 1.5, b * 1.3, b * 1.5)
@@ -398,7 +398,7 @@ func _layout() -> void:
 	# The painted ring (MiniMap) reaches ~17% past the map edge; keep the dials clear of it.
 	var map_half: float = PassengerHUD.MINIMAP_SIZE * 0.5 * 1.17
 	var cx: float = vp.x * 0.5
-	var r_speed: float = clampf(b * 0.62, 56.0, 84.0)
+	var r_speed: float = clampf(b * 0.62, 48.0, 84.0)
 	var r_fuel: float = r_speed * 0.68
 	_dash.speed_centre = Vector2(cx - map_half - g - r_speed, vp.y - mb - r_speed)
 	_dash.fuel_centre = Vector2(cx + map_half + g + r_fuel, vp.y - mb - r_fuel)
@@ -420,6 +420,35 @@ func _layout() -> void:
 	_status_label.position = Vector2(0.0, vp.y * 0.22)
 	_status_label.size = Vector2(vp.x, 50.0)
 	_layout_hud_art()
+
+## Base button size. Tablets used to get oversized, overlapping controls: the layout keeps its
+## width (stretch "expand"), so a 4:3 / 16:10 screen is just *taller* and a height-based size grew
+## by up to 40 %. Now: (1) size from the 16:9-equivalent height, (2) on a real device cap the
+## physical size (~1.5 cm base, steer buttons ~2 cm wide) so a 10" tablet isn't all buttons,
+## (3) shrink until the steer pair, the dashboard (speedo | map | LPG) and the pedals can't touch.
+const MAX_BUTTON_IN: float = 0.6
+func base_button_size(vp: Vector2, ml: float, mr: float, g: float) -> float:
+	var h169: float = minf(vp.y, vp.x * 9.0 / 16.0)
+	var b: float = clampf(h169 * 0.165, 64.0, 128.0)
+	if OS.has_feature("mobile"):
+		var dpi: float = float(DisplayServer.screen_get_dpi())
+		var win: Vector2 = Vector2(DisplayServer.window_get_size())
+		var px_per_unit: float = win.x / maxf(vp.x, 1.0)
+		if dpi > 0.0 and px_per_unit > 0.0:
+			b = minf(b, MAX_BUTTON_IN * dpi / px_per_unit)
+	var map_half: float = PassengerHUD.MINIMAP_SIZE * 0.5 * 1.17
+	var cx: float = vp.x * 0.5
+	for i: int in 12:
+		var r_speed: float = clampf(b * 0.62, 48.0, 84.0)
+		var r_fuel: float = r_speed * 0.68
+		var left_end: float = ml + b * 1.3 * 2.0 + g
+		var right_start: float = vp.x - mr - (b * 1.0 + g + b * 1.15 + g + b * 0.75)
+		var dash_l: float = cx - map_half - g - r_speed * 2.0 * 1.12
+		var dash_r: float = cx + map_half + g + r_fuel * 2.0 * 1.15
+		if left_end + g <= dash_l and dash_r + g <= right_start:
+			break
+		b *= 0.92
+	return maxf(b, 56.0)
 
 func _place(c: Control, r: Rect2) -> void:
 	c.position = r.position
