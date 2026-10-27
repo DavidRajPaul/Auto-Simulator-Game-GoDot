@@ -1,5 +1,7 @@
 # Namma Auto — asset sources (audio, models, textures, UI)
 
+> This is the **download list** (what to get next and from where). The catalog of what is already in the game, and how to add or replace a file, is **[`assets/README.md`](../assets/README.md)**.
+
 Every link below was checked on 2026-10-19: the licence shown is the one on the page that day.
 **Only CC0, CC BY, or the Pixabay licence.** Never use NC (non-commercial) or "editorial" assets.
 Anything CC BY must be credited in the in-game Credits screen (`scripts/ui/MainMenu.gd`).
@@ -212,7 +214,7 @@ Prompts: the "Namma Auto Game Art Prompt Pack" doc (1A-2I). Raw PNGs go in `asse
 | `assets/ui/portraits.png` (rider portraits) | cropped from 4G and 4F |
 | `assets/ui/logo.png` (menu logo) | 1G |
 | `assets/ui/loading_bg.jpg` (loading screen) | 1F |
-| `icon.png`, `assets/icon/icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
+| `assets/icon/icon.png`, `icon_192.png`, adaptive fg/bg/mono | 1B, 1D |
 | `assets/icon/boot_splash.png` | 1E |
 
 Not used yet: 1A and 1C (alternative icons), 2A (the full sheet; the single-button images are sharper) and the LPG bunk pin from 3B (the mini-map doesn't show bunks yet).

@@ -11,7 +11,7 @@ have dark outlines that stop the fill). Outputs are small and packed for mobile:
                                  (1024x1024, 256 px cells; order = REWARD_CELLS, mirrored in UIKit.REWARD_CELLS)
   assets/ui/logo.png             game logo cut out, 1024 px wide
   assets/ui/loading_bg.jpg       loading screen backdrop (1F night street), 1280x720
-  icon.png, assets/icon/*        launcher + adaptive icons (1B / 1D), boot splash (1E)
+  assets/icon/icon.png + icon/*  launcher + adaptive icons (1B / 1D), boot splash (1E)
 
 Run: python3 tools/art/import_game_art.py   (Pillow, numpy, scipy)
 """
@@ -155,7 +155,7 @@ def branding() -> None:
     cover(Image.open(src("1F")).convert("RGB"), 1280, 720).save(UI / "loading_bg.jpg", quality=86)
     cover(Image.open(src("1E")).convert("RGB"), 1280, 720).save(ICON / "boot_splash.png", optimize=True)
     icon = Image.open(src("1B")).convert("RGB")
-    icon.resize((512, 512), Image.LANCZOS).save(ROOT / "icon.png", optimize=True)
+    icon.resize((512, 512), Image.LANCZOS).save(ROOT / "assets" / "icon" / "icon.png", optimize=True)
     icon.resize((192, 192), Image.LANCZOS).save(ICON / "icon_192.png", optimize=True)
     # Adaptive: driver + auto cut out of 1D layer 1, kept inside the 66 % safe circle.
     fg = Image.fromarray(cutout(src("1D.Android_adaptive_icon_layer1"), sat_max=20, val_min=225), "RGBA")

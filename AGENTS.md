@@ -18,7 +18,7 @@ Maintain this structure across all phases. Never place loose scripts or scenes i
 ```text
 res://
 ├── AGENTS.md                        # This constitution (read before every task)
-├── README.md                        # Roadmap (Phases 1–10) and status — keep it current
+├── README.md                        # Features, architecture diagram, assets summary, roadmap (Phases 1–14) — keep it current
 ├── project.godot                    # Project config, InputMap, Autoloads, Jolt Physics
 ├── export_presets.cfg               # Android presets: "Android" APK + "Android AAB" (Gradle) — arm64-v8a + armeabi-v7a
 ├── .github/workflows/android-build.yml  # CI: headless tests → perf probe → APK + AAB artifacts
@@ -53,9 +53,10 @@ res://
 ├── tools/assets/process_city.py     # landmark scenes → one-draw-call static GLBs (atlas + hard-edge clustering)
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
 ├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
-├── assets/textures/, assets/ui/, assets/audio/   # generated atlases + CC0 audio (credits in docs/ASSETS.md)
+├── assets/                          # ALL shipped art + sound: audio/, fonts/, fx/, icon/ (app icon too), models/, textures/, ui/
+│   └── README.md                    # Asset catalog (file → used by → source → licence) + how to add/replace — update with every asset change
 ├── assets_src/incoming/             # user downloads awaiting integration (.gdignore, not exported)
-├── assets/fonts/                    # Noto Sans Tamil (OFL) — UI fallback font
+├── docs/                            # ASSETS.md (download list), MISSIONS_PLAN.md (Part B plan), PLAYTEST_OCT26.md, images/ (README screenshots)
 ├── translations/ui.csv              # en/ta UI strings (keys used via tr())
 ├── scenes/
 │   ├── main_menu.tscn               # Title screen (run/main_scene) → main_chennai
@@ -184,6 +185,7 @@ res://
 * Stitch screens are layout references: they invent features (gems, races). Rebuild them in Godot with the game's real data; their hosted images (lh3.googleusercontent.com) can't be fetched here.
 * The first-ride tutorial never auto-starts in test runs (persistence off); suites call `TutorialDirector.start()`. Anything that must stay calm during it reads `GameState.tutorial_active`; scripted riders/traffic come from `SignalBus.scripted_hail_requested` / `scripted_traffic_requested`.
 * World markers (STOP line) sit at +0.1 m: road surfaces are at +0.045…+0.08, so anything lower is hidden under the road.
+* Every shipped art/sound file lives under `assets/` (the app icon is `assets/icon/icon.png`); README screenshots go in `docs/images/`. Adding, replacing or removing an asset means updating `assets/README.md`, the folder's `CREDITS_*.md` and, for CC BY, `MainMenu.CREDITS`.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---
@@ -202,6 +204,7 @@ res://
    godot --headless --path . --fixed-fps 60 res://tests/run_phase4_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase5_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase6_tests.tscn
+   # … through run_phase11_tests — CI runs every suite; run them all before a PR
    ```
    After adding a new `class_name`, re-run `--import` first or the runner fails to parse. A parse error leaves the runner idling, so always wrap it in `timeout`.
    Do not use `-s` — autoload globals (`SignalBus`, `GameState`) don't resolve in `-s` scripts. Each new phase adds `tests/run_phaseN_tests.tscn` and a CI step.
@@ -215,11 +218,8 @@ res://
 ---
 
 ## 5. Phase Status
-Full roadmap with exit gates: `README.md` → Roadmap.
-* **Phase 1 — Core greybox & 3-wheel physics:** code complete, feel-tuned, placeholder audio, 47/47 tests, perf probe 99/150 draw calls, CI APK build. Remaining exit gate: on-device feel tuning and 60 FPS on a budget phone.
-* **Phase 2 — Chennai 3-zone world:** OSM pipeline, streamed city, graph traffic, cattle; 30/30 tests; 112/150 draw calls. Remaining: jaywalkers, elevated flyover ramps, device check.
-* **Phase 3 — Core loop (Savari & haggling):** hails, 5 s haggle, GPS + mini-map, comfort, near misses, payout; 41/41 tests; 108/150 draw calls. Remaining: device play-test & balance.
-* **Phase 4 — Economy & garage:** procedural Bajaj RE model, 3 autos, garage (repair/upgrades/horns/paint/autos), LPG/EV/tow, condition, shift clock, encrypted save, settings incl. tilt & Tamil; 51/51 tests; 108/150 draw calls. Remaining: device check (tilt axis), balance.
-* **Phase 5 — Polish → MVP:** code complete. Real-size osm2streets roads + 21.6k real buildings, comfort pack, day/night, monsoon (rain, wiper, wet roads, flood spots), kick rhythm, main menu, back button, AAB in CI; 35/35 tests; 120/150 draw calls. Remaining: real audio + art (from the user's downloaded assets), on-device soak.
-  Added after MVP: reverse gear + indicators, facade atlas building skins, driver levels + shift goals, UI/ambience audio; phase 6 suite 48/48; 125/150 draw calls. Asset links: `docs/ASSETS.md`.
-* **Phase 7 — Play-test feedback pass (Oct 2026):** physics interpolation + stabilised cockpit, stepped sun shadows, live splash, scooter riders, people at pickups, cows off, strict bargaining, TomTom-based time-of-day traffic, sat-nav ribbon + turn-by-turn, full OSM map + real EN/Tamil street boards, collision overhaul, rewards engine, `AdMonetizationManager` (mock provider), CPU hot-path fixes; phase 7 suite 55/55. Details & open items: `docs/PLAYTEST_OCT26.md`. Remaining: Open Buildings height raster export, MTC bus + landmark models, licensed/commissioned music, AdMob plugin install.
+Full roadmap with exit gates, and the test-suite ↔ phase mapping: `README.md` → Roadmap. Part B plan: `docs/MISSIONS_PLAN.md`.
+* **Part A — MVP (Phases 1–5):** code complete — 3-wheel physics, real-size osm2streets Chennai, Savari + haggling, economy + garage, polish. Remaining: on-device gates (60 FPS, soak, tilt axis, AAB size).
+* **Part A+ — post-MVP (suites 6–11):** controls & levels, Stitch UI, two play-test passes (`docs/PLAYTEST_OCT26.md`), city & people, rewards engine + mock ads, first-ride tutorial. All 11 suites green (465 checks), perf probe 98/150.
+* **Part B — story content (next):** Phase 6 visible damage (`run_phase12_tests`), Phase 7 mission engine (`run_phase13_tests`), Phase 8 eight missions (`run_phase14_tests`), Phase 9 voice/art/balance.
+* **Part C — launch:** Phase 10 monetization (policy, mock provider, rewards engine done; SDK, consent, billing, PGS, Firebase open), 11 compliance, 12 closed testing, 13 soft launch, 14 LiveOps.
