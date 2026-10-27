@@ -43,6 +43,9 @@ jobs:
           curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
 
+      - name: Verify Chennai density policy
+        run: python3 -m unittest discover -s tests -p 'test_city_density.py' -v
+
       - name: Import project
         run: ${GODOT_BIN} --headless --path . --import
 
