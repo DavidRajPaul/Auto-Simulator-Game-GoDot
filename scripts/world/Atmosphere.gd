@@ -13,6 +13,9 @@ const UPDATE_INTERVAL_S: float = 0.25
 ## cockpit. Stepping it rarely keeps shadows rock-steady between steps.
 const SUN_STEP_DEG: float = 3.0
 const SUN_EASE_S: float = 2.5
+## Low-cost sky-cover noise, generated once. No volumetric clouds or new assets.
+const CLOUD_TEXTURE_SIZE: int = 256
+const CLOUD_NOISE_SEED: int = 13080
 
 @export var environment_path: NodePath
 @export var sun_path: NodePath
@@ -20,6 +23,7 @@ const SUN_EASE_S: float = 2.5
 var _env: Environment
 var _sun: DirectionalLight3D
 var _sky: ProceduralSkyMaterial
+var _cloud_texture: NoiseTexture2D
 var _timer: float = 0.0
 var _rain_blend: float = 0.0
 var _base_fog_density: float = 0.0028
@@ -34,8 +38,31 @@ func _ready() -> void:
 		_base_fog_density = _env.fog_density
 		if _env.sky != null:
 			_sky = _env.sky.sky_material as ProceduralSkyMaterial
+			if _sky != null:
+				# The sky resource can be shared between scenes; only modify our copy.
+				_sky = _sky.duplicate() as ProceduralSkyMaterial
+				_env.sky = _env.sky.duplicate() as Sky
+				_env.sky.sky_material = _sky
+				_setup_clouds()
 	_rain_blend = 1.0 if GameState.is_raining else 0.0
 	apply(GameState.shift_minute, _rain_blend)
+
+## ProceduralSkyMaterial blends this noise into its sky without a second cloud
+## draw pass. Deterministic and asset-free; generated asynchronously by Godot.
+func _setup_clouds() -> void:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = CLOUD_NOISE_SEED
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.014
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 4
+	noise.fractal_gain = 0.5
+	_cloud_texture = NoiseTexture2D.new()
+	_cloud_texture.width = CLOUD_TEXTURE_SIZE
+	_cloud_texture.height = CLOUD_TEXTURE_SIZE
+	_cloud_texture.seamless = true
+	_cloud_texture.noise = noise
+	_sky.sky_cover = _cloud_texture
 
 func _process(delta: float) -> void:
 	_rain_blend = move_toward(_rain_blend, 1.0 if GameState.is_raining else 0.0, delta * 0.25)
@@ -98,6 +125,12 @@ func apply(minute: float, rain: float) -> void:
 			_sky.sky_top_color = top.lerp(Color(0.45, 0.47, 0.5) * lerpf(0.3, 1.0, day), rain)
 			_sky.sky_horizon_color = horizon
 			_sky.ground_horizon_color = horizon
+			# Sparse white coastal cumulus on dry days; a broad slate-grey
+			# cloud ceiling during northeast-monsoon rain.
+			var cloud_day: Color = Color(0.96, 0.95, 0.91, 0.24)
+			var cloud_storm: Color = Color(0.35, 0.38, 0.43, 0.88)
+			var cloud_night: Color = Color(0.16, 0.18, 0.23, 0.2)
+			_sky.sky_cover_modulate = cloud_night.lerp(cloud_day, day).lerp(cloud_storm, rain)
 
 	var lights_on: bool = day < 0.55 or rain > 0.5
 	for n: Node in get_tree().get_nodes_in_group("headlight"):
