@@ -15,6 +15,8 @@ signal engine_restarted()
 signal lpg_empty()
 ## Fires once when the tank crosses 20%, re-armed after refuelling.
 signal fuel_low(level: float, capacity: float)
+## Nearby compatible station suggestion; distance is direct-line until routing is added.
+signal fuel_station_suggested(station_name: String, distance_m: int)
 
 # --- World ---------------------------------------------------------------
 ## Emitted by waterlogging zones when the player auto enters/leaves (depth 0 = dry).
