@@ -1,0 +1,39 @@
+name: Rebuild Chennai Density Fix
+on:
+  push:
+    branches:
+      - fix/chennai-density-vegetation-visibility
+    paths:
+      - tools/osm/build_world.py
+      - tools/osm/config.py
+      - .github/workflows/rebuild-chennai-density.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install mapbox-earcut numpy
+      - name: Rebuild map and street trees from checked-in OSM sources
+        run: |
+          python3 tools/osm/build_world.py
+          python3 tools/osm/build_street_dressing.py
+          python3 tools/osm/audit_city_density.py
+      - name: Commit generated city data to feature branch
+        run: |
+          git config user.name "city-rebuild[bot]"
+          git config user.email "city-rebuild@users.noreply.github.com"
+          git add data/world
+          if git diff --cached --quiet; then echo "No generated data changes"; exit 0; fi
+          git commit -m "data(city): rebuild denser Chennai streets and dressing"
+          git push
