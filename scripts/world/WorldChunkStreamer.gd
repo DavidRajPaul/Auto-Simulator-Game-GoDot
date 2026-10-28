@@ -682,9 +682,16 @@ func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 		var mid2: Vector3 = top + dir * 1.4 * s + Vector3(0.0, 0.35 * s, 0.0)
 		var wv: Vector3 = Vector3(-dir.z, 0.0, dir.x) * 0.45 * s
 		var col: Color = frond if k % 2 == 0 else frond.darkened(0.15)
-		var q: Array[Vector3] = [top, mid2 - wv, tip, mid2 + wv]
-		_face(m, q, Vector3.UP, col)
-		_face(m, q, Vector3.DOWN, col.darkened(0.25))
+		# Two tapered leaf panels per frond create a curved, drooping profile
+		# instead of one rigid kite. No textures or extra draw calls.
+		var root_left: Vector3 = top - wv * 0.2
+		var root_right: Vector3 = top + wv * 0.2
+		var mid_left: Vector3 = mid2 - wv
+		var mid_right: Vector3 = mid2 + wv
+		_face(m, [root_left, mid_left, mid2, root_right], Vector3.UP, col)
+		_face(m, [root_left, mid_left, mid2, root_right], Vector3.DOWN, col.darkened(0.22))
+		_face(m, [mid_left, tip, mid_right, mid2], Vector3.UP, col.darkened(0.05))
+		_face(m, [mid_left, tip, mid_right, mid2], Vector3.DOWN, col.darkened(0.25))
 	_blob(m, top - Vector3(0.0, 0.25 * s, 0.0), Vector3(0.6, 0.5, 0.6) * s, Color(0.45, 0.4, 0.15))
 
 func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color) -> void:
