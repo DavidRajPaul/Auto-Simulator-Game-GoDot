@@ -483,6 +483,38 @@ def build_fill_buildings(edges: list[dict], areas: dict, raster: streets.Raster,
                         raster.fill_polygon(corners, R_BUILDING, grow=1.0)
                         out.append({"p": [v for x, z in corners for v in (r2(x), r2(z))], "h": r2(h), "k": "",
                                     "z": zid or "", "s": rng.randrange(9973), "cx": cx, "cz": cz, "f": 1})
+                        # A second courtyard row fills sparse OSM interior plots while
+                        # respecting all road, footpath, existing building and water masks.
+                        # No second row on the open Marina beachfront.
+                        if zid != "marina" and rng.random() < 0.72:
+                            back_d = rng.uniform(6.0, 10.0)
+                            back_off = off + d / 2.0 + 1.8 + back_d / 2.0
+                            bx, bz = px + dx * (w / 2.0) + nx * back_off, pz + dz * (w / 2.0) + nz * back_off
+                            bw = w * rng.uniform(0.75, 0.95)
+                            back = [(bx + dx * sx * bw / 2 + nx * sz * back_d / 2,
+                                     bz + dz * sx * bw / 2 + nz * sz * back_d / 2)
+                                    for sx, sz in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+                            back_probe = back + [(bx, bz)] + [
+                                ((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
+                                for p, q in zip(back, back[1:] + back[:1])]
+                            back_ok = all(raster.get(x, z) == 0 for x, z in back_probe)
+                            back_ok = back_ok and raster.count_in_polygon(
+                                back, (R_ROAD, R_WALK, R_BUILDING, R_WATER), grow=1.0)[0] == 0
+                            back_ok = back_ok and bx < coast_x_at(areas["sea"], bz) - SEA_CLEAR_M
+                            back_ok = back_ok and all(
+                                math.hypot(bx - x, bz - z) > r + math.hypot(bw, back_d) / 2
+                                for x, z, r in clear_pts)
+                            if back_ok:
+                                signed_back = sum(
+                                    back[i][0] * back[i - 1][1] - back[i - 1][0] * back[i][1]
+                                    for i in range(4))
+                                if signed_back < 0:
+                                    back.reverse()
+                                raster.fill_polygon(back, R_BUILDING, grow=1.0)
+                                out.append({"p": [v for x, z in back for v in (r2(x), r2(z))],
+                                            "h": r2(h * rng.uniform(0.7, 1.15)), "k": "",
+                                            "z": zid or "", "s": rng.randrange(9973),
+                                            "cx": bx, "cz": bz, "f": 1})
                     t += w + rng.uniform(0.5, 3.0)
     print(f"  fill buildings: {len(out)}")
     return out
