@@ -14,6 +14,10 @@ const GAP_SEEK_COOLDOWN_S: Array[float] = [0.6, 2.5, 3.5, 99.0, 99.0, 4.0, 3.5]
 const LATERAL_SPEED_MPS: float = 2.6
 const HORN_REACTION_DELAY_S: float = 0.35
 const TURN_SLOWDOWN_M: float = 12.0
+const FOLLOW_TIME_S: float = 1.5
+const FOLLOW_MIN_GAP_M: float = 3.0
+const COMFORT_BRAKE_MPS2: float = 4.0
+const EMERGENCY_BRAKE_MPS2: float = 9.0
 ## Junctions are driven as a smooth curve from TURN_BLEND_M before the node to TURN_BLEND_M
 ## after it (was: a snap from one road's lane offset to the next, a sideways jump of several
 ## metres on a right-angle turn, plus an instant change of heading).
@@ -249,23 +253,41 @@ func tick(delta: float) -> void:
 		if _horn_timer < 0.0:
 			_try_shift(_horn_dir, true)
 
-	var lead_gap: float = manager.gap_ahead(self)
-	var safe_gap: float = current_speed_mps * 1.1 + 3.0
-	var target_speed: float = cruise_speed_mps * manager.speed_factor # rush hour crawl
+	var lead: Dictionary = manager.lead_ahead(self)
+	var lead_gap: float = float(lead["gap"])
+	var lead_speed: float = float(lead["speed"])
+	var safe_gap: float = FOLLOW_MIN_GAP_M + current_speed_mps * FOLLOW_TIME_S
+	var target_speed: float = cruise_speed_mps * manager.speed_factor
 	var remaining: float = manager.graph.edges[edge].length - t
 	if remaining < TURN_SLOWDOWN_M:
-		target_speed *= 0.7 # ease off into junctions
+		target_speed *= 0.7
 	if courtesy_timer > 0.0:
 		courtesy_timer -= delta
-		target_speed *= 0.5 # letting the indicating auto merge or turn
-	if lead_gap < safe_gap:
-		target_speed = minf(target_speed, cruise_speed_mps * clampf((lead_gap - 2.0) / safe_gap, 0.0, 1.0))
-		_gap_seek_timer -= delta
-		if _gap_seek_timer <= 0.0:
-			_gap_seek_timer = GAP_SEEK_COOLDOWN_S[archetype]
-			if not _try_shift(1, false):
-				_try_shift(-1, false)
-	current_speed_mps = move_toward(current_speed_mps, target_speed, 6.0 * delta)
+		target_speed *= 0.5
+	if lead_gap < INF:
+		# Respect the lead's actual speed and the closing-distance braking budget.
+		var closing: float = maxf(current_speed_mps - lead_speed, 0.0)
+		var stopping_room: float = maxf(lead_gap - FOLLOW_MIN_GAP_M, 0.0)
+		var allowed_closing: float = sqrt(2.0 * COMFORT_BRAKE_MPS2 * stopping_room)
+		var following_cap: float = maxf(0.0, lead_speed + allowed_closing)
+		if lead_gap < safe_gap:
+			following_cap = minf(following_cap, lead_speed * clampf(lead_gap / safe_gap, 0.0, 1.0))
+			target_speed = minf(target_speed, following_cap)
+			_gap_seek_timer -= delta
+			if _gap_seek_timer <= 0.0:
+				_gap_seek_timer = GAP_SEEK_COOLDOWN_S[archetype]
+				if not _try_shift(1, false):
+					_try_shift(-1, false)
+		elif closing > 0.0:
+			target_speed = minf(target_speed, following_cap)
+	var brake_rate: float = COMFORT_BRAKE_MPS2
+	if lead_gap < FOLLOW_MIN_GAP_M + current_speed_mps * 0.45:
+		brake_rate = EMERGENCY_BRAKE_MPS2
+	var rate: float = brake_rate if target_speed < current_speed_mps else 2.5
+	current_speed_mps = move_toward(current_speed_mps, target_speed, rate * delta)
+	# Never advance through a lead bumper on this tick, even at low frame rates.
+	if lead_gap < INF:
+		current_speed_mps = minf(current_speed_mps, maxf(lead_gap - 0.15, 0.0) / maxf(delta, 0.001))
 
 	var step: float = current_speed_mps * delta
 	if turning:
