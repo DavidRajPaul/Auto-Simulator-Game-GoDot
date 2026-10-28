@@ -31,6 +31,7 @@ func _run() -> void:
 	await _test_traffic_follows_graph(traffic)
 	_test_following_brake(traffic)
 	_test_junction_yield(traffic)
+	_test_flood_traffic(traffic)
 	_test_cattle(traffic)
 	await _test_drive(auto)
 	await _test_streaming(world, auto)
@@ -209,6 +210,21 @@ func _test_junction_yield(traffic: ChennaiTrafficManager) -> void:
 	blocker.deactivate()
 	_check("Cleared junction allows entry", traffic.junction_clear(waiting))
 	waiting.deactivate()
+
+func _test_flood_traffic(traffic: ChennaiTrafficManager) -> void:
+	_check("Traffic flood hazards loaded", not traffic._flood_spots.is_empty())
+	if traffic._flood_spots.is_empty():
+		return
+	var spot: Dictionary = traffic._flood_spots[0]
+	var p: Vector2 = spot["pos"] as Vector2
+	var pos: Vector3 = Vector3(p.x, 0.0, p.y)
+	var old_rain: bool = GameState.is_raining
+	GameState.is_raining = false
+	_check("Dry weather does not restrict flood-zone traffic", is_equal_approx(traffic.flood_speed_factor(pos), 1.0))
+	GameState.is_raining = true
+	_check("Monsoon slows traffic in flood zone", traffic.flood_speed_factor(pos) < 1.0)
+	_check("Far from flooding retains normal traffic speed", is_equal_approx(traffic.flood_speed_factor(pos + Vector3(10000.0, 0.0, 10000.0)), 1.0))
+	GameState.is_raining = old_rain
 
 func _test_cattle(traffic: ChennaiTrafficManager) -> void:
 	var cows_active: int = 0
