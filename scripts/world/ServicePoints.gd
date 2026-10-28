@@ -41,7 +41,7 @@ func _ready() -> void:
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player_pos = p)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
 	SignalBus.tow_requested.connect(func(from: Vector3) -> void:
-		var r: Dictionary = tow_to_nearest_fuel(from)
+		var r: Dictionary = tow_to_nearest_fuel(_player_pos if from == Vector3.ZERO else from)
 		if not r.is_empty():
 			SignalBus.teleport_requested.emit(r["transform"]))
 

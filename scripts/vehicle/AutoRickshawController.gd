@@ -116,7 +116,8 @@ func _ready() -> void:
 		reset_physics_interpolation()
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
-		_prev_velocity = Vector3.ZERO)
+		_prev_velocity = Vector3.ZERO
+		current_water_depth_m = 0.0)
 	if use_player_profile:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
 		SignalBus.engine_switch_off_requested.connect(switch_off_engine)
@@ -561,6 +562,10 @@ func blow_horn() -> void:
 func pull_hand_kick_starter() -> bool:
 	if not is_engine_stalled:
 		return true
+	# Restarting while intake-height water surrounds the engine is unsafe.
+	if current_water_depth_m >= stats.water_stall_depth_m:
+		SignalBus.flood_restart_blocked.emit()
+		return false
 	var now: float = _clock_s
 	if kick_rhythm_enabled and kick_start_pulls > 0:
 		var gap: float = now - _last_kick_s
