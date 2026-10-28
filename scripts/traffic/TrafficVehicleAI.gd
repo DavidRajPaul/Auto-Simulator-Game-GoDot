@@ -259,6 +259,8 @@ func tick(delta: float) -> void:
 	var lead_speed: float = float(lead["speed"])
 	var safe_gap: float = FOLLOW_MIN_GAP_M + current_speed_mps * FOLLOW_TIME_S
 	var target_speed: float = cruise_speed_mps * manager.speed_factor
+	# Monsoon approach warning and deep-water crawling, based on actual flood spots.
+	target_speed *= manager.flood_speed_factor(global_position)
 	var remaining: float = manager.graph.edges[edge].length - t
 	if remaining < TURN_SLOWDOWN_M:
 		target_speed *= 0.7
