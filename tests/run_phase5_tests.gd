@@ -177,10 +177,15 @@ func _test_monsoon(main: Node, world: WorldChunkStreamer, auto: AutoRickshawCont
 	await _physics(30)
 	Input.action_release("accelerate")
 	_check("Deep monsoon flood stalls the engine", auto.is_engine_stalled, "%s, %.2f m" % [deepest["name"], auto.current_water_depth_m])
-	for i: int in 3: # mashing
+	_events.erase("flood_restart_blocked")
+	for i: int in 3: # submerged: kick is blocked before rhythm evaluation
 		auto.pull_hand_kick_starter()
-	_check("Mashing KICK doesn't restart it", auto.is_engine_stalled and _events.get("kick_timed", true) == false)
+	_check("Submerged engine cannot be kick-started", auto.is_engine_stalled and _events.has("flood_restart_blocked"))
 	auto.current_water_depth_m = 0.0 # pushed out of the water
+	# Outside the flood, the original anti-mashing rhythm behavior still applies.
+	for i: int in 3:
+		auto.pull_hand_kick_starter()
+	_check("Mashing KICK doesn't restart it once dry", auto.is_engine_stalled and _events.get("kick_timed", true) == false)
 	_events.erase("engine_restarted")
 	for i: int in auto.stats.kick_start_pulls_needed + 1:
 		await _physics(36) # ~0.6 s rhythm
