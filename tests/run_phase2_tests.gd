@@ -30,6 +30,7 @@ func _run() -> void:
 	_test_traffic_on_roads(traffic, auto)
 	await _test_traffic_follows_graph(traffic)
 	_test_following_brake(traffic)
+	_test_junction_yield(traffic)
 	_test_cattle(traffic)
 	await _test_drive(auto)
 	await _test_streaming(world, auto)
@@ -182,6 +183,32 @@ func _test_following_brake(traffic: ChennaiTrafficManager) -> void:
 	_check("Follower keeps nonnegative bumper gap", gap_after >= 0.0)
 	lead.deactivate()
 	follower.deactivate()
+
+func _test_junction_yield(traffic: ChennaiTrafficManager) -> void:
+	var cars: Array[TrafficVehicleAI] = []
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.HATCHBACK:
+			cars.append(v)
+		if cars.size() == 2:
+			break
+	if cars.size() < 2:
+		_check("Junction test has two cars", false)
+		return
+	var waiting: TrafficVehicleAI = cars[0]
+	var blocker: TrafficVehicleAI = cars[1]
+	var e: int = 0
+	var d: int = 1 if traffic.graph.lanes_in_dir(e, 1) > 0 else -1
+	var road_len: float = traffic.graph.edges[e].length
+	traffic.place_vehicle(waiting, e, road_len - 9.0 if d > 0 else 9.0, d, 0)
+	var junction_id: int = traffic.graph.edges[e].b if d > 0 else traffic.graph.edges[e].a
+	traffic.place_vehicle(blocker, e, road_len - 2.0 if d > 0 else 2.0, d, 0)
+	blocker.turning = true
+	blocker.global_position = traffic.graph.nodes[junction_id]
+	_check("Occupied junction denies entry", not traffic.junction_clear(waiting))
+	blocker.turning = false
+	blocker.deactivate()
+	_check("Cleared junction allows entry", traffic.junction_clear(waiting))
+	waiting.deactivate()
 
 func _test_cattle(traffic: ChennaiTrafficManager) -> void:
 	var cows_active: int = 0

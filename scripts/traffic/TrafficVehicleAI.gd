@@ -18,6 +18,7 @@ const FOLLOW_TIME_S: float = 1.5
 const FOLLOW_MIN_GAP_M: float = 3.0
 const COMFORT_BRAKE_MPS2: float = 4.0
 const EMERGENCY_BRAKE_MPS2: float = 9.0
+const JUNCTION_HOLD_BUFFER_M: float = 1.5
 ## Junctions are driven as a smooth curve from TURN_BLEND_M before the node to TURN_BLEND_M
 ## after it (was: a snap from one road's lane offset to the next, a sideways jump of several
 ## metres on a right-angle turn, plus an instant change of heading).
@@ -261,6 +262,13 @@ func tick(delta: float) -> void:
 	var remaining: float = manager.graph.edges[edge].length - t
 	if remaining < TURN_SLOWDOWN_M:
 		target_speed *= 0.7
+	# Do not enter a junction occupied by another turning or stopped vehicle.
+	# Stop at the turn-curve entry rather than freezing halfway through a turn.
+	var junction_hold: bool = not turning and remaining < TURN_SLOWDOWN_M and not manager.junction_clear(self)
+	if junction_hold:
+		var entry_gap: float = maxf(remaining - _blend_before(manager.graph.edges[edge].length) - JUNCTION_HOLD_BUFFER_M, 0.0)
+		var allowed_speed: float = sqrt(2.0 * COMFORT_BRAKE_MPS2 * entry_gap)
+		target_speed = minf(target_speed, allowed_speed)
 	if courtesy_timer > 0.0:
 		courtesy_timer -= delta
 		target_speed *= 0.5
@@ -288,6 +296,10 @@ func tick(delta: float) -> void:
 	# Never advance through a lead bumper on this tick, even at low frame rates.
 	if lead_gap < INF:
 		current_speed_mps = minf(current_speed_mps, maxf(lead_gap - 0.15, 0.0) / maxf(delta, 0.001))
+
+	if junction_hold:
+		var hold_room: float = maxf(remaining - _blend_before(manager.graph.edges[edge].length) - JUNCTION_HOLD_BUFFER_M, 0.0)
+		current_speed_mps = minf(current_speed_mps, hold_room / maxf(delta, 0.001))
 
 	var step: float = current_speed_mps * delta
 	if turning:
