@@ -361,6 +361,25 @@ func lead_ahead(me: TrafficVehicleAI) -> Dictionary:
 			best = {"gap": gap_p, "speed": player_speed}
 	return best
 
+## Prevent two pooled vehicles from occupying the same junction at once.
+## A turning vehicle owns the conflict area; an approaching vehicle yields
+## when its next junction is within the same physical radius.
+const JUNCTION_CONFLICT_RADIUS_M: float = 12.0
+
+func junction_clear(me: TrafficVehicleAI) -> bool:
+	var road: RoadGraph.Edge = graph.edges[me.edge]
+	var junction_id: int = road.b if me.dir > 0 else road.a
+	var centre: Vector3 = graph.nodes[junction_id]
+	for other: TrafficVehicleAI in pool:
+		if other == me or not other.active:
+			continue
+		if other.turning and other.global_position.distance_to(centre) < JUNCTION_CONFLICT_RADIUS_M:
+			return false
+		# Occupied exit / crossing area: avoid pulling into a stopped queue.
+		if other.current_speed_mps < 1.0 and other.global_position.distance_to(centre) < 5.0:
+			return false
+	return true
+
 ## Player hit this vehicle: it stops and leans on the horn ("Enna pa, kannu theriyala?").
 func _on_bumped(v: Node3D, impact_mps: float) -> void:
 	var tv: TrafficVehicleAI = v as TrafficVehicleAI
