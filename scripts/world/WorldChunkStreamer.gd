@@ -682,9 +682,16 @@ func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 		var mid2: Vector3 = top + dir * 1.4 * s + Vector3(0.0, 0.35 * s, 0.0)
 		var wv: Vector3 = Vector3(-dir.z, 0.0, dir.x) * 0.45 * s
 		var col: Color = frond if k % 2 == 0 else frond.darkened(0.15)
-		var q: Array[Vector3] = [top, mid2 - wv, tip, mid2 + wv]
-		_face(m, q, Vector3.UP, col)
-		_face(m, q, Vector3.DOWN, col.darkened(0.25))
+		# Two tapered leaf panels per frond create a curved, drooping profile
+		# instead of one rigid kite. No textures or extra draw calls.
+		var root_left: Vector3 = top - wv * 0.2
+		var root_right: Vector3 = top + wv * 0.2
+		var mid_left: Vector3 = mid2 - wv
+		var mid_right: Vector3 = mid2 + wv
+		_face(m, [root_left, mid_left, mid2, root_right], Vector3.UP, col)
+		_face(m, [root_left, mid_left, mid2, root_right], Vector3.DOWN, col.darkened(0.22))
+		_face(m, [mid_left, tip, mid_right, mid2], Vector3.UP, col.darkened(0.05))
+		_face(m, [mid_left, tip, mid_right, mid2], Vector3.DOWN, col.darkened(0.25))
 	_blob(m, top - Vector3(0.0, 0.25 * s, 0.0), Vector3(0.6, 0.5, 0.6) * s, Color(0.45, 0.4, 0.15))
 
 func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color) -> void:
@@ -700,16 +707,21 @@ func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color
 ## Hexagonal bipyramid "leaf blob" (12 faces).
 func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
 	var ring: Array[Vector3] = []
+	var seed_f: float = c.x * 1.73 + c.z * 2.19 + c.y * 0.61
+	var twist: float = sin(seed_f * 0.17) * 0.28
 	for k: int in 6:
-		var a: float = TAU * float(k) / 6.0 + 0.3
-		ring.append(c + Vector3(cos(a) * size.x * 0.5, 0.0, sin(a) * size.z * 0.5))
-	var top: Vector3 = c + Vector3(0.0, size.y * 0.55, 0.0)
-	var bot: Vector3 = c - Vector3(0.0, size.y * 0.45, 0.0)
+		var a: float = TAU * float(k) / 6.0 + 0.3 + twist
+		var radius: float = 0.82 + 0.18 * sin(seed_f + float(k) * 2.47)
+		var rise: float = 0.13 * size.y * sin(seed_f * 0.47 + float(k) * 2.11)
+		ring.append(c + Vector3(cos(a) * size.x * 0.5 * radius, rise, sin(a) * size.z * 0.5 * radius))
+	var top: Vector3 = c + Vector3(0.12 * size.x * sin(seed_f), size.y * 0.58, 0.09 * size.z * cos(seed_f))
+	var bot: Vector3 = c + Vector3(-0.08 * size.x * cos(seed_f), -size.y * 0.44, 0.07 * size.z * sin(seed_f))
 	for k: int in 6:
 		var p0: Vector3 = ring[k]
 		var p1: Vector3 = ring[(k + 1) % 6]
-		_tri_out(m, p0, p1, top, c, col.lightened(0.08))
-		_tri_out(m, p0, p1, bot, c, col.darkened(0.12))
+		var tint: float = 0.025 * sin(seed_f + float(k) * 1.9)
+		_tri_out(m, p0, p1, top, c, col.lightened(0.08 + maxf(tint, 0.0)))
+		_tri_out(m, p0, p1, bot, c, col.darkened(0.12 + maxf(-tint, 0.0)))
 
 ## Triangle wound to face away from `centre`.
 func _tri_out(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, centre: Vector3, col: Color) -> void:
