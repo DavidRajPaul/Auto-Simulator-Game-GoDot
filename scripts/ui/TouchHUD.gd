@@ -167,6 +167,9 @@ func _ready() -> void:
 	_layout()
 	SignalBus.telemetry_updated.connect(_on_telemetry)
 	SignalBus.engine_stalled_in_water.connect(_on_stalled)
+	SignalBus.flood_restart_blocked.connect(func() -> void: _flash("Engine submerged! Tap RESCUE to tow out.", 3.0, Tone.WARN))
+	SignalBus.teleport_requested.connect(func(_xform: Transform3D) -> void:
+		_set_button_visible("FloodRescue", false))
 	SignalBus.kick_start_attempt.connect(_on_kick_attempt)
 	SignalBus.kick_timed.connect(func(good: bool) -> void:
 		if not good:
@@ -195,6 +198,7 @@ func _ready() -> void:
 	SignalBus.tutorial_highlight.connect(_on_tutorial_highlight)
 	SignalBus.weather_changed.connect(func(_r: bool) -> void: _refresh_wiper_visibility())
 	_set_button_visible("KickStart", false)
+	_set_button_visible("FloodRescue", false)
 	_refresh_wiper_visibility()
 	SignalBus.ui_modal_changed.connect(func(open: bool) -> void:
 		_root.visible = not open
@@ -269,6 +273,7 @@ func _build_controls() -> void:
 	_add_button("IndicatorLeft", "", "indicator_left", INDICATOR_OFF, "ind_left")
 	_add_button("IndicatorRight", "", "indicator_right", INDICATOR_OFF, "ind_right")
 	_add_button("KickStart", "KICK", "kick_start", Color(0.55, 0.36, 0.1, 0.9), "kick")
+	_add_button("FloodRescue", "RESCUE", "", Color(0.6, 0.2, 0.13, 0.92))
 	_add_button("Camera", "", "camera_cycle", Color(0.2, 0.2, 0.45, 0.7), "camera")
 	_add_button("Wiper", "", "", Color(0.2, 0.35, 0.45, 0.7), "wiper")
 	_add_button("SteerLeft", "◀", "steer_left", Color(0.2, 0.2, 0.24, 0.72))
@@ -382,6 +387,7 @@ func _layout() -> void:
 	_place_button("Brake", brake)
 	_place_button("Handbrake", hbrake)
 	_place_button("KickStart", Rect2(hbrake.position.x, hbrake.position.y - g - b * 0.8, b * 0.75, b * 0.8))
+	_place_button("FloodRescue", Rect2(hbrake.position.x + b * 0.8, hbrake.position.y - g - b * 0.8, b * 1.1, b * 0.8))
 
 	# Top-left: D/R gear, horn, camera; wiper under the gear.
 	var s: float = b * 0.78
@@ -591,6 +597,8 @@ func _press(button_name: String) -> void:
 	var action: String = str(e["action"])
 	if button_name == "Wiper":
 		_toggle_wiper()
+	elif button_name == "FloodRescue":
+		SignalBus.tow_requested.emit(Vector3.ZERO)
 	elif action != "":
 		_late_release.erase(action)
 		Input.action_press(action)
@@ -678,9 +686,10 @@ func _on_telemetry(data: Dictionary) -> void:
 			_show_banner(_status_label.text, Tone.WARN)
 
 func _on_stalled(_pos: Vector3) -> void:
-	_stall_text = "Engine flooded! Tap KICK"
-	_flash("Engine flooded! Tap KICK in a steady rhythm", 3.0, Tone.WARN)
+	_stall_text = "Engine flooded! RESCUE or kick when clear"
+	_flash("Engine flooded! Tap RESCUE to tow to safety.", 4.0, Tone.WARN)
 	_set_button_visible("KickStart", true)
+	_set_button_visible("FloodRescue", true)
 
 ## Tutorial spotlight: report where the named control sits so the overlay can cut a hole for it.
 func _on_tutorial_highlight(control_id: String) -> void:
