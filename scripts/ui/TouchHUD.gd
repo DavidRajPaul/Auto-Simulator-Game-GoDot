@@ -179,7 +179,9 @@ func _ready() -> void:
 	SignalBus.ride_updated.connect(func(info: Dictionary) -> void: _ride_fare = int(info["fare"]))
 	SignalBus.ride_completed.connect(func(_b: Dictionary) -> void: _ride_fare = -1)
 	SignalBus.lpg_empty.connect(func() -> void: _flash("Fuel empty! Tow to the nearest bunk.", 4.0, Tone.WARN))
-	SignalBus.fuel_low.connect(func(_level: float, _capacity: float) -> void: _flash("Fuel low! Head to the nearest bunk.", 4.0, Tone.WARN))
+	SignalBus.fuel_low.connect(func(_level: float, _capacity: float) -> void: _flash("Fuel low! Find a nearby bunk.", 4.0, Tone.WARN))
+	SignalBus.fuel_station_suggested.connect(func(station_name: String, distance_m: int) -> void:
+		_flash("Nearest fuel: %s (%d m direct)" % [station_name, distance_m], 5.0, Tone.WARN))
 	SignalBus.gear_changed.connect(_on_gear_changed)
 	SignalBus.gear_change_refused.connect(func() -> void: _flash(tr("STOP_TO_SHIFT"), 1.5, Tone.WARN))
 	SignalBus.indicator_blink.connect(_on_indicator_blink)
