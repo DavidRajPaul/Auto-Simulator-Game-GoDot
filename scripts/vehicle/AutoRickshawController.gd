@@ -10,6 +10,8 @@ const IDLE_FUEL_UNITS_PER_HOUR: float = 0.08
 const STALL_MAX_SPEED_KMH: float = 12.0
 const WATER_DRAG_N_PER_MPS: float = 240.0
 const WATER_DRAG_MAX_N: float = 2200.0
+const SPLASH_MIN_SPEED_KMH: float = 6.0
+const SPLASH_MAX_SPEED_KMH: float = 42.0
 const GETHU_MIN_SPEED_KMH: float = 20.0
 const GETHU_BONUS_INR: int = 15
 
@@ -72,6 +74,7 @@ var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
+var _wheel_splashes: Array[GPUParticles3D] = []
 ## --- Collisions (modelled on BUSSID / Car Parking Multiplayer / Truckers of Europe feel) ---
 ## Low body friction so a glancing hit SLIDES along the wall instead of gluing the auto to it,
 ## a little restitution for a believable bump-back, chamfered hull corners so building corners
@@ -109,6 +112,7 @@ func _ready() -> void:
 	_setup_collision()
 	_apply_mass()
 	_setup_wheel_rays()
+	_setup_wheel_splashes()
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
 	SignalBus.passenger_boarded.connect(_on_passenger_boarded)
 	SignalBus.passenger_alighted.connect(_on_passenger_alighted)
@@ -148,6 +152,50 @@ func _recolour() -> void:
 		var w: Node3D = get_node_or_null(wheel_name) as Node3D
 		if w != null:
 			w.visible = procedural_wheels
+
+## Three tiny GPU emitters, each reusing one shared material and quad mesh.
+## Emission is off when dry, slow, airborne, or the flood has drained.
+func _setup_wheel_splashes() -> void:
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(0.11, 0.20)
+	var surface: StandardMaterial3D = StandardMaterial3D.new()
+	surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	surface.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	surface.albedo_color = Color(0.67, 0.70, 0.68, 0.55)
+	surface.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	surface.vertex_color_use_as_albedo = true
+	surface.cull_mode = BaseMaterial3D.CULL_DISABLED
+	quad.material = surface
+	var motion: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	motion.direction = Vector3(0.0, 1.0, 0.0)
+	motion.spread = 55.0
+	motion.initial_velocity_min = 1.1
+	motion.initial_velocity_max = 2.7
+	motion.gravity = Vector3(0.0, -7.0, 0.0)
+	motion.scale_min = 0.5
+	motion.scale_max = 1.2
+	for origin: Vector3 in [FRONT_WHEEL_POS, REAR_LEFT_WHEEL_POS, REAR_RIGHT_WHEEL_POS]:
+		var spray: GPUParticles3D = GPUParticles3D.new()
+		spray.name = "WheelSplash%d" % _wheel_splashes.size()
+		spray.position = origin + Vector3(0.0, -stats.wheel_radius_m * 0.45, 0.0)
+		spray.amount = 10
+		spray.lifetime = 0.42
+		spray.explosiveness = 0.0
+		spray.process_material = motion
+		spray.draw_pass_1 = quad
+		spray.emitting = false
+		spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(spray)
+		_wheel_splashes.append(spray)
+
+func _update_wheel_splashes() -> void:
+	var active: bool = current_water_depth_m > 0.06 and current_speed_kmh > SPLASH_MIN_SPEED_KMH and wheels_grounded > 0
+	for i: int in _wheel_splashes.size():
+		var spray: GPUParticles3D = _wheel_splashes[i]
+		var ray: RayCast3D = front_wheel_ray if i == 0 else (rear_left_wheel_ray if i == 1 else rear_right_wheel_ray)
+		spray.emitting = active and ray.is_colliding()
+		if spray.emitting:
+			spray.amount_ratio = clampf((current_speed_kmh - SPLASH_MIN_SPEED_KMH) / (SPLASH_MAX_SPEED_KMH - SPLASH_MIN_SPEED_KMH), 0.15, 1.0)
 
 func _setup_collision() -> void:
 	var pm: PhysicsMaterial = PhysicsMaterial.new()
