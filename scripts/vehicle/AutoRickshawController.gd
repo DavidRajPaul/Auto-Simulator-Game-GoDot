@@ -116,7 +116,8 @@ func _ready() -> void:
 		reset_physics_interpolation()
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
-		_prev_velocity = Vector3.ZERO)
+		_prev_velocity = Vector3.ZERO
+		current_water_depth_m = 0.0)
 	if use_player_profile:
 		SignalBus.vehicle_loadout_changed.connect(apply_stats)
 		SignalBus.engine_switch_off_requested.connect(switch_off_engine)
