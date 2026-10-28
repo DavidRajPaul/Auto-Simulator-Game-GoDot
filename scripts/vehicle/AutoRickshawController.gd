@@ -5,6 +5,8 @@ extends RigidBody3D
 ## so keyboard, the TouchHUD and the headless tests all drive it the same way.
 
 const TELEMETRY_INTERVAL_S: float = 0.1
+const LOW_FUEL_FRACTION: float = 0.20
+const IDLE_FUEL_UNITS_PER_HOUR: float = 0.08
 const STALL_MAX_SPEED_KMH: float = 12.0
 const GETHU_MIN_SPEED_KMH: float = 20.0
 const GETHU_BONUS_INR: int = 15
@@ -30,6 +32,7 @@ var forward_speed_mps: float = 0.0
 var current_steer_rad: float = 0.0
 var current_roll_deg: float = 0.0
 var fuel_level: float = 0.0
+var _low_fuel_warned: bool = false
 var odometer_km: float = 0.0
 var is_engine_stalled: bool = false
 var kick_start_pulls: int = 0
@@ -391,7 +394,16 @@ func _update_fuel_and_odometer(delta: float) -> void:
 	if is_engine_stalled or (use_player_profile and GameState.tutorial_active):
 		return # guided first ride: no fuel burn
 	var was_full: bool = fuel_level > 0.0
-	fuel_level = maxf(0.0, fuel_level - km * stats.fuel_burn_per_km)
+	# Fuel is consumed by driving and by an idling engine; no consumption
+	# while stalled or switched off. A slow city journey must still cost fuel.
+	var idle_burn: float = IDLE_FUEL_UNITS_PER_HOUR * delta / 3600.0
+	fuel_level = maxf(0.0, fuel_level - km * stats.fuel_burn_per_km - idle_burn)
+	var low: bool = fuel_level > 0.0 and fuel_level <= stats.fuel_capacity * LOW_FUEL_FRACTION
+	if low and not _low_fuel_warned:
+		_low_fuel_warned = true
+		SignalBus.fuel_low.emit(fuel_level, stats.fuel_capacity)
+	elif not low:
+		_low_fuel_warned = false
 	if was_full and fuel_level <= 0.0:
 		SignalBus.lpg_empty.emit()
 

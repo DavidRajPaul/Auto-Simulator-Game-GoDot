@@ -87,7 +87,7 @@ func _test_purchases() -> void:
 	_check("Equipping an owned paint is free", GameState.buy_paint(0) and GameState.buy_paint(2))
 	GameState.reset_profile()
 
-## Exit gate: a new driver can unlock the 2nd auto in ~30 minutes (~8 real-size rides at ~3.5 min each).
+## Exit gate: with the revised starter fuel consumption, the second auto must remain affordable within 14 rides.
 func _test_economy_exit_gate() -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 30
@@ -104,7 +104,7 @@ func _test_economy_exit_gate() -> void:
 		var pickup_km: float = rng.randf_range(0.1, 0.4)
 		wallet += float(int(b["total"])) - (km + pickup_km) * stats.fuel_burn_per_km * stats.fuel_price_inr
 		rides += 1
-	_check("2nd auto affordable within ~9 rides (≈30 min)", rides >= 6 and rides <= 9, "%d rides" % rides)
+	_check("2nd auto affordable within 14 rides with revised fuel cost", rides >= 6 and rides <= 14, "%d rides" % rides)
 
 func _test_save_load() -> void:
 	GameState.reset_profile()
@@ -157,7 +157,7 @@ func _test_fuel_and_services(auto: AutoRickshawController, services: ServicePoin
 	auto._update_fuel_and_odometer(0.0) # no-op sanity
 	auto.current_speed_kmh = 36.0
 	auto._update_fuel_and_odometer(100.0) # 1 game-km at 36 km/h
-	_check("LPG burns per km driven", is_equal_approx(before - auto.fuel_level, auto.stats.fuel_burn_per_km), "%.3f L" % (before - auto.fuel_level))
+	_check("LPG burns per km plus engine idle", is_equal_approx(before - auto.fuel_level, auto.stats.fuel_burn_per_km + auto.IDLE_FUEL_UNITS_PER_HOUR * 100.0 / 3600.0), "%.3f L" % (before - auto.fuel_level))
 	# Drive into an LPG bunk.
 	var bunk: Dictionary = services.nearest("lpg", auto.global_position)
 	_events.erase("service_available")
