@@ -13,6 +13,8 @@ signal engine_stalled_in_water(world_pos: Vector3)
 signal kick_start_attempt(progress_ratio: float)
 signal engine_restarted()
 signal lpg_empty()
+## Fires once when the tank crosses 20%, re-armed after refuelling.
+signal fuel_low(level: float, capacity: float)
 
 # --- World ---------------------------------------------------------------
 ## Emitted by waterlogging zones when the player auto enters/leaves (depth 0 = dry).
