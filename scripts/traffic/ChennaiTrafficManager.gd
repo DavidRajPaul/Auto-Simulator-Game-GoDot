@@ -58,6 +58,12 @@ var density: float = 0.5
 var zone_id: String = ""
 var target_active: int = 12
 var speed_factor: float = 1.0
+const FLOOD_APPROACH_BUFFER_M: float = 14.0
+const FLOOD_DEEP_M: float = 0.45
+const FLOOD_CRAWL_FACTOR: float = 0.28
+const FLOOD_SHALLOW_FACTOR: float = 0.65
+var _flood_spots: Array[Dictionary] = []
+
 const NEAR_MISS_CLEARANCE_M: float = 0.6
 const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
 const PLAYER_HALF_WIDTH_M: float = 0.65
@@ -67,6 +73,7 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
 	graph = RoadGraph.from_json_file(graph_path) if graph_path != "" else _build_greybox_graph()
 	_load_market_zones()
+	_load_flood_hazards()
 	if ResourceLoader.exists(HONK_FILE):
 		_honk = AudioStreamPlayer3D.new()
 		_honk.name = "HonkBack"
@@ -110,6 +117,34 @@ func _load_market_zones() -> void:
 		_zones.append({"id": str(z["id"]), "x": float(z["x"]), "z": float(z["z"]), "r": float(z["r"])})
 		if MARKET_ZONES.has(str(z["id"])):
 			_market_zones.append(Vector3(float(z["x"]), float(z["z"]), float(z["r"])))
+
+## Use the same manifest flood spots as MonsoonFX. One load at startup,
+## and a bounded <=18 x spots lookup per tick; no physics probes.
+func _load_flood_hazards() -> void:
+	if graph_path == "":
+		return
+	var file: FileAccess = FileAccess.open(graph_path.get_base_dir().path_join("manifest.json"), FileAccess.READ)
+	if file == null:
+		return
+	var manifest: Dictionary = JSON.parse_string(file.get_as_text()) as Dictionary
+	for spot: Dictionary in manifest.get("flood_spots", []):
+		_flood_spots.append({"pos": Vector2(float(spot["x"]), float(spot["z"])), "radius": float(spot["r"]), "depth": float(spot["depth"])})
+
+## Reduce speed on approach, and crawl through deeper water.
+## No invented rerouting: route avoidance is a separate graph-routing slice.
+func flood_speed_factor(world_pos: Vector3) -> float:
+	if not GameState.is_raining:
+		return 1.0
+	var point: Vector2 = Vector2(world_pos.x, world_pos.z)
+	var factor: float = 1.0
+	for spot: Dictionary in _flood_spots:
+		var distance: float = point.distance_to(spot["pos"] as Vector2) - float(spot["radius"])
+		if distance > FLOOD_APPROACH_BUFFER_M:
+			continue
+		var hazard_factor: float = FLOOD_CRAWL_FACTOR if float(spot["depth"]) >= FLOOD_DEEP_M else FLOOD_SHALLOW_FACTOR
+		var proximity: float = 1.0 - clampf(maxf(distance, 0.0) / FLOOD_APPROACH_BUFFER_M, 0.0, 1.0)
+		factor = minf(factor, lerpf(1.0, hazard_factor, proximity))
+	return factor
 
 func in_market_zone(p: Vector3) -> bool:
 	for z: Vector3 in _market_zones:
