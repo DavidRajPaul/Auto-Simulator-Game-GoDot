@@ -426,22 +426,6 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	if dressing_enabled:
 		_street_dressing(m, dress)
-	if m.verts.is_empty():
-		return holder
-	var arrays: Array = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = m.verts
-	arrays[Mesh.ARRAY_NORMAL] = m.norms
-	arrays[Mesh.ARRAY_COLOR] = m.cols
-	arrays[Mesh.ARRAY_TEX_UV] = m.uvs
-	arrays[Mesh.ARRAY_TEX_UV2] = m.uv2s
-	var mesh: ArrayMesh = ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.surface_set_material(0, _bld_mat)
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.name = "BuildingMeshes"
-	mi.mesh = mesh
-	holder.add_child(mi)
 	# Foliage must not sample the facade atlas: its colours are vertex-painted.
 	# Keep trees in one separate mesh per chunk, independent of building textures.
 	if dressing_enabled and not dress.get("trees", []).is_empty():
@@ -460,6 +444,22 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 			tree_node.name = "RoadsideTrees"
 			tree_node.mesh = fm
 			holder.add_child(tree_node)
+	if m.verts.is_empty():
+		return holder
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = m.verts
+	arrays[Mesh.ARRAY_NORMAL] = m.norms
+	arrays[Mesh.ARRAY_COLOR] = m.cols
+	arrays[Mesh.ARRAY_TEX_UV] = m.uvs
+	arrays[Mesh.ARRAY_TEX_UV2] = m.uv2s
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _bld_mat)
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "BuildingMeshes"
+	mi.mesh = mesh
+	holder.add_child(mi)
 	var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
 	shape.backface_collision = true
 	shape.set_faces(faces)
