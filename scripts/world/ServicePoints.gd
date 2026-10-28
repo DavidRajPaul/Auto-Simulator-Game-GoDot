@@ -40,6 +40,15 @@ func _ready() -> void:
 		_build_marker(sv)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player_pos = p)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
+	# Reserve warning includes a reachable compatible service destination. Distance
+	# here is straight-line, not a road route; navigation will be added separately.
+	SignalBus.fuel_low.connect(func(_level: float, _capacity: float) -> void:
+		var kind: String = "ev" if GameState.active_stats().fuel_type == 2 else "lpg"
+		var station: Dictionary = nearest(kind, _player_pos)
+		if not station.is_empty():
+			var dist_m: int = roundi((_player_pos as Vector3).distance_to(station["pos"]))
+			SignalBus.fuel_station_suggested.emit(str(station["name"]), dist_m))
+
 	SignalBus.tow_requested.connect(func(from: Vector3) -> void:
 		var r: Dictionary = tow_to_nearest_fuel(from)
 		if not r.is_empty():
@@ -77,7 +86,11 @@ func nearest(kind: String, from: Vector3) -> Dictionary:
 func tow_to_nearest_fuel(from: Vector3) -> Dictionary:
 	var kind: String = "ev" if GameState.active_stats().fuel_type == 2 else "lpg"
 	var target: Dictionary = nearest(kind, from)
-	if target.is_empty() or not GameState.spend(mini(TOW_COST_INR, GameState.wallet_inr)):
+	if target.is_empty():
+		return {}
+	# Never softlock a driver with an empty wallet: an affordable tow costs up
+	# to ₹150, and is free when no money remains.
+	if not GameState.spend(mini(TOW_COST_INR, maxi(0, GameState.wallet_inr))):
 		return {}
 	var p: Vector3 = target["pos"]
 	return {"transform": Transform3D(Basis(Vector3.UP, float(target["yaw"])), p + Vector3(0, 1.0, 0)), "name": target["name"]}
