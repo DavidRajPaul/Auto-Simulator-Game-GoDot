@@ -16,7 +16,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	print("\n=== Namma Auto — Phase 5 tests ===")
-	for sig: String in ["recover_available", "hint_requested", "weather_changed", "kick_timed", "engine_restarted", "teleport_requested"]:
+	for sig: String in ["recover_available", "hint_requested", "weather_changed", "kick_timed", "flood_restart_blocked", "engine_restarted", "teleport_requested"]:
 		var n: String = sig
 		SignalBus.connect(sig, func(a: Variant = null, _b: Variant = null) -> void: _events[n] = a)
 	GameState.reset_profile()
