@@ -177,6 +177,8 @@ func _test_monsoon(main: Node, world: WorldChunkStreamer, auto: AutoRickshawCont
 	await _physics(30)
 	Input.action_release("accelerate")
 	_check("Deep monsoon flood stalls the engine", auto.is_engine_stalled, "%s, %.2f m" % [deepest["name"], auto.current_water_depth_m])
+	_check("Three wheel splash emitters exist", auto.get_node_or_null("WheelSplash0") != null and auto.get_node_or_null("WheelSplash1") != null and auto.get_node_or_null("WheelSplash2") != null)
+
 	_events.erase("flood_restart_blocked")
 	for i: int in 3: # submerged: kick is blocked before rhythm evaluation
 		auto.pull_hand_kick_starter()
