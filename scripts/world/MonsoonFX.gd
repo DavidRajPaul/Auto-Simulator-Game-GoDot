@@ -116,4 +116,4 @@ func _set_flooded(raining: bool) -> void:
 	for z: WaterlogZone in _zones:
 		z.set_deferred("monitoring", raining)
 	if not raining and not _zones.is_empty():
-		SignalBus.water_depth_changed.emit(0.0)
+		WaterlogZone.clear_active_flooding()
