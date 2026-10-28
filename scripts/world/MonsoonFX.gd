@@ -23,7 +23,7 @@ var _overlay: ColorRect
 var _mat: ShaderMaterial
 var _zones: Array[WaterlogZone] = []
 var _puddles: Array[MeshInstance3D] = []
-var _puddle_mat: StandardMaterial3D
+var _puddle_mat: ShaderMaterial
 
 func _ready() -> void:
 	_build_overlay()
@@ -72,11 +72,9 @@ func _load_flood_spots() -> void:
 	if f == null:
 		return
 	var m: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
-	_puddle_mat = StandardMaterial3D.new()
-	_puddle_mat.albedo_color = PUDDLE_COLOUR
-	_puddle_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_puddle_mat.roughness = 0.05
-	_puddle_mat.metallic = 0.3
+	_puddle_mat = ShaderMaterial.new()
+	_puddle_mat.shader = load("res://shaders/monsoon_puddle.gdshader") as Shader
+	_puddle_mat.set_shader_parameter("muddy_water", PUDDLE_COLOUR)
 	for s: Dictionary in m.get("flood_spots", []):
 		var spot: Dictionary = {"id": str(s["id"]), "name": str(s["name"]), "depth": float(s["depth"]), "r": float(s["r"]),
 			"pos": Vector3(float(s["x"]), 0.0, float(s["z"]))}
