@@ -8,6 +8,9 @@ const TELEMETRY_INTERVAL_S: float = 0.1
 const LOW_FUEL_FRACTION: float = 0.20
 const IDLE_FUEL_UNITS_PER_HOUR: float = 0.08
 const STALL_MAX_SPEED_KMH: float = 12.0
+## Water slows the auto even before intake-height flooding; capped for stability.
+const WATER_DRAG_N_PER_MPS: float = 240.0
+const WATER_DRAG_MAX_N: float = 2200.0
 const GETHU_MIN_SPEED_KMH: float = 20.0
 const GETHU_BONUS_INR: int = 15
 
@@ -303,6 +306,7 @@ func _physics_process(delta: float) -> void:
 	_solve_wheel(rear_right_wheel_ray, false, throttle_in, brake_in, handbrake_on, delta)
 	_apply_stabilizer()
 	_apply_aero_drag()
+	_apply_water_drag()
 	_update_fuel_and_odometer(delta)
 	_check_water_stall()
 	_update_lamps(brake_in, delta)
@@ -369,6 +373,17 @@ func _apply_aero_drag() -> void:
 	if spd > 0.5:
 		apply_central_force(-v.normalized() * stats.aero_drag_coeff * spd * spd)
 
+## Simplified rolling/flow resistance; not a computational fluid solver.
+func _apply_water_drag() -> void:
+	if current_water_depth_m <= 0.05:
+		return
+	var horizontal: Vector3 = Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+	if horizontal.length_squared() < 0.01:
+		return
+	var depth_ratio: float = clampf(current_water_depth_m / maxf(stats.water_stall_depth_m, 0.1), 0.0, 1.5)
+	var force_n: float = minf(WATER_DRAG_MAX_N, horizontal.length() * WATER_DRAG_N_PER_MPS * depth_ratio)
+	apply_central_force(-horizontal.normalized() * force_n)
+
 func _apply_stabilizer() -> void:
 	var roll_rad: float = global_transform.basis.get_euler().z
 	current_roll_deg = absf(rad_to_deg(roll_rad))
@@ -410,7 +425,9 @@ func _update_fuel_and_odometer(delta: float) -> void:
 func _check_water_stall() -> void:
 	if is_engine_stalled or current_water_depth_m < stats.water_stall_depth_m:
 		return
-	if current_speed_kmh < STALL_MAX_SPEED_KMH and Input.get_action_strength("accelerate") < 0.9:
+	# Floodwater above intake/stall depth can stop the engine regardless of
+	# throttle. High speed is not a guaranteed way through deep water.
+	if current_speed_kmh < STALL_MAX_SPEED_KMH or current_water_depth_m >= stats.water_stall_depth_m * 1.35:
 		is_engine_stalled = true
 		kick_start_pulls = 0
 		SignalBus.engine_stalled_in_water.emit(global_position)
@@ -561,6 +578,9 @@ func blow_horn() -> void:
 func pull_hand_kick_starter() -> bool:
 	if not is_engine_stalled:
 		return true
+	# Never restart a flooded engine while its intake is still submerged.
+	if current_water_depth_m >= stats.water_stall_depth_m:
+		return false
 	var now: float = _clock_s
 	if kick_rhythm_enabled and kick_start_pulls > 0:
 		var gap: float = now - _last_kick_s
