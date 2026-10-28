@@ -263,6 +263,13 @@ func _physics_process(delta: float) -> void:
 	var steer_in: float = Input.get_action_strength("steer_left") - Input.get_action_strength("steer_right")
 	var handbrake_on: bool = Input.is_action_pressed("handbrake")
 
+	# Read current physics velocity BEFORE handling gear changes and auto-reverse.
+	# Previously _auto_gear()/set_gear() used last tick's current_speed_kmh,
+	# allowing a one-frame stale reading near the 4 km/h shift safety limit.
+	var forward_dir: Vector3 = -global_transform.basis.z
+	forward_speed_mps = linear_velocity.dot(forward_dir)
+	current_speed_kmh = absf(forward_speed_mps) * 3.6
+
 	if Input.is_action_just_pressed("horn"):
 		blow_horn()
 	if Input.is_action_just_pressed("kick_start"):
@@ -281,10 +288,6 @@ func _physics_process(delta: float) -> void:
 
 	if fuel_level <= 0.0:
 		throttle_in = 0.0
-
-	var forward_dir: Vector3 = -global_transform.basis.z
-	forward_speed_mps = linear_velocity.dot(forward_dir)
-	current_speed_kmh = absf(forward_speed_mps) * 3.6
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)
 	var target_steer: float = steer_in * deg_to_rad(stats.max_steer_angle_deg) * speed_steer_factor
