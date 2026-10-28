@@ -337,6 +337,30 @@ func gap_ahead(me: TrafficVehicleAI) -> float:
 			best = minf(best, along - me.half_length() - 1.4)
 	return best
 
+## Lead obstacle data for car-following. Reuses the fixed traffic pool; no physics raycast.
+## The closest obstacle includes the lead speed, so braking responds to closing rate.
+func lead_ahead(me: TrafficVehicleAI) -> Dictionary:
+	var best: Dictionary = {"gap": INF, "speed": 0.0}
+	for o: TrafficVehicleAI in pool:
+		if o == me or not o.active or o.edge != me.edge or o.dir != me.dir:
+			continue
+		if absf(o.lateral - me.lateral) > me.half_width() + o.half_width():
+			continue
+		var gap: float = (o.t - o.half_length()) - (me.t + me.half_length())
+		if gap >= -0.5 and gap < float(best["gap"]):
+			best = {"gap": gap, "speed": o.current_speed_mps}
+	if _player != null:
+		var fwd: Vector3 = -me.global_transform.basis.z
+		var to_p: Vector3 = _player.global_position - me.global_position
+		var along: float = to_p.dot(fwd)
+		var side: float = absf(to_p.dot(Vector3(fwd.z, 0.0, -fwd.x)))
+		var gap_p: float = along - me.half_length() - 1.4
+		if along > 0.0 and side < me.half_width() + 0.9 and gap_p < float(best["gap"]):
+			var player_body: RigidBody3D = _player as RigidBody3D
+			var player_speed: float = maxf(0.0, player_body.linear_velocity.dot(fwd)) if player_body != null else 0.0
+			best = {"gap": gap_p, "speed": player_speed}
+	return best
+
 ## Player hit this vehicle: it stops and leans on the horn ("Enna pa, kannu theriyala?").
 func _on_bumped(v: Node3D, impact_mps: float) -> void:
 	var tv: TrafficVehicleAI = v as TrafficVehicleAI
