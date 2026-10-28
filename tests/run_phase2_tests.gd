@@ -29,6 +29,7 @@ func _run() -> void:
 	await _physics(120)
 	_test_traffic_on_roads(traffic, auto)
 	await _test_traffic_follows_graph(traffic)
+	_test_following_brake(traffic)
 	_test_cattle(traffic)
 	await _test_drive(auto)
 	await _test_streaming(world, auto)
@@ -149,6 +150,38 @@ func _test_traffic_follows_graph(traffic: ChennaiTrafficManager) -> void:
 	_check("AI turns onto new roads at junctions", changed >= 2, "%d vehicles changed edge" % changed)
 	_check("No NaN/inf AI positions", bad_pos == 0)
 	_check("No traffic instantiate/free while driving", traffic.get_child_count() == children)
+
+func _test_following_brake(traffic: ChennaiTrafficManager) -> void:
+	# Deterministic two-vehicle test on one road, isolated from live traffic.
+	var followers: Array[TrafficVehicleAI] = []
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.HATCHBACK:
+			followers.append(v)
+		if followers.size() == 2:
+			break
+	if followers.size() < 2:
+		_check("Following test has two cars", false)
+		return
+	var lead: TrafficVehicleAI = followers[0]
+	var follower: TrafficVehicleAI = followers[1]
+	var e: int = 0
+	var d: int = 1
+	if traffic.graph.lanes_in_dir(e, d) == 0:
+		d = -1
+	traffic.place_vehicle(lead, e, 60.0, d, 0)
+	traffic.place_vehicle(follower, e, 43.0, d, 0)
+	lead.current_speed_mps = 0.0
+	lead.cruise_speed_mps = 0.0
+	follower.current_speed_mps = 10.0
+	follower.cruise_speed_mps = 10.0
+	var gap_before: float = float(traffic.lead_ahead(follower)["gap"])
+	follower.tick(0.1)
+	var gap_after: float = float(traffic.lead_ahead(follower)["gap"])
+	_check("Stopped lead is detected ahead", gap_before > 0.0 and gap_before < 20.0)
+	_check("Follower brakes for stopped lead", follower.current_speed_mps < 10.0)
+	_check("Follower keeps nonnegative bumper gap", gap_after >= 0.0)
+	lead.deactivate()
+	follower.deactivate()
 
 func _test_cattle(traffic: ChennaiTrafficManager) -> void:
 	var cows_active: int = 0
