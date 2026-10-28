@@ -194,6 +194,22 @@ func _test_monsoon(main: Node, world: WorldChunkStreamer, auto: AutoRickshawCont
 	GameState.set_rain(false)
 	await _frames(5)
 	_check("Floods drain when the rain stops", not GameState.is_raining)
+	# Two overlapping flood areas: exiting the shallow area must not erase
+	# the deeper hazard. Run while rain is off so manifest zones are inactive.
+	var shallow: WaterlogZone = WaterlogZone.new()
+	var deep: WaterlogZone = WaterlogZone.new()
+	shallow.depth_m = 0.12
+	deep.depth_m = 0.42
+	shallow._on_body_entered(auto)
+	deep._on_body_entered(auto)
+	_check("Overlapping zones report deepest water", is_equal_approx(auto.current_water_depth_m, 0.42))
+	shallow._on_body_exited(auto)
+	_check("Exiting shallow zone preserves deeper flood", is_equal_approx(auto.current_water_depth_m, 0.42))
+	deep._on_body_exited(auto)
+	_check("Leaving final zone clears water depth", is_zero_approx(auto.current_water_depth_m))
+	shallow.free()
+	deep.free()
+
 	# Windscreen wiper clears drops.
 	GameState.set_rain(true, 600.0)
 	SignalBus.camera_mode_changed.emit("Cockpit")
