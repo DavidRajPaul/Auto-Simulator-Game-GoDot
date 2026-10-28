@@ -697,19 +697,26 @@ func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color
 		var out: Vector3 = (d0 + d1).normalized()
 		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, col.lightened(0.06 * out.x))
 
-## Hexagonal bipyramid "leaf blob" (12 faces).
+## Irregular low-poly leaf crown (12 triangles). Keeps the original mesh/face
+## budget while removing the identical diamond silhouette from every tree.
+## Variation is deterministic from crown position, so streaming is stable.
 func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
 	var ring: Array[Vector3] = []
+	var seed_f: float = c.x * 1.73 + c.z * 2.19 + c.y * 0.61
+	var twist: float = sin(seed_f * 0.17) * 0.28
 	for k: int in 6:
-		var a: float = TAU * float(k) / 6.0 + 0.3
-		ring.append(c + Vector3(cos(a) * size.x * 0.5, 0.0, sin(a) * size.z * 0.5))
-	var top: Vector3 = c + Vector3(0.0, size.y * 0.55, 0.0)
-	var bot: Vector3 = c - Vector3(0.0, size.y * 0.45, 0.0)
+		var a: float = TAU * float(k) / 6.0 + 0.3 + twist
+		var radius: float = 0.82 + 0.18 * sin(seed_f + float(k) * 2.47)
+		var rise: float = 0.13 * size.y * sin(seed_f * 0.47 + float(k) * 2.11)
+		ring.append(c + Vector3(cos(a) * size.x * 0.5 * radius, rise, sin(a) * size.z * 0.5 * radius))
+	var top: Vector3 = c + Vector3(0.12 * size.x * sin(seed_f), size.y * 0.58, 0.09 * size.z * cos(seed_f))
+	var bot: Vector3 = c + Vector3(-0.08 * size.x * cos(seed_f), -size.y * 0.44, 0.07 * size.z * sin(seed_f))
 	for k: int in 6:
 		var p0: Vector3 = ring[k]
 		var p1: Vector3 = ring[(k + 1) % 6]
-		_tri_out(m, p0, p1, top, c, col.lightened(0.08))
-		_tri_out(m, p0, p1, bot, c, col.darkened(0.12))
+		var tint: float = 0.025 * sin(seed_f + float(k) * 1.9)
+		_tri_out(m, p0, p1, top, c, col.lightened(0.08 + maxf(tint, 0.0)))
+		_tri_out(m, p0, p1, bot, c, col.darkened(0.12 + maxf(-tint, 0.0)))
 
 ## Triangle wound to face away from `centre`.
 func _tri_out(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, centre: Vector3, col: Color) -> void:
