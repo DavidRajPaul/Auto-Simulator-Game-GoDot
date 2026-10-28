@@ -10,6 +10,8 @@ signal telemetry_updated(data: Dictionary)
 signal two_wheel_tilt_changed(is_on_two_wheels: bool)
 signal gethu_stunt_bonus_earned(stunt_name: String, bonus_inr: int)
 signal engine_stalled_in_water(world_pos: Vector3)
+## Driver tried to restart with the engine still submerged.
+signal flood_restart_blocked()
 signal kick_start_attempt(progress_ratio: float)
 signal engine_restarted()
 signal lpg_empty()
