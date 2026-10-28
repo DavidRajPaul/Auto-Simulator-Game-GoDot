@@ -48,6 +48,7 @@ func _run() -> void:
 	_park_all(traffic)
 	await _physics(90) # let suspension settle
 	_check("Auto settles on 3 wheels", auto.wheels_grounded == 3, "grounded=%d" % auto.wheels_grounded)
+	_test_gear_shift_safety(auto)
 	await _test_acceleration(auto)
 	await _test_steering_roll(auto)
 	await _reset_auto(auto)
@@ -65,6 +66,19 @@ func _run() -> void:
 	get_tree().quit(1 if _failed > 0 else 0)
 
 # --- Tests -----------------------------------------------------------------
+
+func _test_gear_shift_safety(auto: AutoRickshawController) -> void:
+	# No movement required: gear shift limit must reject a moving trike and
+	# permit a stationary change. Restore drive before acceleration tests.
+	var saved_speed: float = auto.current_speed_kmh
+	auto.current_speed_kmh = AutoRickshawController.GEAR_SHIFT_MAX_KMH + 0.5
+	_check("Reject reverse shift while moving", not auto.set_gear(AutoRickshawController.GEAR_REVERSE)
+		and auto.gear == AutoRickshawController.GEAR_DRIVE)
+	auto.current_speed_kmh = 0.0
+	_check("Allow reverse shift when stationary", auto.set_gear(AutoRickshawController.GEAR_REVERSE)
+		and auto.gear == AutoRickshawController.GEAR_REVERSE)
+	_check("Restore drive gear", auto.set_gear(AutoRickshawController.GEAR_DRIVE))
+	auto.current_speed_kmh = saved_speed
 
 func _test_resources_load() -> void:
 	for path: String in REQUIRED_RESOURCES:
