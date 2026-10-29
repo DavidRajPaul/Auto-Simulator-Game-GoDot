@@ -1,309 +1,422 @@
 {
- "_note": "made by tools/osm/place_city_props.py",
- "props": [
-  {
-   "model": "chennai_central",
-   "x": 1811.0,
-   "z": -3725.2,
-   "yaw": 1.571,
-   "skyline": true
-  },
-  {
-   "model": "water_tower",
-   "x": 2234.6,
-   "z": -95.5,
-   "yaw": 1.75,
-   "zone": "marina"
-  },
-  {
-   "model": "water_tower",
-   "x": 1182.5,
-   "z": 1932.4,
-   "yaw": 1.15,
-   "zone": "mylapore"
-  },
-  {
-   "model": "water_tower",
-   "x": -296.4,
-   "z": -867.1,
-   "yaw": 1.45,
-   "zone": "anna_salai"
-  },
-  {
-   "model": "water_tower",
-   "x": -2800.0,
-   "z": 1107.3,
-   "yaw": 1.95,
-   "zone": "t_nagar"
-  },
-  {
-   "model": "slum_cluster",
-   "x": 1558.2,
-   "z": 756.6,
-   "yaw": -0.287
-  },
-  {
-   "model": "slum_cluster",
-   "x": 1830.7,
-   "z": 695.2,
-   "yaw": 1.223
-  },
-  {
-   "model": "slum_cluster",
-   "x": 1041.0,
-   "z": 1437.1,
-   "yaw": -2.681
-  },
-  {
-   "model": "slum_cluster",
-   "x": -884.0,
-   "z": -166.8,
-   "yaw": -2.259
-  },
-  {
-   "model": "slum_cluster",
-   "x": 2178.2,
-   "z": -2478.7,
-   "yaw": -0.585
-  },
-  {
-   "model": "slum_cluster",
-   "x": 2386.5,
-   "z": -2301.0,
-   "yaw": -3.127
-  },
-  {
-   "model": "slum_cluster",
-   "x": -502.2,
-   "z": -73.5,
-   "yaw": 1.219
-  },
-  {
-   "model": "gas_station",
-   "x": 555.4,
-   "z": -604.1,
-   "yaw": -1.856,
-   "scale": 1.0,
-   "service": "lpg_royapettah",
-   "fx": 561.0,
-   "fz": -602.5
-  },
-  {
-   "model": "gas_station",
-   "x": 652.1,
-   "z": 1390.8,
-   "yaw": 2.967,
-   "scale": 1.0,
-   "service": "lpg_mylapore",
-   "fx": 651.1,
-   "fz": 1396.6
-  },
-  {
-   "model": "gas_station",
-   "x": -868.1,
-   "z": 439.2,
-   "yaw": -2.951,
-   "scale": 0.65,
-   "service": "lpg_teynampet",
-   "fx": -867.4,
-   "fz": 442.9
-  },
-  {
-   "model": "gas_station",
-   "x": -2038.8,
-   "z": 600.5,
-   "yaw": 0.424,
-   "scale": 0.65,
-   "service": "lpg_tnagar",
-   "fx": -2040.4,
-   "fz": 597.1
-  },
-  {
-   "model": "barricade/roadside_barricade",
-   "x": 2260.0,
-   "z": 330.0,
-   "yaw": 0.0,
-   "scale": 1.5,
-   "zone": "marina",
-   "barricade_type": "yellow_black"
-  },
-  {
-   "model": "barricade/roadside_barricade",
-   "x": 1040.0,
-   "z": 1090.0,
-   "yaw": 1.571,
-   "scale": 1.5,
-   "zone": "mylapore",
-   "barricade_type": "orange_white"
-  },
-  {
-   "model": "barricade/roadside_barricade",
-   "x": -520.0,
-   "z": 470.0,
-   "yaw": -1.571,
-   "scale": 1.5,
-   "zone": "anna_salai",
-   "barricade_type": "blue_municipal"
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -1778.2,
-   "z": 342.8,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "anna_salai",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": 902.4,
-   "z": -1879.3,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "t_nagar",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": 890.4,
-   "z": -1862.3,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "t_nagar",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": 446.6,
-   "z": -943.2,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "royapettah",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -2136.0,
-   "z": 323.4,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "royapettah",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -3064.4,
-   "z": 1719.7,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "t_nagar",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": 1570.7,
-   "z": -1546.9,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "mylapore",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -1558.3,
-   "z": 215.0,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "marina",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -1729.4,
-   "z": -859.6,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "mylapore",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -178.0,
-   "z": 404.4,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "anna_salai",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": -1215.6,
-   "z": 339.7,
-   "yaw": 1.571,
-   "scale": 0.12,
-   "zone": "anna_salai",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "parked_two_wheeler_pack",
-   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
-   "x": 837.1,
-   "z": 277.5,
-   "yaw": 0.0,
-   "scale": 0.12,
-   "zone": "mylapore",
-   "parked_two_wheeler": true
-  },
-  {
-   "model": "maintenance_vehicle_pack",
-   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
-   "x": 555.4,
-   "z": -604.1,
-   "yaw": -1.856,
-   "scale": 0.24,
-   "zone": "royapettah",
-   "maintenance_display": true
-  },
-  {
-   "model": "maintenance_vehicle_pack",
-   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
-   "x": 652.1,
-   "z": 1390.8,
-   "yaw": 2.967,
-   "scale": 0.24,
-   "zone": "mylapore",
-   "maintenance_display": true
-  },
-  {
-   "model": "maintenance_vehicle_pack",
-   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
-   "x": -868.1,
-   "z": 439.2,
-   "yaw": -2.951,
-   "scale": 0.24,
-   "zone": "anna_salai",
-   "maintenance_display": true
-  },
-  {
-   "model": "maintenance_vehicle_pack",
-   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
-   "x": -2038.8,
-   "z": 600.5,
-   "yaw": 0.424,
-   "scale": 0.24,
-   "zone": "t_nagar",
-   "maintenance_display": true
-  }
- ]
+  "_note": "made by tools/osm/place_city_props.py",
+  "props": [
+    {
+      "model": "chennai_central",
+      "x": 1811,
+      "z": -3725.2,
+      "yaw": 1.571,
+      "skyline": true
+    },
+    {
+      "model": "water_tower",
+      "x": 2234.6,
+      "z": -95.5,
+      "yaw": 1.75,
+      "zone": "marina"
+    },
+    {
+      "model": "water_tower",
+      "x": 1182.5,
+      "z": 1932.4,
+      "yaw": 1.15,
+      "zone": "mylapore"
+    },
+    {
+      "model": "water_tower",
+      "x": -296.4,
+      "z": -867.1,
+      "yaw": 1.45,
+      "zone": "anna_salai"
+    },
+    {
+      "model": "water_tower",
+      "x": -2800,
+      "z": 1107.3,
+      "yaw": 1.95,
+      "zone": "t_nagar"
+    },
+    {
+      "model": "slum_cluster",
+      "x": 1558.2,
+      "z": 756.6,
+      "yaw": -0.287
+    },
+    {
+      "model": "slum_cluster",
+      "x": 1830.7,
+      "z": 695.2,
+      "yaw": 1.223
+    },
+    {
+      "model": "slum_cluster",
+      "x": 1041,
+      "z": 1437.1,
+      "yaw": -2.681
+    },
+    {
+      "model": "slum_cluster",
+      "x": -884,
+      "z": -166.8,
+      "yaw": -2.259
+    },
+    {
+      "model": "slum_cluster",
+      "x": 2178.2,
+      "z": -2478.7,
+      "yaw": -0.585
+    },
+    {
+      "model": "slum_cluster",
+      "x": 2386.5,
+      "z": -2301,
+      "yaw": -3.127
+    },
+    {
+      "model": "slum_cluster",
+      "x": -502.2,
+      "z": -73.5,
+      "yaw": 1.219
+    },
+    {
+      "model": "gas_station",
+      "x": 555.4,
+      "z": -604.1,
+      "yaw": -1.856,
+      "scale": 1,
+      "service": "lpg_royapettah",
+      "fx": 561,
+      "fz": -602.5
+    },
+    {
+      "model": "gas_station",
+      "x": 652.1,
+      "z": 1390.8,
+      "yaw": 2.967,
+      "scale": 1,
+      "service": "lpg_mylapore",
+      "fx": 651.1,
+      "fz": 1396.6
+    },
+    {
+      "model": "gas_station",
+      "x": -868.1,
+      "z": 439.2,
+      "yaw": -2.951,
+      "scale": 0.65,
+      "service": "lpg_teynampet",
+      "fx": -867.4,
+      "fz": 442.9
+    },
+    {
+      "model": "gas_station",
+      "x": -2038.8,
+      "z": 600.5,
+      "yaw": 0.424,
+      "scale": 0.65,
+      "service": "lpg_tnagar",
+      "fx": -2040.4,
+      "fz": 597.1
+    },
+    {
+      "model": "barricade/roadside_barricade",
+      "x": 2260,
+      "z": 330,
+      "yaw": 0,
+      "scale": 1.5,
+      "zone": "marina",
+      "barricade_type": "yellow_black"
+    },
+    {
+      "model": "barricade/roadside_barricade",
+      "x": 1040,
+      "z": 1090,
+      "yaw": 1.571,
+      "scale": 1.5,
+      "zone": "mylapore",
+      "barricade_type": "orange_white"
+    },
+    {
+      "model": "barricade/roadside_barricade",
+      "x": -520,
+      "z": 470,
+      "yaw": -1.571,
+      "scale": 1.5,
+      "zone": "anna_salai",
+      "barricade_type": "blue_municipal"
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -1778.2,
+      "z": 342.8,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "anna_salai",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": 902.4,
+      "z": -1879.3,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "t_nagar",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": 890.4,
+      "z": -1862.3,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "t_nagar",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": 446.6,
+      "z": -943.2,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "royapettah",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -2136,
+      "z": 323.4,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "royapettah",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -3064.4,
+      "z": 1719.7,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "t_nagar",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": 1570.7,
+      "z": -1546.9,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "mylapore",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -1558.3,
+      "z": 215,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "marina",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -1729.4,
+      "z": -859.6,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "mylapore",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -178,
+      "z": 404.4,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "anna_salai",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": -1215.6,
+      "z": 339.7,
+      "yaw": 1.571,
+      "scale": 0.12,
+      "zone": "anna_salai",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "parked_two_wheeler_pack",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "x": 837.1,
+      "z": 277.5,
+      "yaw": 0,
+      "scale": 0.12,
+      "zone": "mylapore",
+      "parked_two_wheeler": true
+    },
+    {
+      "model": "maintenance_vehicle_pack",
+      "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+      "x": 555.4,
+      "z": -604.1,
+      "yaw": -1.856,
+      "scale": 0.24,
+      "zone": "royapettah",
+      "maintenance_display": true
+    },
+    {
+      "model": "maintenance_vehicle_pack",
+      "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+      "x": 652.1,
+      "z": 1390.8,
+      "yaw": 2.967,
+      "scale": 0.24,
+      "zone": "mylapore",
+      "maintenance_display": true
+    },
+    {
+      "model": "maintenance_vehicle_pack",
+      "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+      "x": -868.1,
+      "z": 439.2,
+      "yaw": -2.951,
+      "scale": 0.24,
+      "zone": "anna_salai",
+      "maintenance_display": true
+    },
+    {
+      "model": "maintenance_vehicle_pack",
+      "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+      "x": -2038.8,
+      "z": 600.5,
+      "yaw": 0.424,
+      "scale": 0.24,
+      "zone": "t_nagar",
+      "maintenance_display": true
+    },
+    {
+      "model": "ripon_building",
+      "asset": "res://assets/models/city/ripon_building.glb",
+      "x": 1368.97,
+      "z": -3620.68,
+      "yaw": 3.14159,
+      "scale": 52,
+      "geo_lat": 13.0817545,
+      "geo_lon": 80.2716236,
+      "landmark": true,
+      "landmark_footprint": [
+        52,
+        35,
+        42
+      ],
+      "note": "Georeferenced Ripon Building; currently beyond northern playable road-graph boundary"
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": -1772.2,
+      "z": 346.8,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "anna_salai",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": 896.4,
+      "z": -1858.3,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "t_nagar",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": -2130,
+      "z": 327.4,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "royapettah",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": 1576.7,
+      "z": -1542.9,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "mylapore",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": -1723.4,
+      "z": -855.6,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "mylapore",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_kadai",
+      "asset": "res://assets/models/city/tea_kadai.glb",
+      "x": -1209.6,
+      "z": 343.7,
+      "yaw": 1.571,
+      "scale": 3,
+      "zone": "anna_salai",
+      "tea_cluster": true,
+      "near_parking": true,
+      "landmark_footprint": [
+        3.3,
+        3,
+        3.3
+      ]
+    }
+  ]
 }
