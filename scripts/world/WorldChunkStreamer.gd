@@ -1164,7 +1164,7 @@ func _add_tea_stall_fallback(holder: StaticBody3D, p: Dictionary, index: int) ->
 	MeshKit.box(surf, Vector3(0.0, 2.5, 0.0), Vector3(3.1, 0.22, 2.4), Color(0.75, 0.2, 0.13))
 	MeshKit.box(surf, Vector3(0.0, 1.2, -1.1), Vector3(2.6, 0.75, 0.5), Color(0.67, 0.42, 0.2))
 	var kiosk: MeshInstance3D = MeshInstance3D.new()
-	kiosk.mesh = MeshKit.finish(surf)
+	kiosk.mesh = MeshKit.finish(surf, PersonMesh.material())
 	kiosk.visibility_range_end = 115.0
 	kiosk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	place.add_child(kiosk)
