@@ -95,6 +95,7 @@ var _timer: float = 0.0
 var wetness: float = 0.0
 var _road_mat: StandardMaterial3D
 var _bld_mat: ShaderMaterial
+var _tree_mat: StandardMaterial3D
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 var skyline: Node3D
@@ -122,6 +123,11 @@ func _ready() -> void:
 	_bld_mat.shader = load("res://shaders/building_facade.gdshader") as Shader
 	_bld_mat.set_shader_parameter("atlas", load("res://assets/textures/facade_atlas.png") as Texture2D)
 	_bld_mat.set_shader_parameter("glow", load("res://assets/textures/facade_glow.png") as Texture2D)
+	_tree_mat = StandardMaterial3D.new()
+	_tree_mat.vertex_color_use_as_albedo = true
+	_tree_mat.vertex_color_is_srgb = true
+	_tree_mat.roughness = 0.95
+	_tree_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_build_ground()
 	_build_areas()
 	_build_landmarks()
@@ -420,6 +426,24 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	if dressing_enabled:
 		_street_dressing(m, dress)
+	# Foliage must not sample the facade atlas: its colours are vertex-painted.
+	# Keep trees in one separate mesh per chunk, independent of building textures.
+	if dressing_enabled and not dress.get("trees", []).is_empty():
+		var foliage: MeshBuf = MeshBuf.new()
+		_street_trees(foliage, dress)
+		if not foliage.verts.is_empty():
+			var fa: Array = []
+			fa.resize(Mesh.ARRAY_MAX)
+			fa[Mesh.ARRAY_VERTEX] = foliage.verts
+			fa[Mesh.ARRAY_NORMAL] = foliage.norms
+			fa[Mesh.ARRAY_COLOR] = foliage.cols
+			var fm: ArrayMesh = ArrayMesh.new()
+			fm.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, fa)
+			fm.surface_set_material(0, _tree_mat)
+			var tree_node: MeshInstance3D = MeshInstance3D.new()
+			tree_node.name = "RoadsideTrees"
+			tree_node.mesh = fm
+			holder.add_child(tree_node)
 	if m.verts.is_empty():
 		return holder
 	var arrays: Array = []
@@ -580,6 +604,8 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 		for k: int in 2:
 			var off: Vector3 = across * (float(k) - 0.5) * 1.1 + Vector3(0.0, POLE_ARM_Y + 0.05, 0.0)
 			_wire(m, a + off, b + off, 0.35 + 0.12 * float(k))
+
+func _street_trees(m: MeshBuf, dress: Dictionary) -> void:
 	for t: Array in dress.get("trees", []):
 		var base2: Vector3 = Vector3(float(t[0]), 0.0, float(t[1]))
 		match int(t[2]):

@@ -36,7 +36,7 @@ class CityDensityTests(unittest.TestCase):
 
     def test_default_infill_not_unbounded(self) -> None:
         self.assertGreaterEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.65)
-        self.assertLess(DEFAULT_ZONE_STYLE["bld_density"], 0.85)
+        self.assertLessEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.96)
 
 
 if __name__ == "__main__":

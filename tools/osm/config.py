@@ -17,13 +17,13 @@ ZONES = {
     "marina":     {"name": "Marina Beach & Kamarajar Salai", "center": (13.0520, 80.2800), "radius": 900.0,
                    "bld_height": (5.0, 14.0), "bld_density": 0.45},
     "mylapore":   {"name": "Mylapore Heritage Tank", "center": (13.0335, 80.2690), "radius": 700.0,
-                   "bld_height": (5.0, 11.0), "bld_density": 0.98},
+                   "bld_height": (5.0, 11.0), "bld_density": 1.0},
     "anna_salai": {"name": "Anna Salai (Mount Road)", "center": (13.0590, 80.2560), "radius": 900.0,
-                   "bld_height": (10.0, 34.0), "bld_density": 0.95},
+                   "bld_height": (10.0, 34.0), "bld_density": 1.0},
     "t_nagar":    {"name": "T. Nagar Usman Road", "center": (13.0410, 80.2340), "radius": 800.0,
                    "bld_height": (9.0, 26.0), "bld_density": 1.0},
 }
-DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.72}
+DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.94}
 
 # Real-world landmark positions (approximate, hand-checked against OSM). Placeholder shapes in Phase 2,
 # replaced with low-poly GLTF hero models in Phase 5.

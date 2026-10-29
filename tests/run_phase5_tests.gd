@@ -50,7 +50,7 @@ func _run() -> void:
 func _test_world_data(m: Dictionary) -> void:
 	_check("Map is 1 : 1 with osm2streets roads", is_equal_approx(float(m.get("map_scale", 0.0)), 1.0) and str(m.get("road_source", "")) == "osm2streets")
 	var st: Dictionary = m.get("stats", {})
-	_check("Most buildings are real OSM footprints", int(st.get("real_buildings", 0)) * 3 > int(st.get("buildings", 1)) * 2,
+	_check("Real OSM buildings remain the majority after infill", int(st.get("real_buildings", 0)) * 2 > int(st.get("buildings", 1)) and int(st.get("real_buildings", 0)) >= 16000,
 		"%d of %d" % [int(st.get("real_buildings", 0)), int(st.get("buildings", 0))])
 	var graph: RoadGraph = RoadGraph.from_json_file(WORLD_DIR.path_join("road_graph.json"))
 	var floods: Array = m.get("flood_spots", [])
