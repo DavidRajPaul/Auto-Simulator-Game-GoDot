@@ -27,7 +27,7 @@ func _physics_process(delta: float) -> void:
 	if _elapsed < CHECK_S:
 		return
 	_elapsed = 0.0
-	var world: Node = get_tree().get_first_node_in_group("world_streamer")
+	var world: Node = get_parent().get_node_or_null("World")
 	if world != null:
 		var sea: MeshInstance3D = world.get_node_or_null("Area_sea") as MeshInstance3D
 		if sea != null and sea.material_override != _sea_material:
