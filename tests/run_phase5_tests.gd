@@ -77,6 +77,7 @@ func _test_world_data(m: Dictionary) -> void:
 	_check("Stand chunk has real building footprints", real >= 20, "%d real of %d" % [real, blds.size()])
 
 func _test_chunk_meshes(world: WorldChunkStreamer) -> void:
+	_check("Artist coconut palm asset is available", ResourceLoader.exists("res://assets/models/city/coconut_palm.glb"))
 	var road_tris: int = 0
 	var bld_tris: int = 0
 	for k: Vector2i in world.loaded:
