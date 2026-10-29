@@ -17,7 +17,7 @@ const PEOPLE_DIR: String = "res://assets/models/people/"
 const META_FILE: String = "res://assets/models/people/people.json"
 # Chennai pavements should feel inhabited without blowing the mobile draw-call
 # budget.  Keep the same pooled/LOD approach and add ten more walkers.
-const POOL: int = 24
+const POOL: int = 30
 const IDLE_SHARE: float = 0.3
 const SPAWN_MIN_M: float = 22.0
 const SPAWN_MAX_M: float = 95.0
@@ -27,15 +27,15 @@ const DESPAWN_M: float = 70.0
 const DESPAWN_FAR_M: float = 125.0
 const SPAWN_ON_SCREEN_M: float = 75.0
 const VISIBLE_M: float = 130.0
-const ANIMATE_M: float = 70.0
-const SHADOW_COUNT: int = 3
-const SHADOW_M: float = 28.0
+const ANIMATE_M: float = 55.0
+const SHADOW_COUNT: int = 2
+const SHADOW_M: float = 23.0
 const KERB_GAP_M: float = 1.2
 const IDLE_JUNCTION_CLEAR_M: float = 14.0
 const KERB_SPREAD_M: float = 0.9
 const WALK_Y: float = 0.08
 const TURN_RATE: float = 5.0
-const UPDATE_S: float = 0.5
+const UPDATE_S: float = 0.6
 ## Startle: an auto closing in fast makes walkers stop and step away from the road.
 const STARTLE_M: float = 4.5
 const STARTLE_SPEED_MPS: float = 2.0
@@ -43,7 +43,12 @@ const STARTLE_SPEED_MPS: float = 2.0
 const PACE: Dictionary = {"old_man_veshti": Vector2(0.85, 1.0)}
 const DEFAULT_PACE: Vector2 = Vector2(1.1, 1.35)
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
-const SHARE: Dictionary = {"young_man": 4, "man_casual": 3, "old_man_veshti": 3, "girl_churidar": 2, "woman_modern": 2}
+const SHARE: Dictionary = {
+    "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
+    "woman_modern": 2, "woman_saree_violet": 2, "woman_saree_green": 2,
+    "woman_saree_maroon": 2, "girl_pavadai": 2,
+    "man_dhoti_new": 3, "man_pattern_shirt": 3, "woman_saree_new": 3
+}
 
 var graph: RoadGraph
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -85,7 +90,7 @@ func _ready() -> void:
 		for n: int in int(SHARE.get(_ids[k], 1)):
 			slots.append(k)
 	for i: int in POOL:
-		if _scenes.is_empty():
+		if _scenes.is_empty() or slots.is_empty():
 			break
 		var k: int = slots[i % slots.size()]
 		var w: Walker = Walker.new()
