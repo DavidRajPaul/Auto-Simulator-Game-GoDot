@@ -140,8 +140,10 @@ func refresh() -> void:
 	for c: Dictionary in wanted:
 		if _assigned.has(c["key"]):
 			continue
-		if _damage.has(c["key"]) and _clock < float(_damage[c["key"]].get("repair_at", 0.0)):
-			continue
+		if _damage.has(c["key"]):
+			if _clock < float(_damage[c["key"]].get("repair_at", 0.0)):
+				continue
+			_damage.erase(c["key"])
 		var n: Node3D = _free_board()
 		if n == null:
 			break
@@ -182,9 +184,7 @@ func _place(n: Node3D, c: Dictionary) -> void:
 	var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
 	solid.process_mode = Node.PROCESS_MODE_INHERIT
 	n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_INHERIT
-	n.get_child(0).rotation.z = 0.0
-	n.get_child(0).position.y = 0.0
-	solid.rotation.z = 0.0
+	n.rotation.z = 0.0
 	var english: String = _short(str(c["name"])).to_upper()
 	ta.text = str(c["ta"])
 	en.text = english
@@ -218,9 +218,7 @@ func _on_impact(n: Node3D, body: Node3D) -> void:
 	state["hits"] = int(state["hits"]) + 1
 	if int(state["hits"]) == 1:
 		# First strike: lean the board and posts while keeping physical collision.
-		n.get_child(0).rotation.z = BEND_ANGLE_RAD
-		var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
-		solid.rotation.z = BEND_ANGLE_RAD
+		n.rotation.z = BEND_ANGLE_RAD
 	else:
 		# Second strike: detach visually, fall, then rebuild after a cooldown.
 		state["repair_at"] = _clock + REPAIR_S
@@ -228,8 +226,8 @@ func _on_impact(n: Node3D, body: Node3D) -> void:
 		solid.process_mode = Node.PROCESS_MODE_DISABLED
 		n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_DISABLED
 		var tween: Tween = create_tween()
-		tween.tween_property(n.get_child(0), "rotation:z", 1.45, 0.55)
-		tween.parallel().tween_property(n.get_child(0), "position:y", -1.2, 0.55)
+		tween.tween_property(n, "rotation:z", 1.45, 0.55)
+		tween.parallel().tween_property(n, "position:y", -1.2, 0.55)
 		tween.tween_callback(func() -> void:
 			if is_instance_valid(n):
 				n.visible = false
