@@ -44,7 +44,12 @@ fog_light_color = Color(0.64, 0.64, 0.62, 1)
 fog_density = 0.0028
 fog_sky_affect = 0.3
 
+[ext_resource type="Script" path="res://scripts/world/MarinaSeaGuard.gd" id="24"]
+
 [node name="MainChennai" type="Node3D"]
+
+[node name="MarinaSeaGuard" type="Node" parent="."]
+script = ExtResource("24")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env")
