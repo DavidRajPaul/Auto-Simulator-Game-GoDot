@@ -1,8 +1,12 @@
 shader_type spatial;
 render_mode cull_disabled;
 uniform vec4 ocean_blue : source_color = vec4(0.03, 0.24, 0.38, 1.0);
+varying vec2 ocean_coords;
+void vertex() {
+  ocean_coords = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+}
 void fragment() {
-  vec2 p = UV * 35.0;
+  vec2 p = ocean_coords * 0.12;
   float a = sin(p.x * 2.0 + TIME * 1.4 + sin(p.y * 0.7));
   float b = sin(p.y * 2.5 - TIME * 1.1);
   float wave = 0.5 + 0.25 * a + 0.25 * b;
