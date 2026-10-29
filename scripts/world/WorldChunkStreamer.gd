@@ -232,7 +232,12 @@ func _add_imported_palms(chunk: Node3D) -> void:
 	var markers: Node3D = chunk.get_node_or_null("Buildings/ImportedPalmMarkers") as Node3D
 	if markers == null or markers.get_child_count() == 0 or not ResourceLoader.exists(COCONUT_PALM_SCENE):
 		return
-	var source: Node3D = (load(COCONUT_PALM_SCENE) as PackedScene).instantiate() as Node3D
+	var palm_scene: PackedScene = load(COCONUT_PALM_SCENE) as PackedScene
+	if palm_scene == null:
+		return
+	var source: Node3D = palm_scene.instantiate() as Node3D
+	if source == null:
+		return
 	var source_mesh: MeshInstance3D = null
 	var mesh_nodes: Array[Node] = source.find_children("*", "MeshInstance3D", true, false)
 	if not mesh_nodes.is_empty():
