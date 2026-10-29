@@ -24,6 +24,8 @@
 [ext_resource type="Script" path="res://scripts/ui/TutorialOverlay.gd" id="22"]
 [ext_resource type="Script" path="res://scripts/world/BuildingBoards.gd" id="23"]
 
+[ext_resource type="Script" path="res://scripts/world/MarinaSeaGuard.gd" id="24"]
+
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
 sky_horizon_color = Color(0.86, 0.82, 0.72, 1)
@@ -45,6 +47,9 @@ fog_density = 0.0028
 fog_sky_affect = 0.3
 
 [node name="MainChennai" type="Node3D"]
+
+[node name="MarinaSeaGuard" type="Node" parent="."]
+script = ExtResource("24")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env")
