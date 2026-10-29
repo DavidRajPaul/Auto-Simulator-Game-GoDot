@@ -15,7 +15,9 @@ extends Node3D
 
 const PEOPLE_DIR: String = "res://assets/models/people/"
 const META_FILE: String = "res://assets/models/people/people.json"
-const POOL: int = 14
+# Chennai pavements should feel inhabited without blowing the mobile draw-call
+# budget.  Keep the same pooled/LOD approach and add ten more walkers.
+const POOL: int = 24
 const IDLE_SHARE: float = 0.3
 const SPAWN_MIN_M: float = 22.0
 const SPAWN_MAX_M: float = 95.0
