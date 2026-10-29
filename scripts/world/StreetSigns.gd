@@ -20,6 +20,13 @@ const PLATE_HEIGHT_M: float = 2.55
 const POST_GAP_M: float = 1.62
 const POST_R: float = 0.035
 const BLUE: Color = Color(0.03, 0.2, 0.58)
+const LABEL_MAX_WIDTH_M: float = 1.84
+const LABEL_MAX_HEIGHT_M: float = 0.23
+const BEND_ANGLE_RAD: float = 0.19
+const REPAIR_S: float = 35.0
+const IMPACT_COOLDOWN_S: float = 0.8
+var _damage: Dictionary = {} # spot key -> {hits, repair_at}
+var _clock: float = 0.0
 
 var _player: Vector3 = Vector3.ZERO
 var _pool: Array[Node3D] = []
@@ -42,6 +49,40 @@ func _ready() -> void:
 		n.add_child(mi)
 		n.add_child(_label("Tamil", PLATE_HEIGHT_M + 0.14, 54))
 		n.add_child(_label("English", PLATE_HEIGHT_M - 0.14, 46))
+		# Solid posts and plate: the auto can no longer pass through the board.
+		var solid: StaticBody3D = StaticBody3D.new()
+		solid.name = "Solid"
+		solid.collision_layer = 1
+		solid.collision_mask = 0
+		var plate_hit: CollisionShape3D = CollisionShape3D.new()
+		var plate_box: BoxShape3D = BoxShape3D.new()
+		plate_box.size = Vector3(PLATE.x, PLATE.y, 0.12)
+		plate_hit.shape = plate_box
+		plate_hit.position.y = PLATE_HEIGHT_M
+		solid.add_child(plate_hit)
+		for side: float in [-1.0, 1.0]:
+			var post_hit: CollisionShape3D = CollisionShape3D.new()
+			var post_shape: CylinderShape3D = CylinderShape3D.new()
+			post_shape.radius = 0.065
+			post_shape.height = PLATE_HEIGHT_M + 0.4
+			post_hit.shape = post_shape
+			post_hit.position = Vector3(side * POST_GAP_M * 0.5, post_shape.height * 0.5, 0.035)
+			solid.add_child(post_hit)
+		n.add_child(solid)
+		var trigger: Area3D = Area3D.new()
+		trigger.name = "ImpactArea"
+		trigger.collision_layer = 0
+		trigger.collision_mask = 1
+		trigger.monitoring = true
+		var trigger_shape: CollisionShape3D = CollisionShape3D.new()
+		var trigger_box: BoxShape3D = BoxShape3D.new()
+		trigger_box.size = Vector3(PLATE.x + 0.4, PLATE_HEIGHT_M + 0.7, 0.7)
+		trigger_shape.shape = trigger_box
+		trigger_shape.position.y = (PLATE_HEIGHT_M + 0.4) * 0.5
+		trigger.add_child(trigger_shape)
+		n.add_child(trigger)
+		trigger.body_entered.connect(func(body: Node3D) -> void: _on_impact(n, body))
+
 		add_child(n)
 		_pool.append(n)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player = p)
@@ -77,6 +118,7 @@ func _label(label_name: String, y: float, font_size: int) -> Label3D:
 	return l
 
 func _process(delta: float) -> void:
+	_clock += delta
 	if _spots.is_empty():
 		return
 	_timer += delta
@@ -98,6 +140,10 @@ func refresh() -> void:
 	for c: Dictionary in wanted:
 		if _assigned.has(c["key"]):
 			continue
+		if _damage.has(c["key"]):
+			if _clock < float(_damage[c["key"]].get("repair_at", 0.0)):
+				continue
+			_damage.erase(c["key"])
 		var n: Node3D = _free_board()
 		if n == null:
 			break
@@ -133,15 +179,60 @@ func _place(n: Node3D, c: Dictionary) -> void:
 	n.rotation = Vector3(0.0, float(c["yaw"]), 0.0)
 	var ta: Label3D = n.get_node("Tamil") as Label3D
 	var en: Label3D = n.get_node("English") as Label3D
+	n.set_meta("spot_key", int(c["key"]))
+	n.set_meta("last_hit", -10.0)
+	var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
+	solid.process_mode = Node.PROCESS_MODE_INHERIT
+	n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_INHERIT
+	n.rotation.z = 0.0
 	var english: String = _short(str(c["name"])).to_upper()
 	ta.text = str(c["ta"])
 	en.text = english
 	en.position.y = PLATE_HEIGHT_M - 0.14 if ta.text != "" else PLATE_HEIGHT_M - 0.02
 	en.font_size = 46 if ta.text != "" else 56
-	var fit: float = clampf(19.0 / maxf(float(english.length()), 1.0), 0.5, 1.0)
-	en.pixel_size = 0.0042 * fit
-	ta.pixel_size = 0.0042 * clampf(16.0 / maxf(float(ta.text.length()), 1.0), 0.5, 1.0)
+	_fit_label(en, LABEL_MAX_WIDTH_M, LABEL_MAX_HEIGHT_M)
+	_fit_label(ta, LABEL_MAX_WIDTH_M, LABEL_MAX_HEIGHT_M)
 	n.visible = true
+
+## Measure rendered glyphs, not character count (Tamil and English differ greatly).
+func _fit_label(l: Label3D, max_width: float, max_height: float) -> void:
+	l.pixel_size = 0.0042
+	if l.text.is_empty():
+		return
+	var font: Font = l.font if l.font != null else ThemeDB.fallback_font
+	var dimensions: Vector2 = font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_CENTER, -1, l.font_size)
+	var width_m: float = maxf(dimensions.x * l.pixel_size, 0.001)
+	var height_m: float = maxf(dimensions.y * l.pixel_size, 0.001)
+	l.pixel_size *= minf(1.0, minf(max_width / width_m, max_height / height_m))
+
+func _on_impact(n: Node3D, body: Node3D) -> void:
+	if not body.is_in_group("player_auto") or not n.visible:
+		return
+	if _clock - float(n.get_meta("last_hit", -10.0)) < IMPACT_COOLDOWN_S:
+		return
+	n.set_meta("last_hit", _clock)
+	var key: int = int(n.get_meta("spot_key", -1))
+	if key < 0:
+		return
+	var state: Dictionary = _damage.get(key, {"hits": 0, "repair_at": 0.0})
+	state["hits"] = int(state["hits"]) + 1
+	if int(state["hits"]) == 1:
+		# First strike: lean the board and posts while keeping physical collision.
+		n.rotation.z = BEND_ANGLE_RAD
+	else:
+		# Second strike: detach visually, fall, then rebuild after a cooldown.
+		state["repair_at"] = _clock + REPAIR_S
+		var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
+		solid.process_mode = Node.PROCESS_MODE_DISABLED
+		n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_DISABLED
+		var tween: Tween = create_tween()
+		tween.tween_property(n, "rotation:z", 1.45, 0.55)
+		tween.parallel().tween_property(n, "position:y", -1.2, 0.55)
+		tween.tween_callback(func() -> void:
+			if is_instance_valid(n):
+				n.visible = false
+				_assigned.erase(key))
+	_damage[key] = state
 
 ## Chennai boards abbreviate: "Road" → "Rd", "Street" → "St", "Salai" stays.
 static func _short(s: String) -> String:
