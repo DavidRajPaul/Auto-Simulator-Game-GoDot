@@ -277,6 +277,15 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
+    # Preserve handcrafted roadside props and georeferenced landmarks across OSM rebuilds.
+    # Generated water towers, settlements and stations above remain authoritative.
+    if OUT.exists():
+        prior = json.loads(OUT.read_text()).get("props", [])
+        for item in prior:
+            if (item.get("model") == "ripon_building" or item.get("tea_cluster")
+                    or item.get("parked_two_wheeler") or item.get("maintenance_display")
+                    or item.get("barricade_type")):
+                props.append(item)
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
         print(p)
