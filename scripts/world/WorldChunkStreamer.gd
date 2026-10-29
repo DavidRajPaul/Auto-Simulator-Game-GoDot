@@ -106,6 +106,9 @@ static var details_enabled: bool = true
 static var dressing_enabled: bool = true
 var skyline_home: Transform3D = Transform3D.IDENTITY
 
+func set_stream_target(target: Node3D) -> void:
+	_player = target
+
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
 	var f: FileAccess = FileAccess.open(world_dir.path_join("manifest.json"), FileAccess.READ)

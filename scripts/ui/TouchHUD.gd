@@ -526,6 +526,8 @@ func button_at(pos: Vector2) -> String:
 	return best
 
 func _input(event: InputEvent) -> void:
+	if not _root.visible:
+		return
 	if event is InputEventScreenTouch:
 		var st: InputEventScreenTouch = event as InputEventScreenTouch
 		if st.pressed:
