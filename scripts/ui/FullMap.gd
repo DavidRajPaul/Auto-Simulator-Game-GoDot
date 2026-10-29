@@ -17,6 +17,8 @@ const MIN_SCALE: float = 0.05 # px per metre (whole city)
 const MAX_SCALE: float = 3.0
 const LABEL_CELL_PX: float = 170.0
 
+var _on_foot: bool = false
+var _parked_auto: Vector3 = Vector3.ZERO
 var graph: RoadGraph
 var scale_px: float = 0.6
 var centre: Vector2 = Vector2.ZERO # world (x, z) at the screen centre
@@ -50,6 +52,8 @@ func _ready() -> void:
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
 	SignalBus.full_map_requested.connect(set_open)
+	SignalBus.on_foot_changed.connect(func(value: bool) -> void: _on_foot = value)
+	SignalBus.parked_auto_position_changed.connect(func(pos: Vector3) -> void: _parked_auto = pos)
 	_load_world_extras()
 	get_viewport().size_changed.connect(func() -> void:
 		size = get_viewport().get_visible_rect().size
@@ -197,6 +201,11 @@ func _draw() -> void:
 		_draw_labels(view)
 	_draw_hails()
 	_draw_player()
+	if _on_foot:
+		var pin: Vector2 = to_screen(Vector2(_parked_auto.x, _parked_auto.z))
+		draw_circle(pin, 13.0, Color.BLACK)
+		draw_circle(pin, 10.0, Color(0.2, 0.95, 0.4))
+		draw_string(_font, pin + Vector2(14.0, 5.0), "Parked Auto", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 	_draw_chrome()
 
 func _draw_areas(view: Rect2) -> void:
