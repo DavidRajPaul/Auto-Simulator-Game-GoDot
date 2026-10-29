@@ -72,8 +72,14 @@ FALLBACK_CLIP_ID = "young_man"
 PEOPLE = [
     ("old_man_veshti", "indian_old_man_walking", 1.66, 3000, 0,
      '"Indian Old man walking" by anandmohan662 (Sketchfab), CC BY 4.0'),
-    # "Indian Man In Dhoti" is left out: its dhoti cloth is bound to the skeleton at the wrong scale
-    # in the export, so it skins into a 3 m sheet.
+    # Imported from the user-supplied CC BY packs, after review of the source glTF rigs.
+    # Dhoti cloth in this particular export previously distorted; check final render before release.
+    ("man_dhoti_new", "indian_man_in_dhoti", 1.68, 3400, 0,
+     '"Indian Man In Dhoti" by anandmohan662 (Sketchfab), CC BY 4.0'),
+    ("man_pattern_shirt", "indian_man_in_pattern_shirt", 1.73, 3500, 0,
+     '"indian man in pattern shirt" by Pixel_Monster (Sketchfab), CC BY 4.0'),
+    ("woman_saree_new", "sareewoman", 1.57, 3400, 0,
+     '"Sareewoman" by dk8026854 (Sketchfab), CC BY 4.0'),
     ("young_man", "alex_texel_a-pose", 1.72, 3000, 0,
      '"Alex Texel A-pose" by alex.texelsales (Sketchfab), CC BY 4.0'),
     # "Indian Woman in Saree" (Pixel_Monster) is left out: Sketchfab Standard licence, and the project
