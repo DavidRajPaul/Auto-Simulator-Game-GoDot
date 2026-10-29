@@ -36,6 +36,7 @@ const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1)
 const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
 const CITY_MODEL_DIR: String = "res://assets/models/city/"
+const COCONUT_PALM_SCENE: String = "res://assets/models/city/coconut_palm.glb"
 const LANDMARK_VISIBLE_M: float = 420.0
 const SKYLINE_DIST_M: float = 370.0
 ## Collision boxes for baked landmarks (the visual models carry no colliders).
@@ -223,8 +224,39 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 	if loaded.has(k):
 		node.free()
 		return
+	_add_imported_palms(node)
 	add_child(node)
 	loaded[k] = node
+
+func _add_imported_palms(chunk: Node3D) -> void:
+	var markers: Node3D = chunk.get_node_or_null("Buildings/ImportedPalmMarkers") as Node3D
+	if markers == null or markers.get_child_count() == 0 or not ResourceLoader.exists(COCONUT_PALM_SCENE):
+		return
+	var source: Node3D = (load(COCONUT_PALM_SCENE) as PackedScene).instantiate() as Node3D
+	var source_mesh: MeshInstance3D = null
+	var mesh_nodes: Array[Node] = source.find_children("*", "MeshInstance3D", true, false)
+	if not mesh_nodes.is_empty():
+		source_mesh = mesh_nodes[0] as MeshInstance3D
+	if source_mesh == null or source_mesh.mesh == null:
+		source.free()
+		return
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = source_mesh.mesh
+	mm.instance_count = markers.get_child_count()
+	var palms: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	palms.name = "GeneratedCoconutPalms"
+	palms.multimesh = mm
+	palms.visibility_range_end = 180.0
+	for i: int in markers.get_child_count():
+		var marker: Node3D = markers.get_child(i) as Node3D
+		var scale: float = 7.5 * float(marker.get_meta("palm_scale", 1.0))
+		var yaw: float = float(marker.get_meta("palm_yaw", 0.0))
+		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale),
+			marker.position + Vector3(0.0, scale * 0.5, 0.0)))
+	markers.queue_free()
+	source.free()
+	chunk.get_node("Buildings").call_deferred("add_child", palms)
 
 func _exit_tree() -> void:
 	for k: Vector2i in _pending:
@@ -444,6 +476,7 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 			tree_node.name = "RoadsideTrees"
 			tree_node.mesh = fm
 			holder.add_child(tree_node)
+		_imported_palm_markers(holder, dress)
 	if m.verts.is_empty():
 		return holder
 	var arrays: Array = []
@@ -609,10 +642,24 @@ func _street_trees(m: MeshBuf, dress: Dictionary) -> void:
 	for t: Array in dress.get("trees", []):
 		var base2: Vector3 = Vector3(float(t[0]), 0.0, float(t[1]))
 		match int(t[2]):
-			1: _palm(m, base2, float(t[3]), int(t[4]))
+			1: pass # artist-generated palms are instanced separately
 			2: _mast_tree(m, base2, float(t[3]), int(t[4]))
 			3: _copper_pod(m, base2, float(t[3]), int(t[4]))
 			_: _shade_tree(m, base2, float(t[3]), int(t[4]))
+
+func _imported_palm_markers(holder: Node3D, dress: Dictionary) -> void:
+	var palms: Node3D = Node3D.new()
+	palms.name = "ImportedPalmMarkers"
+	for t: Array in dress.get("trees", []):
+		if int(t[2]) != 1:
+			continue
+		var marker: Node3D = Node3D.new()
+		marker.position = Vector3(float(t[0]), 0.0, float(t[1]))
+		marker.set_meta("palm_scale", float(t[3]))
+		marker.set_meta("palm_yaw", float(int(t[4]) % 360) * 0.0174533)
+		palms.add_child(marker)
+	if palms.get_child_count() > 0:
+		holder.add_child(palms)
 
 func _pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
 	var u: Vector3 = Vector3(along.x, 0.0, along.y)
