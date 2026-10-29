@@ -74,7 +74,7 @@ func _create_hero() -> void:
 		mesh.mesh = shape
 		mesh.position.y = 0.85
 		_visual.add_child(mesh)
-	get_parent().add_child.call_deferred(_hero)
+	get_parent().add_child(_hero)
 	_hero.visible = false
 	_hero.set_physics_process(false)
 
@@ -142,7 +142,7 @@ func _exit_auto() -> void:
 	_camera_rig._target = _hero
 	_camera_rig.mode = CameraRig.Mode.CHASE
 	_camera_rig._snap()
-	_world.set("player_path", NodePath("../HeroDriver"))
+	_world.call("set_stream_target", _hero)
 	_hud._root.visible = false
 	_hud.release_all()
 	_exit.visible = false
@@ -166,7 +166,7 @@ func _enter_auto() -> void:
 	_hero.set_physics_process(false)
 	_camera_rig._target = _auto
 	_camera_rig._snap()
-	_world.set("player_path", NodePath("../AutoRickshaw"))
+	_world.call("set_stream_target", _auto)
 	if _vehicle_frozen:
 		_auto.freeze = false
 		_vehicle_frozen = false
