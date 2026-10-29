@@ -8,6 +8,9 @@ const RANGE_M: float = 300.0
 const CELL_M: float = 100.0
 const REDRAW_INTERVAL_S: float = 1.0 / 15.0
 
+var _on_foot: bool = false
+var _parked_auto: Vector3 = Vector3.ZERO
+var _has_parked_auto: bool = false
 var _grid: Dictionary = {} # Vector2i -> PackedVector2Array (pairs of segment endpoints)
 var _player: Vector3 = Vector3.ZERO
 var _heading: Vector3 = Vector3.FORWARD
@@ -24,6 +27,8 @@ func _ready() -> void:
 	if ResourceLoader.exists(TouchHUD.HUD_ATLAS):
 		_hud_tex = load(TouchHUD.HUD_ATLAS) as Texture2D
 	_load_services()
+	SignalBus.on_foot_changed.connect(_on_foot_changed)
+	SignalBus.parked_auto_position_changed.connect(_on_parked_auto)
 	SignalBus.road_graph_ready.connect(_build_grid)
 	if SignalBus.current_road_graph != null:
 		_build_grid(SignalBus.current_road_graph)
@@ -32,6 +37,13 @@ func _ready() -> void:
 		_heading = f)
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
+
+func _on_foot_changed(on_foot: bool) -> void:
+	_on_foot = on_foot
+
+func _on_parked_auto(position: Vector3) -> void:
+	_parked_auto = position
+	_has_parked_auto = true
 
 func _load_services() -> void:
 	var f: FileAccess = FileAccess.open("res://data/world/manifest.json", FileAccess.READ)
@@ -124,6 +136,13 @@ func _draw() -> void:
 			draw_texture_rect_region(_hud_tex, Rect2(hp - Vector2(11, 26), Vector2(22, 26)), TouchHUD.HUD_REGIONS["pin_rider"] as Rect2)
 		else:
 			draw_circle(hp, 5.0, Color(1.0, 0.82, 0.1))
+	# Persistent parked auto marker, clamped to the rim when far away.
+	if _on_foot and _has_parked_auto:
+		var parked: Vector2 = _to_map(Vector2(_parked_auto.x, _parked_auto.z), centre, scale_px, rot)
+		var pin: Vector2 = _clamp_to(parked, centre, r - 12.0)
+		draw_circle(pin, 10.0, Color(0.02, 0.1, 0.04))
+		draw_circle(pin, 7.0, Color(0.25, 1.0, 0.45))
+		draw_string(ThemeDB.fallback_font, pin + Vector2(-5, 5), "A", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.BLACK)
 	# Player arrow + north tick + rim.
 	if _hud_tex != null:
 		draw_texture_rect_region(_hud_tex, Rect2(centre - Vector2(13, 15), Vector2(26, 30)), TouchHUD.HUD_REGIONS["pin_player"] as Rect2)
