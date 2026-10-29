@@ -256,6 +256,10 @@ func tick(delta: float) -> void:
 	var lead: Dictionary = manager.lead_ahead(self)
 	var lead_gap: float = float(lead["gap"])
 	var lead_speed: float = float(lead["speed"])
+	var signal_gap: float = manager.signal_stop_gap(self)
+	if signal_gap < lead_gap:
+		lead_gap = signal_gap
+		lead_speed = 0.0
 	var safe_gap: float = FOLLOW_MIN_GAP_M + current_speed_mps * FOLLOW_TIME_S
 	var target_speed: float = cruise_speed_mps * manager.speed_factor
 	var remaining: float = manager.graph.edges[edge].length - t

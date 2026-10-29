@@ -103,12 +103,12 @@ func _test_hints_and_arrow(main: Node, auto: AutoRickshawController) -> void:
 	var assist: ComfortAssist = main.get_node("ComfortAssist") as ComfortAssist
 	var arrow: MeshInstance3D = assist.get_node("GuidanceArrow") as MeshInstance3D
 	var target: Vector3 = assist.guidance_target()
-	_check("Guidance arrow points to the nearest rider", savari.hails.size() > 0 and target != Vector3.INF, "%d hails" % savari.hails.size())
-	var far: bool = target != Vector3.INF and Vector2(target.x - auto.global_position.x, target.z - auto.global_position.z).length() > ComfortAssist.ARROW_HIDE_NEAR_M
-	_check("Arrow visible while the rider is far", arrow.visible == far)
+	var hud: PassengerHUD = main.get_node("PassengerHUD") as PassengerHUD
+	_check("Guidance distance targets the nearest rider", savari.hails.size() > 0 and target != Vector3.INF and hud._guidance_distance.visible, "%d hails" % savari.hails.size())
+	_check("World-space guidance arrow stays out of the driving view", not arrow.visible)
 	GameState.settings["guidance_arrow"] = false
 	await _physics(2)
-	_check("Guide-arrow setting hides it", not arrow.visible)
+	_check("Guide setting hides the distance readout", not arrow.visible and not hud._guidance_distance.visible)
 	GameState.settings["guidance_arrow"] = true
 
 func _test_flip_recovery(auto: AutoRickshawController) -> void:

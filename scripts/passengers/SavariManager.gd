@@ -95,6 +95,7 @@ func _ready() -> void:
 			if a != null:
 				archetypes.append(a)
 	_load_manifest()
+	_build_parked_stand_autos()
 	_build_pools()
 	SignalBus.player_pose_updated.connect(_on_pose)
 	SignalBus.speed_updated.connect(func(kmh: float) -> void: _speed_kmh = kmh)
@@ -122,6 +123,33 @@ func _load_manifest() -> void:
 	for z: Dictionary in m.get("zones", []):
 		zones.append({"id": str(z["id"]), "name": str(z["name"]), "pos": Vector3(float(z["x"]), 0.0, float(z["z"])), "r": float(z["r"])})
 		destinations.append({"name": str(z["name"]), "pos": Vector3(float(z["x"]), 0.0, float(z["z"])), "kind": "zone"})
+
+## Auto stands are visibly occupied when no player-generated hail is present.
+## These are static art instances built once at scene start and have no physics bodies.
+func _build_parked_stand_autos() -> void:
+	var f: FileAccess = FileAccess.open(world_dir.path_join("manifest.json"), FileAccess.READ)
+	if f == null:
+		return
+	var manifest: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	var files: PackedStringArray = ["res://assets/models/traffic/share_auto.glb", "res://assets/models/traffic/share_auto.glb", "res://assets/models/traffic/hatchback.glb", "res://assets/models/traffic/two_wheeler.glb"]
+	for stand: Dictionary in manifest.get("auto_stands", []):
+		var base: Vector3 = Vector3(float(stand["x"]), 0.0, float(stand["z"]))
+		var yaw: float = float(stand.get("yaw", 0.0))
+		var fwd: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
+		var side: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+		for i: int in files.size():
+			var path: String = files[i]
+			if not ResourceLoader.exists(path):
+				continue
+			var packed: PackedScene = load(path) as PackedScene
+			if packed == null:
+				continue
+			var parked: Node3D = packed.instantiate() as Node3D
+			parked.name = "%s_Parked_%d" % [str(stand["id"]), i]
+			parked.position = base + fwd * (float(i) - 1.5) * 3.1 + side * 4.2 + Vector3.UP * 0.05
+			parked.rotation.y = yaw + PI # traffic GLBs face +Z; stand nose points out toward street
+			parked.scale = Vector3.ONE
+			add_child(parked)
 
 func _physics_process(delta: float) -> void:
 	if graph == null:

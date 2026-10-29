@@ -99,6 +99,7 @@ func _build_marker(s: Dictionary) -> void:
 		"lpg" when bool(s.get("station", false)):
 			label.text = "LPG AUTOGAS  ₹62/L"
 			label.position.y = 7.5
+			_add_station_activity(root)
 		"lpg":
 			_part(root, Vector3(10, 0.4, 7), Vector3(0, 5.2, 0), Color(0.95, 0.95, 0.95))
 			_part(root, Vector3(10.2, 0.6, 7.2), Vector3(0, 5.7, 0), Color(0.95, 0.45, 0.05))
@@ -124,6 +125,32 @@ func _build_marker(s: Dictionary) -> void:
 				_mesh(root, tyre, Vector3(2.3, 0.1 + i * 0.19, -1.5), Color(0.08, 0.08, 0.08))
 			label.text = "Puncture & Tinkering"
 			label.position.y = 4.4
+
+## A busy Chennai forecourt: pump islands and vehicles waiting to refuel.
+## These lightweight static GLB instances are built once with the service point.
+func _add_station_activity(root: Node3D) -> void:
+	for x: float in [-2.6, 2.6]:
+		_part(root, Vector3(0.55, 1.25, 0.5), Vector3(x, 0.62, 1.6), Color(0.92, 0.88, 0.18))
+		_part(root, Vector3(0.22, 0.18, 0.22), Vector3(x, 1.34, 1.6), Color(0.1, 0.12, 0.13))
+	var models: Array[Dictionary] = [
+		{"path": "res://assets/models/traffic/hatchback.glb", "pos": Vector3(-5.2, 0.05, -2.8), "scale": 0.62},
+		{"path": "res://assets/models/traffic/share_auto.glb", "pos": Vector3(0.0, 0.05, -2.8), "scale": 0.62},
+		{"path": "res://assets/models/traffic/two_wheeler.glb", "pos": Vector3(5.0, 0.05, -2.8), "scale": 0.65},
+	]
+	for i: int in models.size():
+		var item: Dictionary = models[i]
+		var path: String = str(item["path"])
+		if not ResourceLoader.exists(path):
+			continue
+		var packed: PackedScene = load(path) as PackedScene
+		if packed == null:
+			continue
+		var vehicle: Node3D = packed.instantiate() as Node3D
+		vehicle.name = "RefuellingVehicle_%d" % i
+		vehicle.position = item["pos"]
+		vehicle.rotation.y = PI # traffic models are authored facing +Z; face the pump
+		vehicle.scale = Vector3.ONE * float(item["scale"])
+		root.add_child(vehicle)
 
 func _part(root: Node3D, size: Vector3, pos: Vector3, colour: Color) -> void:
 	var b: BoxMesh = BoxMesh.new()

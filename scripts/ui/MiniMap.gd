@@ -13,6 +13,7 @@ var _player: Vector3 = Vector3.ZERO
 var _heading: Vector3 = Vector3.FORWARD
 var _route: PackedVector3Array = PackedVector3Array()
 var _hails: Array = []
+var _services: Array[Dictionary] = []
 var _timer: float = 0.0
 
 ## Painted ring and pins (TouchHUD.HUD_ATLAS). The ring turns with north, so its "N" stays true.
@@ -22,6 +23,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists(TouchHUD.HUD_ATLAS):
 		_hud_tex = load(TouchHUD.HUD_ATLAS) as Texture2D
+	_load_services()
 	SignalBus.road_graph_ready.connect(_build_grid)
 	if SignalBus.current_road_graph != null:
 		_build_grid(SignalBus.current_road_graph)
@@ -30,6 +32,14 @@ func _ready() -> void:
 		_heading = f)
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
+
+func _load_services() -> void:
+	var f: FileAccess = FileAccess.open("res://data/world/manifest.json", FileAccess.READ)
+	if f == null:
+		return
+	var manifest: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	for service: Dictionary in manifest.get("services", []):
+		_services.append({"pos": Vector2(float(service["x"]), float(service["z"])), "kind": str(service["kind"])})
 
 func _build_grid(graph: RoadGraph) -> void:
 	_grid.clear()
@@ -93,6 +103,17 @@ func _draw() -> void:
 			draw_multiline(route_lines, Color(0.16, 0.55, 1.0), 4.0)
 		var dest: Vector2 = _to_map(Vector2(_route[_route.size() - 1].x, _route[_route.size() - 1].z), centre, scale_px, rot)
 		draw_circle(_clamp_to(dest, centre, r - 7.0), 6.0, Color(0.25, 1.0, 0.45))
+	# Hails.
+	# LPG/EV stops are shown from the same manifest the service interactions use.
+	for service: Dictionary in _services:
+		var p: Vector2 = service["pos"]
+		if p.distance_to(Vector2(_player.x, _player.z)) > RANGE_M:
+			continue
+		var marker: Vector2 = _to_map(p, centre, scale_px, rot)
+		if marker.distance_to(centre) > r - 7.0:
+			continue
+		var colour: Color = Color("ffb84a") if str(service["kind"]) == "lpg" else Color("64e6a1")
+		draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -5), marker + Vector2(5, 0), marker + Vector2(0, 5), marker + Vector2(-5, 0)]), colour)
 	# Hails.
 	for h: Dictionary in _hails:
 		var p: Vector3 = h["position"]

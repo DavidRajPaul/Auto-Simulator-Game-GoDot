@@ -66,6 +66,8 @@ var nav_banner: NavBanner
 var full_map: FullMap
 var _double_btn: Button
 var _last_ride: Dictionary = {}
+var _warning_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _guidance_distance: Label
 
 ## 5-second haggle timer ring with the seconds in the middle (4G "0s" badge).
 class CountdownRing:
@@ -98,6 +100,7 @@ class Rays:
 		draw_circle(c, r * 0.16, Color(1.0, 0.75, 0.3, 0.25))
 
 func _ready() -> void:
+	_warning_rng.randomize()
 	layer = 11
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -113,6 +116,13 @@ func _ready() -> void:
 		if id == "minimap":
 			SignalBus.tutorial_spotlight.emit(minimap.get_global_rect()))
 	_build_chips()
+	_guidance_distance = UIKit.label("", 26, Color.WHITE, true, 6)
+	_guidance_distance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_guidance_distance.visible = false
+	_root.add_child(_guidance_distance)
+	SignalBus.guidance_distance_updated.connect(func(value: String) -> void:
+		_guidance_distance.text = value
+		_guidance_distance.visible = value != "")
 	nav_banner = NavBanner.new()
 	nav_banner.name = "NavBanner"
 	_root.add_child(nav_banner)
@@ -152,7 +162,7 @@ func _ready() -> void:
 	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
 	SignalBus.pedestrian_startled.connect(func(_p: Vector3) -> void:
 		if _toast_timer <= 0.0:
-			toast(tr("WATCH_OUT"), 1.2))
+			toast(_watch_out_line(), 1.2))
 	SignalBus.driver_xp_changed.connect(func(_x: int, _l: int, _p: float) -> void: _refresh_level())
 	SignalBus.driver_level_up.connect(_on_level_up)
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
@@ -198,6 +208,10 @@ func _process(delta: float) -> void:
 		_toast_timer -= delta
 		if _toast_timer <= 0.0:
 			_toast.text = ""
+
+func _watch_out_line() -> String:
+	var lines: PackedStringArray = [tr("WATCH_OUT"), tr("WATCH_OUT_2"), tr("WATCH_OUT_3"), tr("WATCH_OUT_4"), tr("WATCH_OUT_5"), tr("WATCH_OUT_6")]
+	return lines[_warning_rng.randi_range(0, lines.size() - 1)]
 
 # --- Building ------------------------------------------------------------------
 
@@ -464,6 +478,8 @@ func _layout() -> void:
 	minimap.position = Vector2(vp.x * 0.5 - MINIMAP_SIZE * 0.5, vp.y - 22.0 - MINIMAP_SIZE)
 	_chips.reset_size()
 	_chips.position = Vector2(vp.x - 24.0 - _chips.get_combined_minimum_size().x, 100.0)
+	_guidance_distance.position = Vector2(vp.x * 0.5 - 110.0, 72.0)
+	_guidance_distance.size = Vector2(220.0, 42.0)
 	var rank: Control = _root.get_node("RankChip") as Control
 	rank.reset_size()
 	rank.position = Vector2(vp.x - 24.0 - rank.get_combined_minimum_size().x, 146.0)
