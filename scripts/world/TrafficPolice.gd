@@ -18,8 +18,10 @@ const TURN_SPEED: float = 2.5
 const MIN_WIDTH_M: float = 6.0
 const MIN_SPACING_M: float = 150.0
 const BIG_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
-## Officers: male IPS (arms at sides) and female constable (arms out — directing traffic).
-const OFFICERS: PackedStringArray = ["res://assets/models/people/police_m_ips.glb", "res://assets/models/people/police_f_khaki.glb"]
+## Use the neutral male IPS model for junction posts.  The female source asset
+## has both arms permanently extended, which reads as a frozen traffic signal
+## instead of a resting constable between signal phases.
+const OFFICERS: PackedStringArray = ["res://assets/models/people/police_m_ips.glb"]
 const PLATFORM_R: float = 0.85
 const PLATFORM_H: float = 0.32
 

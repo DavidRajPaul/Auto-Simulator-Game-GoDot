@@ -134,7 +134,9 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
 	if TrafficModelFit.attach(self, model_path, fit_size, flip):
 		_mesh.visible = false
-	if kind == Archetype.TWO_WHEELER:
+	# Autos should never look driverless.  Reuse the compact seated mesh used by
+	# scooters; its low-poly silhouette reads clearly through the open auto side.
+	if kind in [Archetype.TWO_WHEELER, Archetype.SHARE_AUTO]:
 		_add_rider()
 	if kind == Archetype.SERVICE:
 		_mesh.visible = false
