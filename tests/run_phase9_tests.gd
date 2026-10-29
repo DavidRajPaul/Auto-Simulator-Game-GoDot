@@ -73,6 +73,17 @@ func _test_landmark_kit() -> void:
 	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))
 	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
 	_check("Artist police car asset is present", ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_car.glb"))
+	_check("Low-poly two-wheeler pack is present", ResourceLoader.exists("res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb"))
+	_check("Maintenance vehicle pack is present", ResourceLoader.exists("res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb"))
+	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
+	var props: Array = (JSON.parse_string(props_file.get_as_text()) as Dictionary).get("props", []) if props_file != null else []
+	var parked: int = 0
+	var maintenance: int = 0
+	for p: Dictionary in props:
+		parked += 1 if bool(p.get("parked_two_wheeler", false)) else 0
+		maintenance += 1 if bool(p.get("maintenance_display", false)) else 0
+	_check("Parked two-wheelers are distributed near businesses", parked >= 10, "%d placements" % parked)
+	_check("Maintenance vehicles appear at service forecourts", maintenance >= 4, "%d displays" % maintenance)
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))

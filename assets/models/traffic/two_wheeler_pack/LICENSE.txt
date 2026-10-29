@@ -1,0 +1,11 @@
+Model Information:
+* title:	Two-Wheeler Vehicles Pack Low-Poly
+* source:	https://sketchfab.com/3d-models/two-wheeler-vehicles-pack-low-poly-4e7fb68bdbfd42719f4ba4353abd6a16
+* author:	SymetrikGames (https://sketchfab.com/symetrik_games)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Two-Wheeler Vehicles Pack Low-Poly" (https://sketchfab.com/3d-models/two-wheeler-vehicles-pack-low-poly-4e7fb68bdbfd42719f4ba4353abd6a16) by SymetrikGames (https://sketchfab.com/symetrik_games) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

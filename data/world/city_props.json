@@ -144,6 +144,166 @@
    "scale": 1.5,
    "zone": "anna_salai",
    "barricade_type": "blue_municipal"
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -1778.2,
+   "z": 342.8,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "anna_salai",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": 902.4,
+   "z": -1879.3,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "t_nagar",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": 890.4,
+   "z": -1862.3,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "t_nagar",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": 446.6,
+   "z": -943.2,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "royapettah",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -2136.0,
+   "z": 323.4,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "royapettah",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -3064.4,
+   "z": 1719.7,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "t_nagar",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": 1570.7,
+   "z": -1546.9,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "mylapore",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -1558.3,
+   "z": 215.0,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "marina",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -1729.4,
+   "z": -859.6,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "mylapore",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -178.0,
+   "z": 404.4,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "anna_salai",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": -1215.6,
+   "z": 339.7,
+   "yaw": 1.571,
+   "scale": 0.12,
+   "zone": "anna_salai",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "parked_two_wheeler_pack",
+   "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+   "x": 837.1,
+   "z": 277.5,
+   "yaw": 0.0,
+   "scale": 0.12,
+   "zone": "mylapore",
+   "parked_two_wheeler": true
+  },
+  {
+   "model": "maintenance_vehicle_pack",
+   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+   "x": 555.4,
+   "z": -604.1,
+   "yaw": -1.856,
+   "scale": 0.24,
+   "zone": "royapettah",
+   "maintenance_display": true
+  },
+  {
+   "model": "maintenance_vehicle_pack",
+   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+   "x": 652.1,
+   "z": 1390.8,
+   "yaw": 2.967,
+   "scale": 0.24,
+   "zone": "mylapore",
+   "maintenance_display": true
+  },
+  {
+   "model": "maintenance_vehicle_pack",
+   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+   "x": -868.1,
+   "z": 439.2,
+   "yaw": -2.951,
+   "scale": 0.24,
+   "zone": "anna_salai",
+   "maintenance_display": true
+  },
+  {
+   "model": "maintenance_vehicle_pack",
+   "asset": "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
+   "x": -2038.8,
+   "z": 600.5,
+   "yaw": 0.424,
+   "scale": 0.24,
+   "zone": "t_nagar",
+   "maintenance_display": true
   }
  ]
 }
