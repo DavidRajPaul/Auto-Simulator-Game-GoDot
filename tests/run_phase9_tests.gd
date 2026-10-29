@@ -70,6 +70,9 @@ func _test_people_assets() -> void:
 	_check("Every character has walk + idle clips", ok_anims)
 
 func _test_landmark_kit() -> void:
+	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))
+	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
+	_check("Artist police car asset is present", ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_car.glb"))
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))

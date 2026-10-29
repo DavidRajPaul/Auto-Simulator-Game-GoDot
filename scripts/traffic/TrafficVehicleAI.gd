@@ -38,7 +38,7 @@ const MODEL_FILES: Array[String] = [
 const SERVICE_VARIANTS: Array = [
 	["res://assets/models/traffic/svc_garbage_truck.glb", Vector3(2.4, 2.66, 7.2), 3],
 	["res://assets/models/traffic/svc_school_bus.glb", Vector3(2.6, 3.2, 9.5), 3],
-	["res://assets/models/traffic/svc_police_car.glb", Vector3(1.78, 1.67, 4.6), 3],
+	["res://assets/models/traffic/police_car/svc_police_car.glb", Vector3(1.78, 1.67, 4.6), 3],
 	["res://assets/models/traffic/svc_tow_truck.glb", Vector3(2.19, 2.21, 6.4), 2],
 	["res://assets/models/traffic/svc_ambulance.glb", Vector3(2.2, 2.2, 5.9), 2],
 	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],
