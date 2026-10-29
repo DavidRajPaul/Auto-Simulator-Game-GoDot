@@ -26,6 +26,8 @@
 
 [ext_resource type="Script" path="res://scripts/world/MarinaSeaGuard.gd" id="24"]
 
+[ext_resource type="Script" path="res://scripts/passengers/CustomNavigation.gd" id="25"]
+
 [ext_resource type="Script" path="res://scripts/hero/HeroFreeRoam.gd" id="26"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
@@ -123,6 +125,9 @@ script = ExtResource("18")
 
 [node name="BuildingBoards" type="Node3D" parent="."]
 script = ExtResource("23")
+
+[node name="CustomNavigation" type="Node" parent="."]
+script = ExtResource("25")
 
 [node name="RouteLine" type="MeshInstance3D" parent="."]
 script = ExtResource("9")
