@@ -1141,7 +1141,8 @@ func _build_city_props(holder: StaticBody3D) -> void:
 		var size: Vector3 = CITY_FOOTPRINT.get(model, Vector3.ZERO)
 		if size != Vector3.ZERO:
 			var node: Node3D = Node3D.new()
-			node.transform = xf
+			# Collision footprint is specified in world metres: do not multiply by the Tripo visual scale.
+			node.transform = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
 			_base_collider(node, holder, size)
 			node.free()
 		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
