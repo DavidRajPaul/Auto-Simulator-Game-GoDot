@@ -117,6 +117,33 @@
    "service": "lpg_tnagar",
    "fx": -2040.4,
    "fz": 597.1
+  },
+  {
+   "model": "barricade/roadside_barricade",
+   "x": 2260.0,
+   "z": 330.0,
+   "yaw": 0.0,
+   "scale": 1.5,
+   "zone": "marina",
+   "barricade_type": "yellow_black"
+  },
+  {
+   "model": "barricade/roadside_barricade",
+   "x": 1040.0,
+   "z": 1090.0,
+   "yaw": 1.571,
+   "scale": 1.5,
+   "zone": "mylapore",
+   "barricade_type": "orange_white"
+  },
+  {
+   "model": "barricade/roadside_barricade",
+   "x": -520.0,
+   "z": 470.0,
+   "yaw": -1.571,
+   "scale": 1.5,
+   "zone": "anna_salai",
+   "barricade_type": "blue_municipal"
   }
  ]
 }

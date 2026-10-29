@@ -37,6 +37,7 @@ const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
 const CITY_MODEL_DIR: String = "res://assets/models/city/"
 const COCONUT_PALM_SCENE: String = "res://assets/models/city/coconut_palm.glb"
+const MARINA_LIGHTHOUSE_SCENE: String = "res://assets/models/city/lighthouse/chennai_lighthouse.glb"
 const LANDMARK_VISIBLE_M: float = 420.0
 const SKYLINE_DIST_M: float = 370.0
 ## Collision boxes for baked landmarks (the visual models carry no colliders).
@@ -1059,7 +1060,14 @@ func _build_landmarks() -> void:
 		holder.add_child(node)
 		match str(l["kind"]):
 			"lighthouse":
-				_kit_part(node, holder, LandmarkKit.lighthouse(), Vector3(14.0, 9.0, 14.0))
+				var lighthouse_scene: PackedScene = load(MARINA_LIGHTHOUSE_SCENE) as PackedScene
+				if lighthouse_scene != null:
+					var lighthouse: Node3D = lighthouse_scene.instantiate() as Node3D
+					lighthouse.scale = Vector3.ONE * 48.0
+					node.add_child(lighthouse)
+					_base_collider(node, holder, Vector3(14.0, 48.0, 14.0))
+				else:
+					_kit_part(node, holder, LandmarkKit.lighthouse(), Vector3(14.0, 9.0, 14.0))
 			"gopuram":
 				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
 			"tower":
