@@ -1114,10 +1114,11 @@ func _build_city_props(holder: StaticBody3D) -> void:
 	for p: Dictionary in props:
 		index += 1
 		var model: String = str(p["model"])
-		var path: String = CITY_MODEL_DIR + model + ".glb"
-		if not cache.has(model):
-			cache[model] = load(path) if ResourceLoader.exists(path) else null
-		var scene: PackedScene = cache[model] as PackedScene
+		var path: String = str(p.get("asset", CITY_MODEL_DIR + model + ".glb"))
+		var cache_key: String = path
+		if not cache.has(cache_key):
+			cache[cache_key] = load(path) if ResourceLoader.exists(path) else null
+		var scene: PackedScene = cache[cache_key] as PackedScene
 		if scene == null:
 			continue
 		var inst: Node3D = scene.instantiate() as Node3D
@@ -1139,6 +1140,16 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			node.free()
 		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
 			(mi as MeshInstance3D).visibility_range_end = LANDMARK_VISIBLE_M
+		if bool(p.get("parked_two_wheeler", false)):
+			_add_parked_rider(inst, index, p)
+
+func _add_parked_rider(vehicle: Node3D, index: int, prop: Dictionary) -> void:
+	var rider: MeshInstance3D = MeshInstance3D.new()
+	rider.name = "ParkedRider_%d" % index
+	rider.mesh = PersonMesh.seated_rider(index % 6)
+	var off: Array = prop.get("rider_offset", [0.0, 0.72, 0.22])
+	rider.position = Vector3(float(off[0]), float(off[1]), float(off[2]))
+	vehicle.add_child(rider)
 
 func _set_cast_shadow(n: Node, on: bool) -> void:
 	for mi: Node in n.find_children("*", "MeshInstance3D", true, false):

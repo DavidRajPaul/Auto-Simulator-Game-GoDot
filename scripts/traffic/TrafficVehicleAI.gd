@@ -24,7 +24,7 @@ const EMERGENCY_BRAKE_MPS2: float = 9.0
 const TURN_BLEND_M: float = 7.0
 ## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
-	"res://assets/models/traffic/two_wheeler.glb",
+	"res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
 	"res://assets/models/traffic/hatchback.glb",
 	"res://assets/models/traffic/share_auto.glb",
 	"res://assets/models/traffic/bus_tnstc.glb",

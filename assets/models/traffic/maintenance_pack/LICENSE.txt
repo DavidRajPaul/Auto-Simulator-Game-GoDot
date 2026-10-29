@@ -1,0 +1,11 @@
+Model Information:
+* title:	Maintenance vehicles
+* source:	https://sketchfab.com/3d-models/maintenance-vehicles-601a416ce706453e8230b3b4c837ce84
+* author:	OndyRen (https://sketchfab.com/saurondra)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Maintenance vehicles" (https://sketchfab.com/3d-models/maintenance-vehicles-601a416ce706453e8230b3b4c837ce84) by OndyRen (https://sketchfab.com/saurondra) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
