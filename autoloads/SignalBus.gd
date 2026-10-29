@@ -34,6 +34,10 @@ signal camera_mode_changed(mode_name: String)
 ## Short camera kick on impacts, 0–1 strength.
 signal camera_shake(strength: float)
 
+## Hero and parked auto persist independently while walking.
+signal on_foot_changed(on_foot: bool)
+signal parked_auto_position_changed(position: Vector3)
+
 # --- Navigation ------------------------------------------------------------
 ## Latest published road graph, for listeners that start after road_graph_ready fired.
 var current_road_graph: RoadGraph = null
