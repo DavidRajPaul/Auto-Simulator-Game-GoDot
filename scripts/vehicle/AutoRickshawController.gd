@@ -31,6 +31,7 @@ var front_wheel_ray: RayCast3D
 var rear_left_wheel_ray: RayCast3D
 var rear_right_wheel_ray: RayCast3D
 
+var _driver_on_foot: bool = false
 var current_speed_kmh: float = 0.0
 var forward_speed_mps: float = 0.0
 var current_steer_rad: float = 0.0
@@ -108,6 +109,7 @@ func _ready() -> void:
 	if stats == null:
 		stats = VehicleStats.new()
 	add_to_group("player_auto")
+	SignalBus.on_foot_changed.connect(func(value: bool) -> void: _driver_on_foot = value)
 	fuel_level = stats.fuel_capacity if GameState.fuel_level < 0.0 or not use_player_profile else minf(GameState.fuel_level, stats.fuel_capacity)
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	_setup_collision()
@@ -493,7 +495,8 @@ func _check_water_stall() -> void:
 func _emit_telemetry(delta: float) -> void:
 	SignalBus.speed_updated.emit(current_speed_kmh)
 	var fwd: Vector3 = -global_transform.basis.z
-	SignalBus.player_pose_updated.emit(global_position, fwd)
+	if not _driver_on_foot:
+		SignalBus.player_pose_updated.emit(global_position, fwd)
 	# Ride dynamics for the passenger comfort meter.
 	var dv: Vector3 = linear_velocity - _prev_velocity
 	_prev_velocity = linear_velocity
