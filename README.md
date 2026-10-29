@@ -26,11 +26,11 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 | **Language** | Fully statically typed GDScript 2.0 (untyped declarations are errors) |
 | **Target device** | Helio G85 / Snapdragon 680, 3–4 GB RAM, 60 FPS |
 | **Budgets** | ≤ 150 draw calls · ≤ 18 pooled AI vehicles · < 85 MB `.aab` |
-| **Map** | Real size (1 : 1), 7.0 × 5.9 km of central Chennai, 21,610 real building footprints |
+| **Map** | Real size (1 : 1), 7.0 × 5.9 km; latest density rebuild reports **28,355 total buildings (16,871 OSM + 11,484 infill)** |
 | **Languages** | English and தமிழ் (UI), Tanglish rider dialogue |
 | **Monetization** | Hybrid: rewarded + capped interstitial ads (placeholder provider today), Play Billing IAP later |
-| **Version** | `0.5.0-mvp` · 11 headless test suites, 465 checks, all green |
-| **Status** | MVP feature-complete in code; first-ride tutorial done; next up: visible damage and story missions (see Roadmap below) |
+| **Version** | `0.5.0-mvp` development build · 11 headless suites; latest merged-main CI must be checked before release |
+| **Status** | **Pre-release, NOT store-ready.** Core game implemented; world visuals, manual Android QA, missions, platform integrations and release compliance remain open |
 
 ### Design pillars
 1. **Madras Soul** – real Chennai streets, Tamil/English boards, TN buses and lorries, sarees and veshtis on the kerbs, Tanglish riders.
@@ -52,7 +52,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 **Chennai**
 - Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads.
-- 21.6k real building footprints with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
+- OSM building footprints plus procedural infill (28,355 total in the latest density build) with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
 - EB poles with sagging wires, neem trees and palms, Greater Chennai Corporation street-name boards with real OSM names (Tamil + English), name boards on real named buildings.
 - Landmarks: procedural Marina lighthouse and gopuram, Chennai Central on the skyline, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
@@ -310,16 +310,59 @@ Other workflows (manual): **OSM Import** (re-fetch OSM, rebuild `data/world`), *
 
 ---
 
+## 🚦 Verified implementation ledger — 29 October 2026
+
+**Legend:** [x] merged into `main` / implemented in code; [ ] still requires work or acceptance. A checked box **does not** mean a successful manual Android playtest. **All PRs #13–#30 are merged** as of this audit; the latest merged-`main` Android workflow was still running when this README was updated. [Android CI](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml).
+
+### Implemented in the repository
+
+- [x] Core three-wheel physics, driving controls, camera, HUD, collisions, reverse, indicators, horn, vehicle audio, garage, LPG/EV, save/load.
+- [x] Real-size OSM roads, lane geometry, chunk streaming, buildings, facade details, pedestrians, city traffic, Chennai landmarks and auto stands.
+- [x] Savari passenger loop, fares and haggling, GPS, navigation, driver progression, rewards and first-ride tutorial.
+- [x] Procedural clouds (PR #17), organic Chennai trees and palms (PRs #18, #23), monsoon puddles, drag, flood stalls, overlapping flood depth and rescue (PRs #19–#22), three-wheel splash FX (PR #24).
+- [x] Lead-vehicle speed-aware following and braking (PR #25), intersection yielding (PR #26), flood-aware NPC slowdown (PR #27).
+- [x] Denser frontage and second-row infill plus separate vertex-coloured roadside-tree rendering (PR #28). **Generated data and CI passed on the PR; visual realism on Android remains unaccepted.**
+- [x] Marina animated ocean surface and return-to-land guard (PR #29). **Shoreline-breaking waves and natural physical water interaction are not implemented.**
+- [x] GCC street-sign glyph fitting, post/plate collision, first-hit bending, second-hit fall and 35-second reappearance (PR #30). **Animation, text containment and collision still require Android verification.**
+- [x] CI test suites and Android APK/AAB pipeline, including PR-specific successful checks for #28–#30.
+
+### Required acceptance / bug-fix backlog — prioritize before new missions
+
+- [ ] **P0** Download a fresh APK from the **merged `main` SHA**, run the [full manual regression checklist](docs/MANUAL_ANDROID_REGRESSION.md) and record build SHA, device and video evidence. PR-specific green checks do not replace a merged-main device test.
+- [ ] **P0** Verify denser Chennai streets from the auto camera in Mylapore, T. Nagar, Anna Salai and Triplicane; fix remaining empty lots, road/building overlaps and unnatural repeating facades.
+- [ ] **P0** Verify roadside trees actually render in the APK. Replace/improve placeholder procedural foliage with licensed, Chennai-appropriate low-poly realistic coconut, neem, rain-tree, Ashoka and copper-pod models; add near/far LODs and batching.
+- [ ] **P0** Verify Marina animated water, beach access and ocean safety from multiple directions; eliminate unintended teleporting, shoreline gaps and ability to drive over sea. Improve coastal breaking-wave/foam visuals.
+- [ ] **P0** Verify GCC sign text stays within blue plates in English and Tamil, collision blocks the auto, first impact bends, second impact breaks/falls, and repair restores the correct sign. Fix any jitter or invisible collision.
+- [ ] **P0** Verify NPC following, junction yielding and flood speed behavior under dense traffic; fix deadlocks, overlapping vehicles and collisions with the player.
+- [ ] **P0** Verify flood stalls, wheel splashes, kick-start restrictions, towing, fuel, saves, tutorial and passenger payout on Android.
+- [ ] **P0** Profile 20–30 min on 3–4 GB Android phones (traffic + monsoon + dense city); achieve target FPS without severe thermal throttling, excessive draw calls or memory crashes.
+- [ ] **P1** Create recognizable, optimized models of Chennai Central, Ripon Building, LIC Building, Valluvar Kottam, Kapaleeshwarar Temple, Marina Lighthouse and Napier Bridge, using licensed references and real scale. Some landmarks are already represented procedurally or as imported models; **visual authenticity is not accepted yet**.
+- [ ] **P1** Complete visible auto damage and repair visuals (Phase 6), mission engine (Phase 7), eight story missions (Phase 8), localized content and voice polish (Phase 9).
+- [ ] **P0 launch** Replace mock ads with production SDK/consent or deliberately remove ads; implement and test Play Billing if paid products ship. Configure Play Games/cloud save only if retained in launch scope.
+- [ ] **P0 launch** Finalize keystore, Play App Signing, current target API and AAB, privacy policy, Data Safety, content rating, attribution/licence audit, store listing, screenshots and trailer.
+- [ ] **P0 launch** Complete Play internal/closed testing and meet **the actual Play Console requirements for this account** (do not assume the 12-testers/14-days rule applies to every account).
+- [ ] **P0 launch** Triage crashes/ANRs, conduct final regression and staged production rollout. No launch date is committed.
+
+### Free AI 3D asset generation — shortlist (not yet imported)
+
+| Tool | Free access / important limits | Best use |
+|---|---|---|
+| [Tripo Studio](https://www.tripo3d.ai/) | Free 200 credits/month; free 3D export limited to H2.5; free output requires attribution and platform retains IP under current plan terms. [Official pricing](https://www.tripo3d.ai/product-doc/getting-started/pricing-credits) | Browser-based image-to-3D tree/landmark trials |
+| [Meshy](https://www.meshy.ai/) | Free 100 credits/month, **10 monthly downloads of untextured Meshy 6 Lite only**; newer/textured model exports are paid. Free output CC BY 4.0 with attribution. [Official limits](https://help.meshy.ai/en/articles/10421033-why-can-t-i-download-my-model) | Fast browser previews and geometry prototypes |
+| [AssetFurnace](https://github.com/Bingeljell/image-to-3dlab) | Free self-hosted/open-source UI, **requires a capable local GPU/Mac**, and model weights have their own licences. | Zero-credit repeatable image-to-GLB pipeline when hardware is available |
+
+**Recommended workflow:** take a properly licensed, isolated reference photo or original concept image → image-to-3D → Blender decimation/manual cleanup → low-poly GLB → Godot import → LOD, collision and batching → Android FPS test. Do **not** commit AI output before verifying licence, likeness, scale, texture resolution and triangle count. For trees, start with coconut palms, rain trees and neem; for iconic buildings, start with Ripon Building and Chennai Central, then the temple and lighthouse. AI models are **not automatically game-ready**.
+
 # 🗺️ Roadmap
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started · **(you)** needs the owner or a real phone. **Android only.**
 
 | Part | Phase | Status |
 |---|---|---|
-| A · MVP | 1 Core physics · 2 Chennai world · 3 Savari loop · 4 Economy & garage · 5 Polish → MVP | ✅ code · device gates **(you)** |
-| A+ · Post-MVP | Controls & levels · UI art · play-test passes · city & people · rewards & ad placeholders · first-ride tutorial | ✅ |
-| B · Story content | **6 Visible damage** · 7 Mission engine · 8 Eight Chennai missions · 9 Content polish & voice | ⬜ next |
-| C · Launch | 10 Monetization & platform · 11 Compliance & store · 12 Closed testing · 13 Soft launch · 14 LiveOps | 🟡 10 started |
+| A · MVP | 1 Core physics · 2 Chennai world · 3 Savari loop · 4 Economy & garage · 5 Polish → MVP | [x] code; [ ] Android device acceptance |
+| A+ · Post-MVP | Controls & levels · UI art · city & people · rewards & ad placeholders · first-ride tutorial | [x] code; [ ] visual QA |
+| B · Story content | **6 Visible damage** · 7 Mission engine · 8 Eight Chennai missions · 9 Content polish & voice | [ ] pending |
+| C · Launch | 10 Monetization & platform · 11 Compliance & store · 12 Closed testing · 13 Soft launch · 14 LiveOps | [x] ad policy/mock; [ ] production integrations and release |
 
 The detailed plan for Part B (with build tasks, tests and risks) is in **[docs/MISSIONS_PLAN.md](docs/MISSIONS_PLAN.md)**.
 
@@ -372,7 +415,7 @@ The detailed plan for Part B (with build tasks, tests and risks) is in **[docs/M
 |---|---|
 | ![Mylapore osm2streets](docs/images/chennai_map_osm2streets_mylapore.png) | ![Facades and controls](docs/images/ingame_facades_controls.png) |
 
-- Real-size map (7.0 × 5.9 km) from osm2streets (13k lanes, 5.5k junctions) and 21,610 OSM footprints; one wall collider per chunk; Jolt world boundary raised to 20 km.
+- Real-size map (7.0 × 5.9 km) from osm2streets (13k lanes, 5.5k junctions); denser generated infill added in PR #28; one wall collider per chunk; Jolt world boundary raised to 20 km.
 - Comfort pack, day/night, Northeast Monsoon with flood spots, kick-start rhythm, main menu, Android back button, AAB in CI.
 - **MVP exit gate:** feature-complete loop ✅; `.aab` < 85 MB (CI reports it); 60 FPS for 20 minutes without dropping below 45 FPS ⬜ **(you)**; zero known crashers.
 
