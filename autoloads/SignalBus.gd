@@ -69,6 +69,11 @@ signal traffic_bumped(vehicle: Node3D, impact_mps: float)
 ## Per-physics-frame ride dynamics for the comfort meter (g units; jolt = vertical speed change).
 signal vehicle_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)
 
+## Custom player-selected GPS (independent of passenger trips).
+signal custom_navigation_requested(start: Vector3, destination: Vector3)
+signal custom_navigation_cleared()
+signal custom_navigation_state_changed(active: bool, start: Vector3, destination: Vector3)
+
 # --- Passengers & economy (Phase 3) --------------------------------------
 ## Hails visible to the HUD / mini-map: Array of {id, position, archetype}.
 signal hails_updated(hails: Array)
