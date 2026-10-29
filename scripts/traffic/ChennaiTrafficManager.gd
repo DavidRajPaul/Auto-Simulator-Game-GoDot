@@ -58,12 +58,27 @@ var density: float = 0.5
 var zone_id: String = ""
 var target_active: int = 12
 var speed_factor: float = 1.0
+var _signal_nodes: PackedInt32Array = PackedInt32Array()
+var _enforced_signal_nodes: Dictionary = {}
+var _ticket_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _signal_posts: Array[Node3D] = []
+var _signal_lamp_materials: Array[Array] = []
+var _player_pose_seen: bool = false
+var _previous_player_pos: Vector3 = Vector3.ZERO
+var _last_player_ticket_s: float = -1000.0
+var _signal_refresh_timer: float = 1.0
 const NEAR_MISS_CLEARANCE_M: float = 0.6
 const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
 const PLAYER_HALF_WIDTH_M: float = 0.65
+const SIGNAL_POOL_SIZE: int = 8
+const SIGNAL_CYCLE_S: float = 24.0
+const SIGNAL_ENFORCEMENT_FINE_INR: int = 200
+const SIGNAL_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
+const SIGNAL_MIN_WIDTH_M: float = 6.0
 
 func _ready() -> void:
 	rng.seed = 600028
+	_ticket_rng.randomize()
 	_player = get_node_or_null(player_path) as Node3D
 	graph = RoadGraph.from_json_file(graph_path) if graph_path != "" else _build_greybox_graph()
 	_load_market_zones()
@@ -97,6 +112,18 @@ func _ready() -> void:
 	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
 	SignalBus.scripted_traffic_requested.connect(place_scripted_vehicle)
+	SignalBus.player_pose_updated.connect(_on_player_signal_pose)
+	for node_id: int in graph.nodes.size():
+		var big_arms: int = 0
+		for edge_id: int in graph.node_edges[node_id]:
+			var edge: RoadGraph.Edge = graph.edges[edge_id]
+			if SIGNAL_ROADS.has(edge.road_class) and edge.width >= SIGNAL_MIN_WIDTH_M:
+				big_arms += 1
+		if graph.node_edges[node_id].size() >= 3 and big_arms >= 2:
+			_signal_nodes.append(node_id)
+			if _ticket_rng.randf() < 0.25:
+				_enforced_signal_nodes[node_id] = true
+	_build_signal_pool()
 	_initial_spawn.call_deferred()
 
 func _load_market_zones() -> void:
@@ -206,6 +233,119 @@ func _physics_process(delta: float) -> void:
 		else:
 			_respawn(rv)
 		n += 1
+	_signal_refresh_timer += delta
+	if _signal_refresh_timer >= 1.0:
+		_signal_refresh_timer = 0.0
+		_refresh_signal_lights()
+
+func _build_signal_pool() -> void:
+	var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
+	for i: int in SIGNAL_POOL_SIZE:
+		var post: Node3D = Node3D.new()
+		post.name = "TrafficSignal_%d" % i
+		post.visible = false
+		var pole: MeshInstance3D = MeshInstance3D.new()
+		var pole_mesh: CylinderMesh = CylinderMesh.new()
+		pole_mesh.top_radius = 0.08
+		pole_mesh.bottom_radius = 0.12
+		pole_mesh.height = 5.0
+		var pole_mat: StandardMaterial3D = StandardMaterial3D.new()
+		pole_mat.albedo_color = Color(0.18, 0.2, 0.21)
+		pole_mesh.material = pole_mat
+		pole.mesh = pole_mesh
+		pole.position = Vector3(3.5, 2.5, 0.0)
+		post.add_child(pole)
+		var housing: MeshInstance3D = MeshInstance3D.new()
+		var housing_mesh: BoxMesh = BoxMesh.new()
+		housing_mesh.size = Vector3(0.52, 1.65, 0.48)
+		var housing_mat: StandardMaterial3D = StandardMaterial3D.new()
+		housing_mat.albedo_color = Color(0.04, 0.05, 0.05)
+		housing_mesh.material = housing_mat
+		housing.mesh = housing_mesh
+		housing.position = Vector3(3.5, 4.8, 0.0)
+		post.add_child(housing)
+		var lamp_mats: Array[StandardMaterial3D] = []
+		for lamp_i: int in 3:
+			var lamp: MeshInstance3D = MeshInstance3D.new()
+			lamp.name = "Lamp_%d" % lamp_i
+			var sphere: SphereMesh = SphereMesh.new()
+			sphere.radius = 0.15
+			sphere.height = 0.3
+			lamp.mesh = sphere
+			lamp.position = Vector3(3.5, 5.35 - float(lamp_i) * 0.55, 0.0)
+			var mat: StandardMaterial3D = StandardMaterial3D.new()
+			mat.albedo_color = colours[lamp_i].darkened(0.78)
+			mat.emission_enabled = true
+			mat.emission = colours[lamp_i].darkened(0.8)
+			lamp.material_override = mat
+			post.add_child(lamp)
+			lamp_mats.append(mat)
+		_signal_lamp_materials.append(lamp_mats)
+		add_child(post)
+		_signal_posts.append(post)
+
+func _signal_phase(node_id: int) -> float:
+	return fposmod(float(Time.get_ticks_msec()) / 1000.0 + float(node_id * 7), SIGNAL_CYCLE_S)
+
+## Vehicle stopping distance from the junction's stop line; INF means the light is green.
+func signal_stop_gap(vehicle: TrafficVehicleAI) -> float:
+	if vehicle.turning:
+		return INF
+	var edge: RoadGraph.Edge = graph.edges[vehicle.edge]
+	var node_id: int = edge.b if vehicle.dir > 0 else edge.a
+	if not _signal_nodes.has(node_id) or _signal_phase(node_id) < 10.0:
+		return INF
+	return maxf(0.0, edge.length - vehicle.t - vehicle.half_length() - 1.4)
+
+func _refresh_signal_lights() -> void:
+	var near: Array[Array] = []
+	for node_id: int in _signal_nodes:
+		var d: float = _player.global_position.distance_to(graph.nodes[node_id]) if _player != null else INF
+		if d < 190.0:
+			near.append([d, node_id])
+	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	for i: int in _signal_posts.size():
+		var post: Node3D = _signal_posts[i]
+		if i >= near.size():
+			post.visible = false
+			continue
+		var node_id: int = int(near[i][1])
+		post.global_position = graph.nodes[node_id]
+		post.visible = true
+		var phase: float = _signal_phase(node_id)
+		var active_lamp: int = 2 if phase < 10.0 else (1 if phase < 12.0 else 0)
+		var mats: Array = _signal_lamp_materials[i]
+		var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
+		for lamp_i: int in 3:
+			var mat: StandardMaterial3D = mats[lamp_i]
+			mat.albedo_color = colours[lamp_i] if lamp_i == active_lamp else colours[lamp_i].darkened(0.78)
+			mat.emission = colours[lamp_i] * (2.0 if lamp_i == active_lamp else 0.08)
+
+func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
+	if not _player_pose_seen:
+		_previous_player_pos = pos
+		_player_pose_seen = true
+		return
+	if GameState.tutorial_active:
+		_previous_player_pos = pos
+		return
+	var now_s: float = float(Time.get_ticks_msec()) / 1000.0
+	if now_s - _last_player_ticket_s < 8.0:
+		_previous_player_pos = pos
+		return
+	for node_id: int in _signal_nodes:
+		if not _enforced_signal_nodes.has(node_id) or pos.distance_to(graph.nodes[node_id]) > 5.0 or _previous_player_pos.distance_to(graph.nodes[node_id]) <= 7.0:
+			continue
+		if _signal_phase(node_id) < 12.0:
+			continue
+		if _player is RigidBody3D and (_player as RigidBody3D).linear_velocity.length() > 2.0:
+			var fine: int = mini(SIGNAL_ENFORCEMENT_FINE_INR, GameState.wallet_inr)
+			if fine > 0 and GameState.spend(fine):
+				SignalBus.police_intercept_requested.emit(pos, heading, fine)
+				SignalBus.hint_requested.emit("Police stop · ₹%d fine. Red signal violation." % fine, 3.0)
+			_last_player_ticket_s = now_s
+		break
+	_previous_player_pos = pos
 
 ## "Gap-la Gethu": the player squeezes past a moving vehicle with < 0.6 m to spare
 ## above 35 km/h without touching it. One event per vehicle per pass.

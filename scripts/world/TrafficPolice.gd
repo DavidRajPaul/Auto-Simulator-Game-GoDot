@@ -32,6 +32,9 @@ var _headings: Dictionary = {} # post -> Array[float] approach yaws
 var _phase: Dictionary = {} # post -> int
 var _timer: float = UPDATE_S
 var _turn_timer: float = 0.0
+var _interceptor: Node3D
+var _interceptor_shape: CollisionShape3D
+var _intercept_timer: float = 0.0
 
 func _ready() -> void:
 	var stand: ArrayMesh = _stand_mesh()
@@ -66,10 +69,32 @@ func _ready() -> void:
 		post.add_child(body)
 		add_child(post)
 		_posts.append(post)
+	_interceptor = Node3D.new()
+	_interceptor.name = "HiddenSignalConstable"
+	_interceptor.visible = false
+	var officer_path: String = OFFICERS[0]
+	if ResourceLoader.exists(officer_path):
+		var officer_scene: PackedScene = load(officer_path) as PackedScene
+		if officer_scene != null:
+			_interceptor.add_child(officer_scene.instantiate())
+	var block: StaticBody3D = StaticBody3D.new()
+	block.collision_layer = 8
+	block.collision_mask = 0
+	var block_shape: CollisionShape3D = CollisionShape3D.new()
+	var block_box: BoxShape3D = BoxShape3D.new()
+	block_box.size = Vector3(0.65, 1.8, 0.55)
+	block_shape.shape = block_box
+	block_shape.position.y = 0.9
+	block_shape.disabled = true
+	_interceptor_shape = block_shape
+	block.add_child(block_shape)
+	_interceptor.add_child(block)
+	add_child(_interceptor)
 	SignalBus.road_graph_ready.connect(_set_graph)
 	if SignalBus.current_road_graph != null:
 		_set_graph(SignalBus.current_road_graph)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player = p)
+	SignalBus.police_intercept_requested.connect(_show_interceptor)
 
 func _set_graph(g: RoadGraph) -> void:
 	graph = g
@@ -95,6 +120,11 @@ func _set_graph(g: RoadGraph) -> void:
 			junctions.append(ni)
 
 func _process(delta: float) -> void:
+	if _intercept_timer > 0.0:
+		_intercept_timer -= delta
+		if _intercept_timer <= 0.0 and _interceptor != null:
+			_interceptor.visible = false
+			_interceptor_shape.set_deferred("disabled", true)
 	if graph == null:
 		return
 	_timer += delta
@@ -117,6 +147,19 @@ func _process(delta: float) -> void:
 		if officer != null:
 			var want: float = float(heads[int(_phase.get(post, 0))])
 			officer.rotation.y = lerp_angle(officer.rotation.y, want, 1.0 - exp(-TURN_SPEED * delta))
+
+## A red-light fine makes a previously hidden constable step into the lane ahead of the auto.
+func _show_interceptor(world_pos: Vector3, heading: Vector3, _fine_inr: int) -> void:
+	if _interceptor == null:
+		return
+	var fwd: Vector3 = Vector3(heading.x, 0.0, heading.z).normalized()
+	if fwd.length_squared() < 0.01:
+		fwd = Vector3.FORWARD
+	_interceptor.global_position = world_pos + fwd * 2.4
+	_interceptor.look_at(world_pos + Vector3(0.0, 1.0, 0.0), Vector3.UP)
+	_interceptor.visible = true
+	_interceptor_shape.set_deferred("disabled", false)
+	_intercept_timer = 2.5
 
 ## Move posts to the nearest qualifying junctions. Public for tests.
 func refresh() -> void:

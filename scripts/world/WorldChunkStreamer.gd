@@ -907,6 +907,8 @@ func _build_areas() -> void:
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		st.set_normal(Vector3.UP)
 		var y: float = float(specs[kind][1])
+		var water_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		water_rng.seed = 80421
 		for poly: Array in polys:
 			var pts: PackedVector2Array = PackedVector2Array()
 			for p: Array in poly:
@@ -921,11 +923,16 @@ func _build_areas() -> void:
 					var tmp: Vector2 = b
 					b = c
 					c = tmp
+				var tint: Color = Color(0.10, 0.43, 0.53).lerp(Color(0.23, 0.63, 0.68), water_rng.randf())
+				var ripple: float = water_rng.randf_range(-0.012, 0.012) if kind == "water" else 0.0
 				for v: Vector2 in [a, b, c]:
-					st.add_vertex(Vector3(v.x, y, v.y))
+					st.set_color(tint)
+					st.add_vertex(Vector3(v.x, y + ripple, v.y))
 		var mat: StandardMaterial3D = StandardMaterial3D.new()
 		mat.albedo_color = specs[kind][0]
-		mat.roughness = 0.15 if kind in ["sea", "water"] else 1.0
+		mat.vertex_color_use_as_albedo = kind == "water"
+		mat.roughness = 0.38 if kind in ["sea", "water"] else 1.0
+		mat.metallic = 0.08 if kind == "water" else 0.0
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Area_" + kind
@@ -933,6 +940,55 @@ func _build_areas() -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+		if kind == "water":
+			_build_water_barriers(polys, y)
+
+## Low retaining edge around ponds and lakes: a visible concrete curb and a solid collision
+## barrier. Water remains a visual-only surface, so the player cannot drive over a lake.
+func _build_water_barriers(polys: Array, water_y: float) -> void:
+	var holder: StaticBody3D = StaticBody3D.new()
+	holder.name = "WaterBarriers"
+	holder.collision_layer = 1
+	holder.collision_mask = 0
+	add_child(holder)
+	var edge_count: int = 0
+	for poly: Array in polys:
+		edge_count += poly.size()
+	var curb_mesh: BoxMesh = BoxMesh.new()
+	curb_mesh.size = Vector3(1.0, 0.7, 0.65)
+	var curb_mat: StandardMaterial3D = StandardMaterial3D.new()
+	curb_mat.albedo_color = Color(0.63, 0.62, 0.55)
+	curb_mat.roughness = 0.95
+	curb_mesh.material = curb_mat
+	var curb_multi: MultiMesh = MultiMesh.new()
+	curb_multi.transform_format = MultiMesh.TRANSFORM_3D
+	curb_multi.mesh = curb_mesh
+	curb_multi.instance_count = edge_count
+	var curb_draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	curb_draw.name = "ConcreteEdges"
+	curb_draw.multimesh = curb_multi
+	curb_draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(curb_draw)
+	var instance_index: int = 0
+	for poly: Array in polys:
+		for i: int in poly.size():
+			var a: Vector2 = Vector2(float(poly[i][0]), float(poly[i][1]))
+			var b: Vector2 = Vector2(float(poly[(i + 1) % poly.size()][0]), float(poly[(i + 1) % poly.size()][1]))
+			var edge: Vector2 = b - a
+			if edge.length() < 0.05:
+				continue
+			var pos: Vector3 = Vector3((a.x + b.x) * 0.5, water_y + 0.35, (a.y + b.y) * 0.5)
+			var yaw: float = -atan2(edge.y, edge.x)
+			var shape: CollisionShape3D = CollisionShape3D.new()
+			var box: BoxShape3D = BoxShape3D.new()
+			box.size = Vector3(edge.length(), 0.7, 0.65)
+			shape.shape = box
+			shape.position = pos
+			shape.rotation.y = yaw
+			holder.add_child(shape)
+			curb_multi.set_instance_transform(instance_index, Transform3D(Basis(Vector3.UP, yaw) * Basis.IDENTITY.scaled(Vector3(edge.length(), 1.0, 1.0)), pos))
+			instance_index += 1
+	curb_multi.instance_count = instance_index
 
 ## Placeholder landmark silhouettes (replaced by low-poly GLTF hero models in Phase 5).
 func _build_landmarks() -> void:

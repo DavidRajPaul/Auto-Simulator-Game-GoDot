@@ -100,6 +100,7 @@ var _pre_step_velocity: Vector3 = Vector3.ZERO
 ## Off in the cockpit view: the canopy/frame shadows sweeping over the dash as the auto turns
 ## read as flickering dark bands right in the driver's eyes.
 var _self_shadows: bool = true
+var _police_stop_timer: float = 0.0
 
 func _ready() -> void:
 	if use_player_profile:
@@ -114,6 +115,7 @@ func _ready() -> void:
 	_setup_wheel_rays()
 	_setup_wheel_splashes()
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
+	SignalBus.police_intercept_requested.connect(_on_police_intercept)
 	SignalBus.passenger_boarded.connect(_on_passenger_boarded)
 	SignalBus.passenger_alighted.connect(_on_passenger_alighted)
 	SignalBus.refueled.connect(func(level: float) -> void: fuel_level = minf(level, stats.fuel_capacity))
@@ -312,6 +314,7 @@ func _apply_mass() -> void:
 
 func _physics_process(delta: float) -> void:
 	_clock_s += delta
+	_police_stop_timer = maxf(0.0, _police_stop_timer - delta)
 	var throttle_in: float = Input.get_action_strength("accelerate")
 	var brake_in: float = Input.get_action_strength("brake")
 	var steer_in: float = Input.get_action_strength("steer_left") - Input.get_action_strength("steer_right")
@@ -339,6 +342,10 @@ func _physics_process(delta: float) -> void:
 		var tmp: float = throttle_in # auto-reverse: BRAKE pedal drives backwards, ACCEL brakes
 		throttle_in = brake_in
 		brake_in = tmp
+	if _police_stop_timer > 0.0:
+		throttle_in = 0.0
+		brake_in = 1.0
+		handbrake_on = true
 
 	if fuel_level <= 0.0:
 		throttle_in = 0.0
@@ -359,6 +366,11 @@ func _physics_process(delta: float) -> void:
 	_check_water_stall()
 	_update_lamps(brake_in, delta)
 	_emit_telemetry(delta)
+
+func _on_police_intercept(_position: Vector3, _heading: Vector3, _fine_inr: int) -> void:
+	_police_stop_timer = 1.8
+	linear_velocity *= 0.55
+	angular_velocity *= 0.5
 
 func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: float, handbrake_on: bool, delta: float) -> void:
 	ray.force_raycast_update()

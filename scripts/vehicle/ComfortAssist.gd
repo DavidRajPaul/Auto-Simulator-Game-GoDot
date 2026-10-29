@@ -126,6 +126,9 @@ func _build_arrow() -> void:
 	_arrow.mesh = mesh
 	_arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_arrow.visible = false
+	# Guidance is shown in the HUD. Keep the old nodes for settings/tests compatibility,
+	# but never cover the driving view with a floating 3D chevron or label.
+	_arrow.visible = false
 	add_child(_arrow)
 	_arrow_label = Label3D.new()
 	_arrow_label.name = "GuidanceLabel"
@@ -201,33 +204,16 @@ func guidance_target() -> Vector3:
 	return best
 
 func _update_arrow() -> void:
-	var enabled: bool = bool(GameState.settings.get("guidance_arrow", true))
+	# Replaced by the compact top HUD distance readout.
+	_arrow.visible = false
+	_arrow_label.visible = false
 	var target: Vector3 = guidance_target()
-	var p: Vector3 = _player.global_position
-	var flat: Vector3 = Vector3(target.x - p.x, 0.0, target.z - p.z)
-	if not enabled or target == Vector3.INF or flat.length() < ARROW_HIDE_NEAR_M:
-		_arrow.visible = false
-		_arrow_label.visible = false
+	if not bool(GameState.settings.get("guidance_arrow", true)) or target == Vector3.INF:
+		SignalBus.guidance_distance_updated.emit("")
 		return
-	var on_route: bool = _route.size() >= 2
-	_arrow_time += get_physics_process_delta_time()
-	var bob: float = sin(_arrow_time * 3.0) * 0.12
-	var basis: Basis = Basis.looking_at(flat.normalized(), Vector3.UP)
-	basis = basis * Basis(Vector3.RIGHT, ARROW_TILT_RAD) # lean back toward the chase camera
-	var at: Vector3 = p + Vector3(0, ARROW_HEIGHT_M + 0.4 + bob, 0)
-	_arrow.global_transform = Transform3D(basis, at)
-	_arrow.visible = true
-	_arrow_mat.albedo_color = ARROW_ROUTE if on_route else ARROW_RIDER
-	_arrow_label.modulate = ARROW_ROUTE if on_route else ARROW_RIDER
-	_arrow_label.global_position = at + Vector3(0, -0.85, 0) # between the arrow and the roof
-	_arrow_label.visible = true
-	var tick: int = int(_arrow_time * 4.0) # text 4× a second (the route sum walks the whole path)
-	if tick == _label_tick:
-		return
-	_label_tick = tick
-	var dist: float = _route_remaining() if on_route else Vector2(flat.x, flat.z).length()
-	var what: String = tr("GUIDE_DROP") if on_route else tr("GUIDE_RIDER")
-	_arrow_label.text = "%s  %s" % [what, ("%.1f km" % (dist / 1000.0)) if dist >= 1000.0 else ("%d m" % int(roundf(dist / 10.0) * 10.0))]
+	var distance: float = _route_remaining() if _route.size() >= 2 else Vector2(target.x - _player.global_position.x, target.z - _player.global_position.z).length()
+	SignalBus.guidance_distance_updated.emit("%.1f km" % (distance / 1000.0) if distance >= 1000.0 else "%d m" % int(roundf(distance / 10.0) * 10.0))
+	return
 
 ## Metres left along the GPS route from where we are.
 func _route_remaining() -> float:

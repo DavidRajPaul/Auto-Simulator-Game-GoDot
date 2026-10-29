@@ -45,16 +45,17 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 **Driving**
 - 3-wheel raycast delta-trike (1 steerable front wheel, 2 rear drive wheels) with anti-roll, two-wheel "Gethu" tilt, torque curve and aero drag (0–35 km/h in 2.8 s, 58 km/h top).
 - Real reverse gear (D/R), indicators with lamps and relay tick that self-cancel after the turn, brake/reverse lamps, handbrake, three horn tiers that decide which traffic gives way.
-- Chase, cockpit (stabilised "neck") and top-down cameras; physics interpolation for smooth motion.
+- Chase, cockpit (stabilised "neck") and top-down cameras; drag to orbit the chase camera freely; physics interpolation for smooth motion.
 - Monsoon flood spots stall the engine; kick-start back to life in a steady rhythm (mashing floods it).
 - Collisions: sliding chamfered hull, crunch/scrape sounds, sparks, dust, camera jolt, haptics; crashes wear the auto's condition.
-- Comfort pack: auto-recover when flipped, "Reset auto" when stuck, green guidance arrow, gentle steering curve, speed-based FOV.
+- Comfort pack: auto-recover when flipped, "Reset auto" when stuck, compact guidance distance in the top HUD, gentle steering curve, speed-based FOV.
 
 **Chennai**
 - Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads.
 - OSM building footprints plus procedural infill (28,355 total in the latest density build) with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
 - EB poles with sagging wires, neem trees and palms, Greater Chennai Corporation street-name boards with real OSM names (Tamil + English), name boards on real named buildings.
 - Landmarks: procedural Marina lighthouse and gopuram, Chennai Central on the skyline, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
+- Temple tanks and lakes use faceted low-poly water with solid concrete edge barriers; auto stands have parked autos, cars and two-wheelers.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
 - Mixed traffic (scooters with riders, cars, share autos, TNSTC/SETC buses, lorries, service vehicles) whose density follows the TomTom 2025 Chennai hourly profile; 14 animated pedestrians that walk the kerbs and jump out of the way.
 
@@ -62,6 +63,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 - Riders wave you down at 3 auto stands and on kerbs; 5 archetypes (IT commuter, T. Nagar silk shopper, Marina tourist, monsoon rider, college student).
 - 5-second haggle card: Correct Meter / Meter Mela / Fixed price, judged against the Chennai meter (₹35 + ₹18/km), your star rating, greed streak and demand.
 - Sat-nav ribbon in your lane with flowing chevrons, turn-by-turn banner with real street names, heading-up mini-map, full-screen OSM map (pan, pinch, POIs).
+- Mini-map service pins identify LPG bunks and EV kiosks; fuel stations show parked vehicles and pump islands.
 - Tea-cup comfort meter, Gap-la Gethu near-miss bonus, ride timer, fare breakdown with tips, Respect XP and rolling star rating.
 
 **Career and progression**

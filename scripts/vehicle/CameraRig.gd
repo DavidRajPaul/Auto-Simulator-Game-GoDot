@@ -29,6 +29,12 @@ const SHAKE_DECAY: float = 5.0
 const SHAKE_MAX_M: float = 0.12
 var _shake: float = 0.0
 var _shake_t: float = 0.0
+## Free look for the chase camera. Drag to look around without changing the auto's heading.
+var _orbit_yaw: float = 0.0
+var _orbit_pitch: float = -0.12
+var _look_drag_mouse: bool = false
+var _look_touch: int = -1
+var _last_look_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	_target = get_node_or_null(target_path) as Node3D
@@ -66,7 +72,8 @@ func _process(delta: float) -> void:
 		Mode.TOP_DOWN:
 			desired = xf.origin + basis_flat * TOP_DOWN_OFFSET
 		_:
-			desired = xf.origin + basis_flat * CHASE_OFFSET
+			var orbit: Basis = Basis(Vector3.UP, _orbit_yaw) * Basis(Vector3.RIGHT, _orbit_pitch)
+			desired = xf.origin + (basis_flat * orbit) * CHASE_OFFSET
 	var t: float = 1.0 - exp(-follow_sharpness * delta)
 	_camera.global_position = _camera.global_position.lerp(desired, t)
 	# A little wider with speed: reads as faster without needing more speed.
@@ -77,6 +84,38 @@ func _process(delta: float) -> void:
 		_camera.look_at(look_at_pt, Vector3.UP if mode != Mode.TOP_DOWN else -basis_flat.z)
 	if _shake > 0.001:
 		_camera.global_position += _shake_offset() * 1.6
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			_look_drag_mouse = mb.pressed
+			_last_look_pos = mb.position
+		elif mb.button_index == MOUSE_BUTTON_LEFT and not DisplayServer.is_touchscreen_available():
+			_look_drag_mouse = mb.pressed
+			_last_look_pos = mb.position
+	elif event is InputEventMouseMotion and _look_drag_mouse:
+		var mm: InputEventMouseMotion = event
+		_apply_look_delta(mm.position - _last_look_pos)
+		_last_look_pos = mm.position
+	elif event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		# Reserve the central upper portion for camera look; pedals, steering and mini-map stay clear.
+		var vp: Vector2 = get_viewport().get_visible_rect().size
+		if touch.pressed and touch.position.x > vp.x * 0.25 and touch.position.x < vp.x * 0.75 and touch.position.y < vp.y * 0.55:
+			_look_touch = touch.index
+			_last_look_pos = touch.position
+		elif not touch.pressed and touch.index == _look_touch:
+			_look_touch = -1
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event
+		if drag.index == _look_touch:
+			_apply_look_delta(drag.position - _last_look_pos)
+			_last_look_pos = drag.position
+
+func _apply_look_delta(delta: Vector2) -> void:
+	_orbit_yaw = wrapf(_orbit_yaw - delta.x * 0.006, -PI, PI)
+	_orbit_pitch = clampf(_orbit_pitch - delta.y * 0.004, -0.72, 0.55)
 
 func _shake_offset() -> Vector3:
 	var a: float = _shake * _shake * SHAKE_MAX_M

@@ -25,6 +25,8 @@ signal water_depth_changed(depth_m: float)
 # --- Horn / traffic ------------------------------------------------------
 signal horn_blasted(origin: Vector3, forward_dir: Vector3, radius_m: float, horn_tier: int)
 signal traffic_vehicle_shifted(sub_lane: int)
+## Police enforcement at a randomly selected red-light junction.
+signal police_intercept_requested(position: Vector3, heading: Vector3, fine_inr: int)
 
 # --- UI / controls -------------------------------------------------------
 signal wiper_toggled(is_on: bool)
@@ -44,6 +46,8 @@ signal route_updated(points: PackedVector3Array)
 signal gps_route_changed(gps: RefCounted)
 ## Turn-by-turn prompt for the HUD: {turn, text, glyph, distance_m, road, road_ta, remaining_m}.
 signal nav_instruction(info: Dictionary)
+## Compact remaining guidance distance displayed at the top of the driving HUD.
+signal guidance_distance_updated(text: String)
 ## Tap the mini-map: open (true) or close (false) the full-screen city map.
 signal full_map_requested(open: bool)
 ## Gap-la Gethu: passed a moving vehicle with < 0.6 m clearance above 35 km/h.
