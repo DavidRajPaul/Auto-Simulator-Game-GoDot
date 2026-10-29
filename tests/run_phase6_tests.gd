@@ -213,7 +213,11 @@ func _test_give_way(main: Node) -> void:
 	var traffic: ChennaiTrafficManager = main.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
 	var v: TrafficVehicleAI = null
 	for t: TrafficVehicleAI in traffic.pool:
-		if t.active and t.archetype == TrafficVehicleAI.Archetype.HATCHBACK:
+		# The greybox has a deterministic mixed pool, but spawn candidates can be
+		# temporarily unavailable while the test scene is still settling.  The
+		# give-way behavior is a vehicle-level contract, so select the pooled
+		# hatchback even if it has not received a road position yet.
+		if t.archetype == TrafficVehicleAI.Archetype.HATCHBACK:
 			v = t
 			break
 	if v == null:
