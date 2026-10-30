@@ -37,9 +37,7 @@ var _plus_rect: Rect2
 var _minus_rect: Rect2
 var _select_mode: int = 0 # 0 pan, 2 drop/drag destination pin
 var _dragging_pin: bool = false
-var _custom_start: Vector3 = Vector3.ZERO
 var _custom_destination: Vector3 = Vector3.ZERO
-var _has_custom_start: bool = false
 var _has_custom_destination: bool = false
 var _destination_rect: Rect2
 var _navigate_rect: Rect2
@@ -129,8 +127,6 @@ func _load_world_extras() -> void:
 	if props_file != null:
 		var city: Dictionary = JSON.parse_string(props_file.get_as_text()) as Dictionary
 		for prop: Dictionary in city.get("props", []):
-			if str(prop.get("model", "")) in ["chennai_central", "ripon_building"]:
-				continue
 			if not bool(prop.get("landmark", false)) and not bool(prop.get("tea_cluster", false)):
 				continue
 			var label: String = "Tea Kadai"
@@ -199,7 +195,6 @@ func _tap_button(p: Vector2) -> bool:
 		else:
 			SignalBus.hint_requested.emit("Drop a pin on the map first", 2.0)
 	elif _clear_rect.has_point(p):
-		_has_custom_start = false
 		_has_custom_destination = false
 		_select_mode = 0
 		SignalBus.custom_navigation_cleared.emit()
@@ -228,10 +223,10 @@ func _select_point(screen_point: Vector2) -> void:
 
 func _on_custom_state(active: bool, start: Vector3, destination: Vector3) -> void:
 	if active:
-		_custom_start = start
 		_custom_destination = destination
-		_has_custom_start = false
 		_has_custom_destination = true
+	else:
+		_has_custom_destination = false
 	queue_redraw()
 
 func _zoom_at(factor: float, screen_pt: Vector2) -> void:
@@ -429,10 +424,9 @@ func _draw_chrome() -> void:
 	draw_string_outline(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, 6, Color.BLACK)
 	draw_string(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(1.0, 0.72, 0.1))
 	draw_string(_font, Vector2(24, size.y - 18.0), "Map data © OpenStreetMap contributors", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.6))
-	var button_width: float = minf(160.0, (size.x - 40.0) * 0.24)
+	var button_width: float = minf(175.0, (size.x - 44.0) / 3.0)
 	var gap: float = 6.0
 	var y: float = size.y - 98.0
-	button_width = minf(175.0, (size.x - 44.0) / 3.0)
 	_destination_rect = Rect2(Vector2(16.0, y), Vector2(button_width, 56.0))
 	_navigate_rect = Rect2(Vector2(16.0 + button_width + gap, y), Vector2(button_width, 56.0))
 	_clear_rect = Rect2(Vector2(16.0 + (button_width + gap) * 2.0, y), Vector2(button_width, 56.0))
