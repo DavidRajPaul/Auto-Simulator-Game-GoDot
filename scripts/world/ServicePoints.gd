@@ -147,10 +147,24 @@ func _add_mylapore_workshop(root: Node3D) -> bool:
 	workshop.name = "MylaporeWorkshop"
 	workshop.scale = Vector3.ONE * MYLAPORE_WORKSHOP_SCALE
 	root.add_child(workshop)
-	# Avoid generating colliders from arbitrary imported faces. Put a conservative
-	# rear-wall collider behind the open service area; inspect model orientation first.
-	# Full wall/roof collision and precise service-bay alignment are Phase 1B tasks.
+	# Lightweight side and rear guard colliders protect the workshop shell without
+	# placing a solid collider across the vehicle-accessible front bay.
+	# Exact correspondence to imported walls must be confirmed in an in-game review.
+	_add_workshop_wall(root, "WorkshopRearGuard", Vector3(7.2, 3.5, 0.35), Vector3(0, 1.75, 3.78))
+	_add_workshop_wall(root, "WorkshopLeftGuard", Vector3(0.35, 3.5, 7.2), Vector3(-3.65, 1.75, 0))
+	_add_workshop_wall(root, "WorkshopRightGuard", Vector3(0.35, 3.5, 7.2), Vector3(3.65, 1.75, 0))
 	return true
+
+func _add_workshop_wall(root: Node3D, wall_name: String, wall_size: Vector3, offset: Vector3) -> void:
+	var wall: StaticBody3D = StaticBody3D.new()
+	wall.name = wall_name
+	wall.position = offset
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = wall_size
+	shape.shape = box
+	wall.add_child(shape)
+	root.add_child(wall)
 
 ## A busy Chennai forecourt: pump islands and vehicles waiting to refuel.
 ## These lightweight static GLB instances are built once with the service point.
