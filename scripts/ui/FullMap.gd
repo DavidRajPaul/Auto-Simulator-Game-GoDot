@@ -124,15 +124,17 @@ func _load_world_extras() -> void:
 		_pois.append({"name": str(s["name"]), "kind": "stand", "pos": Vector2(float(s["x"]), float(s["z"]))})
 	for s: Dictionary in m.get("services", []):
 		_pois.append({"name": str(s["name"]), "kind": str(s["kind"]), "pos": Vector2(float(s["x"]), float(s["z"]))})
-	# Georeferenced heritage building and roadside tea stalls share the world's authored props.
-	var cf: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
-	if cf != null:
-		var city: Dictionary = JSON.parse_string(cf.get_as_text()) as Dictionary
+	# Real-world landmarks built from the city-props file, with their fixed OSM coordinates.
+	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
+	if props_file != null:
+		var city: Dictionary = JSON.parse_string(props_file.get_as_text()) as Dictionary
 		for prop: Dictionary in city.get("props", []):
-			if bool(prop.get("landmark", false)) or bool(prop.get("tea_cluster", false)):
-				_pois.append({"name": "Ripon Building" if bool(prop.get("landmark", false)) else "Tea Kadai",
-					"kind": "ripon" if bool(prop.get("landmark", false)) else "tea",
-					"pos": Vector2(float(prop["x"]), float(prop["z"]))})
+			if not bool(prop.get("landmark", false)) and not bool(prop.get("tea_cluster", false)):
+				continue
+			var label: String = ("Tea Kadai" if bool(prop.get("tea_cluster", false))
+				else ("Chennai Central" if str(prop.get("model", "")) == "chennai_central" else "Ripon Building"))
+			_pois.append({"name": label, "kind": "landmark",
+				"pos": Vector2(float(prop["x"]), float(prop["z"]))})
 
 # --- Input --------------------------------------------------------------------
 
@@ -331,7 +333,7 @@ func _draw_route() -> void:
 	draw_circle(dest, 7.0, Color(0.2, 0.85, 0.4))
 
 func _draw_pois(view: Rect2) -> void:
-	var icon: Dictionary = {"landmark": ["★", Color(1, 0.8, 0.3)], "stand": ["A", Color(1, 0.75, 0.1)], "lpg": ["⛽", Color(0.95, 0.4, 0.3)], "ev": ["⚡", Color(0.4, 0.9, 1)], "garage": ["🔧", Color(0.8, 0.8, 0.85)], "ripon": ["R", Color(1.0, 0.9, 0.7)], "tea": ["T", Color(1.0, 0.5, 0.2)]}
+	var icon: Dictionary = {"landmark": ["★", Color(1, 0.8, 0.3)], "stand": ["A", Color(1, 0.75, 0.1)], "lpg": ["⛽", Color(0.95, 0.4, 0.3)], "ev": ["⚡", Color(0.4, 0.9, 1)], "garage": ["🔧", Color(0.8, 0.8, 0.85)]}
 	for p: Dictionary in _pois:
 		var w: Vector2 = p["pos"]
 		if not view.has_point(w):
