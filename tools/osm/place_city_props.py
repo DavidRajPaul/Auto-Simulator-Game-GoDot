@@ -5,7 +5,6 @@
                 buildings and roads.
   slum_cluster  canal-side settlements: along the Buckingham Canal / Cooum banks, long side
                 parallel to the water, canal wall facing it.
-  chennai_central  Chennai Central at its real position (just north of the playable map),
                 seen on the skyline from the north end of Kamarajar Salai and Napier Bridge.
 
 Reads only generated world data (chunks, road graph, areas) - re-run after an OSM rebuild.
@@ -21,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "data" / "world"
 OUT = WORLD / "city_props.json"
 
-# Real Chennai Central (13.0827 N, 80.2757 E) through the build_world projection.
 ORIGIN = (13.049, 80.259)
 M_PER_DEG_LAT = 110540.0
 M_PER_DEG_LON = 111320.0 * math.cos(math.radians(ORIGIN[0]))
@@ -165,7 +163,7 @@ def add_biryani_props(manifest, blds, segs, areas, props):
     # is beside an actual OSM road, with a checked 9m x 7m footprint for the
     # stall, patrons and parked scooters. No fabricated shop-name/geolocation.
     # Keep away from landmark compounds and from other placed roadside props.
-    biryani_zones = ("t_nagar", "mylapore", "anna_salai", "egmore", "central")
+    biryani_zones = ("t_nagar", "mylapore", "anna_salai")
     for zone_id in biryani_zones:
         zone = next((z for z in manifest.get("zones", []) if z["id"] == zone_id), None)
         if zone is None:
@@ -231,19 +229,6 @@ def main() -> int:
         return all(math.hypot(px - mx, pz - mz) > r for mx, mz in marks)
     meta = json.loads((ROOT / "assets" / "models" / "city" / "city_models.json").read_text())
     props = []
-    # These are real-world locations in the SAME fixed coordinate origin as the old city.
-    # Central is no longer a distant skyline illusion: it is physically reachable.
-    cx, cz = project(13.0827, 80.2757)
-    props.append({"model": "chennai_central", "x": round(cx, 1), "z": round(cz, 1),
-                  "yaw": round(math.pi * 0.5, 3), "landmark": True, "scale": 1.0})
-    rx, rz = project(13.0817545, 80.2716236)
-    props.append({"model": "ripon_building", "x": round(rx, 2), "z": round(rz, 2),
-                  "yaw": round(math.pi, 3), "scale": 52.0,
-                  "asset": "res://assets/models/city/ripon_building.glb", "landmark": True})
-    # Imported landmarks replace (rather than overlap) OSM/procedural building meshes.
-    # Collision shapes are applied separately by the game.
-    clear_buildings(manifest, cx, cz, math.pi * 0.5, 38.0, 98.0)
-    clear_buildings(manifest, rx, rz, math.pi, 27.0, 23.0)
     # Water towers: near each zone centre, spiralling out to the first free spot.
     wt = meta["water_tower"]["size_m"]
     for z in manifest["zones"]:
@@ -352,50 +337,9 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
-    # Low-risk traffic-management barriers on the pavement side of busy station roads.
-    # These are GAMEPLAY roadside safety props, not claims of real police road closures.
-    # Candidate locations come from the expanded street graph and are rejected when
-    # they intersect the road carriageway, an OSM building, or water.
-    for place_id, lat, lon in (("central", 13.0827, 80.2757),
-                               ("ripon", 13.0817545, 80.2716236),
-                               ("egmore", 13.0770, 80.2600)):
-        tx, tz = project(lat, lon)
-        nearby = sorted(
-            (seg for seg in segs if seg_dist(tx, tz, seg) < 240.0),
-            key=lambda seg: seg_dist(tx, tz, seg))
-        placed = []
-        for seg in nearby:
-            ax, az, bx, bz, half_width = seg
-            dx, dz = bx - ax, bz - az
-            length = math.hypot(dx, dz)
-            if length < 10.0:
-                continue
-            nx, nz = -dz / length, dx / length
-            mx, mz = (ax + bx) / 2.0, (az + bz) / 2.0
-            for side in (1.0, -1.0):
-                off = half_width + 4.2
-                px, pz = mx + side * nx * off, mz + side * nz * off
-                if math.hypot(px - tx, pz - tz) > 225.0:
-                    continue
-                if any(math.hypot(px - x, pz - z) < 42.0 for x, z in placed):
-                    continue
-                yaw = math.atan2(dx, dz)
-                if not free(px, pz, yaw, 1.0, 0.5, bgrid, sgrid, water, 0.7):
-                    continue
-                props.append({
-                    "model": "barricade/roadside_barricade",
-                    "x": round(px, 1), "z": round(pz, 1),
-                    "yaw": round(yaw, 3), "scale": 1.0,
-                    "barricade_type": "yellow_black",
-                    "zone": place_id, "generated_safety_barrier": True
-                })
-                placed.append((px, pz))
-                break
-            if len(placed) >= 3:
-                break
     add_biryani_props(manifest, blds, segs, areas, props)
     # Keep hand-authored street dressing that the procedural rebuild does not own.
-    # Do not copy old Central/Ripon props: they have authoritative coordinates above.
+    # Do not restore removed station landmarks from previously generated props.
     if OUT.exists():
         prior = json.loads(OUT.read_text()).get("props", [])
         for p in prior:
