@@ -306,23 +306,6 @@
       "maintenance_display": true
     },
     {
-      "model": "ripon_building",
-      "asset": "res://assets/models/city/ripon_building.glb",
-      "x": 1368.97,
-      "z": -3620.68,
-      "yaw": 3.14159,
-      "scale": 52,
-      "geo_lat": 13.0817545,
-      "geo_lon": 80.2716236,
-      "landmark": true,
-      "landmark_footprint": [
-        52,
-        35,
-        42
-      ],
-      "note": "Georeferenced Ripon Building; currently beyond northern playable road-graph boundary"
-    },
-    {
       "model": "tea_kadai",
       "asset": "res://assets/models/city/tea_kadai.glb",
       "x": -1772.2,
