@@ -30,3 +30,29 @@ These source files were provided by the user. The first three are optimized deri
 Run `python3 tools/assets/check_required_assets.py`, then start Godot once with `godot --headless --path . --import`. Next run `godot --headless --path . --script res://tests/check_imported_glbs.gd`.
 
 Godot import success doesn't guarantee animation correctness, collisions or visual quality. Perform an Android device pass after assets are restored.
+
+## Findings from the first GitHub Actions run (2026-10-30)
+
+Godot 4.4.1 loaded **four** of the six sidecar-less source GLBs, proving
+their absent committed `.glb.import` files were not the issue.
+
+Two existing binary files are **corrupt/truncated**, not merely lacking metadata:
+
+- `assets/models/city/lighthouse/chennai_lighthouse.glb`
+- `assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb`
+
+Godot reports `ERR_FILE_CORRUPT: len != chunk_length` while importing them.
+The newly added `tools/assets/check_glb_integrity.py` checks GLB headers and
+chunk boundaries directly and separately from the missing-file check.
+
+**Do not manufacture .glb.import files or repair these binaries by modifying
+only the GLB header.** The source data is missing or malformed. Obtain intact
+versions of the original lighthouse model and maintenance-vehicles pack,
+re-export to GLB, and commit the complete binary sources.
+
+## Google Drive transfer
+
+A folder named **Namma Auto - Missing GLB Assets** has been created for
+the manual recovery process. The consolidated archive has the correct
+paths. Asset uploads to Google Drive have not been verified or completed,
+so the folder must not be treated as containing the models yet.
