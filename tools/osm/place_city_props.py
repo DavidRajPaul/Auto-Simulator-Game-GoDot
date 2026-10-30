@@ -166,9 +166,19 @@ def main() -> int:
         return all(math.hypot(px - mx, pz - mz) > r for mx, mz in marks)
     meta = json.loads((ROOT / "assets" / "models" / "city" / "city_models.json").read_text())
     props = []
+    # These are real-world locations in the SAME fixed coordinate origin as the old city.
+    # Central is no longer a distant skyline illusion: it is physically reachable.
     cx, cz = project(13.0827, 80.2757)
-    props.append({"model": "chennai_central", "x": round(cx, 1), "z": round(cz, 1), "yaw": round(math.pi * 0.5, 3),
-                  "skyline": True})
+    props.append({"model": "chennai_central", "x": round(cx, 1), "z": round(cz, 1),
+                  "yaw": round(math.pi * 0.5, 3), "landmark": True, "scale": 1.0})
+    rx, rz = project(13.0817545, 80.2716236)
+    props.append({"model": "ripon_building", "x": round(rx, 2), "z": round(rz, 2),
+                  "yaw": round(math.pi, 3), "scale": 52.0,
+                  "asset": "res://assets/models/city/ripon_building.glb", "landmark": True})
+    # Imported landmarks replace (rather than overlap) OSM/procedural building meshes.
+    # Collision shapes are applied separately by the game.
+    clear_buildings(manifest, cx, cz, math.pi * 0.5, 38.0, 98.0)
+    clear_buildings(manifest, rx, rz, math.pi, 27.0, 23.0)
     # Water towers: near each zone centre, spiralling out to the first free spot.
     wt = meta["water_tower"]["size_m"]
     for z in manifest["zones"]:
@@ -277,6 +287,15 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
+    # Keep hand-authored street dressing that the procedural rebuild does not own.
+    # Do not copy old Central/Ripon props: they have authoritative coordinates above.
+    if OUT.exists():
+        prior = json.loads(OUT.read_text()).get("props", [])
+        for p in prior:
+            if p.get("model") not in ("chennai_central", "ripon_building") and (
+                    p.get("tea_cluster") or p.get("parked_two_wheeler")
+                    or p.get("maintenance_display") or p.get("barricade_type")):
+                props.append(p)
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
         print(p)
