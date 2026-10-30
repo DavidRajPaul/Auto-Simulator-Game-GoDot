@@ -240,8 +240,9 @@ func _test_city_props(s: WorldChunkStreamer) -> void:
 	if props_file != null:
 		var props: Array = (JSON.parse_string(props_file.get_as_text()) as Dictionary).get("props", [])
 		for prop: Dictionary in props:
-			if str(prop.get("model", "")) == "ripon_building" and
-					absf(float(prop["x"]) - 1368.97) < 3.0 and absf(float(prop["z"]) + 3620.68) < 3.0:
+			if (str(prop.get("model", "")) == "ripon_building"
+					and absf(float(prop["x"]) - 1368.97) < 3.0
+					and absf(float(prop["z"]) + 3620.68) < 3.0):
 				has_ripon = true
 	_check("Ripon Building remains at its real Chennai coordinates", has_ripon)
 
