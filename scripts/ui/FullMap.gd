@@ -124,6 +124,16 @@ func _load_world_extras() -> void:
 		_pois.append({"name": str(s["name"]), "kind": "stand", "pos": Vector2(float(s["x"]), float(s["z"]))})
 	for s: Dictionary in m.get("services", []):
 		_pois.append({"name": str(s["name"]), "kind": str(s["kind"]), "pos": Vector2(float(s["x"]), float(s["z"]))})
+	# Real-world landmarks built from the city-props file, with their fixed OSM coordinates.
+	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
+	if props_file != null:
+		var city: Dictionary = JSON.parse_string(props_file.get_as_text()) as Dictionary
+		for prop: Dictionary in city.get("props", []):
+			if not bool(prop.get("landmark", false)):
+				continue
+			var label: String = "Chennai Central" if str(prop.get("model", "")) == "chennai_central" else "Ripon Building"
+			_pois.append({"name": label, "kind": "landmark",
+				"pos": Vector2(float(prop["x"]), float(prop["z"]))})
 
 # --- Input --------------------------------------------------------------------
 

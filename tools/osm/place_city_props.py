@@ -166,9 +166,19 @@ def main() -> int:
         return all(math.hypot(px - mx, pz - mz) > r for mx, mz in marks)
     meta = json.loads((ROOT / "assets" / "models" / "city" / "city_models.json").read_text())
     props = []
+    # These are real-world locations in the SAME fixed coordinate origin as the old city.
+    # Central is no longer a distant skyline illusion: it is physically reachable.
     cx, cz = project(13.0827, 80.2757)
-    props.append({"model": "chennai_central", "x": round(cx, 1), "z": round(cz, 1), "yaw": round(math.pi * 0.5, 3),
-                  "skyline": True})
+    props.append({"model": "chennai_central", "x": round(cx, 1), "z": round(cz, 1),
+                  "yaw": round(math.pi * 0.5, 3), "landmark": True, "scale": 1.0})
+    rx, rz = project(13.0817545, 80.2716236)
+    props.append({"model": "ripon_building", "x": round(rx, 2), "z": round(rz, 2),
+                  "yaw": round(math.pi, 3), "scale": 52.0,
+                  "asset": "res://assets/models/city/ripon_building.glb", "landmark": True})
+    # Imported landmarks replace (rather than overlap) OSM/procedural building meshes.
+    # Collision shapes are applied separately by the game.
+    clear_buildings(manifest, cx, cz, math.pi * 0.5, 38.0, 98.0)
+    clear_buildings(manifest, rx, rz, math.pi, 27.0, 23.0)
     # Water towers: near each zone centre, spiralling out to the first free spot.
     wt = meta["water_tower"]["size_m"]
     for z in manifest["zones"]:
@@ -277,6 +287,56 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
+    # Low-risk traffic-management barriers on the pavement side of busy station roads.
+    # These are GAMEPLAY roadside safety props, not claims of real police road closures.
+    # Candidate locations come from the expanded street graph and are rejected when
+    # they intersect the road carriageway, an OSM building, or water.
+    for place_id, lat, lon in (("central", 13.0827, 80.2757),
+                               ("ripon", 13.0817545, 80.2716236),
+                               ("egmore", 13.0770, 80.2600)):
+        tx, tz = project(lat, lon)
+        nearby = sorted(
+            (seg for seg in segs if seg_dist(tx, tz, seg) < 240.0),
+            key=lambda seg: seg_dist(tx, tz, seg))
+        placed = []
+        for seg in nearby:
+            ax, az, bx, bz, half_width = seg
+            dx, dz = bx - ax, bz - az
+            length = math.hypot(dx, dz)
+            if length < 10.0:
+                continue
+            nx, nz = -dz / length, dx / length
+            mx, mz = (ax + bx) / 2.0, (az + bz) / 2.0
+            for side in (1.0, -1.0):
+                off = half_width + 4.2
+                px, pz = mx + side * nx * off, mz + side * nz * off
+                if math.hypot(px - tx, pz - tz) > 225.0:
+                    continue
+                if any(math.hypot(px - x, pz - z) < 42.0 for x, z in placed):
+                    continue
+                yaw = math.atan2(dx, dz)
+                if not free(px, pz, yaw, 1.0, 0.5, bgrid, sgrid, water, 0.7):
+                    continue
+                props.append({
+                    "model": "barricade/roadside_barricade",
+                    "x": round(px, 1), "z": round(pz, 1),
+                    "yaw": round(yaw, 3), "scale": 1.0,
+                    "barricade_type": "yellow_black",
+                    "zone": place_id, "generated_safety_barrier": True
+                })
+                placed.append((px, pz))
+                break
+            if len(placed) >= 3:
+                break
+    # Keep hand-authored street dressing that the procedural rebuild does not own.
+    # Do not copy old Central/Ripon props: they have authoritative coordinates above.
+    if OUT.exists():
+        prior = json.loads(OUT.read_text()).get("props", [])
+        for p in prior:
+            if p.get("model") not in ("chennai_central", "ripon_building") and (
+                    p.get("tea_cluster") or p.get("parked_two_wheeler")
+                    or p.get("maintenance_display") or (p.get("barricade_type") and not p.get("generated_safety_barrier"))):
+                props.append(p)
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
         print(p)
