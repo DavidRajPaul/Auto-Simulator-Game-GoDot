@@ -328,6 +328,62 @@ def main() -> int:
                 break
             if len(placed) >= 3:
                 break
+    # Deterministic biryani stalls in busy mixed-use neighborhoods. Each candidate
+    # is beside an actual OSM road, with a checked 9m x 7m footprint for the
+    # stall, patrons and parked scooters. No fabricated shop-name/geolocation.
+    # Keep away from landmark compounds and from other placed roadside props.
+    biryani_zones = ("t_nagar", "mylapore", "anna_salai", "egmore", "central")
+    for zone_id in biryani_zones:
+        zone = next((z for z in manifest.get("zones", []) if z["id"] == zone_id), None)
+        if zone is None:
+            continue
+        zx, zz = float(zone["x"]), float(zone["z"])
+        radius = min(500.0, float(zone["r"]) * 0.7)
+        candidates = sorted(
+            (sg for sg in segs if seg_dist(zx, zz, sg) <= radius),
+            key=lambda sg: (int(seg_dist(zx, zz, sg) // 50),
+                            round(sg[0], 1), round(sg[1], 1),
+                            round(sg[2], 1), round(sg[3], 1)))
+        picked = []
+        for sg in candidates:
+            ax, az, bx, bz, half_width = sg
+            length = math.hypot(bx - ax, bz - az)
+            if length < 20.0:
+                continue
+            dx, dz = (bx - ax) / length, (bz - az) / length
+            for fraction in (0.35, 0.65):
+                mx = ax + fraction * (bx - ax)
+                mz = az + fraction * (bz - az)
+                for side in (1.0, -1.0):
+                    nx, nz = -dz * side, dx * side
+                    # Entire stall, customers and bikes must remain outside the carriageway.
+                    px = mx + nx * (half_width + 6.8)
+                    pz = mz + nz * (half_width + 6.8)
+                    if math.hypot(px - zx, pz - zz) > radius:
+                        continue
+                    if any(math.hypot(px - qx, pz - qz) < 140.0 for qx, qz in picked):
+                        continue
+                    if any(math.hypot(px - float(p["x"]), pz - float(p["z"])) < 15.0
+                           for p in props):
+                        continue
+                    yaw = math.atan2(nx, nz)
+                    if not free(px, pz, yaw, 4.5, 3.5, bgrid, sgrid, water, 1.0):
+                        continue
+                    props.append({
+                        "model": "biryani_shop",
+                        "asset": "res://assets/models/city/biryani_shop.glb",
+                        "x": round(px, 2), "z": round(pz, 2),
+                        "yaw": round(yaw, 3), "scale": 1.0,
+                        "zone": zone_id, "biryani_cluster": True,
+                        "landmark_footprint": [4.3, 3.0, 3.7]
+                    })
+                    picked.append((px, pz))
+                    break
+                if len(picked) >= 2:
+                    break
+            if len(picked) >= 2:
+                break
+        print(f"biryani stalls for {zone_id}: {len(picked)}")
     # Keep hand-authored street dressing that the procedural rebuild does not own.
     # Do not copy old Central/Ripon props: they have authoritative coordinates above.
     if OUT.exists():
