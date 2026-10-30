@@ -1,0 +1,45 @@
+name: Place Roadside Biryani Stalls
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/roadside-biryani-stalls
+    paths:
+      - tools/osm/append_biryani_stalls.py
+      - .github/workflows/place-biryani-stalls.yml
+
+permissions:
+  contents: write
+
+jobs:
+  place:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Generate roadside stall placements in collision-clear plots
+        run: python3 tools/osm/append_biryani_stalls.py
+      - name: Verify generated shops and coordinates
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path("data/world/city_props.json").read_text())["props"]
+          b = [x for x in p if x.get("biryani_cluster")]
+          assert 2 <= len(b) <= 10, f"Unexpected roadside stall count: {len(b)}"
+          assert all(x["model"] == "biryani_shop" and x.get("zone") for x in b)
+          print("Verified", len(b), "biryani shop locations")
+          PY
+      - name: Commit authored placements
+        run: |
+          git config user.name "biryani-placements[bot]"
+          git config user.email "biryani-placements@users.noreply.github.com"
+          git add data/world/city_props.json
+          if git diff --cached --quiet; then echo "Already current"; exit 0; fi
+          git commit -m "data(world): add safe roadside biryani stalls"
+          git pull --rebase
+          git push
