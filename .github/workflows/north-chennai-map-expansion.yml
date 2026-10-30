@@ -1,0 +1,89 @@
+name: North Chennai Map Expansion
+
+# One ordered rebuild. Never combine a new Overpass extract with old osm2streets lanes.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/north-chennai-osm-expansion
+    paths:
+      - tools/osm/config.py
+      - .github/workflows/north-chennai-map-expansion.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: north-chennai-osm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OSM2STREETS_REF: main
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Check fixed world origin
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, "tools/osm")
+          from config import BBOX, ORIGIN
+          assert ORIGIN == (13.049, 80.259), "Do not move the existing city!"
+          assert BBOX[2] > 13.0827, "Chennai Central and Ripon must be within the new map"
+          print("Map origin preserved:", ORIGIN, "boundary:", BBOX)
+          PY
+      - name: Refetch expanded roads/buildings and named POIs
+        run: |
+          python3 tools/osm/fetch_osm.py
+          python3 tools/osm/fetch_pois.py
+      - name: Clone osm2streets
+        run: |
+          git clone --depth 1 --branch "$OSM2STREETS_REF" https://github.com/a-b-street/osm2streets /tmp/osm2streets
+          echo "O2S_SHA=$(git -C /tmp/osm2streets rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            /tmp/osm2streets/target
+          key: north-chennai-o2s-${{ env.O2S_SHA }}
+      - name: Build osm2streets Python bindings
+        run: |
+          pip install maturin
+          cd /tmp/osm2streets/osm2streets-py
+          maturin build --release
+          pip install /tmp/osm2streets/target/wheels/*.whl
+      - name: Generate LEFT-hand lanes and intersections
+        run: python3 tools/osm/run_osm2streets.py
+      - name: Generate full world and GPS graph
+        run: |
+          pip install mapbox-earcut numpy
+          python3 tools/osm/build_world.py
+          python3 tools/osm/attach_road_names.py
+      - name: Add accurate heritage assets and clear intersecting building footprints
+        run: python3 tools/osm/place_city_props.py
+      - name: Generate road-safe street furniture and names
+        run: |
+          python3 tools/osm/build_street_dressing.py
+          python3 tools/osm/build_street_signs.py
+          python3 tools/osm/build_building_names.py
+      - name: Validate northern roads and landmarks
+        run: python3 tools/osm/validate_north_chennai.py
+      - name: Commit regenerated OSM and world data
+        run: |
+          git config user.name "north-chennai-map[bot]"
+          git config user.email "north-chennai-map@users.noreply.github.com"
+          git add -A data/osm data/world
+          if git diff --cached --quiet; then echo "No map changes"; exit 0; fi
+          git commit -m "data(osm): extend road network and names to Central/Ripon"
+          git pull --rebase
+          git push
