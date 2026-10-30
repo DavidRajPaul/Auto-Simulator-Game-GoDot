@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "description": "Required custom art: do not silently ship placeholder substitutes. Missing files are a PR-blocking error.",
+  "required": [
+    {
+      "path": "res://assets/models/city/ripon_building.glb",
+      "purpose": "Ripon Building landmark at its real coordinates"
+    },
+    {
+      "path": "res://assets/models/city/tea_kadai.glb",
+      "purpose": "Roadside tea shops"
+    },
+    {
+      "path": "res://assets/models/city/biryani_shop.glb",
+      "purpose": "Biryani stalls on Chennai pavements"
+    },
+    {
+      "path": "res://assets/models/hero/namma_auto_hero.glb",
+      "purpose": "Free-roam player hero; fallback is only for prototyping"
+    }
+  ]
+}
