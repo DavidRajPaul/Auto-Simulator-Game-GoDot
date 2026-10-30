@@ -29,8 +29,14 @@ const PROFILE: Array[Vector4] = [
 ## Zone weight (manifest zone ids): T. Nagar and Mount Road are the city's choke points,
 ## Mylapore's narrow tank streets fill up at temple/market times, Marina is open boulevard
 ## that only gets busy with the evening beach crowd.
-const ZONE_WEIGHT: Dictionary = {"t_nagar": 1.25, "anna_salai": 1.2, "mylapore": 1.0, "marina": 0.75}
+const ZONE_WEIGHT: Dictionary = {
+	"t_nagar": 1.25, "anna_salai": 1.2, "mylapore": 1.0, "marina": 0.75,
+	# Station approaches have high peak-hour pressure, but still respect the fixed 18-car pool.
+	"central": 1.35, "ripon": 1.25, "egmore": 1.18
+}
 const MARINA_EVENING_BOOST: float = 0.35 # 4:30–8:30 PM beach crowd
+const STATION_MORNING_BOOST: float = 0.18
+const STATION_EVENING_BOOST: float = 0.16
 
 ## Minutes per 10 km for this time (minute of day 0–1440) and weekday (0 Mon … 6 Sun).
 static func travel_minutes(minute_of_day: float, weekday: int) -> float:
@@ -53,6 +59,13 @@ static func density(minute_of_day: float, weekday: int, zone_id: String) -> floa
 	var m: float = fposmod(minute_of_day, 1440.0)
 	if zone_id == "marina" and m >= 990.0 and m <= 1230.0:
 		w += MARINA_EVENING_BOOST
+	# Transit hubs are busy around office/commuter arrival and departure hours.
+	# This is a gameplay tuning heuristic, not measured street-by-street traffic data.
+	if zone_id in ["central", "ripon", "egmore"] and weekday != 6:
+		if m >= 420.0 and m <= 630.0:
+			w += STATION_MORNING_BOOST
+		elif m >= 990.0 and m <= 1200.0:
+			w += STATION_EVENING_BOOST
 	return clampf(congestion(minute_of_day, weekday) / 1.15 * w, 0.0, 1.0)
 
 ## Active AI vehicles around the player for a density (pool cap is 18, AGENTS.md).

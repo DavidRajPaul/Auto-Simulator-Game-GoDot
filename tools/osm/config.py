@@ -1,8 +1,10 @@
 """Shared config for the Chennai OSM → Godot world pipeline (Phase 2)."""
 
-# Bounding box covering Marina, Mylapore and Anna Salai → T. Nagar (south, west, north, east).
-BBOX = (13.028, 80.230, 13.070, 80.288)
-ORIGIN = ((BBOX[0] + BBOX[2]) / 2.0, (BBOX[1] + BBOX[3]) / 2.0)
+# Expand north to Ripon Building and Chennai Central. Keep the ORIGINAL origin fixed:
+# world chunks, hand-placed props, and player saves use this coordinate system.
+# Bounding box: (south, west, north, east).
+BBOX = (13.025, 80.225, 13.090, 80.290)
+ORIGIN = (13.049, 80.259)
 
 # 1.0 = real size. Real lane geometry (osm2streets) and real building outlines only line up at 1:1.
 # (Phases 2–4 used a 1 : 2.5 compressed map; fares then counted "real-equivalent" km.)
@@ -22,6 +24,12 @@ ZONES = {
                    "bld_height": (10.0, 34.0), "bld_density": 1.0},
     "t_nagar":    {"name": "T. Nagar Usman Road", "center": (13.0410, 80.2340), "radius": 800.0,
                    "bld_height": (9.0, 26.0), "bld_density": 1.0},
+    "central":    {"name": "Chennai Central & Park Town", "center": (13.0827, 80.2757), "radius": 750.0,
+                   "bld_height": (6.0, 24.0), "bld_density": 0.78},
+    "ripon":      {"name": "Ripon Building & Periamet", "center": (13.08175, 80.27162), "radius": 560.0,
+                   "bld_height": (6.0, 21.0), "bld_density": 0.72},
+    "egmore":     {"name": "Egmore & Poonamallee High Road", "center": (13.0770, 80.2600), "radius": 950.0,
+                   "bld_height": (7.0, 27.0), "bld_density": 0.84},
 }
 DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.94}
 
@@ -36,6 +44,8 @@ LANDMARKS = [
     {"id": "lic_building", "name": "LIC Building", "lat": 13.0627, "lon": 80.2617, "kind": "tower"},
     {"id": "gemini_flyover", "name": "Gemini Flyover", "lat": 13.0558, "lon": 80.2503, "kind": "flyover"},
     {"id": "panagal_park", "name": "Panagal Park", "lat": 13.0405, "lon": 80.2354, "kind": "park"},
+    # Imported GLBs are placed via city_props, not generic landmark placeholders.
+
 ]
 
 # Auto stands = player spawn / passenger hubs (Phase 3).
