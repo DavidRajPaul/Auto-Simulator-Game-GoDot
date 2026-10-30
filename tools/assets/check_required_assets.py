@@ -50,6 +50,10 @@ def audit(root: Path) -> tuple[dict[str, set[str]], list[str]]:
         content = source.read_text(encoding="utf-8", errors="replace")
         for match in ASSET_REF.finditer(content):
             uri = match.group("path")
+            # Ignore printf/GDScript template strings such as "res://assets/models/people/%s.glb".
+            # Concrete instances are verified through their JSON metadata below.
+            if any(x in uri for x in ("%s", "%d", "{", "}")):
+                continue
             if Path(uri).suffix.lower() in MODEL_SUFFIXES:
                 add(uri, str(source.relative_to(root)))
 
