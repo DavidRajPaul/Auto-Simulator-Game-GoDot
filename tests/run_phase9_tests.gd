@@ -222,29 +222,18 @@ func _test_city_props(s: WorldChunkStreamer) -> void:
 			slums += 1
 	_check("TWAD water towers in each neighbourhood", towers >= 4, str(towers))
 	_check("Canal-side settlements placed", slums >= 2, str(slums))
-	# Since the northern OSM expansion, Chennai Central is a real, drivable landmark.
-	# It must stay at its georeferenced position, not follow the player's skyline proxy.
-	var central: Node3D = lm.get_node_or_null("chennai_central_1") as Node3D
-	var central_pos: Vector3 = Vector3(1811.0, 0.0, -3725.2)
-	_check("Chennai Central is physically georeferenced", central != null and
-		central.global_position.distance_to(central_pos) < 3.0)
-	_check("Chennai Central is no longer a movable skyline proxy", s.skyline == null)
-	var ripon: Node3D = null
-	for child: Node in lm.get_children():
-		if child.name.begins_with("ripon_building"):
-			ripon = child as Node3D
-			break
-	# Asset may be added after source changes; validate the authored position in either case.
+	# Northern landmarks were intentionally removed when the original map bounds returned.
 	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
-	var has_ripon: bool = false
-	if props_file != null:
-		var props: Array = (JSON.parse_string(props_file.get_as_text()) as Dictionary).get("props", [])
-		for prop: Dictionary in props:
-			if (str(prop.get("model", "")) == "ripon_building"
-					and absf(float(prop["x"]) - 1368.97) < 3.0
-					and absf(float(prop["z"]) + 3620.68) < 3.0):
-				has_ripon = true
-	_check("Ripon Building remains at its real Chennai coordinates", has_ripon)
+	var props: Array = (JSON.parse_string(props_file.get_as_text()) as Dictionary).get("props", []) if props_file != null else []
+	var removed_models_absent: bool = true
+	for p: Dictionary in props:
+		if str(p.get("model", "")) in ["chennai_central", "ripon_building"]:
+			removed_models_absent = false
+	for child: Node in lm.get_children():
+		if child.name.begins_with("chennai_central") or child.name.begins_with("ripon_building"):
+			removed_models_absent = false
+	_check("Removed Central/Ripon models have no spawned props", removed_models_absent)
+	_check("No Chennai Central skyline proxy", s.skyline == null)
 
 func _test_dressing(s: WorldChunkStreamer) -> void:
 	_check("Street dressing data exists for the loaded chunks", DirAccess.get_files_at("res://data/world/dress").size() > 400)

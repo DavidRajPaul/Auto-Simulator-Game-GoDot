@@ -1,17 +1,9 @@
 {
- "chennai_central": {
-  "credit": "\"chennai central\" by SudharsanArivalagan (Sketchfab), CC BY 4.0",
-  "size_m": [
-   71.9,
-   54.6,
-   190.0
-  ]
- },
  "gas_station": {
   "credit": "\"GAS STATION\" by Karim.Fares (Sketchfab), CC BY 4.0, rebranded as the fictional NAMMA GAS",
   "out": "city",
   "size_m": [
-   34.0,
+   34,
    10.52,
    25.96
   ]
@@ -19,7 +11,7 @@
  "slum_cluster": {
   "credit": "\"Chennai Slum\" by aswin.baskaran (Sketchfab), CC BY 4.0",
   "size_m": [
-   34.0,
+   34,
    10.1,
    21.9
   ]
@@ -28,7 +20,7 @@
   "credit": "\"Chennai Water Tank\" by TamilarasanRG (Sketchfab), CC BY 4.0",
   "size_m": [
    10.9,
-   18.0,
+   18,
    7.8
   ]
  }
