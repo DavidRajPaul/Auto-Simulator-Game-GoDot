@@ -1129,6 +1129,10 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			cache[cache_key] = load(path) if ResourceLoader.exists(path) else null
 		var scene: PackedScene = cache[cache_key] as PackedScene
 		if scene == null:
+			if bool(p.get("biryani_cluster", false)):
+				_add_tea_stall_fallback(holder, p, index)
+				_add_biryani_customers(holder, p, index)
+				continue
 			if bool(p.get("tea_cluster", false)):
 				_add_tea_stall_fallback(holder, p, index)
 				_add_tea_crowd(holder, p, index)
@@ -1160,6 +1164,9 @@ func _build_city_props(holder: StaticBody3D) -> void:
 		if bool(p.get("tea_cluster", false)):
 			_set_cast_shadow(inst, false)
 			_add_tea_crowd(holder, p, index)
+		if bool(p.get("biryani_cluster", false)):
+			_set_cast_shadow(inst, false)
+			_add_biryani_customers(holder, p, index)
 
 ## A compact, low-draw-call fallback while the uploaded Tripo tea model is optimized.
 ## All parts share one mesh and material; no physics interactions are needed for patrons.
@@ -1214,6 +1221,43 @@ func _add_tea_crowd(holder: StaticBody3D, p: Dictionary, index: int) -> void:
 		_set_cast_shadow(bike, false)
 		for m: Node in bike.find_children("*", "MeshInstance3D", true, false):
 			(m as MeshInstance3D).visibility_range_end = 88.0
+
+## Owner and cooking props already live in biryani_shop.glb.
+## Two shared-mesh visitors and a pair of parked scooters add pavement activity
+## without animation or shadow overhead. The generator reserves this whole area.
+func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> void:
+	var spot: Node3D = Node3D.new()
+	spot.name = "BiryaniGathering_%d" % index
+	spot.transform = Transform3D(
+		Basis(Vector3.UP, float(p.get("yaw", 0.0))),
+		Vector3(float(p["x"]), 0.0, float(p["z"])))
+	holder.add_child(spot)
+	for i: int in 2:
+		var person: MeshInstance3D = MeshInstance3D.new()
+		person.mesh = PersonMesh.standing(
+			PersonMesh.Style.SHIRT_TROUSERS if i == 0 else PersonMesh.Style.VESHTI,
+			index + i, false)
+		person.position = Vector3(-1.35 + float(i) * 2.7, 0.08, -2.25)
+		person.rotation.y = PI
+		person.visibility_range_end = 85.0
+		person.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		spot.add_child(person)
+	# Keep parking outside the stall and customer aisle.
+	var bike_path: String = "res://assets/models/traffic/two_wheeler.glb"
+	if not ResourceLoader.exists(bike_path):
+		return
+	var bike_scene: PackedScene = load(bike_path) as PackedScene
+	if bike_scene == null:
+		return
+	for i: int in 2:
+		var bike: Node3D = bike_scene.instantiate() as Node3D
+		bike.name = "BiryaniParkedScooter_%d" % i
+		bike.position = Vector3(-3.4 + float(i) * 1.7, 0.0, 2.6)
+		bike.rotation.y = PI * 0.5
+		spot.add_child(bike)
+		_set_cast_shadow(bike, false)
+		for mesh: Node in bike.find_children("*", "MeshInstance3D", true, false):
+			(mesh as MeshInstance3D).visibility_range_end = 85.0
 
 func _add_parked_rider(vehicle: Node3D, index: int, prop: Dictionary) -> void:
 	var rider: MeshInstance3D = MeshInstance3D.new()
