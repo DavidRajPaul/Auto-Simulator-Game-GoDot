@@ -41,7 +41,13 @@ const MARINA_LIGHTHOUSE_SCENE: String = "res://assets/models/city/lighthouse/che
 const LANDMARK_VISIBLE_M: float = 420.0
 const SKYLINE_DIST_M: float = 370.0
 ## Collision boxes for baked landmarks (the visual models carry no colliders).
-const CITY_FOOTPRINT: Dictionary = {"water_tower": Vector3(8.0, 18.0, 6.5), "slum_cluster": Vector3(30.0, 4.0, 18.0), "ripon_building": Vector3(52.0, 35.0, 42.0), "tea_kadai": Vector3(3.3, 3.0, 3.3)}
+const CITY_FOOTPRINT: Dictionary = {
+	"water_tower": Vector3(8.0, 18.0, 6.5),
+	"slum_cluster": Vector3(30.0, 4.0, 18.0),
+	"chennai_central": Vector3(71.9, 54.6, 190.0),
+	"ripon_building": Vector3(52.0, 35.0, 42.0),
+	"tea_kadai": Vector3(3.3, 3.0, 3.3)
+}
 const KIND_PALETTES: Dictionary = {
 	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
 	"office": [Color(0.6, 0.68, 0.74), Color(0.75, 0.78, 0.8), Color(0.55, 0.6, 0.62)],
@@ -1141,12 +1147,14 @@ func _build_city_props(holder: StaticBody3D) -> void:
 		var size: Vector3 = CITY_FOOTPRINT.get(model, Vector3.ZERO)
 		if size != Vector3.ZERO:
 			var node: Node3D = Node3D.new()
-			# Collision footprint is specified in world metres: do not multiply by the Tripo visual scale.
+			# Model authoring scale is not a real-world collider scale.
 			node.transform = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
 			_base_collider(node, holder, size)
 			node.free()
 		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
 			(mi as MeshInstance3D).visibility_range_end = LANDMARK_VISIBLE_M
+		if bool(p.get("landmark", false)):
+			_set_cast_shadow(inst, false)
 		if bool(p.get("parked_two_wheeler", false)):
 			_add_parked_rider(inst, index, p)
 		if bool(p.get("tea_cluster", false)):
