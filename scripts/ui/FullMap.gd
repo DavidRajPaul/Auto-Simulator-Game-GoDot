@@ -143,6 +143,7 @@ func _gui_input(event: InputEvent) -> void:
 			_press_at[t.index] = t.position
 			if _touches.size() == 1 and _tap_button(t.position):
 				_touches.erase(t.index)
+				_press_at.erase(t.index) # Button press must not also drop a map pin on release
 		else:
 			if _dragging_pin:
 				_select_point(t.position)
