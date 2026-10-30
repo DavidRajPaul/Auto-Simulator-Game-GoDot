@@ -160,6 +160,7 @@ func _add_workshop_wall(root: Node3D, wall_name: String, wall_size: Vector3, off
 	wall.name = wall_name
 	wall.position = offset
 	var shape: CollisionShape3D = CollisionShape3D.new()
+	shape.name = "CollisionShape3D"
 	var box: BoxShape3D = BoxShape3D.new()
 	box.size = wall_size
 	shape.shape = box
