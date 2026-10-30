@@ -44,8 +44,6 @@ const SKYLINE_DIST_M: float = 370.0
 const CITY_FOOTPRINT: Dictionary = {
 	"water_tower": Vector3(8.0, 18.0, 6.5),
 	"slum_cluster": Vector3(30.0, 4.0, 18.0),
-	"chennai_central": Vector3(71.9, 54.6, 190.0),
-	"ripon_building": Vector3(52.0, 35.0, 42.0),
 	"tea_kadai": Vector3(3.3, 3.0, 3.3)
 }
 const KIND_PALETTES: Dictionary = {
@@ -1112,7 +1110,7 @@ func _base_collider(node: Node3D, holder: StaticBody3D, base: Vector3) -> void:
 	holder.add_child(cs)
 
 ## Baked landmark models (assets/models/city, placed by tools/osm/place_city_props.py):
-## TWAD water towers, canal-side settlements, and Chennai Central on the northern skyline.
+## TWAD water towers, canal-side settlements, and other local city details.
 func _build_city_props(holder: StaticBody3D) -> void:
 	var f: FileAccess = FileAccess.open(world_dir.path_join("city_props.json"), FileAccess.READ)
 	if f == null:
