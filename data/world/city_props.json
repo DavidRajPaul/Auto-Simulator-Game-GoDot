@@ -6,7 +6,17 @@
       "x": 1811,
       "z": -3725.2,
       "yaw": 1.571,
-      "skyline": true
+      "scale": 1,
+      "landmark": true
+    },
+    {
+      "model": "ripon_building",
+      "asset": "res://assets/models/city/ripon_building.glb",
+      "x": 1368.97,
+      "z": -3620.68,
+      "yaw": 3.142,
+      "scale": 52,
+      "landmark": true
     },
     {
       "model": "water_tower",
