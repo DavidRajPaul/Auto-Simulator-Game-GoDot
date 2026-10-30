@@ -35,6 +35,7 @@ func _run() -> void:
 	await _physics(60)
 	await _test_live_vehicle_swap(auto)
 	await _test_fuel_and_services(auto, services, ui)
+	_test_mylapore_workshop(services)
 	await _test_condition(auto)
 	await _test_shift_clock()
 	await _test_settings(main, hud)
@@ -185,6 +186,25 @@ func _test_fuel_and_services(auto: AutoRickshawController, services: ServicePoin
 	await _physics(3)
 	var nearest_bunk: Dictionary = services.nearest("lpg", auto.global_position)
 	_check("Tow costs ₹150 and drops you at an LPG bunk", _events.has("teleport_requested") and GameState.wallet_inr == wallet - ServicePoints.TOW_COST_INR and (nearest_bunk["pos"] as Vector3).distance_to(auto.global_position) < 5.0)
+
+## Phase 1B regression: uploaded GLB renders at Mylapore with a clear front bay.
+func _test_mylapore_workshop(services: ServicePoints) -> void:
+	var garage: Node3D = services.get_node_or_null("garage_mylapore") as Node3D
+	_check("Mylapore garage service marker exists", garage != null)
+	if garage == null:
+		return
+	var imported: Node3D = garage.get_node_or_null("MylaporeWorkshop") as Node3D
+	_check("Mylapore GLB model imported", imported != null)
+	if imported == null:
+		return
+	_check("Mylapore workshop uses bounded visual scale",
+		is_equal_approx(imported.scale.x, 8.0) and imported.scale.x == imported.scale.z)
+	for wall_name: String in ["WorkshopRearGuard", "WorkshopLeftGuard", "WorkshopRightGuard"]:
+		var wall: StaticBody3D = garage.get_node_or_null(wall_name) as StaticBody3D
+		_check("%s has a collision shape" % wall_name,
+			wall != null and wall.get_node_or_null("CollisionShape3D") is CollisionShape3D)
+	_check("Garage interaction location stays tied to service marker",
+		services.nearest("garage", garage.global_position).get("id", "") == "garage_mylapore")
 
 func _test_condition(_auto: AutoRickshawController) -> void:
 	GameState.condition = 100.0
