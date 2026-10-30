@@ -29,6 +29,9 @@ jobs:
       - uses: actions/checkout@v5
       - name: Fail fast if required models are missing
         run: python3 tools/assets/check_required_assets.py
+      - name: Verify GLB container integrity
+        if: always()
+        run: python3 tools/assets/check_glb_integrity.py
 
   test:
     name: Tests + perf budget
