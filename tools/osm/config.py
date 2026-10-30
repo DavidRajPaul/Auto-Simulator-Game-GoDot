@@ -1,9 +1,8 @@
 """Shared config for the Chennai OSM → Godot world pipeline (Phase 2)."""
 
-# Expand north to Ripon Building and Chennai Central. Keep the ORIGINAL origin fixed:
-# world chunks, hand-placed props, and player saves use this coordinate system.
+# Original playable map bounds restored; keep the original coordinate origin so existing city content remains aligned.
 # Bounding box: (south, west, north, east).
-BBOX = (13.025, 80.225, 13.090, 80.290)
+BBOX = (13.028, 80.230, 13.070, 80.288)
 ORIGIN = (13.049, 80.259)
 
 # 1.0 = real size. Real lane geometry (osm2streets) and real building outlines only line up at 1:1.
@@ -24,12 +23,6 @@ ZONES = {
                    "bld_height": (10.0, 34.0), "bld_density": 1.0},
     "t_nagar":    {"name": "T. Nagar Usman Road", "center": (13.0410, 80.2340), "radius": 800.0,
                    "bld_height": (9.0, 26.0), "bld_density": 1.0},
-    "central":    {"name": "Chennai Central & Park Town", "center": (13.0827, 80.2757), "radius": 750.0,
-                   "bld_height": (6.0, 24.0), "bld_density": 0.78},
-    "ripon":      {"name": "Ripon Building & Periamet", "center": (13.08175, 80.27162), "radius": 560.0,
-                   "bld_height": (6.0, 21.0), "bld_density": 0.72},
-    "egmore":     {"name": "Egmore & Poonamallee High Road", "center": (13.0770, 80.2600), "radius": 950.0,
-                   "bld_height": (7.0, 27.0), "bld_density": 0.84},
 }
 DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.94}
 
