@@ -22,6 +22,14 @@ env:
   GODOT_BIN: /home/runner/godot/godot
 
 jobs:
+  asset_integrity:
+    name: Required model assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fail fast if required models are missing
+        run: python3 tools/assets/check_required_assets.py
+
   test:
     name: Tests + perf budget
     runs-on: ubuntu-latest
@@ -48,6 +56,9 @@ jobs:
 
       - name: Import project
         run: ${GODOT_BIN} --headless --path . --import
+
+      - name: Verify six imported GLBs load correctly
+        run: ${GODOT_BIN} --headless --path . --script res://tests/check_imported_glbs.gd
 
       - name: Boot main scene (script/scene load check)
         run: |
@@ -83,7 +94,7 @@ jobs:
 
   android:
     name: Export Android APK + AAB
-    needs: test
+    needs: [test, asset_integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
