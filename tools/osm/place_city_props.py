@@ -287,6 +287,47 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
+    # Low-risk traffic-management barriers on the pavement side of busy station roads.
+    # These are GAMEPLAY roadside safety props, not claims of real police road closures.
+    # Candidate locations come from the expanded street graph and are rejected when
+    # they intersect the road carriageway, an OSM building, or water.
+    for place_id, lat, lon in (("central", 13.0827, 80.2757),
+                               ("ripon", 13.0817545, 80.2716236),
+                               ("egmore", 13.0770, 80.2600)):
+        tx, tz = project(lat, lon)
+        nearby = sorted(
+            (seg for seg in segs if seg_dist(tx, tz, seg) < 240.0),
+            key=lambda seg: seg_dist(tx, tz, seg))
+        placed = []
+        for seg in nearby:
+            ax, az, bx, bz, half_width = seg
+            dx, dz = bx - ax, bz - az
+            length = math.hypot(dx, dz)
+            if length < 10.0:
+                continue
+            nx, nz = -dz / length, dx / length
+            mx, mz = (ax + bx) / 2.0, (az + bz) / 2.0
+            for side in (1.0, -1.0):
+                off = half_width + 4.2
+                px, pz = mx + side * nx * off, mz + side * nz * off
+                if math.hypot(px - tx, pz - tz) > 225.0:
+                    continue
+                if any(math.hypot(px - x, pz - z) < 42.0 for x, z in placed):
+                    continue
+                yaw = math.atan2(dx, dz)
+                if not free(px, pz, yaw, 1.0, 0.5, bgrid, sgrid, water, 0.7):
+                    continue
+                props.append({
+                    "model": "barricade/roadside_barricade",
+                    "x": round(px, 1), "z": round(pz, 1),
+                    "yaw": round(yaw, 3), "scale": 1.0,
+                    "barricade_type": "yellow_black",
+                    "zone": place_id, "generated_safety_barrier": True
+                })
+                placed.append((px, pz))
+                break
+            if len(placed) >= 3:
+                break
     # Keep hand-authored street dressing that the procedural rebuild does not own.
     # Do not copy old Central/Ripon props: they have authoritative coordinates above.
     if OUT.exists():
@@ -294,7 +335,7 @@ def main() -> int:
         for p in prior:
             if p.get("model") not in ("chennai_central", "ripon_building") and (
                     p.get("tea_cluster") or p.get("parked_two_wheeler")
-                    or p.get("maintenance_display") or p.get("barricade_type")):
+                    or p.get("maintenance_display") or (p.get("barricade_type") and not p.get("generated_safety_barrier"))):
                 props.append(p)
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
