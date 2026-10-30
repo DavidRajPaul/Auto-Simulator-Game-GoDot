@@ -35,12 +35,12 @@ var _labels: Array[Dictionary] = [] # per named road: {name, ta, cls, a, b, len}
 var _close_rect: Rect2
 var _plus_rect: Rect2
 var _minus_rect: Rect2
-var _select_mode: int = 0 # 0 pan, 1 select start, 2 select destination
+var _select_mode: int = 0 # 0 pan, 2 drop/drag destination pin
+var _dragging_pin: bool = false
 var _custom_start: Vector3 = Vector3.ZERO
 var _custom_destination: Vector3 = Vector3.ZERO
 var _has_custom_start: bool = false
 var _has_custom_destination: bool = false
-var _start_rect: Rect2
 var _destination_rect: Rect2
 var _navigate_rect: Rect2
 var _clear_rect: Rect2
@@ -129,10 +129,11 @@ func _load_world_extras() -> void:
 	if props_file != null:
 		var city: Dictionary = JSON.parse_string(props_file.get_as_text()) as Dictionary
 		for prop: Dictionary in city.get("props", []):
+			if str(prop.get("model", "")) in ["chennai_central", "ripon_building"]:
+				continue
 			if not bool(prop.get("landmark", false)) and not bool(prop.get("tea_cluster", false)):
 				continue
-			var label: String = ("Tea Kadai" if bool(prop.get("tea_cluster", false))
-				else ("Chennai Central" if str(prop.get("model", "")) == "chennai_central" else "Ripon Building"))
+			var label: String = "Tea Kadai"
 			_pois.append({"name": label, "kind": "landmark",
 				"pos": Vector2(float(prop["x"]), float(prop["z"]))})
 
@@ -147,7 +148,10 @@ func _gui_input(event: InputEvent) -> void:
 			if _touches.size() == 1 and _tap_button(t.position):
 				_touches.erase(t.index)
 		else:
-			if _press_at.has(t.index) and (t.position as Vector2).distance_to(_press_at[t.index] as Vector2) < 14.0 and _select_mode != 0:
+			if _dragging_pin:
+				_select_point(t.position)
+				_dragging_pin = false
+			elif _press_at.has(t.index) and (t.position as Vector2).distance_to(_press_at[t.index] as Vector2) < 14.0 and _select_mode != 0:
 				_select_point(t.position)
 			_press_at.erase(t.index)
 			_touches.erase(t.index)
@@ -163,7 +167,11 @@ func _gui_input(event: InputEvent) -> void:
 			_pinch_d = nd
 		else:
 			_touches[d.index] = d.position
-			centre -= d.relative / scale_px
+			if _select_mode == 2 or _dragging_pin:
+				_dragging_pin = true
+				_select_point(d.position)
+			else:
+				centre -= d.relative / scale_px
 		queue_redraw()
 		accept_event()
 	elif event is InputEventMouseButton:
@@ -181,17 +189,15 @@ func _gui_input(event: InputEvent) -> void:
 		queue_redraw()
 
 func _tap_button(p: Vector2) -> bool:
-	if _start_rect.has_point(p):
-		_select_mode = 1
-		queue_redraw()
-	elif _destination_rect.has_point(p):
+	if _destination_rect.has_point(p):
 		_select_mode = 2
 		queue_redraw()
 	elif _navigate_rect.has_point(p):
-		if _has_custom_start and _has_custom_destination:
-			SignalBus.custom_navigation_requested.emit(_custom_start, _custom_destination)
+		if _has_custom_destination:
+			SignalBus.custom_navigation_requested.emit(_player, _custom_destination)
+			set_open(false)
 		else:
-			SignalBus.hint_requested.emit("Choose start and destination", 2.0)
+			SignalBus.hint_requested.emit("Drop a pin on the map first", 2.0)
 	elif _clear_rect.has_point(p):
 		_has_custom_start = false
 		_has_custom_destination = false
@@ -214,20 +220,17 @@ func _tap_button(p: Vector2) -> bool:
 func _select_point(screen_point: Vector2) -> void:
 	var w: Vector2 = to_world(screen_point)
 	var point: Vector3 = Vector3(w.x, 0.0, w.y)
-	if _select_mode == 1:
-		_custom_start = point
-		_has_custom_start = true
-	else:
-		_custom_destination = point
-		_has_custom_destination = true
-	_select_mode = 0
+	_custom_destination = point
+	_has_custom_destination = true
+	# Keep selection mode active so the pin can be dragged until Set Route.
+	_select_mode = 2
 	queue_redraw()
 
 func _on_custom_state(active: bool, start: Vector3, destination: Vector3) -> void:
 	if active:
 		_custom_start = start
 		_custom_destination = destination
-		_has_custom_start = true
+		_has_custom_start = false
 		_has_custom_destination = true
 	queue_redraw()
 
@@ -403,7 +406,7 @@ func _draw_player() -> void:
 	draw_polyline(PackedVector2Array([s + f * 14.0, s - f * 9.0 + r * 9.0, s - f * 4.0, s - f * 9.0 - r * 9.0, s + f * 14.0]), Color.BLACK, 2.0)
 
 func _draw_custom_pins() -> void:
-	for entry: Array in [[_has_custom_start, _custom_start, "S", Color(0.2, 0.85, 0.4)], [_has_custom_destination, _custom_destination, "D", Color(1.0, 0.4, 0.25)]]:
+	for entry: Array in [[_has_custom_destination, _custom_destination, "●", Color(1.0, 0.4, 0.25)]]:
 		if not bool(entry[0]):
 			continue
 		var p: Vector3 = entry[1]
@@ -429,18 +432,18 @@ func _draw_chrome() -> void:
 	var button_width: float = minf(160.0, (size.x - 40.0) * 0.24)
 	var gap: float = 6.0
 	var y: float = size.y - 98.0
-	_start_rect = Rect2(Vector2(16.0, y), Vector2(button_width, 56.0))
-	_destination_rect = Rect2(Vector2(16.0 + button_width + gap, y), Vector2(button_width, 56.0))
-	_navigate_rect = Rect2(Vector2(16.0 + (button_width + gap) * 2.0, y), Vector2(button_width, 56.0))
-	_clear_rect = Rect2(Vector2(16.0 + (button_width + gap) * 3.0, y), Vector2(button_width, 56.0))
-	for entry: Array in [[_start_rect, "Start", 1], [_destination_rect, "Destination", 2], [_navigate_rect, "Navigate", 0], [_clear_rect, "Clear", 0]]:
+	button_width = minf(175.0, (size.x - 44.0) / 3.0)
+	_destination_rect = Rect2(Vector2(16.0, y), Vector2(button_width, 56.0))
+	_navigate_rect = Rect2(Vector2(16.0 + button_width + gap, y), Vector2(button_width, 56.0))
+	_clear_rect = Rect2(Vector2(16.0 + (button_width + gap) * 2.0, y), Vector2(button_width, 56.0))
+	for entry: Array in [[_destination_rect, "Drop Pin", 2], [_navigate_rect, "Set Route", 0], [_clear_rect, "Clear", 0]]:
 		var rc: Rect2 = entry[0]
 		var selected: bool = _select_mode == int(entry[2]) and _select_mode != 0
 		draw_rect(rc, Color(0.7, 0.47, 0.08) if selected else Color(0.05, 0.05, 0.06, 0.92))
 		draw_rect(rc, Color(1.0, 0.72, 0.1), false, 2.0)
 		draw_string(_font, rc.position + Vector2(0.0, 35.0), str(entry[1]), HORIZONTAL_ALIGNMENT_CENTER, rc.size.x, 17, Color.WHITE)
 	if _select_mode != 0:
-		draw_string(_font, Vector2(20.0, size.y - 114.0), "Tap map to set " + ("start" if _select_mode == 1 else "destination"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+		draw_string(_font, Vector2(20.0, size.y - 114.0), "Tap or drag to position the pin", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
 	# North arrow.
 	var n: Vector2 = Vector2(48, 96)
 	draw_colored_polygon(PackedVector2Array([n + Vector2(0, -18), n + Vector2(9, 8), n + Vector2(-9, 8)]), Color(1, 0.4, 0.35))
