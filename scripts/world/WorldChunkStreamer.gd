@@ -45,7 +45,8 @@ const CITY_FOOTPRINT: Dictionary = {
 	"water_tower": Vector3(8.0, 18.0, 6.5),
 	"slum_cluster": Vector3(30.0, 4.0, 18.0),
 	"chennai_central": Vector3(71.9, 54.6, 190.0),
-	"ripon_building": Vector3(52.0, 35.0, 42.0)
+	"ripon_building": Vector3(52.0, 35.0, 42.0),
+	"tea_kadai": Vector3(3.3, 3.0, 3.3)
 }
 const KIND_PALETTES: Dictionary = {
 	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
@@ -1128,6 +1129,9 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			cache[cache_key] = load(path) if ResourceLoader.exists(path) else null
 		var scene: PackedScene = cache[cache_key] as PackedScene
 		if scene == null:
+			if bool(p.get("tea_cluster", false)):
+				_add_tea_stall_fallback(holder, p, index)
+				_add_tea_crowd(holder, p, index)
 			continue
 		var inst: Node3D = scene.instantiate() as Node3D
 		inst.name = "%s_%d" % [model, index]
@@ -1153,6 +1157,63 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			_set_cast_shadow(inst, false)
 		if bool(p.get("parked_two_wheeler", false)):
 			_add_parked_rider(inst, index, p)
+		if bool(p.get("tea_cluster", false)):
+			_set_cast_shadow(inst, false)
+			_add_tea_crowd(holder, p, index)
+
+## A compact, low-draw-call fallback while the uploaded Tripo tea model is optimized.
+## All parts share one mesh and material; no physics interactions are needed for patrons.
+func _add_tea_stall_fallback(holder: StaticBody3D, p: Dictionary, index: int) -> void:
+	var place: Node3D = Node3D.new()
+	place.name = "TeaKadai_%d" % index
+	place.transform = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
+	holder.add_child(place)
+	var surf: SurfaceTool = MeshKit.begin()
+	MeshKit.box(surf, Vector3(0.0, 1.1, 0.0), Vector3(2.4, 1.0, 1.7), Color(0.28, 0.44, 0.3))
+	MeshKit.box(surf, Vector3(0.0, 2.5, 0.0), Vector3(3.1, 0.22, 2.4), Color(0.75, 0.2, 0.13))
+	MeshKit.box(surf, Vector3(0.0, 1.2, -1.1), Vector3(2.6, 0.75, 0.5), Color(0.67, 0.42, 0.2))
+	var kiosk: MeshInstance3D = MeshInstance3D.new()
+	kiosk.mesh = MeshKit.finish(surf, PersonMesh.material())
+	kiosk.visibility_range_end = 115.0
+	kiosk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	place.add_child(kiosk)
+
+## Tea kadais are social hubs: three regulars and parked scooters in the kerbside bay.
+## They are static, bounded and never spawn on the lane centreline.
+func _add_tea_crowd(holder: StaticBody3D, p: Dictionary, index: int) -> void:
+	var yaw: float = float(p.get("yaw", 0.0))
+	var basis: Basis = Basis(Vector3.UP, yaw)
+	var centre: Vector3 = Vector3(float(p["x"]), 0.0, float(p["z"]))
+	var hub: Node3D = Node3D.new()
+	hub.name = "TeaCrowd_%d" % index
+	hub.transform = Transform3D(basis, centre)
+	holder.add_child(hub)
+	for i: int in 3:
+		var guest: MeshInstance3D = MeshInstance3D.new()
+		guest.name = "TeaCustomer_%d" % i
+		var style: PersonMesh.Style = (PersonMesh.Style.VESHTI if i == 0 else (PersonMesh.Style.SAREE if i == 1 else PersonMesh.Style.SHIRT_TROUSERS))
+		guest.mesh = PersonMesh.standing(style, index + i, false)
+		guest.position = Vector3(-2.6 + float(i) * 1.35, 0.08, -2.7)
+		guest.rotation.y = PI + 0.25 * float(i)
+		guest.visibility_range_end = 88.0
+		guest.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		hub.add_child(guest)
+	var bike_path: String = "res://assets/models/traffic/two_wheeler.glb"
+	if not ResourceLoader.exists(bike_path):
+		return
+	var bikes: PackedScene = load(bike_path) as PackedScene
+	if bikes == null:
+		return
+	for i: int in 2:
+		var bike: Node3D = bikes.instantiate() as Node3D
+		bike.name = "TeaParkedBike_%d" % i
+		bike.position = Vector3(-4.6 + float(i) * 2.0, 0.12, -4.0)
+		bike.rotation.y = -PI * 0.5 + float(i) * 0.15
+		bike.scale = Vector3.ONE * 1.0
+		hub.add_child(bike)
+		_set_cast_shadow(bike, false)
+		for m: Node in bike.find_children("*", "MeshInstance3D", true, false):
+			(m as MeshInstance3D).visibility_range_end = 88.0
 
 func _add_parked_rider(vehicle: Node3D, index: int, prop: Dictionary) -> void:
 	var rider: MeshInstance3D = MeshInstance3D.new()

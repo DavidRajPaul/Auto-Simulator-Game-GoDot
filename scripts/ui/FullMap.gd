@@ -129,9 +129,10 @@ func _load_world_extras() -> void:
 	if props_file != null:
 		var city: Dictionary = JSON.parse_string(props_file.get_as_text()) as Dictionary
 		for prop: Dictionary in city.get("props", []):
-			if not bool(prop.get("landmark", false)):
+			if not bool(prop.get("landmark", false)) and not bool(prop.get("tea_cluster", false)):
 				continue
-			var label: String = "Chennai Central" if str(prop.get("model", "")) == "chennai_central" else "Ripon Building"
+			var label: String = ("Tea Kadai" if bool(prop.get("tea_cluster", false))
+				else ("Chennai Central" if str(prop.get("model", "")) == "chennai_central" else "Ripon Building"))
 			_pois.append({"name": label, "kind": "landmark",
 				"pos": Vector2(float(prop["x"]), float(prop["z"]))})
 
