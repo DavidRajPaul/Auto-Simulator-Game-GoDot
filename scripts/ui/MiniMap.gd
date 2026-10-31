@@ -23,7 +23,7 @@ var _timer: float = 0.0
 var _hud_tex: Texture2D
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	if ResourceLoader.exists(TouchHUD.HUD_ATLAS):
 		_hud_tex = load(TouchHUD.HUD_ATLAS) as Texture2D
 	_load_services()
@@ -37,6 +37,19 @@ func _ready() -> void:
 		_heading = f)
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
+
+## Tap the mini-map to choose a destination on the interactive full map.
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		if touch.pressed:
+			SignalBus.full_map_requested.emit(true)
+			accept_event()
+	elif event is InputEventMouseButton:
+		var click: InputEventMouseButton = event
+		if click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+			SignalBus.full_map_requested.emit(true)
+			accept_event()
 
 func _on_foot_changed(on_foot: bool) -> void:
 	_on_foot = on_foot
@@ -124,8 +137,14 @@ func _draw() -> void:
 		var marker: Vector2 = _to_map(p, centre, scale_px, rot)
 		if marker.distance_to(centre) > r - 7.0:
 			continue
-		var colour: Color = Color("ffb84a") if str(service["kind"]) == "lpg" else Color("64e6a1")
-		draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -5), marker + Vector2(5, 0), marker + Vector2(0, 5), marker + Vector2(-5, 0)]), colour)
+		var kind: String = str(service["kind"])
+		var colour: Color = Color("ffb84a") if kind == "lpg" else (Color("64e6a1") if kind == "ev" else Color("c5a4ff"))
+		if kind == "garage":
+			draw_circle(marker, 8.0, Color(0, 0, 0, 0.85))
+			draw_circle(marker, 6.0, colour)
+			draw_string(ThemeDB.fallback_font, marker + Vector2(-4, 4), "G", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.BLACK)
+		else:
+			draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -5), marker + Vector2(5, 0), marker + Vector2(0, 5), marker + Vector2(-5, 0)]), colour)
 	# Hails.
 	for h: Dictionary in _hails:
 		var p: Vector3 = h["position"]
