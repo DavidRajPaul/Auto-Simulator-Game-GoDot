@@ -9,8 +9,10 @@ extends Node3D
 
 const GROUND_Y: float = -0.80 # road height relative to the chassis origin at rest
 ## The downloaded Chennai auto (rSquare, CC BY 4.0) replaces the procedural body while the paint
-## is stock yellow. Its texture can't be repainted, so garage paints and the green EV keep the
-## procedural body. The file's wheels are baked into the body, so the WheelModel nodes are hidden.
+## is stock yellow. Never swap the chassis when paint changes: this caused purchased colors
+## to replace the player auto with a different procedural mesh. Until a paint-mask asset
+## exists, custom paint is saved but the imported model keeps its original texture.
+## The file's wheels are baked into the body, so the WheelModel nodes are hidden.
 const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 
@@ -75,7 +77,7 @@ func _attach_real_model() -> void:
 		real_body.queue_free()
 		real_body = null
 	uses_real_model = false
-	if Engine.is_editor_hint() or not is_stock_yellow() or not is_inside_tree():
+	if Engine.is_editor_hint() or not is_inside_tree():
 		return
 	var holder: Node3D = Node3D.new()
 	holder.name = "RealBody"
