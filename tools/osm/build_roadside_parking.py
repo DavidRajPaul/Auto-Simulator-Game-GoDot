@@ -85,6 +85,7 @@ def main():
                         x,z = a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t
                         break
                     along -= length
+                car_length = 2.0
                 density = min(.8, KINDS[road_class]*zone_multiplier(x,z))
                 if rng.random() < density:
                     # Prefer scooters on narrow Chennai lanes, cars on wider roads.
@@ -105,7 +106,7 @@ def main():
                         out.setdefault(ck,[]).append([round(px,2),round(pz,2),round(yaw,4),kind])
                         occupied.add(cell)
                         placed += 1
-                cursor += car_length + rng.uniform(3.5,8.0) if 'car_length' in locals() else SPACING
+                cursor += car_length + rng.uniform(3.5,8.0)
     # Preserve poles/trees/wires and allow repeatable re-generation.
     for c in manifest["chunks"]:
         ck = (int(c[0]),int(c[1]))
