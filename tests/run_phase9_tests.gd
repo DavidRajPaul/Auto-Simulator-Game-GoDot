@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
+	_test_grounding(city)
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
 	city.queue_free()
@@ -122,6 +123,89 @@ func _model_bounds(car: Node3D) -> AABB:
 		out = local if first else out.merge(local)
 		first = false
 	return out
+
+## Oct 31 device test: parked scooters showed only seat and handlebar, cars sat half in the road.
+## Every parked vehicle, stand vehicle and city prop near the player stands ON the drawn ground.
+func _test_grounding(city: Node) -> void:
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var player: Vector3 = (city.get_node("AutoRickshaw") as Node3D).global_position
+	var fits_ok: bool = true
+	var fits_seen: int = 0
+	var spots_ok: bool = true
+	var spots: int = 0
+	var detail: String = ""
+	for k: Vector2i in world.loaded:
+		var park: Node = (world.loaded[k] as Node).get_node_or_null("RoadsideParking")
+		if park == null:
+			continue
+		for kind: int in RoadsideParking.MODELS.size():
+			if not park.has_meta("fit_%d" % kind):
+				continue
+			var fit: AABB = park.get_meta("fit_%d" % kind)
+			fits_seen += 1
+			# Lowest point on the spot, real length, never stretched taller than it is long.
+			if absf(fit.position.y) > 0.005 or absf(fit.size.z - RoadsideParking.LENGTHS_M[kind]) > 0.05 or fit.size.y > fit.size.z:
+				fits_ok = false
+				detail = "kind %d %s" % [kind, fit]
+		var body: StaticBody3D = park.get_node_or_null("ParkedVehicleCollision") as StaticBody3D
+		if body == null:
+			continue
+		var faces: PackedVector3Array = ((body.get_child(0) as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces()
+		# Each box is 36 vertices; its lowest corner must be on the drawn ground at its centre.
+		for b: int in range(0, faces.size(), 36):
+			var lo: float = INF
+			var c: Vector3 = Vector3.ZERO
+			for v: int in 36:
+				lo = minf(lo, faces[b + v].y)
+				c += faces[b + v]
+			c /= 36.0
+			var g: float = world.surface_height(c.x, c.z, -99.0)
+			spots += 1
+			if g > -50.0 and absf(lo - g) > 0.02:
+				spots_ok = false
+	_check("Parked vehicles: real length, lowest point on the spot (not centred, not stretched)", fits_ok and fits_seen > 0, detail)
+	_check("Parked vehicles stand on the drawn ground at their spots", spots_ok and spots > 50, "%d spots" % spots)
+	var stand_ok: bool = true
+	var stand_n: int = 0
+	for n: Node in (city.get_node("SavariManager") as Node).get_children():
+		if not str(n.name).contains("_Parked_") or not n is Node3D:
+			continue
+		var p: Vector3 = (n as Node3D).global_position
+		var g: float = world.surface_height(p.x, p.z, -99.0)
+		if g < -50.0:
+			continue
+		stand_n += 1
+		if absf(TrafficModelFit.lowest_world_y(n as Node3D) - g) > 0.02:
+			stand_ok = false
+	_check("Auto-stand parked vehicles stand on the ground", stand_ok and stand_n > 0, "%d checked" % stand_n)
+	var prop_ok: bool = true
+	var prop_n: int = 0
+	for n: Node in world.get_node("Landmarks").get_children():
+		if not n is Node3D or (n as Node3D).global_position.distance_to(player) > 600.0:
+			continue
+		if n.find_children("*", "MeshInstance3D", true, false).is_empty():
+			continue
+		var p: Vector3 = (n as Node3D).global_position
+		var g: float = world.surface_height(p.x, p.z, -99.0)
+		if g < -50.0:
+			continue
+		prop_n += 1
+		if absf(TrafficModelFit.lowest_world_y(n as Node3D) - g) > 0.02:
+			prop_ok = false
+			detail = "%s %.3f vs %.3f" % [n.name, TrafficModelFit.lowest_world_y(n as Node3D), g]
+	_check("City props and landmarks near the player stand on the ground", prop_ok and prop_n > 0, "%d checked %s" % [prop_n, detail])
+	var riders_ok: bool = true
+	var riders: int = 0
+	for v: Node in get_tree().get_nodes_in_group("traffic_vehicle"):
+		var r: Node = v.get_node_or_null("Rider")
+		if r != null:
+			riders += 1
+			riders_ok = riders_ok and r.has_meta("baked")
+	if riders == 0:
+		for v: Node in (city.get_node("ChennaiTrafficManager") as Node).find_children("Rider", "", true, false):
+			riders += 1
+			riders_ok = riders_ok and v.has_meta("baked")
+	_check("Two-wheeler riders are the baked real characters (not procedural blocks)", riders_ok and riders > 0, "%d riders" % riders)
 
 func _test_landmark_kit() -> void:
 	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))

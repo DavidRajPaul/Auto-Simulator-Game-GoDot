@@ -32,6 +32,37 @@ static func material() -> StandardMaterial3D:
 	return _material
 
 ## Rider on a scooter/bike. Origin = seat top centre. `variant` picks colours.
+## Real characters baked on a scooter (tools/assets/bake_seated_riders.py): one mesh, one
+## material each, origin at the hip joint, facing +Z.
+const RIDER_MODELS: Array[String] = [
+	"res://assets/models/people/riders/young_man_rider.glb",
+	"res://assets/models/people/riders/man_casual_rider.glb",
+	"res://assets/models/people/riders/woman_modern_rider.glb",
+	"res://assets/models/people/riders/girl_churidar_rider.glb",
+]
+## seated_rider()'s hip joint sits this far from its origin.
+const PROCEDURAL_HIP: Vector3 = Vector3(0.0, 0.08, 0.02)
+
+## A two-wheeler rider whose ORIGIN IS THE HIP and who faces -Z (the way traffic drives).
+## The baked textured characters (Oct 31 device test: the procedural blocks "look like
+## characters" next to the real pedestrians); the procedural rider only if the files are missing.
+static func rider_node(variant: int) -> Node3D:
+	var holder: Node3D = Node3D.new()
+	holder.name = "Rider"
+	var path: String = RIDER_MODELS[posmod(variant, RIDER_MODELS.size())]
+	var scene: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+	if scene != null:
+		var person: Node3D = scene.instantiate() as Node3D
+		person.rotation.y = PI # baked facing +Z
+		holder.add_child(person)
+		holder.set_meta("baked", true)
+	else:
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = seated_rider(variant)
+		mi.position = -PROCEDURAL_HIP
+		holder.add_child(mi)
+	return holder
+
 static func seated_rider(variant: int) -> ArrayMesh:
 	var key: String = "rider_%d" % (variant % 16)
 	if _cache.has(key):

@@ -131,25 +131,43 @@ func _build_parked_stand_autos() -> void:
 	if f == null:
 		return
 	var manifest: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
-	var files: PackedStringArray = ["res://assets/models/traffic/share_auto.glb", "res://assets/models/traffic/share_auto.glb", "res://assets/models/traffic/hatchback.glb", "res://assets/models/traffic/two_wheeler.glb"]
+	# [file, real footprint (w, h, l)] fitted uniformly by length, then stood on the drawn ground.
+	var files: Array = [
+		["res://assets/models/traffic/share_auto.glb", Vector3(1.5, 1.8, 2.9)],
+		["res://assets/models/traffic/share_auto.glb", Vector3(1.5, 1.8, 2.9)],
+		["res://assets/models/traffic/hatchback.glb", Vector3(1.7, 1.5, 3.8)],
+		["res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb", Vector3(0.8, 1.2, 1.83)],
+	]
 	for stand: Dictionary in manifest.get("auto_stands", []):
 		var base: Vector3 = Vector3(float(stand["x"]), 0.0, float(stand["z"]))
 		var yaw: float = float(stand.get("yaw", 0.0))
 		var fwd: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
 		var side: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+		# Nose-to-tail with a 0.7 m gap by real lengths (a fixed 3.1 m pitch put the 3.8 m car
+		# into its neighbours), centred on the stand.
+		var total: float = 0.0
+		for f2: Array in files:
+			total += (f2[1] as Vector3).z + 0.7
+		var along: float = -total * 0.5
 		for i: int in files.size():
-			var path: String = files[i]
+			var length: float = (files[i][1] as Vector3).z
+			along += length * 0.5
+			var offset: float = along
+			along += length * 0.5 + 0.7
+			var path: String = str(files[i][0])
 			if not ResourceLoader.exists(path):
 				continue
-			var packed: PackedScene = load(path) as PackedScene
-			if packed == null:
-				continue
-			var parked: Node3D = packed.instantiate() as Node3D
+			var parked: Node3D = Node3D.new()
 			parked.name = "%s_Parked_%d" % [str(stand["id"]), i]
-			parked.position = base + fwd * (float(i) - 1.5) * 3.1 + side * 4.2 + Vector3.UP * 0.05
-			parked.rotation.y = yaw + PI # traffic GLBs face +Z; stand nose points out toward street
-			parked.scale = Vector3.ONE
+			parked.position = base + fwd * offset + side * 4.2
+			parked.rotation.y = yaw # nose out toward the street (fitted models face -Z)
 			add_child(parked)
+			if not TrafficModelFit.attach(parked, path, files[i][1] as Vector3, true, true):
+				parked.queue_free()
+				continue
+			# Was raw GLBs at scale 1 and y 0.05: the traffic scooter (a 1 m box centred on its
+			# origin) sat half buried. Stand every parked vehicle on the drawn ground.
+			SignalBus.ground_snap_requested.emit(parked)
 
 func _physics_process(delta: float) -> void:
 	if graph == null:

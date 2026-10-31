@@ -29,12 +29,32 @@ func _run() -> void:
 	await _test_fare(phud)
 	await _test_level_up(phud)
 	_test_modals(ui, phud, thud)
+	_test_indicator_art(thud)
 	ui.queue_free()
 	phud.queue_free()
 	thud.queue_free()
 	await _frames(2)
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
+
+## Oct 31 device test: the LEFT indicator blinked to a right-pointing badge. The lit art must have
+## the same silhouette as the unlit button on its own side (not the other side's).
+func _test_indicator_art(t: TouchHUD) -> void:
+	var left_on: Image = t._art("ind_left_on").get_image()
+	var right_on: Image = t._art("ind_right_on").get_image()
+	right_on.flip_x()
+	var diff: int = 0
+	for y: int in range(0, left_on.get_height(), 3):
+		for x: int in range(0, left_on.get_width(), 3):
+			var a: Color = left_on.get_pixel(x, y)
+			var b: Color = right_on.get_pixel(x, y)
+			if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) + absf(a.a - b.a) > 0.08:
+				diff += 1
+	_check("Lit LEFT indicator is the lit right one mirrored (left-pointing badge)", diff < 40, "%d differing samples" % diff)
+	t._on_indicator_blink(-1, true)
+	var icon: TextureRect = t._buttons["IndicatorLeft"]["icon"] as TextureRect
+	_check("Blinking left shows the ind_left_on cell", icon.texture == t._art("ind_left_on"))
+	t._on_indicator_blink(0, false)
 
 func _test_kit() -> void:
 	_check("Shared theme is built once and cached", UIKit.theme() == UIKit.theme())

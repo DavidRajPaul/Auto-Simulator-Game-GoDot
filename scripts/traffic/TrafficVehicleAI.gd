@@ -221,11 +221,10 @@ func pick_service_variant(rng: RandomNumberGenerator) -> void:
 
 ## Nobody rides a scooter by remote control in Chennai: one helmeted rider per two-wheeler.
 func _add_rider() -> void:
-	var rider: MeshInstance3D = MeshInstance3D.new()
-	rider.name = "Rider"
-	rider.mesh = PersonMesh.seated_rider(_rider_variant)
+	var rider: Node3D = PersonMesh.rider_node(_rider_variant)
 	_rider_variant += 1
-	rider.position = rider_seat
+	# rider_seat is the old procedural mesh origin; the rider node's origin is the hip.
+	rider.position = rider_seat + PersonMesh.PROCEDURAL_HIP
 	add_child(rider)
 
 ## The n-th entry of the weighted two-wheeler cycle (weights from TWO_WHEELER_VARIANTS).

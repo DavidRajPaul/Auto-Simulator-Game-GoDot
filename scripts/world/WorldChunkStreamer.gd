@@ -13,6 +13,9 @@ const ROAD_Y: float = 0.06
 const SIDEWALK_Y: float = 0.08
 const SIDEWALK_W: float = 2.5
 const SURFACE_CELL_M: float = 1.0
+## Real-size, grounded scooter for every parked two-wheeler. The traffic two_wheeler.glb is a
+## 1 m box centred on its origin (fitted at runtime by TrafficModelFit); placed raw it sank.
+const PARKED_SCOOTER: String = "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb"
 const CHECK_INTERVAL_S: float = 0.25
 const CLASS_LAYER: Dictionary = {"trunk": 6, "motorway": 6, "primary": 5, "secondary": 4, "tertiary": 3,
 	"unclassified": 2, "residential": 1, "living_street": 0}
@@ -112,6 +115,9 @@ var _heights: Dictionary = {} # Vector2i -> PackedFloat32Array
 ## Area triangles (park, beach) bucketed by chunk, filled once by _build_areas before streaming
 ## starts; worker threads only read it. Vector2i -> PackedVector3Array (3 vertices per triangle).
 var _area_tris: Dictionary = {}
+## Models waiting for their chunk's surface heights (SignalBus.ground_snap_requested).
+## Vector2i -> Array[Node3D]. Snapped once: the drawn ground never changes.
+var _pending_snaps: Dictionary = {}
 var skyline: Node3D
 ## Detail layer switches (tests / profiling).
 static var details_enabled: bool = true
@@ -145,6 +151,7 @@ func _ready() -> void:
 	_build_ground()
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
+	SignalBus.ground_snap_requested.connect(request_ground_snap)
 	_build_landmarks()
 	_spawn_player()
 	update_streaming(true)
@@ -240,14 +247,53 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 		node.free()
 		return
 	_add_imported_palms(node)
-	# Construct parking visuals/collision on the main thread; GLBs are cached by Godot.
-	if dressing_enabled:
-		RoadsideParking.populate(node, world_dir, k)
-	add_child(node)
-	loaded[k] = node
+	# Heights first: parked vehicles and waiting props stand on this chunk's drawn ground.
 	if node.has_meta("surface_heights"):
 		_heights[k] = node.get_meta("surface_heights")
 		node.remove_meta("surface_heights")
+	# Construct parking visuals/collision on the main thread; GLBs are cached by Godot.
+	if dressing_enabled:
+		RoadsideParking.populate(node, world_dir, k, surface_height, _stand_parking_spots())
+	add_child(node)
+	loaded[k] = node
+	_flush_ground_snaps(k)
+
+## Where SavariManager parks each stand's autos (same maths: 4.2 m to the stand's side).
+func _stand_parking_spots() -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array()
+	for st: Dictionary in manifest.get("auto_stands", []):
+		var yaw: float = float(st.get("yaw", 0.0))
+		var side: Vector2 = Vector2(-cos(yaw), sin(yaw)) # (fwd.z, -fwd.x) with fwd = (-sin, -cos)
+		out.append(Vector2(float(st["x"]), float(st["z"])) + side * 4.2)
+	return out
+
+## Stand `node` on the drawn ground at its x/z (see SignalBus.ground_snap_requested).
+func request_ground_snap(node: Node3D) -> void:
+	if not is_instance_valid(node):
+		return
+	var p: Vector3 = node.global_position if node.is_inside_tree() else node.position
+	var k: Vector2i = chunk_of(p)
+	if _heights.has(k) and node.is_inside_tree():
+		TrafficModelFit.stand_on_world(node, _ground_under(node))
+		return
+	if not _pending_snaps.has(k):
+		_pending_snaps[k] = []
+	(_pending_snaps[k] as Array).append(node)
+
+func _flush_ground_snaps(k: Vector2i) -> void:
+	if not _pending_snaps.has(k):
+		return
+	for n: Variant in _pending_snaps[k]:
+		var node: Node3D = n as Node3D
+		if is_instance_valid(node) and node.is_inside_tree():
+			TrafficModelFit.stand_on_world(node, _ground_under(node))
+	_pending_snaps.erase(k)
+
+## Ground height under a model: the highest drawn layer at its origin (a kerb-side scooter whose
+## origin is on the sidewalk stands on the sidewalk, not the road beside it).
+func _ground_under(node: Node3D) -> float:
+	var p: Vector3 = node.global_position
+	return surface_height(p.x, p.z, SIDEWALK_Y)
 
 func _add_imported_palms(chunk: Node3D) -> void:
 	var markers: Node3D = chunk.get_node_or_null("Buildings/ImportedPalmMarkers") as Node3D
@@ -1178,6 +1224,9 @@ func _build_landmarks() -> void:
 				pass # drawn by the water / park areas
 			_:
 				_part(node, holder, _box(Vector3(10, 10, 10)), Vector3(0, 5, 0), Color.MAGENTA, true)
+		# Bridges and flyovers keep their authored deck height; buildings stand on the ground.
+		if not str(l["kind"]) in ["bridge", "flyover", "tank", "park"]:
+			request_ground_snap(node)
 
 ## A procedural LandmarkKit mesh with a box collider round its base.
 func _kit_part(node: Node3D, holder: StaticBody3D, mesh: ArrayMesh, base: Vector3) -> void:
@@ -1232,6 +1281,10 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			continue
 		inst.transform = xf
 		holder.add_child(inst)
+		# Stand it on the drawn ground (several GLBs are centred on their origin: the palm spans
+		# -0.5..0.5, the biryani shop starts at -0.18; sidewalks are 0.08, bare ground -0.15).
+		TrafficModelFit.stand_on_world(inst, SIDEWALK_Y)
+		request_ground_snap(inst)
 		var size: Vector3 = CITY_FOOTPRINT.get(model, Vector3.ZERO)
 		if size != Vector3.ZERO:
 			var node: Node3D = Node3D.new()
@@ -1289,19 +1342,18 @@ func _add_tea_crowd(holder: StaticBody3D, p: Dictionary, index: int) -> void:
 		guest.visibility_range_end = 88.0
 		guest.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		hub.add_child(guest)
-	var bike_path: String = "res://assets/models/traffic/two_wheeler.glb"
-	if not ResourceLoader.exists(bike_path):
+	if not ResourceLoader.exists(PARKED_SCOOTER):
 		return
-	var bikes: PackedScene = load(bike_path) as PackedScene
+	var bikes: PackedScene = load(PARKED_SCOOTER) as PackedScene
 	if bikes == null:
 		return
 	for i: int in 2:
 		var bike: Node3D = bikes.instantiate() as Node3D
 		bike.name = "TeaParkedBike_%d" % i
-		bike.position = Vector3(-4.6 + float(i) * 2.0, 0.12, -4.0)
+		bike.position = Vector3(-4.6 + float(i) * 2.0, 0.0, -4.0)
 		bike.rotation.y = -PI * 0.5 + float(i) * 0.15
-		bike.scale = Vector3.ONE * 1.0
 		hub.add_child(bike)
+		request_ground_snap(bike)
 		_set_cast_shadow(bike, false)
 		for m: Node in bike.find_children("*", "MeshInstance3D", true, false):
 			(m as MeshInstance3D).visibility_range_end = 88.0
@@ -1327,10 +1379,9 @@ func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> 
 		person.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		spot.add_child(person)
 	# Keep parking outside the stall and customer aisle.
-	var bike_path: String = "res://assets/models/traffic/two_wheeler.glb"
-	if not ResourceLoader.exists(bike_path):
+	if not ResourceLoader.exists(PARKED_SCOOTER):
 		return
-	var bike_scene: PackedScene = load(bike_path) as PackedScene
+	var bike_scene: PackedScene = load(PARKED_SCOOTER) as PackedScene
 	if bike_scene == null:
 		return
 	for i: int in 2:
@@ -1339,16 +1390,21 @@ func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> 
 		bike.position = Vector3(-3.4 + float(i) * 1.7, 0.0, 2.6)
 		bike.rotation.y = PI * 0.5
 		spot.add_child(bike)
+		request_ground_snap(bike)
 		_set_cast_shadow(bike, false)
 		for mesh: Node in bike.find_children("*", "MeshInstance3D", true, false):
 			(mesh as MeshInstance3D).visibility_range_end = 85.0
 
 func _add_parked_rider(vehicle: Node3D, index: int, prop: Dictionary) -> void:
-	var rider: MeshInstance3D = MeshInstance3D.new()
+	var rider: Node3D = PersonMesh.rider_node(index)
 	rider.name = "ParkedRider_%d" % index
-	rider.mesh = PersonMesh.seated_rider(index % 6)
 	var off: Array = prop.get("rider_offset", [0.0, 0.72, 0.22])
-	rider.position = Vector3(float(off[0]), float(off[1]), float(off[2]))
+	rider.position = Vector3(float(off[0]), float(off[1]), float(off[2])) + PersonMesh.PROCEDURAL_HIP
+	# The scooter file faces -Z like the rider; the sport-bike files face +Z, so their riders
+	# turn round (before Oct 31 they sat backwards, facing the tail).
+	if str(prop.get("model", "")) == "parked_sport_bike":
+		rider.rotation.y += PI
+		rider.position.z -= 2.0 * PersonMesh.PROCEDURAL_HIP.z
 	vehicle.add_child(rider)
 
 func _set_cast_shadow(n: Node, on: bool) -> void:

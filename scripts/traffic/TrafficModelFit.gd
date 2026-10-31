@@ -39,6 +39,45 @@ static func attach(parent: Node3D, path: String, box: Vector3, flip: bool, unifo
 		holder.position = Vector3(-box.x * 0.5, 0.0, -box.z * 0.5) - bounds.position * holder.scale
 	return true
 
+## Lowest point of every mesh under `node`, in the space of `node`'s parent (so it includes the
+## node's own position, rotation and scale). Use it to stand any model ON the drawn ground:
+## many GLBs are centred on their origin (the traffic scooter spans -0.32..0.32), so placing
+## the origin at ground height buries half of them.
+static func lowest_y(node: Node3D) -> float:
+	var parent: Node3D = node.get_parent() as Node3D
+	var to_parent: Transform3D = parent.global_transform.affine_inverse() if parent != null else Transform3D.IDENTITY
+	var lo: float = INF
+	for mi: MeshInstance3D in _meshes(node):
+		if mi.mesh == null:
+			continue
+		var xf: Transform3D = to_parent * mi.global_transform
+		var b: AABB = mi.get_aabb()
+		for i: int in 8:
+			lo = minf(lo, (xf * b.get_endpoint(i)).y)
+	return lo if lo != INF else node.position.y
+
+## Moves `node` vertically so its lowest mesh point sits exactly at `ground_y` (in the node's
+## parent space; use stand_on_world for nodes under scaled/rotated parents).
+static func stand_on(node: Node3D, ground_y: float) -> void:
+	node.position.y += ground_y - lowest_y(node)
+
+## Lowest mesh point of `node` in WORLD space (node must be in the tree).
+static func lowest_world_y(node: Node3D) -> float:
+	var lo: float = INF
+	for mi: MeshInstance3D in _meshes(node):
+		if mi.mesh == null:
+			continue
+		var b: AABB = mi.get_aabb()
+		for i: int in 8:
+			lo = minf(lo, (mi.global_transform * b.get_endpoint(i)).y)
+	return lo if lo != INF else node.global_position.y
+
+## Stands `node` on world height `ground_y` whatever its parents' transforms are.
+static func stand_on_world(node: Node3D, ground_y: float) -> void:
+	var gp: Vector3 = node.global_position
+	gp.y += ground_y - lowest_world_y(node)
+	node.global_position = gp
+
 ## Bounding box of every mesh under `model`, expressed in `space` (which must be untransformed).
 static func _bounds(model: Node3D, space: Node3D) -> AABB:
 	var inv: Transform3D = space.global_transform.affine_inverse()

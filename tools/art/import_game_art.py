@@ -127,6 +127,10 @@ def controls() -> None:
     got.update(camera=flatten_checker(round_mask(p[0])), camera_p=flatten_checker(round_mask(p[1])))
     p = pieces(cutout(src("2G")))
     got.update(ind_left=flatten_checker(round_mask(p[0]), (90, 66, 82), 48), ind_left_on=flatten_checker(round_mask(p[1]), (90, 66, 82), 48), ind_right=flatten_checker(round_mask(p[2]), (90, 66, 82), 48), ind_right_on=flatten_checker(round_mask(p[3]), (90, 66, 82), 48))
+    # The Stitch sheet's lit LEFT indicator has a right-pointing badge (only its arrow is
+    # flipped), so it looked like a different button while blinking. Use the lit right
+    # indicator mirrored: badge and arrow both point left, same glow as the right side.
+    got["ind_left_on"] = got["ind_right_on"].transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     p = pieces(cutout(src("2H")))  # 4 rows x (handbrake, kick, wiper, pause); row 1 normal, row 4 pressed
     for i, name in enumerate(["handbrake", "kick", "wiper", "pause"]):
         got[name] = p[i]
