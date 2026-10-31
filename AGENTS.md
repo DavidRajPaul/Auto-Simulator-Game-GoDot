@@ -186,6 +186,8 @@ res://
 * The first-ride tutorial never auto-starts in test runs (persistence off); suites call `TutorialDirector.start()`. Anything that must stay calm during it reads `GameState.tutorial_active`; scripted riders/traffic come from `SignalBus.scripted_hail_requested` / `scripted_traffic_requested`.
 * World markers (STOP line) sit at +0.1 m: road surfaces are at +0.045…+0.08, so anything lower is hidden under the road.
 * Every shipped art/sound file lives under `assets/` (the app icon is `assets/icon/icon.png`); README screenshots go in `docs/images/`. Adding, replacing or removing an asset means updating `assets/README.md`, the folder's `CREDITS_*.md` and, for CC BY, `MainMenu.CREDITS`.
+* Sketchfab "packs" often arrive as ONE merged mesh holding a showroom grid of many vehicles. Never point a traffic archetype or a city prop at the whole pack: split it into single vehicles (`tools/assets/process_vehicle_packs.py`), bake real size, then verify with `tests/shot_traffic.tscn` (side + rear renders). Real-size baked vehicles use `TrafficModelFit.attach(..., uniform = true)` so they are never squashed into another archetype's box.
+* AI-generated (Tripo) textures carry baked shading noise and metallic maps that render near-black on mobile; flatten them to a palette livery before simplifying (simplifying a photo atlas smears its UV seams).
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

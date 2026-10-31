@@ -139,124 +139,184 @@
       "barricade_type": "blue_municipal"
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": -1778.2,
       "z": 342.8,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "anna_salai",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": 902.4,
       "z": -1879.3,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "t_nagar",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_sport_bike",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb",
       "x": 890.4,
       "z": -1862.3,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "t_nagar",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.7,
+        -0.28
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": 446.6,
       "z": -943.2,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "royapettah",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": -2136,
       "z": 323.4,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "royapettah",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_sport_bike",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_1.glb",
       "x": -3064.4,
       "z": 1719.7,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "t_nagar",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.7,
+        -0.28
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": 1570.7,
       "z": -1546.9,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "mylapore",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": -1558.3,
       "z": 215,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "marina",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_sport_bike",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_2.glb",
       "x": -1729.4,
       "z": -859.6,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "mylapore",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.7,
+        -0.28
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": -178,
       "z": 404.4,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "anna_salai",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_scooter",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
       "x": -1215.6,
       "z": 339.7,
       "yaw": 1.571,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "anna_salai",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.8,
+        0.2
+      ]
     },
     {
-      "model": "parked_two_wheeler_pack",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+      "model": "parked_sport_bike",
+      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_3.glb",
       "x": 837.1,
       "z": 277.5,
       "yaw": 0,
-      "scale": 0.12,
+      "scale": 1.0,
       "zone": "mylapore",
-      "parked_two_wheeler": true
+      "parked_two_wheeler": true,
+      "rider_offset": [
+        0.0,
+        0.7,
+        -0.28
+      ]
     },
     {
       "model": "maintenance_vehicle_pack",

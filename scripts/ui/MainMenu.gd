@@ -20,7 +20,7 @@ Game art and screens designed with Google Stitch for Namma Auto.
 UI sounds: Kenney Interface Sounds (CC0). Ambience and horns: BigSoundBank, Joseph Sardin (CC0).
 Auto engine and kick-start sounds: kalhan, Freesound (CC BY 4.0). Bulb horn: alex_jauk, Pixabay.
 Indicator tick: ProductionNow, Freesound (CC0). Air horn: goose278, Freesound (CC0).
-Traffic models: Kenney Car Kit (CC0), Cow by Quaternius (CC0). Auto rickshaw by rSquare, Indian Scooter by Shiveloper and Cow - LowPoly by Fadly.W (Sketchfab, CC BY 4.0).
+Traffic models: Kenney Car Kit (CC0), Cow by Quaternius (CC0). Auto rickshaw by rSquare, Indian Scooter by Shiveloper, Cow - LowPoly by Fadly.W and "Two-Wheeler Vehicles Pack Low-Poly" by SymetrikGames (Sketchfab, CC BY 4.0).
 Tamil Nadu buses and lorry: "Tamilnadu TNSTC Bus 2009-2014" and "Tamilnadu SETC Bus 2017-2026" by Nobel Tech, "Tamilnadu Lorry" by Oren garage (Sketchfab, CC BY 4.0).
 People: "Indian Old man walking" by anandmohan662, "Alex Texel A-pose" by alex.texelsales, "Female test" by CloudHubOmniTeam, "South Indian Women" by alnmathew (Sketchfab, CC BY 4.0); "Indian Woman in Saree" by Pixel_Monster (Sketchfab Standard licence).
 City: "chennai central" by SudharsanArivalagan, "Chennai Water Tank" by TamilarasanRG, "Chennai Slum" by aswin.baskaran (Sketchfab, CC BY 4.0). Diesel auto: recordx_media; city road ambience: SoundQue (Pixabay).

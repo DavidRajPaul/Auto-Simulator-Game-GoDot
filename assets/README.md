@@ -36,6 +36,7 @@ the in-game Credits text (`CREDITS` in `scripts/ui/MainMenu.gd`).
 | Traffic and player auto models | `models/traffic`, `models/vehicles` | `python3 tools/assets/process_models.py` (gltf-transform: decimate, 256–1024 px textures) | 1.4k–6.3k tris each |
 | People (walk + idle) | `models/people` | `python3 tools/assets/process_people.py` (22-bone rig, retargeted walk/idle, one atlas, `people.json`) | 1 draw call each |
 | Landmarks, police, service vehicles | `models/city`, `models/people/police_*`, `models/traffic/svc_*` | `python3 tools/assets/process_city.py` (one-draw-call static GLB) | |
+| Vehicle packs, police SUV | `models/traffic/two_wheeler_pack`, `models/traffic/police_car` | `python3 tools/assets/process_vehicle_packs.py` (raw files in `assets_src/incoming/models/traffic`; never ship or fit a whole multi-vehicle pack to one traffic box) | |
 | Impact FX textures | `fx` | `tools/assets/fetch_fx.py` → **Actions → Fetch FX Textures** | |
 | Facade atlas (building skins) | `textures` | `python3 tools/art/make_facade_atlas.py` | |
 | Driving-control icons (v1) | `ui/controls_atlas.png` | `python3 tools/art/make_ui_icons.py` | |
@@ -88,7 +89,10 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | `bus_tnstc.glb`, `bus_setc.glb` | Town bus, SETC coach | Nobel Tech (Sketchfab) | CC BY 4.0 |
 | `lorry.glb` | Goods lorry | Oren garage (Sketchfab) | CC BY 4.0 |
 | `stray_cow.glb`, `stray_cow_fadly.glb` | Stray cattle (off by default: `stray_cattle_enabled = false`) | Quaternius (CC0); Fadly.W (Sketchfab, CC BY 4.0) | |
-| `svc_ambulance, svc_fire_truck, svc_garbage_truck, svc_police_car, svc_school_bus, svc_tow_truck.glb` | Civil service vehicles | "Generic civil service vehicles pack", Comrade1280 (Sketchfab) | CC BY 4.0 |
+| `two_wheeler_pack/sport_bike_0…3.glb` | Sport bikes (1 in 9 two-wheelers; 4 colours) | "Two-Wheeler Vehicles Pack Low-Poly", SymetrikGames (Sketchfab) — split out of the merged showroom grid, flat palette, 2.05 m, by `tools/assets/process_vehicle_packs.py` | CC BY 4.0 |
+| `two_wheeler_pack/scooter_parked.glb` | Parked scooter (real size, grounded copy of `two_wheeler.glb`) | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0 |
+| `police_car/svc_police_car.glb` | Police SUV (service slot) | Tripo AI generation supplied by the project owner; flat livery, 4.5 m, 4.5k tris by `process_vehicle_packs.py`. **Owner to confirm the Tripo plan allows commercial use before release.** | Owner-generated |
+| `svc_ambulance, svc_fire_truck, svc_garbage_truck, svc_school_bus, svc_tow_truck.glb` | Civil service vehicles | "Generic civil service vehicles pack", Comrade1280 (Sketchfab) | CC BY 4.0 |
 
 **People** (`people/`, `PedestrianManager.gd`, `TrafficPolice.gd`; pace and credits in `people.json`):
 
