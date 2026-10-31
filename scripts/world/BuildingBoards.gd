@@ -21,6 +21,8 @@ const PANEL_BIAS: float = 0.6 # panels count as this fraction of their distance 
 const UPDATE_S: float = 0.6
 const CELL_M: float = 60.0
 const DEPTH_M: float = 0.08
+const CHUNK_M: float = 250.0
+const WALL_TOLERANCE_M: float = 0.75
 const SHOP_H: float = 0.72
 const PANEL_H: float = 1.15
 ## [board colour, text colour] per style index (tool: 0 food, 1 cafe/office, 2 bank/electronics,
@@ -47,6 +49,8 @@ var _assigned: Dictionary = {} # spot index -> Node3D
 var _spots: Array = [] # [x, z, yaw, width, y, kind, en, ta, style]
 var _grid: Dictionary = {}
 var _timer: float = UPDATE_S
+var _valid_spots: Dictionary = {}
+var _building_chunks: Dictionary = {}
 
 func _ready() -> void:
 	_load_spots()
@@ -139,7 +143,7 @@ func candidates(p: Vector3) -> Array[Dictionary]:
 			for i: int in _grid.get(c + Vector2i(dx, dz), PackedInt32Array()):
 				var s: Array = _spots[i]
 				var d: float = Vector2(float(s[0]) - p.x, float(s[1]) - p.z).length()
-				if d > SEARCH_M:
+				if d > SEARCH_M or not _has_supporting_wall(i):
 					continue
 				if str(s[5]) == "panel":
 					d *= PANEL_BIAS
@@ -148,6 +152,60 @@ func candidates(p: Vector3) -> Array[Dictionary]:
 	if out.size() > MAX_BOARDS:
 		out.resize(MAX_BOARDS)
 	return out
+
+
+## Guard against outdated board data after buildings are removed/rebuilt.
+## A board must be directly next to an actual footprint wall tall enough to support it.
+## Cache chunk JSON and decisions; never rescan the world each rendered frame.
+func _has_supporting_wall(index: int) -> bool:
+	if _valid_spots.has(index):
+		return bool(_valid_spots[index])
+	var s: Array = _spots[index]
+	var x: float = float(s[0])
+	var z: float = float(s[1])
+	var y: float = float(s[4])
+	var cx: int = floori(x / CHUNK_M)
+	var cz: int = floori(z / CHUNK_M)
+	var supported: bool = false
+	for dx: int in range(-1, 2):
+		for dz: int in range(-1, 2):
+			var key: Vector2i = Vector2i(cx + dx, cz + dz)
+			for b: Dictionary in _chunk_buildings(key):
+				if float(b.get("h", 0.0)) < y + 0.15:
+					continue
+				var pts: Array = b.get("p", [])
+				if pts.size() < 6:
+					continue
+				for j: int in range(0, pts.size(), 2):
+					var k: int = (j + 2) % pts.size()
+					var a: Vector2 = Vector2(float(pts[j]), float(pts[j + 1]))
+					var c: Vector2 = Vector2(float(pts[k]), float(pts[k + 1]))
+					var ab: Vector2 = c - a
+					var fraction: float = clampf((Vector2(x, z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+					if (a + ab * fraction).distance_to(Vector2(x, z)) <= WALL_TOLERANCE_M:
+						supported = true
+						break
+				if supported:
+					break
+			if supported:
+				break
+		if supported:
+			break
+	_valid_spots[index] = supported
+	return supported
+
+func _chunk_buildings(key: Vector2i) -> Array:
+	if _building_chunks.has(key):
+		return _building_chunks[key]
+	var path: String = "res://data/world/chunks/c_%d_%d.json" % [key.x, key.y]
+	var buildings: Array = []
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if file != null:
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
+		if parsed is Dictionary:
+			buildings = (parsed as Dictionary).get("blds", [])
+	_building_chunks[key] = buildings
+	return buildings
 
 func spot(i: int) -> Array:
 	return _spots[i]

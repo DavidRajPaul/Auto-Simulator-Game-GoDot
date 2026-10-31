@@ -460,12 +460,12 @@
       "x": -2619.02,
       "z": 883.92,
       "yaw": -0.119,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "t_nagar",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     },
@@ -475,12 +475,12 @@
       "x": -2822.02,
       "z": 772.29,
       "yaw": -0.212,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "t_nagar",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     },
@@ -490,12 +490,12 @@
       "x": 1122.27,
       "z": 1799.18,
       "yaw": 1.369,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "mylapore",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     },
@@ -505,12 +505,12 @@
       "x": 962.39,
       "z": 1730.53,
       "yaw": 1.357,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "mylapore",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     },
@@ -520,12 +520,12 @@
       "x": -259.72,
       "z": -1216.64,
       "yaw": -1.252,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "anna_salai",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     },
@@ -535,12 +535,12 @@
       "x": -170.19,
       "z": -1036.64,
       "yaw": 1.981,
-      "scale": 1,
+      "scale": 1.0,
       "zone": "anna_salai",
       "biryani_cluster": true,
       "landmark_footprint": [
         4.3,
-        3,
+        3.0,
         3.7
       ]
     }
