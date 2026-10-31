@@ -8,6 +8,8 @@ const USE_RADIUS_M: float = 13.0
 const STOPPED_KMH: float = 6.0
 const VIS_RANGE_M: float = 220.0
 const TOW_COST_INR: int = 150
+const MYLAPORE_WORKSHOP_ASSET: String = "res://assets/models/city/garage_workshop/garage_workshop.glb"
+const MYLAPORE_WORKSHOP_SCALE: float = 8.0
 
 @export var world_dir: String = "res://data/world"
 
@@ -114,6 +116,10 @@ func _build_marker(s: Dictionary) -> void:
 			label.text = "EV CHARGING  ₹12/kWh"
 			label.position.y = 4.0
 		"garage":
+			if str(s["id"]) == "garage_mylapore" and _add_mylapore_workshop(root):
+				label.text = "Mylapore Auto Works"
+				label.position.y = 6.0
+				return
 			_part(root, Vector3(6, 0.25, 5), Vector3(0, 3.2, 0), Color(0.35, 0.2, 0.12))
 			_part(root, Vector3(0.25, 3.2, 5), Vector3(-3.0, 1.6, 0), Color(0.6, 0.45, 0.3))
 			_part(root, Vector3(6, 3.2, 0.25), Vector3(0, 1.6, 2.5), Color(0.6, 0.45, 0.3))
@@ -125,6 +131,41 @@ func _build_marker(s: Dictionary) -> void:
 				_mesh(root, tyre, Vector3(2.3, 0.1 + i * 0.19, -1.5), Color(0.08, 0.08, 0.08))
 			label.text = "Puncture & Tinkering"
 			label.position.y = 4.4
+
+## Phase 1A: one imported workshop, retaining the procedural shop as an asset fallback.
+## The Tripo model is authored in a unit-sized cube (approx. 1 x .61 x 1).
+## Placement/driveway clearance must be verified on the actual Chennai map before release.
+func _add_mylapore_workshop(root: Node3D) -> bool:
+	if not ResourceLoader.exists(MYLAPORE_WORKSHOP_ASSET):
+		return false
+	var scene: PackedScene = load(MYLAPORE_WORKSHOP_ASSET) as PackedScene
+	if scene == null:
+		return false
+	var workshop: Node3D = scene.instantiate() as Node3D
+	if workshop == null:
+		return false
+	workshop.name = "MylaporeWorkshop"
+	workshop.scale = Vector3.ONE * MYLAPORE_WORKSHOP_SCALE
+	root.add_child(workshop)
+	# Lightweight side and rear guard colliders protect the workshop shell without
+	# placing a solid collider across the vehicle-accessible front bay.
+	# Exact correspondence to imported walls must be confirmed in an in-game review.
+	_add_workshop_wall(root, "WorkshopRearGuard", Vector3(7.2, 3.5, 0.35), Vector3(0, 1.75, 3.78))
+	_add_workshop_wall(root, "WorkshopLeftGuard", Vector3(0.35, 3.5, 7.2), Vector3(-3.65, 1.75, 0))
+	_add_workshop_wall(root, "WorkshopRightGuard", Vector3(0.35, 3.5, 7.2), Vector3(3.65, 1.75, 0))
+	return true
+
+func _add_workshop_wall(root: Node3D, wall_name: String, wall_size: Vector3, offset: Vector3) -> void:
+	var wall: StaticBody3D = StaticBody3D.new()
+	wall.name = wall_name
+	wall.position = offset
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	shape.name = "CollisionShape3D"
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = wall_size
+	shape.shape = box
+	wall.add_child(shape)
+	root.add_child(wall)
 
 ## A busy Chennai forecourt: pump islands and vehicles waiting to refuel.
 ## These lightweight static GLB instances are built once with the service point.
