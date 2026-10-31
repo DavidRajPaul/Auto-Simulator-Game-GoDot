@@ -21,6 +21,7 @@ func _run() -> void:
 	GameState.reset_profile()
 	_test_catalogue()
 	_test_effective_stats()
+	_test_upgrade_performance_baseline()
 	_test_purchases()
 	_test_economy_exit_gate()
 	_test_save_load()
@@ -66,6 +67,38 @@ func _test_effective_stats() -> void:
 	_check("Effective stats never mutate the .tres", is_equal_approx(GameState.base_stats("singara_classic").max_speed_kmh, base.max_speed_kmh))
 	GameState.condition = 30.0
 	_check("Worn-out auto (< 40%) loses top speed", GameState.active_stats().max_speed_kmh < eff.max_speed_kmh)
+	GameState.reset_profile()
+
+## Phase 0: deterministic performance contract for the existing single-model fleet.
+## These checks validate configuration and the drive-force curve, NOT observed road speed.
+func _test_upgrade_performance_baseline() -> void:
+	GameState.reset_profile()
+	for vehicle_id: String in GameState.VEHICLE_ORDER:
+		var stock: VehicleStats = GameState.base_stats(vehicle_id)
+		var idle: VehicleStats = GameState.effective_stats(vehicle_id)
+		_check("%s stock configured speed is stable" % vehicle_id,
+			is_equal_approx(stock.max_speed_kmh, idle.max_speed_kmh))
+		_check("%s produces positive force near its speed limit" % vehicle_id,
+			stock.engine_peak_force_n > 0.0 and stock.torque_falloff >= 0.0
+			and stock.torque_falloff < 1.0 and stock.max_speed_kmh > 0.0)
+		var baseline_force: float = stock.engine_peak_force_n * (1.0 - stock.torque_falloff * 0.5)
+		var halfway_drag: float = stock.aero_drag_coeff * pow(stock.max_speed_kmh / 7.2, 2.0)
+		_check("%s has enough theoretical midrange drive force" % vehicle_id,
+			baseline_force > halfway_drag)
+	GameState.upgrades = {"singara_classic": {"engine": 3, "suspension": 3, "tyres": 3}}
+	var stock_classic: VehicleStats = GameState.base_stats("singara_classic")
+	var tuned: VehicleStats = GameState.effective_stats("singara_classic")
+	_check("Fully tuned Singara gains 9 km/h configured speed",
+		is_equal_approx(tuned.max_speed_kmh, stock_classic.max_speed_kmh + 9.0))
+	_check("Fully tuned engine gains 21% peak force",
+		is_equal_approx(tuned.engine_peak_force_n, stock_classic.engine_peak_force_n * 1.21))
+	_check("Full suspension tune reduces jolts and tyres increase grip",
+		tuned.comfort_damping < stock_classic.comfort_damping
+		and tuned.rear_lateral_grip > stock_classic.rear_lateral_grip)
+	GameState.condition = 30.0
+	_check("Engine wear lowers speed and force together",
+		GameState.effective_stats("singara_classic").max_speed_kmh < tuned.max_speed_kmh
+		and GameState.effective_stats("singara_classic").engine_peak_force_n < tuned.engine_peak_force_n)
 	GameState.reset_profile()
 
 func _test_purchases() -> void:
