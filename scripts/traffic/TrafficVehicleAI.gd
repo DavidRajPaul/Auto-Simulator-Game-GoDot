@@ -34,6 +34,14 @@ const MODEL_FILES: Array[String] = [
 	"res://assets/models/traffic/lorry.glb",
 	"", # SERVICE picks from SERVICE_VARIANTS
 ]
+## CC0 Quaternius passenger cars (retain fallback if assets are not imported).
+const CAR_VARIANTS: Array = [
+ ["res://assets/models/traffic/hatchback.glb", Vector3(1.7, 1.5, 3.8)],
+ ["res://assets/models/traffic/quaternius_normal_car.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/quaternius_suv.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/quaternius_sports_car.glb", Vector3(1.9, 1.25, 4.3)],
+]
+static var _car_variant: int = 0
 ## Civil service vehicles (tools/assets/process_city.py, all baked front-to-+Z at real size):
 ## [file, footprint (w, h, l) m, spawn weight]. One pool slot carries all of them and shows a
 ## different one each time it respawns (ambulances and fire tenders rarer than the rest).
@@ -151,6 +159,17 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		flip = BUS_FLIP
 		_bus_variant += 1
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
+	if kind == Archetype.HATCHBACK:
+		var car: Array = CAR_VARIANTS[_car_variant % CAR_VARIANTS.size()]
+		_car_variant += 1
+		if ResourceLoader.exists(str(car[0])):
+			model_path = str(car[0])
+			fit_size = car[1] as Vector3
+			body = fit_size
+			box.size = body
+			_shape.position.y = body.y * 0.5
+			_mesh.scale = body
+			_mesh.position.y = body.y * 0.5
 	var uniform: bool = false
 	if kind == Archetype.TWO_WHEELER:
 		var tw: Array = two_wheeler_variant(_two_wheeler_variant)
