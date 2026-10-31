@@ -8,12 +8,14 @@ extends Node3D
 ## Phase 5 can swap in an artist's GLTF; this keeps the silhouette honest until then.
 
 const GROUND_Y: float = -0.80 # road height relative to the chassis origin at rest
-## The downloaded Chennai auto (rSquare, CC BY 4.0) replaces the procedural body while the paint
-## is stock yellow. Never swap the chassis when paint changes: this caused purchased colors
-## to replace the player auto with a different procedural mesh. Until a paint-mask asset
-## exists, custom paint is saved but the imported model keeps its original texture.
+## The downloaded Chennai auto (rSquare, CC BY 4.0) is ALWAYS the body. Never swap the chassis
+## when paint changes (that once replaced the player auto with a different procedural mesh).
+## Paint is a real recolour: PAINT_SHADER + PAINT_MASK repaint only the yellow panels (R) and
+## the canopy (G) of the original texture; wheels, chrome, seat and chassis are untouched.
 ## The file's wheels are baked into the body, so the WheelModel nodes are hidden.
 const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
+const PAINT_SHADER: String = "res://shaders/auto_paint.gdshader"
+const PAINT_MASK: String = "res://assets/models/vehicles/player_auto_paint_mask.png"
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
@@ -24,6 +26,8 @@ const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 var body_mesh: MeshInstance3D
 var real_body: Node3D
 var uses_real_model: bool = false
+## The repaint material on the textured body surface (null until the real model loads).
+var paint_material: ShaderMaterial
 
 func _ready() -> void:
 	build()
@@ -87,8 +91,38 @@ func _attach_real_model() -> void:
 		real_body = holder
 		uses_real_model = true
 		body_mesh.visible = false
+		_apply_paint_material()
 	else:
 		holder.queue_free()
+
+## Swaps the textured body surface to the repaint shader (same textures) and sets the colours.
+## Stock yellow keeps the file's own material, so the default auto looks exactly as imported.
+func _apply_paint_material() -> void:
+	paint_material = null
+	if real_body == null or is_stock_yellow():
+		return
+	if not ResourceLoader.exists(PAINT_SHADER) or not ResourceLoader.exists(PAINT_MASK):
+		return
+	for node: Node in real_body.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		for s: int in mi.mesh.get_surface_count():
+			var src: StandardMaterial3D = mi.get_active_material(s) as StandardMaterial3D
+			if src == null or src.albedo_texture == null:
+				continue
+			var mat: ShaderMaterial = ShaderMaterial.new()
+			mat.shader = load(PAINT_SHADER) as Shader
+			mat.set_shader_parameter("albedo_tex", src.albedo_texture)
+			mat.set_shader_parameter("mask_tex", load(PAINT_MASK) as Texture2D)
+			if src.normal_enabled and src.normal_texture != null:
+				mat.set_shader_parameter("normal_tex", src.normal_texture)
+				mat.set_shader_parameter("has_normal", true)
+			if src.roughness_texture != null:
+				mat.set_shader_parameter("orm_tex", src.roughness_texture)
+				mat.set_shader_parameter("has_orm", true)
+			mat.set_shader_parameter("body_colour", paint)
+			mat.set_shader_parameter("canopy_colour", trim)
+			mi.set_surface_override_material(s, mat)
+			paint_material = mat
 
 func triangle_count() -> int:
 	var n: int = 0
