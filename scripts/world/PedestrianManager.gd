@@ -34,6 +34,8 @@ const KERB_GAP_M: float = 1.2
 const IDLE_JUNCTION_CLEAR_M: float = 14.0
 const KERB_SPREAD_M: float = 0.9
 const WALK_Y: float = 0.08
+## Limit abrupt height changes from overlapping sidewalk/terrain surface samples.
+const GROUND_FOLLOW_MPS: float = 0.65
 const TURN_RATE: float = 5.0
 const UPDATE_S: float = 0.6
 ## Startle: an auto closing in fast makes walkers stop and step away from the road.
@@ -198,6 +200,8 @@ func _spawn(w: Walker) -> bool:
 	if not _on_pavement(target[0]):
 		return false
 	w.pos = target[0]
+	# Snap only on spawn, while hidden; thereafter follow ground smoothly.
+	w.pos.y = SignalBus.surface_height(w.pos.x, w.pos.z, WALK_Y)
 	w.heading = target[1]
 	if w.idle:
 		# Idlers face the road (waiting for a bus, an auto, a friend).
@@ -323,7 +327,8 @@ func _apply(w: Walker) -> void:
 		fwd = Vector3.FORWARD
 	# Stand on whatever is drawn there (sidewalk, road edge, park or bare ground), not at a fixed
 	# sidewalk height: most kerb spots have no sidewalk polygon and people floated 23 cm.
-	w.pos.y = SignalBus.surface_height(w.pos.x, w.pos.z, WALK_Y)
+	var ground_y: float = SignalBus.surface_height(w.pos.x, w.pos.z, WALK_Y)
+	w.pos.y = move_toward(w.pos.y, ground_y, GROUND_FOLLOW_MPS * get_process_delta_time())
 	# Characters are authored facing +Z: looking at -fwd puts their face along fwd.
 	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP), w.pos)
 
