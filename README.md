@@ -16,32 +16,52 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 ---
 
-## 🚨 Launch command centre — revised January 2027 target
+## 🚨 Launch command centre — January 2027 target
 
-> **Updated 31 October 2026:** The planned release has moved from 14 November 2026 to **January 2027**. An exact January day is not yet committed. Prior October/November dates are superseded. The release remains gated by gameplay, real-device QA, asset licensing, Play Console eligibility and Android CI.
+> **Updated 31 October 2026 after external playtest:** A player praised the game but said the roads looked empty and did not feel like Chennai. **Street bustle and authentic roadside occupancy are now a launch-critical quality pillar**, ahead of additional landmarks or map expansion. Target release: **January 2027**, exact day not committed.
 
-**Current gate: NOT STORE READY.** Priority is to stabilize the tutorial, original auto mesh and paint, seated driver/ground contact, passenger loop and garage/save behavior before expanding content.
+**Status: NOT STORE READY.** Code merged ≠ device acceptance. No new map expansions or story missions until the priorities below pass.
 
-### P0 — must pass before release candidate
+### Current integration state
 
-- [ ] Merge and verify PR #49 (two-wheeler and police model corrections); check Android CI and visual asset lineup.
-- [x] PR #50 merged (original auto paint recolouring); [ ] Android acceptance screenshots and saved-paint reload.
-- [ ] PR #51 (seated driver and ground contact) to be reconciled, merged and verified on-device.
-- [ ] First 10-minute player journey: tutorial start/skip, kick-start, steering, pickup, bargaining, navigation, drop-off, payment, restart/save.
-- [ ] Garage/economy: vehicle preview and paints, entrance/parking bay, repair/upgrade effects, low balance, save consistency.
-- [ ] Real-device 20–30-minute performance and stability test on a 3–4 GB Android device, with FPS/heat/memory observations.
-- [ ] Production Android delivery: green merged-main CI, signed/versioned AAB, accurate permissions, privacy/data safety, asset-licence audit and store listing.
-- [ ] Google Play account eligibility and closed-testing requirements independently verified and started early.
+- [x] PR #49 — processed individual two-wheelers and corrected police SUV — merged; Android appearance still needs visual QA.
+- [x] PR #50 — recolouring original player auto without replacing body — merged; paint/save Android QA remains.
+- [x] PR #51 — seated driver, auto/traffic ground alignment, pedestrian surface height — merged; verify on real phone.
+- [ ] Main branch CI, full first-ride usability and 20–30-minute real-device performance acceptance still require documented evidence.
 
-### Revised delivery sequence
+### Revised launch priorities (strict order)
 
-| Window | Focus | Exit gate |
+| Rank | Priority | Deliverable | Acceptance gate |
+|---|---|---|---|
+| **1** | **P0 — Stability** | Fix new regressions after #49–#51: tutorial darkness, driver visibility/exit/re-entry, grounded traffic and pedestrians, original-auto paint, Android CI. | Clean main CI; screenshots of cockpit/chase/on-foot; no obvious clipping/floating or chassis swapping. |
+| **2** | **P0 — Core playable journey** | Tutorial → first savari pickup → bargaining → GPS → drop-off → fare → save/relaunch; garage entry/repairs/upgrades/paint and money persistence. | One uninterrupted 10–15-minute phone run without softlock, broken taps, lost progress or inconsistent vehicle identity. |
+| **3** | **P0 — Chennai Street Life / density** | Fill believable kerbs and commercial frontages: parked scooters/bikes/cars/autos, MTC buses, tea kadai customers, shop vendors, bus-stop queues, visible street commerce, pedestrian clusters and appropriate moving traffic. | Mylapore benchmark route looks occupied during day/evening without trapping the player or blocking intersections and driveways. |
+| **4** | **P0 — District authenticity** | Different density/style presets for Mylapore, Triplicane, T. Nagar, Marina, commercial corridors and residential roads. Use OSM roads/building footprints, land-use/POIs and deterministic seeded placement; keep landmarks at correct sites. | Five blind local playtesters can distinguish test neighbourhoods from in-game views; collect feedback and fix major misses. |
+| **5** | **P0 — Performance scalability** | MultiMesh for repeated parked props, LOD/culling for pedestrians/shops, pooled moving traffic, chunk streaming, density scaling by device tier, collision/route clearance. | Maintain ≤150 draw calls target and ≤18 active pooled AI vehicles unless measured hardware evidence supports revised limits; 20–30-minute budget Android run with acceptable FPS/heat/RAM and no severe stutter. |
+| **6** | **P0 — Production readiness** | Signed AAB, release version/package, install/upgrade QA, asset license & credits audit, Play policies/privacy/data safety, listing and tester enrollment. | Store-compliant artifact, green release pipeline, Play Console eligibility and testing evidence. |
+| **7** | **P1 — Polish** | Street signs and contextual navigation labels, garage orientation/parking bay, Chennai ambience and varied animations. | No conspicuous repeated props or confusing route indications in key benchmark route. |
+| **8** | **P2 — Postlaunch** | New map regions, more iconic landmarks, missions, new vehicles, cinematic garages, monetization expansion, LiveOps. | Deferred; never displace P0 quality and release gates. |
+
+### Chennai Street Life implementation order
+
+1. **Measure before spawning:** screenshot/video comparison at matching Mylapore viewpoints; identify dead frontages, unrealistic open parcels and gaps. Do not erase legitimate open grounds, water or public spaces.
+2. **Static occupancy first:** properly scaled parked two-wheelers/cars/autos on legal/credible kerb segments, tea stalls, shopfront props, bus-stop furniture and customers. Respect sidewalk passability, road clearance, turns, fire access and collision.
+3. **Dynamic density second:** zone/time-weighted MTC buses, auto/2-wheeler traffic, delivery riders, pedestrians and clusters around POIs. Maintain traversable lanes and avoid artificial gridlock.
+4. **District presets third:** Mylapore temple/market, Triplicane old residential, T. Nagar shopping, Marina waterfront and quieter residential areas; use seeded and data-driven placement instead of global randomness.
+5. **Optimize and validate:** mobile LOD, MultiMesh/culling, deterministic regression maps, no roads overlapped by buildings or parked vehicles; capture FPS, draw calls, RAM, collisions and player route completion.
+
+**Proposed test densities are tuning hypotheses, not real Chennai measured counts.** Start with one Mylapore benchmark zone, profile on a 3–4 GB Android phone, then scale to other neighbourhoods. Prioritise visual richness without harming playability.
+
+### Revised release sequence
+
+| Window | Delivery | Exit gate |
 |---|---|---|
-| **November 2026** | Integrate outstanding fixes, regression/screenshot verification, tutorial, driver, traffic-ground alignment, garage and first-ride bugs | Stable core gameplay and green CI |
-| **December 2026** | Device performance, QA across Android devices, crash fixes, content polish within frozen scope, licences and Play Console setup | Signed release candidate and ready test track |
-| **January 2027** | Closed-test feedback, store review/submission when eligible, controlled release | Production rollout only after platform and quality gates clear |
+| **Early November 2026** | Regression-free merged build, first-ride/garage smoke tests, benchmark viewpoints and placement rules | Stable core, baseline screenshots |
+| **Mid–late November 2026** | Mylapore static kerb occupancy, active street commerce, buses/pedestrians, density and performance tests | Mylapore looks alive and drives well |
+| **December 2026** | District presets and authenticity playtest, low-end Android tuning, sound/wayfinding polish, licensing and store preparation | Feature freeze and signed release candidate |
+| **January 2027** | Closed-test feedback, Play submission/production access where eligible, controlled release | Release only when Play and quality gates pass |
 
-**Scope freeze:** No new maps, story missions, vehicles or additional features until P0 acceptance. January is a target, not a promise of Play approval. New personal Google Play developer accounts may need at least 12 opted-in testers over 14 continuous days before production access; see [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465).
+**Store dependency:** production access can require at least 12 opted-in closed testers for 14 continuous days on eligible new personal developer accounts. Begin setup in parallel; January is a target, not a guaranteed Play publication date. [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465).
 
 ## 📌 At a glance
 
