@@ -30,7 +30,7 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i) -> void:
 	chunk.add_child(holder)
 	var faces: PackedVector3Array = PackedVector3Array()
 	for kind: int in MODELS.size():
-		var records: Array[Array] = []
+		var records: Array = []
 		for record: Array in parking:
 			if int(record[3]) == kind:
 				records.append(record)
