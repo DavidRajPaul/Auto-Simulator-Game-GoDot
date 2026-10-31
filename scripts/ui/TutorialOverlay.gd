@@ -6,7 +6,7 @@ extends CanvasLayer
 ## Sits above the driving HUDs (layers 10–11) and below menus (GarageUI 15).
 ## Nothing here takes input: the dim and the card ignore the mouse, so driving never stops.
 
-const DIM: Color = Color(0.11, 0.08, 0.13, 0.55)
+const DIM: Color = Color(0.11, 0.08, 0.13, 0.16)
 const RING_PAD: float = 10.0
 const CARD_W: float = 470.0
 const DONE_SHOW_S: float = 2.5
