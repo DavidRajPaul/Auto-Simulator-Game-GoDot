@@ -22,6 +22,9 @@ const EMERGENCY_BRAKE_MPS2: float = 9.0
 ## after it (was: a snap from one road's lane offset to the next, a sideways jump of several
 ## metres on a right-angle turn, plus an instant change of heading).
 const TURN_BLEND_M: float = 7.0
+## The graph runs at y = 0 (physics ground) but asphalt is drawn at WorldChunkStreamer.ROAD_Y:
+## stand traffic on the drawn road so tyres don't sink 6 cm into it.
+const ROAD_VISUAL_Y: float = 0.06
 ## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
 	"res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
@@ -391,7 +394,7 @@ func _apply_turn_transform() -> void:
 	vel.y = 0.0
 	if vel.length_squared() < 0.0001:
 		vel = -global_transform.basis.z
-	global_transform = Transform3D(Basis.looking_at(vel.normalized(), Vector3.UP), pos)
+	global_transform = Transform3D(Basis.looking_at(vel.normalized(), Vector3.UP), pos + Vector3.UP * ROAD_VISUAL_Y)
 
 func _hermite(u: float) -> Vector3:
 	var u2: float = u * u
@@ -433,7 +436,7 @@ func _apply_transform() -> void:
 		fwd = Vector3.FORWARD
 	fwd = fwd.normalized()
 	var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
-	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), pd[0] + left * lateral)
+	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), pd[0] + left * lateral + Vector3.UP * ROAD_VISUAL_Y)
 
 func _try_shift(step: int, from_horn: bool) -> bool:
 	if step == 0 or turning:

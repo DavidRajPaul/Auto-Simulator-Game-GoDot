@@ -7,7 +7,10 @@ extends Node3D
 ## Real-world proportions: 2.6 m long, 1.3 m wide, 1.75 m tall, 0.17 m clearance.
 ## Phase 5 can swap in an artist's GLTF; this keeps the silhouette honest until then.
 
-const GROUND_Y: float = -0.80 # road height relative to the chassis origin at rest
+## Drawn road height relative to the chassis origin at rest. Physics ground is y = 0 and the
+## chassis rests 0.805 m above it, but asphalt is drawn at WorldChunkStreamer.ROAD_Y (0.06):
+## at -0.80 the baked tyres sank ~5.5 cm into the road in every camera.
+const GROUND_Y: float = -0.745
 ## The downloaded Chennai auto (rSquare, CC BY 4.0) replaces the procedural body while the paint
 ## is stock yellow. Never swap the chassis when paint changes: this caused purchased colors
 ## to replace the player auto with a different procedural mesh. Until a paint-mask asset
@@ -15,6 +18,10 @@ const GROUND_Y: float = -0.80 # road height relative to the chassis origin at re
 ## The file's wheels are baked into the body, so the WheelModel nodes are hidden.
 const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
+## Seated khaki-shirt driver (PersonMesh.seated_auto_driver, one draw call): hips on the front
+## bench behind the handlebar. The controller hides him on foot (the hero walks instead, so
+## there is never a duplicate) and in the cockpit camera (the camera is his eyes).
+const DRIVER_SEAT: Vector3 = Vector3(0.0, GROUND_Y + 0.66, -0.36)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
 @export var trim: Color = Color(0.07, 0.07, 0.07) # black canopy / skirts
@@ -22,6 +29,7 @@ const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 @export var chrome: Color = Color(0.82, 0.83, 0.86)
 
 var body_mesh: MeshInstance3D
+var driver: MeshInstance3D
 var real_body: Node3D
 var uses_real_model: bool = false
 
@@ -67,6 +75,12 @@ func build() -> void:
 	body_mesh.mesh = mesh
 	add_child(body_mesh)
 	_attach_real_model()
+	if driver == null:
+		driver = MeshInstance3D.new()
+		driver.name = "Driver"
+		driver.mesh = PersonMesh.seated_auto_driver(0)
+		driver.position = DRIVER_SEAT
+		add_child(driver)
 
 ## Stock Chennai yellow (Singara Classic, King Deluxe) with a dark canopy.
 func is_stock_yellow() -> bool:

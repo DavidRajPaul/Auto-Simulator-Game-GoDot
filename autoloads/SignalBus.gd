@@ -41,6 +41,15 @@ signal parked_auto_position_changed(position: Vector3)
 # --- Navigation ------------------------------------------------------------
 ## Latest published road graph, for listeners that start after road_graph_ready fired.
 var current_road_graph: RoadGraph = null
+## Set by WorldChunkStreamer: (x, z, fallback) -> height of the drawn ground (walk/road/park/bare).
+var surface_height_provider: Callable = Callable()
+
+## Drawn-ground height at (x, z) so people and props stand on what is visible; `fallback` when
+## no world streamer is running or the chunk isn't loaded.
+func surface_height(x: float, z: float, fallback: float) -> float:
+	if surface_height_provider.is_valid():
+		return float(surface_height_provider.call(x, z, fallback))
+	return fallback
 signal road_graph_ready(graph: RoadGraph)
 ## Player pose for the mini-map / ride logic (every physics frame).
 signal player_pose_updated(position: Vector3, heading: Vector3)

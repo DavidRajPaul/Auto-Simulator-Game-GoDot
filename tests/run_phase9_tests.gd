@@ -23,7 +23,9 @@ func _run() -> void:
 	var city: Node = (load(CITY) as PackedScene).instantiate()
 	add_child(city)
 	await _physics(150)
+	_test_surface_heights(city.get_node("World") as WorldChunkStreamer)
 	_test_pedestrians(city.get_node("PedestrianManager") as PedestrianManager)
+	_test_seated_driver(city)
 	await _test_walking(city.get_node("PedestrianManager") as PedestrianManager)
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
@@ -129,6 +131,42 @@ func _test_audio_data() -> void:
 	var classic: VehicleStats = load("res://data/vehicles/Bajaj_RE_4S.tres") as VehicleStats
 	_check("Starter auto keeps the LPG putter", classic.engine_loop == "")
 
+func _test_surface_heights(world: WorldChunkStreamer) -> void:
+	var p: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
+	_check("Surface heights exist for the chunk under the player", world._heights.has(world.chunk_of(p)))
+	var seen: Dictionary = {}
+	var k: Vector2i = world.chunk_of(p)
+	var grid: PackedFloat32Array = world._heights.get(k, PackedFloat32Array())
+	for h: float in grid:
+		seen[snappedf(h, 0.001)] = true
+	_check("Surface raster has sidewalk, road and bare-ground cells", seen.has(0.08) and seen.has(0.06) and seen.has(snappedf(WorldChunkStreamer.GROUND_VISUAL_Y, 0.001)), str(seen.keys()))
+
+## The player's auto is never driverless: a seated driver shows while driving (chase camera),
+## hides on foot (the hero walks instead — never two of him) and in the cockpit view.
+func _test_seated_driver(city: Node) -> void:
+	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
+	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
+	_check("The player's auto has a seated driver", model.driver != null and model.driver.mesh != null)
+	SignalBus.camera_mode_changed.emit("Chase")
+	SignalBus.on_foot_changed.emit(false)
+	_check("Driver is visible while driving in the chase camera", model.driver.visible)
+	SignalBus.on_foot_changed.emit(true)
+	_check("Driver hides when the hero is on foot (no duplicate)", not model.driver.visible)
+	SignalBus.on_foot_changed.emit(false)
+	SignalBus.camera_mode_changed.emit("Cockpit")
+	_check("Driver hides in the cockpit view (camera is his eyes)", not model.driver.visible)
+	SignalBus.camera_mode_changed.emit("Chase")
+	_check("Driver returns in the chase camera", model.driver.visible)
+	# Tyres on the drawn asphalt (road is drawn 0.06 above the physics ground), not sunk into it.
+	var lo: float = 99.0
+	if model.real_body != null:
+		for n: Node in model.real_body.find_children("*", "MeshInstance3D", true, false):
+			var mi: MeshInstance3D = n as MeshInstance3D
+			for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array:
+				lo = minf(lo, (mi.global_transform * v).y)
+	var road: float = SignalBus.surface_height(auto.global_position.x, auto.global_position.z, WorldChunkStreamer.ROAD_Y)
+	_check("Auto tyres touch the drawn road surface (within 2 cm)", absf(lo - road) < 0.02 or (road < 0.0 and absf(lo - WorldChunkStreamer.ROAD_Y) < 0.02), "tyre %.3f, ground %.3f" % [lo, road])
+
 func _test_pedestrians(pm: PedestrianManager) -> void:
 	_check("Pedestrian pool built from the character set", pm.people.size() == PedestrianManager.POOL)
 	_check("People are out on the pavements", pm.active_count() >= PedestrianManager.POOL / 2, "%d active" % pm.active_count())
@@ -142,6 +180,21 @@ func _test_pedestrians(pm: PedestrianManager) -> void:
 		if float(cp["dist"]) < e.width * 0.5 - 0.6:
 			ok_kerb = false
 	_check("Nobody walks down the middle of the carriageway", ok_kerb)
+	# Feet on what is drawn: each walker stands at the streamer's drawn-ground height (walk 0.08,
+	# road edge 0.06, park, or the bare ground plane), not a fixed sidewalk height in mid-air.
+	var ok_ground: bool = true
+	var bare: int = 0
+	var detail: String = ""
+	for w: PedestrianManager.Walker in pm.people:
+		if not w.active:
+			continue
+		var ground: float = SignalBus.surface_height(w.node.global_position.x, w.node.global_position.z, -99.0)
+		if ground < -50.0 or absf(w.node.global_position.y - ground) > 0.01:
+			ok_ground = false
+			detail += "%.2f vs %.2f; " % [w.node.global_position.y, ground]
+		if is_equal_approx(ground, WorldChunkStreamer.GROUND_VISUAL_Y):
+			bare += 1
+	_check("Pedestrians stand on the drawn ground (no floating above bare kerbs)", ok_ground, detail if detail != "" else "%d on bare ground" % bare)
 	var idle: int = 0
 	for w: PedestrianManager.Walker in pm.people:
 		if w.active and w.idle:

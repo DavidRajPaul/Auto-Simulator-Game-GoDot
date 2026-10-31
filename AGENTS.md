@@ -186,6 +186,8 @@ res://
 * The first-ride tutorial never auto-starts in test runs (persistence off); suites call `TutorialDirector.start()`. Anything that must stay calm during it reads `GameState.tutorial_active`; scripted riders/traffic come from `SignalBus.scripted_hail_requested` / `scripted_traffic_requested`.
 * World markers (STOP line) sit at +0.1 m: road surfaces are at +0.045…+0.08, so anything lower is hidden under the road.
 * Every shipped art/sound file lives under `assets/` (the app icon is `assets/icon/icon.png`); README screenshots go in `docs/images/`. Adding, replacing or removing an asset means updating `assets/README.md`, the folder's `CREDITS_*.md` and, for CC BY, `MainMenu.CREDITS`.
+* Physics ground is y = 0, but asphalt is drawn at `ROAD_Y` 0.06 and sidewalks at 0.08: vehicle visuals sit on the drawn road (`AutoRickshawModel.GROUND_Y`, `TrafficVehicleAI.ROAD_VISUAL_Y`), and people/props standing on kerbs take `SignalBus.surface_height(x, z, fallback)` (per-chunk 1 m raster of the drawn layers) — most kerbs have no sidewalk polygon, so a fixed height floats them.
+* The player auto has a seated driver (`AutoRickshawModel.driver`); it hides on foot (`on_foot_changed`) and in the cockpit camera. Never show it together with the walking hero.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

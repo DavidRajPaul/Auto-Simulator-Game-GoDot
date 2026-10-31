@@ -321,6 +321,9 @@ func _apply(w: Walker) -> void:
 	var fwd: Vector3 = Vector3(w.heading.x, 0.0, w.heading.z)
 	if fwd.length() < 0.01:
 		fwd = Vector3.FORWARD
+	# Stand on whatever is drawn there (sidewalk, road edge, park or bare ground), not at a fixed
+	# sidewalk height: most kerb spots have no sidewalk polygon and people floated 23 cm.
+	w.pos.y = SignalBus.surface_height(w.pos.x, w.pos.z, WALK_Y)
 	# Characters are authored facing +Z: looking at -fwd puts their face along fwd.
 	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP), w.pos)
 
