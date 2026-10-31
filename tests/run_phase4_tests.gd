@@ -179,7 +179,9 @@ func _test_live_vehicle_swap(auto: AutoRickshawController) -> void:
 	GameState.buy_paint(2)
 	await _physics(2)
 	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
-	_check("New paint shows on the model", model.paint.is_equal_approx(GameState.PAINTS[2]["body"]))
+	_check("New paint is saved in model color selection", model.paint.is_equal_approx(GameState.PAINTS[2]["body"]))
+	_check("Custom paint never swaps away the imported auto body", model.uses_real_model and model.real_body != null)
+	_check("Custom paint keeps procedural replacement body hidden", model.body_mesh != null and not model.body_mesh.visible)
 	GameState.reset_profile()
 	GameState.select_vehicle("singara_classic")
 	GameState.buy_paint(0)
