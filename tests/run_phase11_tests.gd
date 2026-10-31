@@ -95,6 +95,16 @@ func _test_full_ride(city: Node, dir: TutorialDirector) -> void:
 	_check("Engine is switched off and KICK is shown", auto.is_engine_stalled and (hud._buttons["KickStart"]["panel"] as Control).visible)
 	_check("Mentor card shows the line", overlay.card.visible and overlay.line_label.text.contains("KICK"), overlay.line_label.text)
 	_check("Spotlight is on the KICK button", overlay.is_spotlight_on())
+	# Coach mode (Oct 31 playtest: "I barely could see the game because of the overlay").
+	var vp: Vector2 = overlay.get_viewport().get_visible_rect().size
+	_check("No screen dimming: the overlay covers < 15 % of the screen", overlay.covered_fraction() < 0.15, "%.1f %%" % (overlay.covered_fraction() * 100.0))
+	var road_band: Rect2 = Rect2(vp.x * 0.35, vp.y * 0.12, vp.x * 0.3, vp.y * 0.6) # road + vanishing point
+	_check("Coach strip and bubble stay off the road ahead", not overlay.card.get_rect().intersects(road_band) and not overlay.bubble.get_rect().intersects(road_band),
+		"vp %s band %s strip %s bubble %s" % [vp, road_band, overlay.card.get_rect(), overlay.bubble.get_rect()])
+	_check("Coach strip shows the short task", overlay.task_label.text == tr("TUT_KICK_TASK"), overlay.task_label.text)
+	_check("Tutorial teaches in daylight (clock >= 8:00)", GameState.shift_minute >= TutorialDirector.TUTORIAL_MIN_MINUTE, "%.0f" % GameState.shift_minute)
+	_check("The big status ribbon is suppressed during the tutorial", not hud._banner.visible and not hud._status_label.visible)
+	_check("SKIP is offered on the strip", overlay.skip_button.visible)
 	AdMonetizationManager.debug_advance(2000.0) # well past the first-session grace
 	_check("No interstitial can fire during the tutorial", AdMonetizationManager.interstitial_block_reason("after_fare_summary") == "tutorial"
 		and not AdMonetizationManager.maybe_show_interstitial("after_fare_summary"))
@@ -108,6 +118,7 @@ func _test_full_ride(city: Node, dir: TutorialDirector) -> void:
 		await _physics(34)
 	await _physics(2)
 	_check("Steady kicks start the engine and advance", not auto.is_engine_stalled and dir.current_step_id() == "pull_out", dir.current_step_id())
+	_check("ACCEL target says HOLD", overlay._chip.visible and overlay._chip.text == tr("TUT_HOLD"), overlay._chip.text)
 
 	# 2. Pull out to 15 km/h. No LPG burnt on the way.
 	var fuel0: float = auto.fuel_level

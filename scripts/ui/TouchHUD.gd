@@ -908,7 +908,10 @@ func _place_needle(n: TextureRect, centre: Vector2, length: float) -> void:
 func _show_banner(text: String, tone: Tone) -> void:
 	if _banner == null:
 		return
-	if text == "":
+	# During the first ride the coach strip owns the top of the screen; the big ribbon repeated
+	# its instruction ("Engine off. Tap KICK...") on top of the road.
+	_status_label.visible = not GameState.tutorial_active
+	if text == "" or GameState.tutorial_active:
 		_banner.visible = false
 		return
 	_banner.texture = _hud(["banner_yellow", "banner_red", "banner_green"][int(tone)])

@@ -105,7 +105,7 @@ res://
 │       ├── PassengerHUD.gd          # Haggle card, passenger card, fare screen, wallet
 │       ├── MiniMap.gd               # Heading-up circular mini-map
 │       ├── GarageUI.gd              # Service prompts, clock, pause/settings, garage, shift summary
-│       ├── TutorialOverlay.gd       # Mentor subtitle card + spotlight on the control to press
+│       ├── TutorialOverlay.gd       # Coach mode: task strip in the top HUD row, folding speech bubble, ring on the control
 │       └── DebugOverlay.gd          # FPS / draw calls, debug builds only
 └── tests/
     ├── run_phase1_tests.gd          # Headless verification suite (Node script)
@@ -187,6 +187,7 @@ res://
 * World markers (STOP line) sit at +0.1 m: road surfaces are at +0.045…+0.08, so anything lower is hidden under the road.
 * Every shipped art/sound file lives under `assets/` (the app icon is `assets/icon/icon.png`); README screenshots go in `docs/images/`. Adding, replacing or removing an asset means updating `assets/README.md`, the folder's `CREDITS_*.md` and, for CC BY, `MainMenu.CREDITS`.
 * Player-auto paint is a recolour of the ONE imported body (`shaders/auto_paint.gdshader`): body panels from `player_auto_paint_mask.png` (R, baked by `tools/assets/make_auto_paint_mask.py`), canopy found in mesh space (its roof canvas samples a black texture area shared with other parts). The canopy also samples an empty normal-map area, so it must skip `NORMAL_MAP` or a coloured canopy renders as shadow. Stock yellow keeps the file's own material. Check every paint with `tests/shot_paint.tscn`.
+* The tutorial overlay must never dim or cover the road (Oct 31 playtest: lowering the dim was not the fix). Coach strip lives in the top HUD row gap, the speech bubble over the left kerb and folds after `SPEECH_S`; targets get a ring/arrow/chip only. Phase 11 asserts < 15 % coverage and no overlap with the road band. TouchHUD's status ribbon is muted while `GameState.tutorial_active`. Each tutorial step has a short `<line_key>_TASK` string.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---
