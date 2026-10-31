@@ -15,6 +15,7 @@ const SHIRTS: Array[Color] = [Color(0.92, 0.92, 0.88), Color(0.35, 0.55, 0.85), 
 const SAREES: Array[Color] = [Color(0.8, 0.1, 0.35), Color(0.95, 0.55, 0.1), Color(0.15, 0.45, 0.4), Color(0.55, 0.15, 0.55)]
 const HELMETS: Array[Color] = [Color(0.1, 0.1, 0.12), Color(0.85, 0.85, 0.85), Color(0.75, 0.1, 0.1), Color(0.15, 0.3, 0.7)]
 const HAIR: Color = Color(0.06, 0.05, 0.05)
+const KHAKI: Color = Color(0.62, 0.52, 0.33)
 const TROUSER: Color = Color(0.18, 0.2, 0.28)
 const JEANS: Color = Color(0.2, 0.3, 0.5)
 const VESHTI_WHITE: Color = Color(0.95, 0.94, 0.88)
@@ -61,6 +62,40 @@ static func seated_rider(variant: int) -> ArrayMesh:
 	MeshKit.tube(st, Vector3(0, shoulder_y - 0.02, -0.06), Vector3(0, shoulder_y + 0.1, -0.08), 0.05, skin, 6)
 	_ellipsoid(st, Vector3(0, shoulder_y + 0.24, -0.1), Vector3(0.135, 0.15, 0.15), helmet, 8, 5)
 	MeshKit.box(st, Vector3(0, shoulder_y + 0.24, -0.235), Vector3(0.2, 0.08, 0.03), Color(0.05, 0.06, 0.08))
+	var mesh: ArrayMesh = MeshKit.finish(st, material())
+	_cache[key] = mesh
+	return mesh
+
+## The player's auto driver: seated, hands forward on the handlebar, Chennai auto-driver khaki
+## shirt, bare head with black hair (no helmet). One mesh on the shared material (one draw call).
+static func seated_auto_driver(variant: int) -> ArrayMesh:
+	var key: String = "auto_driver_%d" % (variant % 4)
+	if _cache.has(key):
+		return _cache[key]
+	var skin: Color = SKIN_TONES[variant % SKIN_TONES.size()]
+	var shirt: Color = KHAKI
+	var st: SurfaceTool = MeshKit.begin()
+	for side: float in [-1.0, 1.0]:
+		var hip: Vector3 = Vector3(0.11 * side, 0.08, 0.02)
+		var knee: Vector3 = Vector3(0.15 * side, 0.12, -0.36)
+		var foot: Vector3 = Vector3(0.14 * side, -0.34, -0.42)
+		MeshKit.tube(st, hip, knee, 0.075, TROUSER, 6)
+		MeshKit.tube(st, knee, foot, 0.06, TROUSER, 6)
+		MeshKit.box(st, foot + Vector3(0, -0.02, -0.06), Vector3(0.1, 0.06, 0.2), SANDAL)
+	var lean: Basis = Basis(Vector3.RIGHT, -0.1)
+	_torso(st, Vector3(0, 0.05, 0.04), lean, 0.5, shirt)
+	var shoulder_y: float = 0.52
+	for side: float in [-1.0, 1.0]:
+		var sh: Vector3 = Vector3(0.21 * side, shoulder_y, -0.02)
+		var elbow: Vector3 = Vector3(0.26 * side, shoulder_y - 0.2, -0.22)
+		var hand: Vector3 = Vector3(0.3 * side, shoulder_y - 0.12, -0.46)
+		MeshKit.tube(st, sh, elbow, 0.05, shirt, 6)
+		MeshKit.tube(st, elbow, hand, 0.042, skin, 6)
+	MeshKit.tube(st, Vector3(0, shoulder_y - 0.02, -0.04), Vector3(0, shoulder_y + 0.1, -0.05), 0.05, skin, 6)
+	_ellipsoid(st, Vector3(0, shoulder_y + 0.22, -0.06), Vector3(0.1, 0.125, 0.11), skin, 8, 5)
+	# Hair cap on the crown and back of the head, and a moustache.
+	_ellipsoid(st, Vector3(0, shoulder_y + 0.27, -0.03), Vector3(0.105, 0.085, 0.11), HAIR, 8, 4)
+	MeshKit.box(st, Vector3(0, shoulder_y + 0.18, -0.165), Vector3(0.08, 0.018, 0.02), HAIR)
 	var mesh: ArrayMesh = MeshKit.finish(st, material())
 	_cache[key] = mesh
 	return mesh

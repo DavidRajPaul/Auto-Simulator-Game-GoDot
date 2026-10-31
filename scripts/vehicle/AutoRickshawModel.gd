@@ -7,7 +7,8 @@ extends Node3D
 ## Real-world proportions: 2.6 m long, 1.3 m wide, 1.75 m tall, 0.17 m clearance.
 ## Phase 5 can swap in an artist's GLTF; this keeps the silhouette honest until then.
 
-const GROUND_Y: float = -0.80 # road height relative to the chassis origin at rest
+## Correct for drawn asphalt being 0.06 m above physics ground.
+const GROUND_Y: float = -0.745
 ## The downloaded Chennai auto (rSquare, CC BY 4.0) is ALWAYS the body. Never swap the chassis
 ## when paint changes (that once replaced the player auto with a different procedural mesh).
 ## Paint is a real recolour: PAINT_SHADER + PAINT_MASK repaint only the yellow panels (R) and
@@ -17,6 +18,7 @@ const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
 const PAINT_SHADER: String = "res://shaders/auto_paint.gdshader"
 const PAINT_MASK: String = "res://assets/models/vehicles/player_auto_paint_mask.png"
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
+const DRIVER_SEAT: Vector3 = Vector3(0.0, GROUND_Y + 0.66, -0.36)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
 @export var trim: Color = Color(0.07, 0.07, 0.07) # black canopy / skirts
@@ -24,6 +26,7 @@ const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 @export var chrome: Color = Color(0.82, 0.83, 0.86)
 
 var body_mesh: MeshInstance3D
+var driver: MeshInstance3D
 var real_body: Node3D
 var uses_real_model: bool = false
 ## The repaint material on the textured body surface (null until the real model loads).
@@ -71,6 +74,12 @@ func build() -> void:
 	body_mesh.mesh = mesh
 	add_child(body_mesh)
 	_attach_real_model()
+	if driver == null:
+		driver = MeshInstance3D.new()
+		driver.name = "Driver"
+		driver.mesh = PersonMesh.seated_auto_driver(0)
+		driver.position = DRIVER_SEAT
+		add_child(driver)
 
 ## Stock Chennai yellow (Singara Classic, King Deluxe) with a dark canopy.
 func is_stock_yellow() -> bool:

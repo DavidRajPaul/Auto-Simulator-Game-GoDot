@@ -263,7 +263,8 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 		return {}
 	var h: Dictionary = {"id": _next_hail_id, "pos": pos, "archetype": archetype, "age": 0.0, "node": node, "at_stand": at_stand}
 	_next_hail_id += 1
-	node.global_position = pos
+	# Visual only: stand the rider on the drawn ground (sidewalk, road edge or bare ground).
+	node.global_position = Vector3(pos.x, SignalBus.surface_height(pos.x, pos.z, pos.y), pos.z)
 	var body: MeshInstance3D = node.get_node("Body") as MeshInstance3D
 	var style: PersonMesh.Style = ARCHETYPE_STYLE.get(archetype.id, PersonMesh.Style.SHIRT_TROUSERS) as PersonMesh.Style
 	var variant: int = rng.randi() % 12

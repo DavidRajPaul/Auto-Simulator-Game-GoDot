@@ -12,6 +12,7 @@ const GROUND_VISUAL_Y: float = -0.15
 const ROAD_Y: float = 0.06
 const SIDEWALK_Y: float = 0.08
 const SIDEWALK_W: float = 2.5
+const SURFACE_CELL_M: float = 1.0
 const CHECK_INTERVAL_S: float = 0.25
 const CLASS_LAYER: Dictionary = {"trunk": 6, "motorway": 6, "primary": 5, "secondary": 4, "tertiary": 3,
 	"unclassified": 2, "residential": 1, "living_street": 0}
@@ -104,6 +105,13 @@ var _bld_mat: ShaderMaterial
 var _tree_mat: StandardMaterial3D
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
+## Visual ground height per loaded chunk (SURFACE_CELL_M grid of the drawn walk / road / junction
+## / park / beach layers, GROUND_VISUAL_Y elsewhere) so people stand ON what is drawn: ~70 % of
+## kerb-side spots have no osm2streets sidewalk, and a fixed SIDEWALK_Y floated them 23 cm.
+var _heights: Dictionary = {} # Vector2i -> PackedFloat32Array
+## Area triangles (park, beach) bucketed by chunk, filled once by _build_areas before streaming
+## starts; worker threads only read it. Vector2i -> PackedVector3Array (3 vertices per triangle).
+var _area_tris: Dictionary = {}
 var skyline: Node3D
 ## Detail layer switches (tests / profiling).
 static var details_enabled: bool = true
@@ -139,6 +147,7 @@ func _ready() -> void:
 	_tree_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_build_ground()
 	_build_areas()
+	SignalBus.surface_height_provider = surface_height
 	_build_landmarks()
 	_spawn_player()
 	update_streaming(true)
@@ -187,6 +196,7 @@ func update_streaming(blocking: bool) -> void:
 		if absi(k.x - c.x) > load_radius_chunks + 1 or absi(k.y - c.y) > load_radius_chunks + 1:
 			(loaded[k] as Node3D).queue_free()
 			loaded.erase(k)
+			_heights.erase(k)
 
 func chunk_of(p: Vector3) -> Vector2i:
 	return Vector2i(floori(p.x / chunk_size), floori(p.z / chunk_size))
@@ -235,6 +245,9 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 	_add_imported_palms(node)
 	add_child(node)
 	loaded[k] = node
+	if node.has_meta("surface_heights"):
+		_heights[k] = node.get_meta("surface_heights")
+		node.remove_meta("surface_heights")
 
 func _add_imported_palms(chunk: Node3D) -> void:
 	var markers: Node3D = chunk.get_node_or_null("Buildings/ImportedPalmMarkers") as Node3D
@@ -289,6 +302,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var mesh: ArrayMesh = null
 	if data.has("surf"):
 		mesh = _surface_mesh(data["surf"] as Dictionary)
+		root.set_meta("surface_heights", _surface_heights(k, data["surf"] as Dictionary))
 	elif data.has("roads"):
 		mesh = _road_mesh(data["roads"] as Array)
 	if mesh != null:
@@ -950,6 +964,76 @@ func _build_ground() -> void:
 	body.add_child(mi)
 	add_child(body)
 
+func _bucket_area_triangle(a: Vector3, b: Vector3, c: Vector3) -> void:
+	var lo: Vector2i = Vector2i(floori(minf(a.x, minf(b.x, c.x)) / chunk_size), floori(minf(a.z, minf(b.z, c.z)) / chunk_size))
+	var hi: Vector2i = Vector2i(floori(maxf(a.x, maxf(b.x, c.x)) / chunk_size), floori(maxf(a.z, maxf(b.z, c.z)) / chunk_size))
+	for i: int in range(lo.x, hi.x + 1):
+		for j: int in range(lo.y, hi.y + 1):
+			var key: Vector2i = Vector2i(i, j)
+			if not _area_tris.has(key):
+				_area_tris[key] = PackedVector3Array()
+			var arr: PackedVector3Array = _area_tris[key]
+			arr.append(a)
+			arr.append(b)
+			arr.append(c)
+			_area_tris[key] = arr
+
+## Height of the drawn ground at (x, z): walk 0.08, road 0.06, junction 0.05, park/beach, or the
+## bare ground plane. Unloaded chunks return `fallback`.
+func surface_height(x: float, z: float, fallback: float = SIDEWALK_Y) -> float:
+	var k: Vector2i = Vector2i(floori(x / chunk_size), floori(z / chunk_size))
+	if not _heights.has(k):
+		return fallback
+	var grid: PackedFloat32Array = _heights[k]
+	var n: int = int(ceil(chunk_size / SURFACE_CELL_M))
+	var ci: int = clampi(int((x - float(k.x) * chunk_size) / SURFACE_CELL_M), 0, n - 1)
+	var cj: int = clampi(int((z - float(k.y) * chunk_size) / SURFACE_CELL_M), 0, n - 1)
+	return grid[cj * n + ci]
+
+## Worker-thread raster of one chunk's drawn layers (highest layer wins per cell centre).
+func _surface_heights(k: Vector2i, surf: Dictionary) -> PackedFloat32Array:
+	var n: int = int(ceil(chunk_size / SURFACE_CELL_M))
+	var grid: PackedFloat32Array = PackedFloat32Array()
+	grid.resize(n * n)
+	grid.fill(GROUND_VISUAL_Y)
+	var origin: Vector2 = Vector2(float(k.x), float(k.y)) * chunk_size
+	var areas: PackedVector3Array = _area_tris.get(k, PackedVector3Array())
+	for t: int in range(0, areas.size(), 3):
+		_raster_triangle(grid, n, origin, Vector2(areas[t].x, areas[t].z), Vector2(areas[t + 1].x, areas[t + 1].z), Vector2(areas[t + 2].x, areas[t + 2].z), areas[t].y)
+	for kind: String in surf:
+		var base_kind: String = kind.trim_suffix("_up")
+		if not base_kind in ["walk", "road", "junction"]:
+			continue
+		var y: float = float(SURF_STYLE[base_kind][1]) + (UP_LAYER_Y if kind.ends_with("_up") else 0.0)
+		var part: Dictionary = surf[kind]
+		var v: Array = part["v"]
+		var ix: Array = part["i"]
+		for t: int in range(0, ix.size() - 2, 3):
+			var a: int = int(ix[t]) * 2
+			var b: int = int(ix[t + 1]) * 2
+			var c: int = int(ix[t + 2]) * 2
+			_raster_triangle(grid, n, origin, Vector2(float(v[a]), float(v[a + 1])), Vector2(float(v[b]), float(v[b + 1])), Vector2(float(v[c]), float(v[c + 1])), y)
+	return grid
+
+func _raster_triangle(grid: PackedFloat32Array, n: int, origin: Vector2, a: Vector2, b: Vector2, c: Vector2, y: float) -> void:
+	var area: float = (b - a).cross(c - a)
+	if absf(area) < 1e-6:
+		return
+	var i0: int = maxi(0, floori((minf(a.x, minf(b.x, c.x)) - origin.x) / SURFACE_CELL_M))
+	var i1: int = mini(n - 1, floori((maxf(a.x, maxf(b.x, c.x)) - origin.x) / SURFACE_CELL_M))
+	var j0: int = maxi(0, floori((minf(a.y, minf(b.y, c.y)) - origin.y) / SURFACE_CELL_M))
+	var j1: int = mini(n - 1, floori((maxf(a.y, maxf(b.y, c.y)) - origin.y) / SURFACE_CELL_M))
+	for j: int in range(j0, j1 + 1):
+		for i: int in range(i0, i1 + 1):
+			var p: Vector2 = origin + Vector2((float(i) + 0.5) * SURFACE_CELL_M, (float(j) + 0.5) * SURFACE_CELL_M)
+			var w0: float = (b - p).cross(c - p) / area
+			var w1: float = (c - p).cross(a - p) / area
+			if w0 < 0.0 or w1 < 0.0 or w0 + w1 > 1.0:
+				continue
+			var cell: int = j * n + i
+			if y > grid[cell]:
+				grid[cell] = y
+
 func _build_areas() -> void:
 	var f: FileAccess = FileAccess.open(world_dir.path_join("areas.json"), FileAccess.READ)
 	if f == null:
@@ -983,6 +1067,8 @@ func _build_areas() -> void:
 					var tmp: Vector2 = b
 					b = c
 					c = tmp
+				if kind in ["beach", "park"]:
+					_bucket_area_triangle(Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector3(c.x, y, c.y))
 				var tint: Color = Color(0.10, 0.43, 0.53).lerp(Color(0.23, 0.63, 0.68), water_rng.randf())
 				var ripple: float = water_rng.randf_range(-0.012, 0.012) if kind == "water" else 0.0
 				for v: Vector2 in [a, b, c]:

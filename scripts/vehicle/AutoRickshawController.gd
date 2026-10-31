@@ -32,6 +32,7 @@ var rear_left_wheel_ray: RayCast3D
 var rear_right_wheel_ray: RayCast3D
 
 var _driver_on_foot: bool = false
+var _cockpit_view: bool = false
 var current_speed_kmh: float = 0.0
 var forward_speed_mps: float = 0.0
 var current_steer_rad: float = 0.0
@@ -109,7 +110,12 @@ func _ready() -> void:
 	if stats == null:
 		stats = VehicleStats.new()
 	add_to_group("player_auto")
-	SignalBus.on_foot_changed.connect(func(value: bool) -> void: _driver_on_foot = value)
+	SignalBus.on_foot_changed.connect(func(value: bool) -> void:
+		_driver_on_foot = value
+		_update_driver_visibility())
+	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void:
+		_cockpit_view = mode_name == "Cockpit"
+		_update_driver_visibility())
 	fuel_level = stats.fuel_capacity if GameState.fuel_level < 0.0 or not use_player_profile else minf(GameState.fuel_level, stats.fuel_capacity)
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	_setup_collision()
@@ -143,6 +149,13 @@ func apply_stats(new_stats: VehicleStats) -> void:
 	fuel_level = minf(fuel_level, stats.fuel_capacity)
 	_apply_mass()
 	_recolour()
+
+## The seated driver shows while someone drives and the camera is outside the auto: on foot the
+## hero walks (never two of him), and in the cockpit view the camera is his eyes.
+func _update_driver_visibility() -> void:
+	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
+	if model != null and model.driver != null:
+		model.driver.visible = not _driver_on_foot and not _cockpit_view
 
 func _recolour() -> void:
 	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
