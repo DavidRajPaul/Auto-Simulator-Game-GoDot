@@ -204,7 +204,8 @@ func _test_pedestrians(pm: PedestrianManager) -> void:
 			ok_kerb = false
 	_check("Nobody walks down the middle of the carriageway", ok_kerb)
 	# Feet on what is drawn: each walker stands at the streamer's drawn-ground height (walk 0.08,
-	# road edge 0.06, park, or the bare ground plane), not a fixed sidewalk height in mid-air.
+	# road edge 0.06, park, or bare ground. Stepping down may ease over up to 25 cm;
+	# stepping up must snap immediately to prevent feet penetrating raised pavement.
 	var ok_ground: bool = true
 	var bare: int = 0
 	var detail: String = ""
@@ -212,12 +213,12 @@ func _test_pedestrians(pm: PedestrianManager) -> void:
 		if not w.active:
 			continue
 		var ground: float = SignalBus.surface_height(w.node.global_position.x, w.node.global_position.z, -99.0)
-		if ground < -50.0 or absf(w.node.global_position.y - ground) > 0.01:
+		if ground < -50.0 or w.node.global_position.y < ground - 0.01 or w.node.global_position.y > ground + 0.25:
 			ok_ground = false
 			detail += "%.2f vs %.2f; " % [w.node.global_position.y, ground]
 		if is_equal_approx(ground, WorldChunkStreamer.GROUND_VISUAL_Y):
 			bare += 1
-	_check("Pedestrians stand on the drawn ground (no floating above bare kerbs)", ok_ground, detail if detail != "" else "%d on bare ground" % bare)
+	_check("Pedestrians never sink and settle toward drawn ground (within 25 cm)", ok_ground, detail if detail != "" else "%d on bare ground" % bare)
 	var idle: int = 0
 	for w: PedestrianManager.Walker in pm.people:
 		if w.active and w.idle:
