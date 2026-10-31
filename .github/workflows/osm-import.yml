@@ -32,6 +32,10 @@ jobs:
       - name: Build world chunks
         run: |
           if [ -f tools/osm/build_world.py ]; then python3 tools/osm/build_world.py; else echo "build_world.py not present yet"; fi
+      - name: Populate roadside parking
+        run: |
+          python3 tools/osm/build_street_dressing.py
+          python3 tools/osm/build_roadside_parking.py
       - name: Commit results
         run: |
           git config user.name "osm-import[bot]"
