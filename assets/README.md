@@ -76,7 +76,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 
 ### 🚗 Models — `assets/models/` (22 MB)
 
-**Player auto** (`vehicles/`): `player_auto.glb` + 3 textures — Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0, 6.3k tris. Used while the paint is stock yellow; other garage paints use the procedural body (`AutoRickshawModel.gd`).
+**Player auto** (`vehicles/`): `player_auto.glb` + 3 textures — Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0, 6.3k tris. Always the body; garage paints recolour it with `shaders/auto_paint.gdshader` and `player_auto_paint_mask.png` (made by `tools/assets/make_auto_paint_mask.py`, derived from the same model — same licence).
 
 **Traffic** (`traffic/`, loaded by `TrafficVehicleAI.gd` / `TrafficModelFit.gd` as visuals on the collision boxes):
 
