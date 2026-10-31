@@ -78,6 +78,9 @@ func _ready() -> void:
 
 ## Begin (or resume) the tutorial. from_step = -1 resumes from the saved step. The actual start
 ## waits until the road graph and the player auto are live.
+## Clock for the first ride (8:00 AM, full daylight).
+const TUTORIAL_MIN_MINUTE: float = 480.0
+
 func start(from_step: int = -1) -> void:
 	_pending_start = from_step
 	if is_inside_tree() and _world_ready():
@@ -116,6 +119,10 @@ func _begin(from_step: int) -> void:
 	total_seconds = 0.0
 	GameState.tutorial_active = true
 	GameState.tutorial_min_condition = data.min_condition
+	# The shift opens at 6:00, before sunrise: the first ride happened in near darkness and the
+	# playtester could barely see the road. Teach in full morning light.
+	if GameState.shift_minute < TUTORIAL_MIN_MINUTE:
+		GameState.shift_minute = TUTORIAL_MIN_MINUTE
 	GameState.settings["first_ride_done"] = false
 	_enter(idx)
 
@@ -159,6 +166,7 @@ func _enter(i: int) -> void:
 				_done_flag = true # dropped off while the GPS step was still open
 	SignalBus.tutorial_step_started.emit({
 		"index": i, "count": data.steps.size(), "id": s.id, "line": tr(s.line_key),
+		"task": tr(s.line_key + "_TASK") if tr(s.line_key + "_TASK") != s.line_key + "_TASK" else "",
 		"mentor": tr(data.mentor_name_key), "highlight": s.highlight,
 	})
 	SignalBus.tutorial_highlight.emit(s.highlight)

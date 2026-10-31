@@ -119,7 +119,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 - Shift clock 6 AM → 10 PM in 18 real minutes, end-of-day summary, 3 shift goals per day.
 - Driver Level 1–20 with stand titles (Puthu Driver → Madras Legend), ₹50 × level bonuses, cosmetic unlocks.
 - Rewards engine: idempotent ledger, daily caps, 7-day login calendar, 11 achievements (Play Games ids ready), rewarded 2× fare / half tank / free tow.
-- **First-ride tutorial** with Murugan Anna of the Mylapore stand: kick-start → pull out → stop line → indicate → honk → pick up → haggle → GPS → drop off (+₹100) → free roam. Skip, replay and resume per step.
+- **First-ride tutorial** with Murugan Anna of the Mylapore stand: kick-start → pull out → stop line → indicate → honk → pick up → haggle → GPS → drop off (+₹100) → free roam. Skip, replay and resume per step. "Coach mode" UI: a compact strip in the top HUD row (short task, progress dots, SKIP), a speech bubble over the left kerb that folds away after 6 s, and a ring + bouncing arrow + TAP/HOLD chip on the control. No screen dimming; taught at 8:00 AM daylight.
 
 **Shell**
 - Live splash → main menu (Continue / New career / Settings / Credits / Daily reward / Achievements) → threaded loading screen with tips.
@@ -342,7 +342,7 @@ Suite numbers follow the order they were written, not the roadmap phases.
 | `run_phase8_tests` | Play-test pass: camera, shadows, splash, riders, bargaining, time-of-day traffic, rewards, ads | 55 |
 | `run_phase9_tests` | Chennai people, building detail, street dressing, buses, lorry, landmarks | 35 |
 | `run_phase10_tests` | Play-test round 2: street boards on the footpath, GCC look, tree mix, impact FX, icons | 28 |
-| `run_phase11_tests` | First-ride tutorial: bot plays all 10 steps, skip, replay, resume, scripted world | 47 |
+| `run_phase11_tests` | First-ride tutorial: bot plays all 10 steps, skip, replay, resume, scripted world, coach-mode overlay never covers the road | 54 |
 | `run_perf_probe` | Draw calls and traffic pool while driving the city and the greybox (needs a display) | 98 / 150 max (Oct 27) |
 
 ## 📦 Android builds (GitHub Actions)
@@ -477,7 +477,7 @@ The detailed plan for Part B (with build tasks, tests and risks) is in **[docs/M
 | Play-test pass (26 Oct) | Smooth camera, stepped sun shadows, live splash, scooter riders, people at pickups, stricter bargaining, TomTom traffic, sat-nav ribbon + turn banner, full map, street boards, collision overhaul, `RewardsEngine`, ad policy + mock ads, CPU hot-path fixes — details in [docs/PLAYTEST_OCT26.md](docs/PLAYTEST_OCT26.md) | 8 |
 | Chennai city & people | 9 walking characters, building detail layer, EB poles/wires/trees, TNSTC/SETC buses, lorry, Chennai Central, water towers, real audio (kalhan engine, horns, diesel, city ambience) | 9 |
 | Play-test round 2 | Street boards on the footpath (GCC blue plates), tree mix, textured impact FX, traffic police, service vehicles, building name boards, no pop-in of traffic/people | 10 |
-| First-ride tutorial | Murugan Anna's 10-step guided ride, spotlight overlay, scripted world (no ads, no fuel burn, thin traffic, crash floor), skip/replay/resume, analytics hook | 11 |
+| First-ride tutorial | Murugan Anna's 10-step guided ride, coach-mode overlay (no dimming), scripted world (no ads, no fuel burn, thin traffic, crash floor), skip/replay/resume, analytics hook | 11 |
 
 **Levels:** there are no "level 1, level 2" stages. Driver XP comes from every ride (20 XP + comfort, on-time, Correct Meter and near-miss bonuses) and signalled turns. Each level pays ₹50 × level and a stand title (Puthu Driver → Stand Member → Meter Maestro → … → Madras Legend). Unlocks are cosmetic plus the EV: Lv 4 musical air-horn, Lv 5 Namma Green EV, Lv 6 Neon Night paint. The King Deluxe is never gated.
 
