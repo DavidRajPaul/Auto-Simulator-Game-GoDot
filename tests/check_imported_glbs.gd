@@ -9,7 +9,8 @@ const CANDIDATES: PackedStringArray = [
     "res://assets/models/city/lighthouse/chennai_lighthouse.glb",
     "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
     "res://assets/models/traffic/police_car/svc_police_car.glb",
-    "res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+    "res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb",
+    "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
 ]
 
 func _initialize() -> void:

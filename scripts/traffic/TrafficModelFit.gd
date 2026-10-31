@@ -6,7 +6,9 @@ extends RefCounted
 ## caller keeps the box.
 
 ## `flip` turns the model 180° for files that were authored facing -Z (the scooter).
-static func attach(parent: Node3D, path: String, box: Vector3, flip: bool) -> bool:
+## `uniform` keeps the model's own proportions: it is scaled by length only and centred on the
+## box (use for real-size baked vehicles, so a tall SUV is never squashed into a saloon box).
+static func attach(parent: Node3D, path: String, box: Vector3, flip: bool, uniform: bool = false) -> bool:
 	if path == "" or not ResourceLoader.exists(path):
 		return false
 	var packed: PackedScene = load(path) as PackedScene
@@ -28,8 +30,13 @@ static func attach(parent: Node3D, path: String, box: Vector3, flip: bool) -> bo
 		yaw += PI
 	model.rotation.y = yaw
 	bounds = _bounds(model, holder)
-	holder.scale = Vector3(box.x / bounds.size.x, box.y / bounds.size.y, box.z / bounds.size.z)
-	holder.position = Vector3(-box.x * 0.5, 0.0, -box.z * 0.5) - bounds.position * holder.scale
+	if uniform:
+		var s: float = box.z / bounds.size.z
+		holder.scale = Vector3(s, s, s)
+		holder.position = Vector3(-bounds.size.x * s * 0.5, 0.0, -box.z * 0.5) - bounds.position * s
+	else:
+		holder.scale = Vector3(box.x / bounds.size.x, box.y / bounds.size.y, box.z / bounds.size.z)
+		holder.position = Vector3(-box.x * 0.5, 0.0, -box.z * 0.5) - bounds.position * holder.scale
 	return true
 
 ## Bounding box of every mesh under `model`, expressed in `space` (which must be untransformed).
