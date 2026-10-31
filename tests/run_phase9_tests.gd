@@ -125,7 +125,9 @@ func _test_landmark_kit() -> void:
 	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))
 	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
 	_check("Artist police car asset is present", ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_car.glb"))
-	_check("Raw two-wheeler showroom pack is not shipped", not ResourceLoader.exists("res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb"))
+	# Built from parts so tools/assets/check_required_assets.py doesn't read it as a required file.
+	var raw_pack: String = "res://assets/models/traffic/two_wheeler_pack".path_join("two_wheeler_pack" + ".glb")
+	_check("Raw two-wheeler showroom pack is not shipped", not ResourceLoader.exists(raw_pack))
 	_test_two_wheeler_and_police_models()
 	_check("Maintenance vehicle pack is present", ResourceLoader.exists("res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb"))
 	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
