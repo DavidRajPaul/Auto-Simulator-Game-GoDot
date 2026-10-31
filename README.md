@@ -42,6 +42,12 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 | **7** | **P1 — Polish** | Street signs and contextual navigation labels, garage orientation/parking bay, Chennai ambience and varied animations. | No conspicuous repeated props or confusing route indications in key benchmark route. |
 | **8** | **P2 — Postlaunch** | New map regions, more iconic landmarks, missions, new vehicles, cinematic garages, monetization expansion, LiveOps. | Deferred; never displace P0 quality and release gates. |
 
+### P0.2 roadside parking — implementation branch
+
+The kerbside parking pass uses reproducible OSM road-edge sampling instead of unconstrained random positions. The generated `data/world/dress/c_*.json` `parking` entries contain scooters, cars and autos, with district/road-class densities, junction setbacks and building-footprint clearance. The chunk streamer draws actual traffic GLB meshes through MultiMesh and combines stationary collision into one hull per chunk; parked scenery does not count toward the moving 18-vehicle AI budget.
+
+**Build the map data:** run `python3 tools/osm/build_street_dressing.py` then `python3 tools/osm/build_roadside_parking.py`, or use the OSM Import workflow on this branch. The parking generator must run **after** street dressing, which replaces its output files. Generated `data/world/dress/` JSON changes must be committed before shipped Android builds show parking. **Acceptance still pending:** device screenshots and playtest on Kapaleeshwarar tank → Luz Corner → R.K. Mutt Road; confirm vehicles align and are grounded, intersections and sidewalks remain navigable, and frame/draw-call budgets pass. Procedural density is a visual tuning hypothesis, not measured parking inventory.
+
 ### Chennai Street Life implementation order
 
 1. **Measure before spawning:** screenshot/video comparison at matching Mylapore viewpoints; identify dead frontages, unrealistic open parcels and gaps. Do not erase legitimate open grounds, water or public spaces.
