@@ -287,6 +287,16 @@ func _test_pedestrians(pm: PedestrianManager) -> void:
 		if float(cp["dist"]) < e.width * 0.5 - 0.6:
 			ok_kerb = false
 	_check("Nobody walks down the middle of the carriageway", ok_kerb)
+	# Oct 31 device test: a woman walked along the kerb line through a shopfront.
+	var inside: int = 0
+	var samples: int = 0
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active:
+			samples += 1
+			if not SignalBus.walkable(w.node.global_position.x, w.node.global_position.z):
+				inside += 1
+	_check("Building footprints are known for the chunk under the player", not SignalBus.walkable_provider.is_null())
+	_check("No pedestrian stands inside a building", inside == 0 and samples > 0, "%d of %d inside" % [inside, samples])
 	# Feet on what is drawn: each walker stands at the streamer's drawn-ground height (walk 0.08,
 	# road edge 0.06, park, or bare ground. Stepping down may ease over up to 25 cm;
 	# stepping up must snap immediately to prevent feet penetrating raised pavement.
@@ -327,6 +337,17 @@ func _test_walking(pm: PedestrianManager) -> void:
 	var face: Vector3 = w.node.global_transform.basis.z
 	_check("Walkers face where they are going", face.dot(w.heading) > 0.9)
 	_check("Walk clip loops", w.anim.get_animation("walk").loop_mode == Animation.LOOP_LINEAR and w.anim.current_animation == "walk")
+	# Ten seconds of walking: feet never inside a building (main before the fix: 0.8 % of samples).
+	var inside: int = 0
+	var total: int = 0
+	for f: int in 60:
+		await _physics(10)
+		for c: PedestrianManager.Walker in pm.people:
+			if c.active:
+				total += 1
+				if not SignalBus.walkable(c.node.global_position.x, c.node.global_position.z):
+					inside += 1
+	_check("Walkers keep out of buildings while walking (< 0.2 % of samples)", total > 100 and float(inside) / float(total) < 0.002, "%d of %d samples inside" % [inside, total])
 
 func _test_hail_rider(sm: SavariManager) -> void:
 	var it: PassengerArchetype = null

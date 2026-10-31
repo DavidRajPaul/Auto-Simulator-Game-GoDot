@@ -13,6 +13,8 @@ const ROAD_Y: float = 0.06
 const SIDEWALK_Y: float = 0.08
 const SIDEWALK_W: float = 2.5
 const SURFACE_CELL_M: float = 1.0
+## Building-footprint mask cell (finer than the height grid: walkers pass walls within a metre).
+const BLOCK_CELL_M: float = 0.5
 ## Real-size, grounded scooter for every parked two-wheeler. The traffic two_wheeler.glb is a
 ## 1 m box centred on its origin (fitted at runtime by TrafficModelFit); placed raw it sank.
 const PARKED_SCOOTER: String = "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb"
@@ -112,6 +114,9 @@ var _finished: Array[Array] = [] # [key, node]
 ## / park / beach layers, GROUND_VISUAL_Y elsewhere) so people stand ON what is drawn: ~70 % of
 ## kerb-side spots have no osm2streets sidewalk, and a fixed SIDEWALK_Y floated them 23 cm.
 var _heights: Dictionary = {} # Vector2i -> PackedFloat32Array
+## Building footprints per loaded chunk (BLOCK_CELL_M grid, 1 = inside a building), so people
+## never walk through walls (Oct 31 device test: a woman walked along the kerb line inside a shop).
+var _blocked: Dictionary = {} # Vector2i -> PackedByteArray
 ## Area triangles (park, beach) bucketed by chunk, filled once by _build_areas before streaming
 ## starts; worker threads only read it. Vector2i -> PackedVector3Array (3 vertices per triangle).
 var _area_tris: Dictionary = {}
@@ -151,6 +156,7 @@ func _ready() -> void:
 	_build_ground()
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
+	SignalBus.walkable_provider = is_walkable
 	SignalBus.ground_snap_requested.connect(request_ground_snap)
 	_build_landmarks()
 	_spawn_player()
@@ -201,6 +207,7 @@ func update_streaming(blocking: bool) -> void:
 			(loaded[k] as Node3D).queue_free()
 			loaded.erase(k)
 			_heights.erase(k)
+			_blocked.erase(k)
 
 func chunk_of(p: Vector3) -> Vector2i:
 	return Vector2i(floori(p.x / chunk_size), floori(p.z / chunk_size))
@@ -251,6 +258,9 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 	if node.has_meta("surface_heights"):
 		_heights[k] = node.get_meta("surface_heights")
 		node.remove_meta("surface_heights")
+	if node.has_meta("building_mask"):
+		_blocked[k] = node.get_meta("building_mask")
+		node.remove_meta("building_mask")
 	# Construct parking visuals/collision on the main thread; GLBs are cached by Godot.
 	if dressing_enabled:
 		RoadsideParking.populate(node, world_dir, k, surface_height, _stand_parking_spots())
@@ -351,6 +361,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		root.set_meta("surface_heights", _surface_heights(k, data["surf"] as Dictionary))
 	elif data.has("roads"):
 		mesh = _road_mesh(data["roads"] as Array)
+	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array))
 	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Roads"
@@ -1026,6 +1037,53 @@ func _bucket_area_triangle(a: Vector3, b: Vector3, c: Vector3) -> void:
 
 ## Height of the drawn ground at (x, z): walk 0.08, road 0.06, junction 0.05, park/beach, or the
 ## bare ground plane. Unloaded chunks return `fallback`.
+## False inside a building footprint. Unloaded chunks count as walkable (nothing drawn there).
+func is_walkable(x: float, z: float) -> bool:
+	var k: Vector2i = Vector2i(floori(x / chunk_size), floori(z / chunk_size))
+	if not _blocked.has(k):
+		return true
+	var mask: PackedByteArray = _blocked[k]
+	var n: int = int(ceil(chunk_size / BLOCK_CELL_M))
+	var ci: int = clampi(int((x - float(k.x) * chunk_size) / BLOCK_CELL_M), 0, n - 1)
+	var cj: int = clampi(int((z - float(k.y) * chunk_size) / BLOCK_CELL_M), 0, n - 1)
+	return mask[cj * n + ci] == 0
+
+## Worker-thread raster of this chunk's building footprints (same polygons as the walls).
+func _building_mask(k: Vector2i, blds: Array) -> PackedByteArray:
+	var n: int = int(ceil(chunk_size / BLOCK_CELL_M))
+	var mask: PackedByteArray = PackedByteArray()
+	mask.resize(n * n)
+	mask.fill(0)
+	var origin: Vector2 = Vector2(float(k.x), float(k.y)) * chunk_size
+	for b: Variant in blds:
+		var flat: Array = (b as Dictionary)["p"]
+		var pts: PackedVector2Array = PackedVector2Array()
+		for i: int in range(0, flat.size(), 2):
+			pts.append(Vector2(float(flat[i]), float(flat[i + 1])))
+		if pts.size() < 3:
+			continue
+		var idx: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
+		for t: int in range(0, idx.size(), 3):
+			_mask_triangle(mask, n, origin, pts[idx[t]], pts[idx[t + 1]], pts[idx[t + 2]])
+	return mask
+
+func _mask_triangle(mask: PackedByteArray, n: int, origin: Vector2, a: Vector2, b: Vector2, c: Vector2) -> void:
+	var area: float = (b - a).cross(c - a)
+	if absf(area) < 1e-6:
+		return
+	var i0: int = maxi(0, floori((minf(a.x, minf(b.x, c.x)) - origin.x) / BLOCK_CELL_M))
+	var i1: int = mini(n - 1, floori((maxf(a.x, maxf(b.x, c.x)) - origin.x) / BLOCK_CELL_M))
+	var j0: int = maxi(0, floori((minf(a.y, minf(b.y, c.y)) - origin.y) / BLOCK_CELL_M))
+	var j1: int = mini(n - 1, floori((maxf(a.y, maxf(b.y, c.y)) - origin.y) / BLOCK_CELL_M))
+	for j: int in range(j0, j1 + 1):
+		for i: int in range(i0, i1 + 1):
+			var p: Vector2 = origin + Vector2((float(i) + 0.5) * BLOCK_CELL_M, (float(j) + 0.5) * BLOCK_CELL_M)
+			var w0: float = (b - p).cross(c - p) / area
+			var w1: float = (c - p).cross(a - p) / area
+			if w0 < -0.02 or w1 < -0.02 or w0 + w1 > 1.02:
+				continue
+			mask[j * n + i] = 1
+
 func surface_height(x: float, z: float, fallback: float = SIDEWALK_Y) -> float:
 	var k: Vector2i = Vector2i(floori(x / chunk_size), floori(z / chunk_size))
 	if not _heights.has(k):

@@ -31,6 +31,9 @@ const ANIMATE_M: float = 55.0
 const SHADOW_COUNT: int = 2
 const SHADOW_M: float = 23.0
 const KERB_GAP_M: float = 1.2
+## Closest a walker comes to the carriageway when a building leaves no pavement.
+const ROAD_EDGE_M: float = 0.35
+const BODY_M: float = 0.35
 const IDLE_JUNCTION_CLEAR_M: float = 14.0
 const KERB_SPREAD_M: float = 0.9
 const WALK_Y: float = 0.08
@@ -197,7 +200,7 @@ func _spawn(w: Walker) -> bool:
 		return false
 	var target: Array[Vector3] = _target(w)
 	# The kerb line of one street can fall on another street's carriageway near junctions.
-	if not _on_pavement(target[0]):
+	if not _on_pavement(target[0]) or not SignalBus.walkable(target[0].x, target[0].z):
 		return false
 	w.pos = target[0]
 	# Snap only on spawn, while hidden; thereafter follow ground smoothly.
@@ -242,14 +245,26 @@ func _deactivate(w: Walker) -> void:
 		w.anim.active = false
 
 ## Kerb-side point and travel direction for the walker's spot on its edge.
+## Kerb-side point and travel direction for the walker's spot on its edge. The walker keeps to
+## its own kerb distance where it is clear, else the widest strip between the road edge and the
+## nearest wall (Oct 31 device test: people walked through shopfronts where buildings stand
+## closer to the road than the kerb line).
 func _target(w: Walker) -> Array[Vector3]:
 	var pd: Array[Vector3] = graph.sample(w.edge, w.s, w.dir)
 	var e: RoadGraph.Edge = graph.edges[w.edge]
 	var left: Vector3 = Vector3(pd[1].z, 0.0, -pd[1].x)
-	var off: float = e.width * 0.5 + w.kerb
-	var p: Vector3 = pd[0] + left * off * w.side
+	var edge_off: float = e.width * 0.5
+	var off: float = edge_off + w.kerb
+	while off > edge_off + ROAD_EDGE_M and not _clear(pd[0] + left * off * w.side, left * w.side):
+		off -= 0.25
+	var p: Vector3 = pd[0] + left * maxf(off, edge_off + ROAD_EDGE_M) * w.side
 	p.y = WALK_Y
 	return [p, pd[1]]
+
+## A person (BODY_M radius) fits at `p`: the spot and a body's width toward the wall are free.
+func _clear(p: Vector3, out: Vector3) -> bool:
+	var q: Vector3 = p + out * BODY_M
+	return SignalBus.walkable(p.x, p.z) and SignalBus.walkable(q.x, q.z)
 
 func _step(w: Walker, delta: float) -> void:
 	_check_startle(w, delta)
@@ -259,7 +274,9 @@ func _step(w: Walker, delta: float) -> void:
 	if w.startle > 0.0:
 		# Stopped and stepping back from the road for a moment.
 		w.startle -= delta
-		w.pos += w.dodge * delta
+		var step: Vector3 = w.pos + w.dodge * delta
+		if SignalBus.walkable(step.x, step.z):
+			w.pos = step
 		if w.startle <= 0.0 and w.anim != null:
 			w.anim.play("walk")
 			w.anim.speed_scale = w.pace / float(_native_pace.get(w.id, 1.2))
