@@ -16,6 +16,65 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 ---
 
+## 🚨 Launch command centre — 31 October to 14 November 2026
+
+> **Priority override:** This section is the authoritative, current launch order. Older roadmap items further below are historical plans, **not** commitments for this two-week release. **Goal: a stable Android release candidate and Play testing/submission by 14 November**, not a guaranteed public production launch. No new missions, maps or vehicles until P0 issues are resolved.
+
+**Current gate: NOT STORE READY.** User-supplied Android gameplay screenshots on 31 October confirmed a visible Mylapore workshop and usable repair/upgrades/paint menus, but also a nearly black tutorial overlay, a replacement-looking auto after blue paint, an apparently missing driver, floating vehicle/pedestrian visuals, and unclear "80 m" guidance text. Passing headless tests does not mean these visuals are accepted.
+
+### Verified progress and current PRs
+
+- [x] Existing playable driving, Chennai OSM/chunk map, Savari loop, fare settlement, route display, local saves, money/progression, tutorial framework and Android APK/AAB CI are implemented in code. **Real-device end-to-end release acceptance remains outstanding.**
+- [x] PR #43 merged: map Drop Pin and dynamic reroute logic; original configured Chennai bounding box restored, but **baked world/road data boundary still needs verification**.
+- [x] PR #44 merged: vehicle upgrade-speed configuration and physics baseline assertions; **real speed measurements remain outstanding**.
+- [x] PR #45 merged: new Mylapore workshop GLB loaded at garage service point, initial shell collision geometry and regression tests. Mylapore workshop visually confirmed in user screenshots; garage entrance, surrounding empty space and collision placement not yet approved.
+- [x] PR #46 merged: garage markers on mini-map, mini-map tap to full map, garage tap destination and Set Route integration. **Touch navigation on the user's installed APK needs explicit testing**.
+- [ ] PR #47 **OPEN**, CI passed on its head at time of this audit: reduce tutorial spotlight opacity and prevent paint selection from switching the imported auto to different procedural geometry. **Do not mark resolved until merged and tested on Android.** Non-yellow paint remains visually unsupported on the imported textured body; color selection is saved but genuine model recoloring is not implemented.
+- [x] Existing garage tabs show repair price, engine/suspension/tyres, horn, paint and vehicle selection; screenshots confirm UI works. Improvements and comprehensive payment/save tests remain.
+
+### Critical-first release backlog
+
+| Order | Priority | Work and acceptance criterion | Status |
+|---|---|---|---|
+| 1 | **P0 BLOCKER** | Merge/test PR #47: first-ride tutorial cannot obscure the road/auto; blue paint must **never change chassis/wheels**. Retest all colors and reloading existing save. | [ ] CI green; manual acceptance pending |
+| 2 | **P0 BLOCKER** | **Auto visual integrity:** implement material-separated or paint-mask recoloring of original `player_auto.glb`, never fallback to an unrelated body. Validate stock/blue/black side-by-side screenshots, correct wheels and roof. Disable misleading purchase options until visually supported. | [ ] |
+| 3 | **P0 BLOCKER** | **Hero and ground contact:** confirm seated hero exists/loads during driving, hides appropriately on foot, and enters/exits without duplicate models. Fix auto wheel contact and pedestrian foot-to-pavement placement for slopes/LOD and verify from 3 camera angles. | [ ] |
+| 4 | **P0 BLOCKER** | **First 10-minute player journey:** tutorial start/skip, kick-start, steering, braking, hail, pickup, fare, GPS, drop-off, cash, app relaunch, save/restore; no black screen, softlock, crash or broken touch target. | [ ] |
+| 5 | **P0 BLOCKER** | **Garage/economy:** Mylapore bay entry without off-side prompt or invisible wall, upgrades apply to the actual auto, repaired condition remains persistent, insufficient money doesn't charge, painted model persists. | [ ] |
+| 6 | **P0 BLOCKER** | **Release engineering:** green merged-main CI, signed release AAB with stable package/version and correct target API, install/upgrade test, audited permissions and asset licenses, store policy/privacy/data safety declarations. | [ ] |
+| 7 | **P0 BLOCKER** | **Real Android QA:** full 20–30-minute run on at least a low/mid-range Android phone; benchmark FPS, draw calls, RAM, heat, crashes and map holes. Preserve 150-draw-call and 85 MB AAB budgets; no severe prolonged stalls. | [ ] |
+| 8 | **P1 MUST IF TIME** | Garage G marker map navigation on device, valid arrival marker; fix tap/pan conflict. Label ambiguous "80 m" as next turn/pickup/garage distance depending on active guidance. | [ ] |
+| 9 | **P1 MUST IF TIME** | Improve workshop orientation, visible parking-bay geometry, collision clearance, nearby empty spaces and garage menu preview; verify no roadside overlap. | [ ] |
+| 10 | **P1 MUST IF TIME** | Fix major floating/overlapping traffic, NPC following deadlocks, map obstacles and unusable turn instructions encountered during the smoke test. | [ ] |
+| 11 | **P2 DEFER** | Additional auto chassis, cinematic garage interior, extra workshop variants, story missions, expanded Chennai, extra landmarks (including previously removed Ripon/Central), deep customization, new gearbox/brake tiers, LiveOps. | [ ] Deferred until after first stable launch |
+
+**Definition of launch blocker:** Any reproducible gameplay corruption, invisible/impossible navigation, unreadable tutorial, missing player model, bad vehicle identity, loss of currency/save, crash/ANR, Play policy/asset license problem or noninstallable AAB. No fake green checkmarks: each closure needs a build SHA, screenshot/video and reproduction/pass result.
+
+### 14-day execution schedule (scope freeze)
+
+| Dates (IST) | Delivery focus | Exit gate |
+|---|---|---|
+| **Oct 31 – Nov 2** | Merge PR #47 after device verification; lock auto mesh; resolve tutorial darkness and paint-model swap; investigate driver/ground contact; make screenshots baseline. | P0 regressions reproduced and assigned, no chassis swap |
+| **Nov 3–5** | True recolor approach or hide broken color purchases; seated driver and ground contact fixes; camera/road/footpath acceptance; regression tests. | Player/auto look correct at all tested angles |
+| **Nov 6–8** | Complete uninterrupted first ride, garage repairs/upgrades/save, route-to-garage flow; fix UI blockers and main-road collision issues. | One complete player loop on device with no blocking errors |
+| **Nov 9–11** | Freeze new features; low-end Android 30-minute test, crash/performance correction, build size, signed release pipeline, policy/privacy/licensing and store assets. | Play-ready signed AAB + smoke-test evidence |
+| **Nov 12–14** | Final integration and release candidate; Play internal/closed-test upload where eligible; submission or production-access application if account qualifies. | Tagged release candidate and documented Play Console state |
+
+**Google Play reality:** New personal developer accounts created after 13 November 2023 generally need **at least 12 opted-in closed testers continuously for 14 days before applying for production access**. Google can also take additional time to review production access and app submissions. Therefore a **public Play Store release by 14 November cannot be guaranteed** if the required testing has not already started or production access is not yet approved. Source: [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465); [Google Play review timing](https://support.google.com/googleplay/android-developer/answer/9859654). Start Play Console setup/testing track work **now**, in parallel with fixes; do not defer it to the final day.
+
+### Owner tasks — start immediately
+
+- [ ] Confirm Play Console access, account type and whether production access is already granted; if closed testing is required, enroll at least 12 engaged testers **as soon as a compliant test build is available**.
+- [ ] Download latest merged-main debug APK and attach screenshot/video after PR #47 lands: first tutorial, stock auto side/rear, painted auto side/rear, seated driver, pedestrians on sidewalk, garage entrance and map guidance.
+- [ ] Provide a 20–30 minute device run (model, Android version, FPS, heat/crash notes), plus whether another 3–4 GB RAM test phone is available.
+- [ ] Prepare Play listing, screenshots, icon, privacy-policy URL, declarations and signing credentials **privately in GitHub secrets**, never in PR text/chat. Verify the model/texture redistribution rights for every imported asset.
+
+### Release cut line
+
+**Ship only**: one trustworthy player auto with authentic silhouette and consistent paint behavior, one usable physical garage, passenger-earning loop, GPS/garage wayfinding, stable save/upgrade purchases, tutorial, device-performance acceptance and store compliance. **Do not block shipping on** additional autos, new stories, weather realism beyond stability, garage cinematic scenes or extra city extensions.
+
+---
+
 ## 📌 At a glance
 
 | | |
@@ -54,7 +113,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 - Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads.
 - OSM building footprints plus procedural infill (28,355 total in the latest density build) with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
 - EB poles with sagging wires, neem trees and palms, Greater Chennai Corporation street-name boards with real OSM names (Tamil + English), name boards on real named buildings.
-- Landmarks: procedural Marina lighthouse and gopuram, Chennai Central on the skyline, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
+- Landmarks: procedural Marina lighthouse and gopuram, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
 - Temple tanks and lakes use faceted low-poly water with solid concrete edge barriers; auto stands have parked autos, cars and two-wheelers.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
 - Mixed traffic (scooters with riders, cars, share autos, TNSTC/SETC buses, lorries, service vehicles) whose density follows the TomTom 2025 Chennai hourly profile; 14 animated pedestrians that walk the kerbs and jump out of the way.
@@ -63,12 +122,12 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 - Riders wave you down at 3 auto stands and on kerbs; 5 archetypes (IT commuter, T. Nagar silk shopper, Marina tourist, monsoon rider, college student).
 - 5-second haggle card: Correct Meter / Meter Mela / Fixed price, judged against the Chennai meter (₹35 + ₹18/km), your star rating, greed streak and demand.
 - Sat-nav ribbon in your lane with flowing chevrons, turn-by-turn banner with real street names, heading-up mini-map, full-screen OSM map (pan, pinch, POIs).
-- Mini-map service pins identify LPG bunks and EV kiosks; fuel stations show parked vehicles and pump islands.
+- Mini-map service pins identify LPG bunks, EV kiosks and garages; fuel stations show parked vehicles and pump islands.
 - Tea-cup comfort meter, Gap-la Gethu near-miss bonus, ride timer, fare breakdown with tips, Respect XP and rolling star rating.
 
 **Career and progression**
 - Wallet, LPG (₹62/L at 4 bunks) or EV charge (₹12/kWh at 3 kiosks), condition and repair, ₹150 tow when you run dry.
-- Garage at every stand: repair, engine/suspension/tyre upgrades, horns, paints (Alangaram), 3 autos (Singara Classic, Madras King Deluxe ₹1,000, Namma Green EV ₹3,000).
+- Garage service points at Mylapore, Marina and T. Nagar (physical workshop GLB currently at Mylapore): repair, engine/suspension/tyre upgrades, horns, paints (Alangaram), 3 autos (Singara Classic, Madras King Deluxe ₹1,000, Namma Green EV ₹3,000).
 - Shift clock 6 AM → 10 PM in 18 real minutes, end-of-day summary, 3 shift goals per day.
 - Driver Level 1–20 with stand titles (Puthu Driver → Madras Legend), ₹50 × level bonuses, cosmetic unlocks.
 - Rewards engine: idempotent ledger, daily caps, 7-day login calendar, 11 achievements (Play Games ids ready), rewarded 2× fare / half tank / free tow.
@@ -256,13 +315,13 @@ All shipped art and sound is in [`assets/`](assets/), one folder per kind. The f
 | `assets/models/vehicles/` | Player auto (stock yellow) | rSquare (Sketchfab) | CC BY 4.0 |
 | `assets/models/traffic/` | Scooter, hatchback, share auto, TNSTC/SETC buses, lorry, cows, 6 service vehicles | Shiveloper, Kenney, rSquare, Nobel Tech, Oren garage, Quaternius, Fadly.W, Comrade1280 | CC BY 4.0, CC0 |
 | `assets/models/people/` | 9 walking Chennai characters (veshti, sarees, churidar, pavadai…), 2 police | Sketchfab CC BY authors | CC BY 4.0 |
-| `assets/models/city/` | Chennai Central, water tower, canal settlement, gas station | Sketchfab CC BY authors | CC BY 4.0 |
+| `assets/models/city/` | Mylapore garage workshop, water tower, canal settlement, gas station | Sketchfab CC BY authors | CC BY 4.0 |
 | `assets/fx/` | Sparks, smoke, dust, puffs | Kenney particle packs | CC0 |
 | `assets/textures/` | Chennai facade atlas + night glow | generated (`tools/art`) | ours |
 | `assets/ui/`, `assets/icon/` | Controls, HUD dials, rewards, portraits, logo, loading art, app icon, splash | Google Stitch art for this project | ours |
 | `assets/fonts/` | Bricolage Grotesque, Rubik, Noto Sans Tamil, Baloo Thambi 2 | Google Fonts | SIL OFL 1.1 |
 
-Also procedural (no files): the custom-paint auto body, roads and buildings from OSM, lighthouse and gopuram, scooter riders, menu skyline, rain shader, synth fallback sounds.
+Also procedural (no files): the legacy alternate auto body (not suitable as a paint replacement), roads and buildings from OSM, lighthouse and gopuram, scooter riders, menu skyline, rain shader, synth fallback sounds.
 
 ---
 
@@ -312,9 +371,9 @@ Other workflows (manual): **OSM Import** (re-fetch OSM, rebuild `data/world`), *
 
 ---
 
-## 🚦 Verified implementation ledger — 29 October 2026
+## 🚦 Historical implementation ledger — 29 October 2026 (superseded by launch command centre)
 
-**Legend:** [x] merged into `main` / implemented in code; [ ] still requires work or acceptance. A checked box **does not** mean a successful manual Android playtest. **All PRs #13–#30 are merged** as of this audit; the latest merged-`main` Android workflow was still running when this README was updated. [Android CI](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml).
+**Historical snapshot only — see the launch command centre above for current priorities.** **Legend:** [x] merged into `main` / implemented in code; [ ] still requires work or acceptance. A checked box **does not** mean a successful manual Android playtest. **All PRs #13–#30 are merged** as of this audit; the latest merged-`main` Android workflow was still running when this README was updated. [Android CI](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml).
 
 ### Implemented in the repository
 
