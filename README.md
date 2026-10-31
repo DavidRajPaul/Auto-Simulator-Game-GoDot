@@ -33,7 +33,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 | Rank | Priority | Deliverable | Acceptance gate |
 |---|---|---|---|
-| **1** | **P0 — Stability** | Fix new regressions after #49–#51: tutorial darkness, driver visibility/exit/re-entry, grounded traffic and pedestrians, original-auto paint, Android CI. | Clean main CI; screenshots of cockpit/chase/on-foot; no obvious clipping/floating or chassis swapping. |
+| **1** | **P0 — Stability** | Fix new regressions after #49–#51: tutorial darkness, seated hero driver (no exit/re-entry in release 1), grounded traffic and pedestrians, original-auto paint, Android CI. | Clean main CI; screenshots of cockpit/chase/top-down; no obvious clipping/floating or chassis swapping. |
 | **2** | **P0 — Core playable journey** | Tutorial → first savari pickup → bargaining → GPS → drop-off → fare → save/relaunch; garage entry/repairs/upgrades/paint and money persistence. | One uninterrupted 10–15-minute phone run without softlock, broken taps, lost progress or inconsistent vehicle identity. |
 | **3** | **P0 — Chennai Street Life / density** | Fill believable kerbs and commercial frontages: parked scooters/bikes/cars/autos, MTC buses, tea kadai customers, shop vendors, bus-stop queues, visible street commerce, pedestrian clusters and appropriate moving traffic. | Mylapore benchmark route looks occupied during day/evening without trapping the player or blocking intersections and driveways. |
 | **4** | **P0 — District authenticity** | Different density/style presets for Mylapore, Triplicane, T. Nagar, Marina, commercial corridors and residential roads. Use OSM roads/building footprints, land-use/POIs and deterministic seeded placement; keep landmarks at correct sites. | Five blind local playtesters can distinguish test neighbourhoods from in-game views; collect feedback and fix major misses. |
@@ -51,6 +51,16 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 5. **Optimize and validate:** mobile LOD, MultiMesh/culling, deterministic regression maps, no roads overlapped by buildings or parked vehicles; capture FPS, draw calls, RAM, collisions and player route completion.
 
 **Proposed test densities are tuning hypotheses, not real Chennai measured counts.** Start with one Mylapore benchmark zone, profile on a 3–4 GB Android phone, then scale to other neighbourhoods. Prioritise visual richness without harming playability.
+
+### Test devices and benchmark route (owner, 31 Oct)
+
+- **Devices:** OnePlus Pad (primary), Moto G40 (budget check).
+- **Benchmark route:** Kapaleeshwarar temple tank → Luz Corner → R.K. Mutt Road. Before/after screenshots and density tuning for street life (ranks 3–5) are taken on this route first.
+- **Budget rule:** the ≤ 18 limit counts **moving pooled AI vehicles** only; parked vehicles and static street props are batched (MultiMesh) and budgeted by draw calls instead.
+
+### Deferred to release 2 (decided, not in the first release)
+
+- **On-foot hero mode** — getting out of the auto, walking/running/jumping around the city, parked-auto marker on the maps, re-entering. Removed from release 1 on 31 Oct (owner decision): the hero stays seated at the handlebar. The previous implementation (`scripts/hero/HeroFreeRoam.gd`, `SignalBus.on_foot_changed` / `parked_auto_position_changed`, map "Parked Auto" pins) is in git history before the removal commit and can be restored as a starting point. The animated `assets/models/hero/namma_auto_hero.glb` (walk / run / jump / fall / wave clips) is kept for it; it needs collapsing from 33 mesh parts (= 33 draw calls) before it can walk the streets.
 
 ### Revised release sequence
 
@@ -119,7 +129,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 - Shift clock 6 AM → 10 PM in 18 real minutes, end-of-day summary, 3 shift goals per day.
 - Driver Level 1–20 with stand titles (Puthu Driver → Madras Legend), ₹50 × level bonuses, cosmetic unlocks.
 - Rewards engine: idempotent ledger, daily caps, 7-day login calendar, 11 achievements (Play Games ids ready), rewarded 2× fare / half tank / free tow.
-- **First-ride tutorial** with Murugan Anna of the Mylapore stand: kick-start → pull out → stop line → indicate → honk → pick up → haggle → GPS → drop off (+₹100) → free roam. Skip, replay and resume per step. "Coach mode" UI: a compact strip in the top HUD row (short task, progress dots, SKIP), a speech bubble over the left kerb that folds away after 6 s, and a ring + bouncing arrow + TAP/HOLD chip on the control. No screen dimming; taught at 8:00 AM daylight.
+- **First-ride tutorial** with Murugan Anna of the Mylapore stand: kick-start → pull out → stop line → indicate → honk → pick up → haggle → GPS → drop off (+₹100) → free roam. Skip, replay and resume per step. "Coach mode" UI: a compact strip in the top HUD row (short task, progress dots, SKIP), a speech bubble over the left kerb that folds away after 6 s, and a ring + bouncing arrow + TAP/HOLD chip on the control. No screen dimming; taught from 7:00 AM daylight.
 
 **Shell**
 - Live splash → main menu (Continue / New career / Settings / Credits / Daily reward / Achievements) → threaded loading screen with tips.

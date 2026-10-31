@@ -18,6 +18,13 @@ const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
 const PAINT_SHADER: String = "res://shaders/auto_paint.gdshader"
 const PAINT_MASK: String = "res://assets/models/vehicles/player_auto_paint_mask.png"
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
+## The driver is the owner's hero (namma_auto_hero.glb) baked once into a static seated pose by
+## tools/assets/bake_seated_hero.py: one mesh, one material (the animated file is 33 parts =
+## 33 draw calls). Origin = his hip joint, so DRIVER_HIP is the hip point on the front bench.
+## PersonMesh's procedural driver is only the fallback if the baked file is missing.
+## First release: the driver never leaves the auto (on-foot mode is planned for a later release).
+const DRIVER_MODEL: String = "res://assets/models/hero/namma_auto_hero_seated.glb"
+const DRIVER_HIP: Vector3 = Vector3(0.0, GROUND_Y + 0.80, -0.20)
 const DRIVER_SEAT: Vector3 = Vector3(0.0, GROUND_Y + 0.66, -0.36)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
@@ -26,7 +33,7 @@ const DRIVER_SEAT: Vector3 = Vector3(0.0, GROUND_Y + 0.66, -0.36)
 @export var chrome: Color = Color(0.82, 0.83, 0.86)
 
 var body_mesh: MeshInstance3D
-var driver: MeshInstance3D
+var driver: Node3D
 var real_body: Node3D
 var uses_real_model: bool = false
 ## The repaint material on the textured body surface (null until the real model loads).
@@ -75,11 +82,30 @@ func build() -> void:
 	add_child(body_mesh)
 	_attach_real_model()
 	if driver == null:
-		driver = MeshInstance3D.new()
-		driver.name = "Driver"
-		driver.mesh = PersonMesh.seated_auto_driver(0)
-		driver.position = DRIVER_SEAT
+		driver = _make_driver()
 		add_child(driver)
+
+func _make_driver() -> Node3D:
+	var holder: Node3D = Node3D.new()
+	holder.name = "Driver"
+	var scene: PackedScene = load(DRIVER_MODEL) as PackedScene if ResourceLoader.exists(DRIVER_MODEL) else null
+	if scene != null:
+		var hero: Node3D = scene.instantiate() as Node3D
+		hero.name = "Hero"
+		hero.rotation.y = PI # baked facing +Z like every glTF; the auto drives along -Z
+		holder.add_child(hero)
+		holder.position = DRIVER_HIP
+		holder.set_meta("hero", true)
+	else:
+		var fallback: MeshInstance3D = MeshInstance3D.new()
+		fallback.mesh = PersonMesh.seated_auto_driver(0)
+		holder.add_child(fallback)
+		holder.position = DRIVER_SEAT
+	return holder
+
+## True when the seated driver is the owner's hero model (not the procedural fallback).
+func driver_is_hero() -> bool:
+	return driver != null and driver.has_meta("hero")
 
 ## Stock Chennai yellow (Singara Classic, King Deluxe) with a dark canopy.
 func is_stock_yellow() -> bool:
