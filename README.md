@@ -16,64 +16,32 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 ---
 
-## 🚨 Launch command centre — 31 October to 14 November 2026
+## 🚨 Launch command centre — revised January 2027 target
 
-> **Priority override:** This section is the authoritative, current launch order. Older roadmap items further below are historical plans, **not** commitments for this two-week release. **Goal: a stable Android release candidate and Play testing/submission by 14 November**, not a guaranteed public production launch. No new missions, maps or vehicles until P0 issues are resolved.
+> **Updated 31 October 2026:** The planned release has moved from 14 November 2026 to **January 2027**. An exact January day is not yet committed. Prior October/November dates are superseded. The release remains gated by gameplay, real-device QA, asset licensing, Play Console eligibility and Android CI.
 
-**Current gate: NOT STORE READY.** User-supplied Android gameplay screenshots on 31 October confirmed a visible Mylapore workshop and usable repair/upgrades/paint menus, but also a nearly black tutorial overlay, a replacement-looking auto after blue paint, an apparently missing driver, floating vehicle/pedestrian visuals, and unclear "80 m" guidance text. Passing headless tests does not mean these visuals are accepted.
+**Current gate: NOT STORE READY.** Priority is to stabilize the tutorial, original auto mesh and paint, seated driver/ground contact, passenger loop and garage/save behavior before expanding content.
 
-### Verified progress and current PRs
+### P0 — must pass before release candidate
 
-- [x] Existing playable driving, Chennai OSM/chunk map, Savari loop, fare settlement, route display, local saves, money/progression, tutorial framework and Android APK/AAB CI are implemented in code. **Real-device end-to-end release acceptance remains outstanding.**
-- [x] PR #43 merged: map Drop Pin and dynamic reroute logic; original configured Chennai bounding box restored, but **baked world/road data boundary still needs verification**.
-- [x] PR #44 merged: vehicle upgrade-speed configuration and physics baseline assertions; **real speed measurements remain outstanding**.
-- [x] PR #45 merged: new Mylapore workshop GLB loaded at garage service point, initial shell collision geometry and regression tests. Mylapore workshop visually confirmed in user screenshots; garage entrance, surrounding empty space and collision placement not yet approved.
-- [x] PR #46 merged: garage markers on mini-map, mini-map tap to full map, garage tap destination and Set Route integration. **Touch navigation on the user's installed APK needs explicit testing**.
-- [ ] PR #47 **OPEN**, CI passed on its head at time of this audit: reduce tutorial spotlight opacity and prevent paint selection from switching the imported auto to different procedural geometry. **Do not mark resolved until merged and tested on Android.** Non-yellow paint remains visually unsupported on the imported textured body; color selection is saved but genuine model recoloring is not implemented.
-- [x] Existing garage tabs show repair price, engine/suspension/tyres, horn, paint and vehicle selection; screenshots confirm UI works. Improvements and comprehensive payment/save tests remain.
+- [ ] Merge and verify PR #49 (two-wheeler and police model corrections); check Android CI and visual asset lineup.
+- [x] PR #50 merged (original auto paint recolouring); [ ] Android acceptance screenshots and saved-paint reload.
+- [ ] PR #51 (seated driver and ground contact) to be reconciled, merged and verified on-device.
+- [ ] First 10-minute player journey: tutorial start/skip, kick-start, steering, pickup, bargaining, navigation, drop-off, payment, restart/save.
+- [ ] Garage/economy: vehicle preview and paints, entrance/parking bay, repair/upgrade effects, low balance, save consistency.
+- [ ] Real-device 20–30-minute performance and stability test on a 3–4 GB Android device, with FPS/heat/memory observations.
+- [ ] Production Android delivery: green merged-main CI, signed/versioned AAB, accurate permissions, privacy/data safety, asset-licence audit and store listing.
+- [ ] Google Play account eligibility and closed-testing requirements independently verified and started early.
 
-### Critical-first release backlog
+### Revised delivery sequence
 
-| Order | Priority | Work and acceptance criterion | Status |
-|---|---|---|---|
-| 1 | **P0 BLOCKER** | Merge/test PR #47: first-ride tutorial cannot obscure the road/auto; blue paint must **never change chassis/wheels**. Retest all colors and reloading existing save. | [ ] CI green; manual acceptance pending |
-| 2 | **P0 BLOCKER** | **Auto visual integrity:** implement material-separated or paint-mask recoloring of original `player_auto.glb`, never fallback to an unrelated body. Validate stock/blue/black side-by-side screenshots, correct wheels and roof. Disable misleading purchase options until visually supported. | [ ] |
-| 3 | **P0 BLOCKER** | **Hero and ground contact:** confirm seated hero exists/loads during driving, hides appropriately on foot, and enters/exits without duplicate models. Fix auto wheel contact and pedestrian foot-to-pavement placement for slopes/LOD and verify from 3 camera angles. | [ ] Code done: there was **no** driver while driving — a khaki-shirt seated driver now shows in chase/top-down, hides on foot and in cockpit; auto + traffic tyres sank 5.5–6 cm into the drawn road (now on it); 71 % of pedestrian spots had no sidewalk polygon so people floated 23 cm (now stand on the drawn ground via a per-chunk surface raster). Android acceptance pending |
-| 4 | **P0 BLOCKER** | **First 10-minute player journey:** tutorial start/skip, kick-start, steering, braking, hail, pickup, fare, GPS, drop-off, cash, app relaunch, save/restore; no black screen, softlock, crash or broken touch target. | [ ] |
-| 5 | **P0 BLOCKER** | **Garage/economy:** Mylapore bay entry without off-side prompt or invisible wall, upgrades apply to the actual auto, repaired condition remains persistent, insufficient money doesn't charge, painted model persists. | [ ] |
-| 6 | **P0 BLOCKER** | **Release engineering:** green merged-main CI, signed release AAB with stable package/version and correct target API, install/upgrade test, audited permissions and asset licenses, store policy/privacy/data safety declarations. | [ ] |
-| 7 | **P0 BLOCKER** | **Real Android QA:** full 20–30-minute run on at least a low/mid-range Android phone; benchmark FPS, draw calls, RAM, heat, crashes and map holes. Preserve 150-draw-call and 85 MB AAB budgets; no severe prolonged stalls. | [ ] |
-| 8 | **P1 MUST IF TIME** | Garage G marker map navigation on device, valid arrival marker; fix tap/pan conflict. Label ambiguous "80 m" as next turn/pickup/garage distance depending on active guidance. | [ ] |
-| 9 | **P1 MUST IF TIME** | Improve workshop orientation, visible parking-bay geometry, collision clearance, nearby empty spaces and garage menu preview; verify no roadside overlap. | [ ] |
-| 10 | **P1 MUST IF TIME** | Fix major floating/overlapping traffic, NPC following deadlocks, map obstacles and unusable turn instructions encountered during the smoke test. | [ ] |
-| 11 | **P2 DEFER** | Additional auto chassis, cinematic garage interior, extra workshop variants, story missions, expanded Chennai, extra landmarks (including previously removed Ripon/Central), deep customization, new gearbox/brake tiers, LiveOps. | [ ] Deferred until after first stable launch |
-
-**Definition of launch blocker:** Any reproducible gameplay corruption, invisible/impossible navigation, unreadable tutorial, missing player model, bad vehicle identity, loss of currency/save, crash/ANR, Play policy/asset license problem or noninstallable AAB. No fake green checkmarks: each closure needs a build SHA, screenshot/video and reproduction/pass result.
-
-### 14-day execution schedule (scope freeze)
-
-| Dates (IST) | Delivery focus | Exit gate |
+| Window | Focus | Exit gate |
 |---|---|---|
-| **Oct 31 – Nov 2** | Merge PR #47 after device verification; lock auto mesh; resolve tutorial darkness and paint-model swap; investigate driver/ground contact; make screenshots baseline. | P0 regressions reproduced and assigned, no chassis swap |
-| **Nov 3–5** | True recolor approach or hide broken color purchases; seated driver and ground contact fixes; camera/road/footpath acceptance; regression tests. | Player/auto look correct at all tested angles |
-| **Nov 6–8** | Complete uninterrupted first ride, garage repairs/upgrades/save, route-to-garage flow; fix UI blockers and main-road collision issues. | One complete player loop on device with no blocking errors |
-| **Nov 9–11** | Freeze new features; low-end Android 30-minute test, crash/performance correction, build size, signed release pipeline, policy/privacy/licensing and store assets. | Play-ready signed AAB + smoke-test evidence |
-| **Nov 12–14** | Final integration and release candidate; Play internal/closed-test upload where eligible; submission or production-access application if account qualifies. | Tagged release candidate and documented Play Console state |
+| **November 2026** | Integrate outstanding fixes, regression/screenshot verification, tutorial, driver, traffic-ground alignment, garage and first-ride bugs | Stable core gameplay and green CI |
+| **December 2026** | Device performance, QA across Android devices, crash fixes, content polish within frozen scope, licences and Play Console setup | Signed release candidate and ready test track |
+| **January 2027** | Closed-test feedback, store review/submission when eligible, controlled release | Production rollout only after platform and quality gates clear |
 
-**Google Play reality:** New personal developer accounts created after 13 November 2023 generally need **at least 12 opted-in closed testers continuously for 14 days before applying for production access**. Google can also take additional time to review production access and app submissions. Therefore a **public Play Store release by 14 November cannot be guaranteed** if the required testing has not already started or production access is not yet approved. Source: [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465); [Google Play review timing](https://support.google.com/googleplay/android-developer/answer/9859654). Start Play Console setup/testing track work **now**, in parallel with fixes; do not defer it to the final day.
-
-### Owner tasks — start immediately
-
-- [ ] Confirm Play Console access, account type and whether production access is already granted; if closed testing is required, enroll at least 12 engaged testers **as soon as a compliant test build is available**.
-- [ ] Download latest merged-main debug APK and attach screenshot/video after PR #47 lands: first tutorial, stock auto side/rear, painted auto side/rear, seated driver, pedestrians on sidewalk, garage entrance and map guidance.
-- [ ] Provide a 20–30 minute device run (model, Android version, FPS, heat/crash notes), plus whether another 3–4 GB RAM test phone is available.
-- [ ] Prepare Play listing, screenshots, icon, privacy-policy URL, declarations and signing credentials **privately in GitHub secrets**, never in PR text/chat. Verify the model/texture redistribution rights for every imported asset.
-
-### Release cut line
-
-**Ship only**: one trustworthy player auto with authentic silhouette and consistent paint behavior, one usable physical garage, passenger-earning loop, GPS/garage wayfinding, stable save/upgrade purchases, tutorial, device-performance acceptance and store compliance. **Do not block shipping on** additional autos, new stories, weather realism beyond stability, garage cinematic scenes or extra city extensions.
-
----
+**Scope freeze:** No new maps, story missions, vehicles or additional features until P0 acceptance. January is a target, not a promise of Play approval. New personal Google Play developer accounts may need at least 12 opted-in testers over 14 continuous days before production access; see [Google Play testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465).
 
 ## 📌 At a glance
 

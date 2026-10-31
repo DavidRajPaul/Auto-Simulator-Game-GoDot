@@ -71,20 +71,79 @@ func _test_people_assets() -> void:
 	_check("Every character is one mesh, one surface (one draw call)", ok_draw)
 	_check("Every character has walk + idle clips", ok_anims)
 
+## Every traffic two-wheeler variant is ONE bike at real size (not the pack's showroom grid), and
+## the police SUV keeps its own proportions (uniform fit) inside the traffic budget.
+func _test_two_wheeler_and_police_models() -> void:
+	var ok_load: bool = true
+	var ok_size: bool = true
+	var detail: String = ""
+	for v: Array in TrafficVehicleAI.TWO_WHEELER_VARIANTS:
+		var car: Node3D = Node3D.new()
+		add_child(car)
+		if not TrafficModelFit.attach(car, str(v[0]), v[1] as Vector3, v[2] as bool, v[3] as bool):
+			ok_load = false
+		else:
+			var b: AABB = _model_bounds(car)
+			detail += "%s %s; " % [str(v[0]).get_file(), str(b.size)]
+			# Length along -Z, standing on the road, narrower than a car, one vehicle long.
+			if b.size.z < 1.6 or b.size.z > 2.4 or b.size.x > 1.0 or b.size.y < 0.7 or b.size.y > 1.4 or absf(b.position.y) > 0.05:
+				ok_size = false
+		car.free()
+	_check("Every two-wheeler variant loads", ok_load)
+	_check("Two-wheelers are single bikes at real size (1.6–2.4 m long, < 1 m wide, on the road)", ok_size, detail)
+	var police: Array = []
+	for v: Array in TrafficVehicleAI.SERVICE_VARIANTS:
+		if str(v[0]).contains("police"):
+			police = v
+	var pcar: Node3D = Node3D.new()
+	add_child(pcar)
+	var fitted: bool = police.size() > 3 and bool(police[3]) and TrafficModelFit.attach(pcar, str(police[0]), police[1] as Vector3, true, true)
+	var pb: AABB = _model_bounds(pcar) if fitted else AABB()
+	pcar.free()
+	# Real SUV proportions: ~4.5 m long, height/length ~0.49 (was squashed to 0.36).
+	_check("Police SUV keeps real proportions (uniform fit, h/l > 0.42)", fitted and absf(pb.size.z - 4.5) < 0.1 and pb.size.y / pb.size.z > 0.42, str(pb.size))
+	var tris: int = 0
+	var scene: PackedScene = load(str(police[0])) as PackedScene if not police.is_empty() else null
+	if scene != null:
+		var inst: Node3D = scene.instantiate() as Node3D
+		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
+			var m: Mesh = (mi as MeshInstance3D).mesh
+			for s: int in m.get_surface_count():
+				tris += (m.surface_get_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		inst.free()
+	_check("Police SUV is inside the traffic triangle budget (<= 6000)", tris > 0 and tris <= 6000, "%d triangles" % tris)
+
+func _model_bounds(car: Node3D) -> AABB:
+	var out: AABB = AABB()
+	var first: bool = true
+	for mi: Node in car.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi as MeshInstance3D
+		var local: AABB = (car.global_transform.affine_inverse() * m.global_transform) * m.get_aabb()
+		out = local if first else out.merge(local)
+		first = false
+	return out
+
 func _test_landmark_kit() -> void:
 	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))
 	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
 	_check("Artist police car asset is present", ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_car.glb"))
-	_check("Low-poly two-wheeler pack is present", ResourceLoader.exists("res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb"))
+	# Built from parts so tools/assets/check_required_assets.py doesn't read it as a required file.
+	var raw_pack: String = "res://assets/models/traffic/two_wheeler_pack".path_join("two_wheeler_pack" + ".glb")
+	_check("Raw two-wheeler showroom pack is not shipped", not ResourceLoader.exists(raw_pack))
+	_test_two_wheeler_and_police_models()
 	_check("Maintenance vehicle pack is present", ResourceLoader.exists("res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb"))
 	var props_file: FileAccess = FileAccess.open("res://data/world/city_props.json", FileAccess.READ)
 	var props: Array = (JSON.parse_string(props_file.get_as_text()) as Dictionary).get("props", []) if props_file != null else []
 	var parked: int = 0
 	var maintenance: int = 0
+	var parked_single: bool = true
 	for p: Dictionary in props:
 		parked += 1 if bool(p.get("parked_two_wheeler", false)) else 0
+		if bool(p.get("parked_two_wheeler", false)):
+			parked_single = parked_single and absf(float(p.get("scale", 1.0)) - 1.0) < 0.001 and ResourceLoader.exists(str(p.get("asset", "")))
 		maintenance += 1 if bool(p.get("maintenance_display", false)) else 0
 	_check("Parked two-wheelers are distributed near businesses", parked >= 10, "%d placements" % parked)
+	_check("Parked two-wheelers are single real-size bikes (scale 1, file exists)", parked_single)
 	_check("Maintenance vehicles appear at service forecourts", maintenance >= 4, "%d displays" % maintenance)
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
@@ -130,42 +189,6 @@ func _test_audio_data() -> void:
 	_check("Madras King Deluxe runs on the diesel engine loop", king.engine_loop.ends_with("engine_diesel_loop.ogg") and ResourceLoader.exists(king.engine_loop))
 	var classic: VehicleStats = load("res://data/vehicles/Bajaj_RE_4S.tres") as VehicleStats
 	_check("Starter auto keeps the LPG putter", classic.engine_loop == "")
-
-func _test_surface_heights(world: WorldChunkStreamer) -> void:
-	var p: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
-	_check("Surface heights exist for the chunk under the player", world._heights.has(world.chunk_of(p)))
-	var seen: Dictionary = {}
-	var k: Vector2i = world.chunk_of(p)
-	var grid: PackedFloat32Array = world._heights.get(k, PackedFloat32Array())
-	for h: float in grid:
-		seen[snappedf(h, 0.001)] = true
-	_check("Surface raster has sidewalk, road and bare-ground cells", seen.has(0.08) and seen.has(0.06) and seen.has(snappedf(WorldChunkStreamer.GROUND_VISUAL_Y, 0.001)), str(seen.keys()))
-
-## The player's auto is never driverless: a seated driver shows while driving (chase camera),
-## hides on foot (the hero walks instead — never two of him) and in the cockpit view.
-func _test_seated_driver(city: Node) -> void:
-	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
-	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
-	_check("The player's auto has a seated driver", model.driver != null and model.driver.mesh != null)
-	SignalBus.camera_mode_changed.emit("Chase")
-	SignalBus.on_foot_changed.emit(false)
-	_check("Driver is visible while driving in the chase camera", model.driver.visible)
-	SignalBus.on_foot_changed.emit(true)
-	_check("Driver hides when the hero is on foot (no duplicate)", not model.driver.visible)
-	SignalBus.on_foot_changed.emit(false)
-	SignalBus.camera_mode_changed.emit("Cockpit")
-	_check("Driver hides in the cockpit view (camera is his eyes)", not model.driver.visible)
-	SignalBus.camera_mode_changed.emit("Chase")
-	_check("Driver returns in the chase camera", model.driver.visible)
-	# Tyres on the drawn asphalt (road is drawn 0.06 above the physics ground), not sunk into it.
-	var lo: float = 99.0
-	if model.real_body != null:
-		for n: Node in model.real_body.find_children("*", "MeshInstance3D", true, false):
-			var mi: MeshInstance3D = n as MeshInstance3D
-			for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array:
-				lo = minf(lo, (mi.global_transform * v).y)
-	var road: float = SignalBus.surface_height(auto.global_position.x, auto.global_position.z, WorldChunkStreamer.ROAD_Y)
-	_check("Auto tyres touch the drawn road surface (within 2 cm)", absf(lo - road) < 0.02 or (road < 0.0 and absf(lo - WorldChunkStreamer.ROAD_Y) < 0.02), "tyre %.3f, ground %.3f" % [lo, road])
 
 func _test_pedestrians(pm: PedestrianManager) -> void:
 	_check("Pedestrian pool built from the character set", pm.people.size() == PedestrianManager.POOL)
@@ -310,3 +333,41 @@ func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	else:
 		_failed += 1
 		printerr("  FAIL  ", test_name, ("  (" + detail + ")") if detail != "" else "")
+
+func _test_surface_heights(world: WorldChunkStreamer) -> void:
+	var p: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
+	_check("Surface heights exist for the chunk under the player", world._heights.has(world.chunk_of(p)))
+	var seen: Dictionary = {}
+	var k: Vector2i = world.chunk_of(p)
+	var grid: PackedFloat32Array = world._heights.get(k, PackedFloat32Array())
+	for h: float in grid:
+		seen[snappedf(h, 0.001)] = true
+	_check("Surface raster has sidewalk, road and bare-ground cells", seen.has(0.08) and seen.has(0.06) and seen.has(snappedf(WorldChunkStreamer.GROUND_VISUAL_Y, 0.001)), str(seen.keys()))
+
+## The player's auto is never driverless: a seated driver shows while driving (chase camera),
+## hides on foot (the hero walks instead — never two of him) and in the cockpit view.
+
+func _test_seated_driver(city: Node) -> void:
+	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
+	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
+	_check("The player's auto has a seated driver", model.driver != null and model.driver.mesh != null)
+	SignalBus.camera_mode_changed.emit("Chase")
+	SignalBus.on_foot_changed.emit(false)
+	_check("Driver is visible while driving in the chase camera", model.driver.visible)
+	SignalBus.on_foot_changed.emit(true)
+	_check("Driver hides when the hero is on foot (no duplicate)", not model.driver.visible)
+	SignalBus.on_foot_changed.emit(false)
+	SignalBus.camera_mode_changed.emit("Cockpit")
+	_check("Driver hides in the cockpit view (camera is his eyes)", not model.driver.visible)
+	SignalBus.camera_mode_changed.emit("Chase")
+	_check("Driver returns in the chase camera", model.driver.visible)
+	# Tyres on the drawn asphalt (road is drawn 0.06 above the physics ground), not sunk into it.
+	var lo: float = 99.0
+	if model.real_body != null:
+		for n: Node in model.real_body.find_children("*", "MeshInstance3D", true, false):
+			var mi: MeshInstance3D = n as MeshInstance3D
+			for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array:
+				lo = minf(lo, (mi.global_transform * v).y)
+	var road: float = SignalBus.surface_height(auto.global_position.x, auto.global_position.z, WorldChunkStreamer.ROAD_Y)
+	_check("Auto tyres touch the drawn road surface (within 2 cm)", absf(lo - road) < 0.02 or (road < 0.0 and absf(lo - WorldChunkStreamer.ROAD_Y) < 0.02), "tyre %.3f, ground %.3f" % [lo, road])
+

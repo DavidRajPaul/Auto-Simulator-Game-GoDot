@@ -22,12 +22,11 @@ const EMERGENCY_BRAKE_MPS2: float = 9.0
 ## after it (was: a snap from one road's lane offset to the next, a sideways jump of several
 ## metres on a right-angle turn, plus an instant change of heading).
 const TURN_BLEND_M: float = 7.0
-## The graph runs at y = 0 (physics ground) but asphalt is drawn at WorldChunkStreamer.ROAD_Y:
-## stand traffic on the drawn road so tyres don't sink 6 cm into it.
+## Align traffic to the drawn road surface.
 const ROAD_VISUAL_Y: float = 0.06
 ## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
-	"res://assets/models/traffic/two_wheeler_pack/two_wheeler_pack.glb",
+	"", # TWO_WHEELER picks from TWO_WHEELER_VARIANTS
 	"res://assets/models/traffic/hatchback.glb",
 	"res://assets/models/traffic/share_auto.glb",
 	"res://assets/models/traffic/bus_tnstc.glb",
@@ -41,11 +40,26 @@ const MODEL_FILES: Array[String] = [
 const SERVICE_VARIANTS: Array = [
 	["res://assets/models/traffic/svc_garbage_truck.glb", Vector3(2.4, 2.66, 7.2), 3],
 	["res://assets/models/traffic/svc_school_bus.glb", Vector3(2.6, 3.2, 9.5), 3],
-	["res://assets/models/traffic/police_car/svc_police_car.glb", Vector3(1.78, 1.67, 4.6), 3],
+	# Police SUV is baked at real size (2.1 x 2.19 x 4.5 m) and fitted uniformly so it is never
+	# squashed into a saloon box; the collision box ignores the mirrors.
+	["res://assets/models/traffic/police_car/svc_police_car.glb", Vector3(1.95, 2.19, 4.5), 3, true],
 	["res://assets/models/traffic/svc_tow_truck.glb", Vector3(2.19, 2.21, 6.4), 2],
 	["res://assets/models/traffic/svc_ambulance.glb", Vector3(2.2, 2.2, 5.9), 2],
 	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],
 ]
+## Two-wheelers: [file, fit box (w, h, l) m, flip, uniform, spawn weight, rider seat].
+## The Activa-style scooter is the everyday Chennai two-wheeler; the sport bikes come from the
+## SymetrikGames pack, split into single bikes by tools/assets/process_vehicle_packs.py (the raw
+## pack is one merged showroom grid and must never be fitted to a traffic box as a whole).
+## Each pool slot takes the next entry of the weighted cycle, so the mix stays stable.
+const TWO_WHEELER_VARIANTS: Array = [
+	["res://assets/models/traffic/two_wheeler.glb", Vector3(0.8, 1.0, 2.0), false, false, 5, Vector3(0.0, 0.72, 0.22)],
+	["res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
+	["res://assets/models/traffic/two_wheeler_pack/sport_bike_1.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
+	["res://assets/models/traffic/two_wheeler_pack/sport_bike_2.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
+	["res://assets/models/traffic/two_wheeler_pack/sport_bike_3.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
+]
+static var _two_wheeler_variant: int = 0
 ## Tamil Nadu buses: the green-and-yellow town bus and the white SETC coach.
 const BUS_FILES: Array[String] = [
 	"res://assets/models/traffic/bus_tnstc.glb",
@@ -96,6 +110,8 @@ var _shape: CollisionShape3D
 ## Footprint of what is shown now (SERVICE swaps it per variant).
 var body: Vector3 = Vector3.ONE
 var service_variant: int = -1
+## Where the seated rider goes (per two-wheeler model; share autos use the scooter seat).
+var rider_seat: Vector3 = RIDER_SEAT_POS
 var _service_models: Array[Node3D] = []
 
 # Junction curve (cubic Hermite from the old lane to the new lane).
@@ -135,7 +151,16 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		flip = BUS_FLIP
 		_bus_variant += 1
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
-	if TrafficModelFit.attach(self, model_path, fit_size, flip):
+	var uniform: bool = false
+	if kind == Archetype.TWO_WHEELER:
+		var tw: Array = two_wheeler_variant(_two_wheeler_variant)
+		_two_wheeler_variant += 1
+		model_path = str(tw[0])
+		fit_size = tw[1] as Vector3
+		flip = tw[2] as bool
+		uniform = tw[3] as bool
+		rider_seat = tw[5] as Vector3
+	if TrafficModelFit.attach(self, model_path, fit_size, flip, uniform):
 		_mesh.visible = false
 	# Autos should never look driverless.  Reuse the compact seated mesh used by
 	# scooters; its low-poly silhouette reads clearly through the open auto side.
@@ -144,7 +169,7 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	if kind == Archetype.SERVICE:
 		_mesh.visible = false
 		for v: Array in SERVICE_VARIANTS:
-			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true):
+			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true, v.size() > 3 and bool(v[3])):
 				var holder: Node3D = get_node("Model") as Node3D
 				holder.name = "Service_%s" % str(v[0]).get_file().get_basename()
 				holder.visible = false
@@ -181,8 +206,32 @@ func _add_rider() -> void:
 	rider.name = "Rider"
 	rider.mesh = PersonMesh.seated_rider(_rider_variant)
 	_rider_variant += 1
-	rider.position = RIDER_SEAT_POS
+	rider.position = rider_seat
 	add_child(rider)
+
+## The n-th entry of the weighted two-wheeler cycle (weights from TWO_WHEELER_VARIANTS).
+static func two_wheeler_variant(n: int) -> Array:
+	var total: int = 0
+	for v: Array in TWO_WHEELER_VARIANTS:
+		total += int(v[4])
+	var slot: int = posmod(n, total)
+	# Spread the rare entries through the cycle: scooter, bike, scooter, scooter, bike, ...
+	var order: Array[int] = []
+	var counts: Array[int] = []
+	for v: Array in TWO_WHEELER_VARIANTS:
+		counts.append(0)
+	for k: int in total:
+		var best: int = 0
+		var best_deficit: float = -INF
+		for i: int in TWO_WHEELER_VARIANTS.size():
+			var want: float = float(TWO_WHEELER_VARIANTS[i][4]) * float(k + 1) / float(total)
+			var deficit: float = want - float(counts[i])
+			if deficit > best_deficit:
+				best_deficit = deficit
+				best = i
+		counts[best] += 1
+		order.append(best)
+	return TWO_WHEELER_VARIANTS[order[slot]]
 
 func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	edge = edge_idx

@@ -182,10 +182,28 @@ func _test_live_vehicle_swap(auto: AutoRickshawController) -> void:
 	_check("New paint is saved in model color selection", model.paint.is_equal_approx(GameState.PAINTS[2]["body"]))
 	_check("Custom paint never swaps away the imported auto body", model.uses_real_model and model.real_body != null)
 	_check("Custom paint keeps procedural replacement body hidden", model.body_mesh != null and not model.body_mesh.visible)
+	var pm: ShaderMaterial = model.paint_material
+	_check("Custom paint recolours the imported body (paint-mask shader, same textures)", pm != null and pm.shader != null
+		and pm.get_shader_parameter("albedo_tex") != null and pm.get_shader_parameter("mask_tex") != null
+		and (pm.get_shader_parameter("body_colour") as Color).is_equal_approx(GameState.PAINTS[2]["body"])
+		and (pm.get_shader_parameter("canopy_colour") as Color).is_equal_approx(GameState.PAINTS[2]["canopy"]))
+	var tris_painted: int = _real_body_triangles(model)
 	GameState.reset_profile()
 	GameState.select_vehicle("singara_classic")
 	GameState.buy_paint(0)
 	await _physics(2)
+	_check("Stock yellow keeps the imported material (no repaint override)", model.paint_material == null and model.uses_real_model)
+	_check("Repaint never changes the auto's geometry (same triangle count)", tris_painted > 0 and tris_painted == _real_body_triangles(model), "%d vs %d" % [tris_painted, _real_body_triangles(model)])
+
+func _real_body_triangles(model: AutoRickshawModel) -> int:
+	var n: int = 0
+	if model.real_body == null:
+		return 0
+	for node: Node in model.real_body.find_children("*", "MeshInstance3D", true, false):
+		var m: Mesh = (node as MeshInstance3D).mesh
+		for s: int in m.get_surface_count():
+			n += (m.surface_get_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+	return n
 
 func _test_fuel_and_services(auto: AutoRickshawController, services: ServicePoints, ui: GarageUI) -> void:
 	_check("Service points loaded (LPG, EV, garages)", services.services.size() >= 9 and not services.nearest("lpg", Vector3.ZERO).is_empty() and not services.nearest("garage", Vector3.ZERO).is_empty())
