@@ -148,8 +148,9 @@ func _gui_input(event: InputEvent) -> void:
 			if _dragging_pin:
 				_select_point(t.position)
 				_dragging_pin = false
-			elif _press_at.has(t.index) and (t.position as Vector2).distance_to(_press_at[t.index] as Vector2) < 14.0 and _select_mode != 0:
-				_select_point(t.position)
+			elif _press_at.has(t.index) and (t.position as Vector2).distance_to(_press_at[t.index] as Vector2) < 14.0:
+				if not _select_garage_at(t.position) and _select_mode != 0:
+					_select_point(t.position)
 			_press_at.erase(t.index)
 			_touches.erase(t.index)
 		_pinch_d = _pinch_distance()
@@ -178,7 +179,7 @@ func _gui_input(event: InputEvent) -> void:
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_at(1.0 / 1.15, mb.position)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and not DisplayServer.is_touchscreen_available():
-			if not _tap_button(mb.position) and _select_mode != 0:
+			if not _tap_button(mb.position) and not _select_garage_at(mb.position) and _select_mode != 0:
 				_select_point(mb.position)
 		accept_event()
 	elif event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT and not DisplayServer.is_touchscreen_available():
@@ -211,6 +212,29 @@ func _tap_button(p: Vector2) -> bool:
 		queue_redraw()
 	else:
 		return false
+	return true
+
+## Select a service point directly instead of requiring the player to drop a pin
+## on the garage's tiny map symbol. The usual Set Route button starts navigation.
+func _select_garage_at(screen_point: Vector2) -> bool:
+	var nearest: Dictionary = {}
+	var best_distance: float = 30.0
+	for poi: Dictionary in _pois:
+		if str(poi.get("kind", "")) != "garage":
+			continue
+		var position: Vector2 = poi["pos"]
+		var distance: float = to_screen(position).distance_to(screen_point)
+		if distance < best_distance:
+			best_distance = distance
+			nearest = poi
+	if nearest.is_empty():
+		return false
+	var pos: Vector2 = nearest["pos"]
+	_custom_destination = Vector3(pos.x, 0.0, pos.y)
+	_has_custom_destination = true
+	_select_mode = 0
+	SignalBus.hint_requested.emit("%s selected — tap Set Route" % str(nearest["name"]), 3.0)
+	queue_redraw()
 	return true
 
 func _select_point(screen_point: Vector2) -> void:
