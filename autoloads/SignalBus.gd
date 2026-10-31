@@ -41,6 +41,10 @@ signal camera_shake(strength: float)
 var current_road_graph: RoadGraph = null
 ## Set by WorldChunkStreamer: (x, z, fallback) -> height of the drawn ground (walk/road/park/bare).
 var surface_height_provider: Callable = Callable()
+## Ask the world to stand a model on the drawn ground at its (x, z) once that chunk's surface
+## heights are known (now if loaded, else when the chunk streams in). Used by every static prop
+## and parked vehicle so nothing is buried in, or floats above, the road or kerb.
+signal ground_snap_requested(node: Node3D)
 
 ## Drawn-ground height at (x, z) so people and props stand on what is visible; `fallback` when
 ## no world streamer is running or the chunk isn't loaded.

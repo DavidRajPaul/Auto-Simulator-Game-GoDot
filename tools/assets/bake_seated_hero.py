@@ -60,10 +60,10 @@ def _descendants(g: Gltf, i: int) -> list[int]:
     return out
 
 
-def posed_world(g: Gltf) -> list[np.ndarray]:
+def posed_world(g: Gltf, pose: list | None = None) -> list[np.ndarray]:
     world = [m.copy() for m in g.rest_world()]
     by_name = {n.get("name"): i for i, n in enumerate(g.nodes)}
-    for bone, tip, target in POSE:
+    for bone, tip, target in (POSE if pose is None else pose):
         b, t = by_name[bone], by_name[tip]
         head = world[b][:3, 3].copy()
         cur = world[t][:3, 3] - head
@@ -118,16 +118,17 @@ def texture(g: Gltf) -> Image.Image:
     return Image.open(io.BytesIO(data)).convert("RGB")
 
 
-def main() -> int:
-    g = Gltf(SRC)
+def bake(src: Path, out_path: Path, pose: list, hip_bone: str, standing_m: float, budget: int) -> dict:
+    """Pose `src`'s rig, skin it into one textured mesh, origin at `hip_bone`, write `out_path`."""
+    g = Gltf(src)
     rest = g.rest_world()
     by_name = {n.get("name"): i for i, n in enumerate(g.nodes)}
     # Standing height from the rest skin -> metres.
     p_rest, _, _, _ = skin(g, rest)
-    scale = STANDING_HEIGHT_M / (p_rest[:, 1].max() - p_rest[:, 1].min())
-    world = posed_world(g)
+    scale = standing_m / (p_rest[:, 1].max() - p_rest[:, 1].min())
+    world = posed_world(g, pose)
     pos, nrm, uv, idx = skin(g, world)
-    hip = world[by_name["Hip"]][:3, 3]
+    hip = world[by_name[hip_bone]][:3, 3]
     pos = (pos - hip) * scale
     tex = texture(g)
     # trimesh stores glTF UVs with v flipped; give it its convention so the export round-trips.
@@ -137,15 +138,18 @@ def main() -> int:
                            visual=trimesh.visual.TextureVisuals(uv=uv_t, material=mat))
     TMP.parent.mkdir(parents=True, exist_ok=True)
     mesh.export(TMP)
-    subprocess.run(["node", str(ROOT / "tools" / "assets" / "seam_safe_simplify.mjs"), str(TMP), str(OUT), str(TRI_BUDGET)],
+    subprocess.run(["node", str(ROOT / "tools" / "assets" / "seam_safe_simplify.mjs"), str(TMP), str(out_path), str(budget)],
                    check=True)
     TMP.unlink()
-    out = trimesh.util.concatenate(trimesh.load(OUT, force="scene").dump())
+    out = trimesh.util.concatenate(trimesh.load(out_path, force="scene").dump())
     lo, hi = out.bounds
-    report = {"file": OUT.relative_to(ROOT).as_posix(), "triangles": int(len(out.faces)),
-              "bounds_min": np.round(lo, 3).tolist(), "bounds_max": np.round(hi, 3).tolist(),
-              "scale_from_file": round(float(scale), 4), "feet_below_hip_m": round(float(-lo[1]), 3)}
-    print(json.dumps(report, indent=2))
+    return {"file": out_path.relative_to(ROOT).as_posix(), "triangles": int(len(out.faces)),
+            "bounds_min": np.round(lo, 3).tolist(), "bounds_max": np.round(hi, 3).tolist(),
+            "scale_from_file": round(float(scale), 4), "feet_below_hip_m": round(float(-lo[1]), 3)}
+
+
+def main() -> int:
+    print(json.dumps(bake(SRC, OUT, POSE, "Hip", STANDING_HEIGHT_M, TRI_BUDGET), indent=2))
     return 0
 
 

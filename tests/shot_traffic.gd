@@ -41,9 +41,8 @@ func _ready() -> void:
 		TrafficModelFit.attach(car, it[0] as String, size, it[2] as bool, it[3] as bool)
 		var seat: Vector3 = it[4]
 		if seat != Vector3.ZERO and OS.get_environment("SHOT_RIDERS") != "0":
-			var rider: MeshInstance3D = MeshInstance3D.new()
-			rider.mesh = PersonMesh.seated_rider(0)
-			rider.position = seat
+			var rider: Node3D = PersonMesh.rider_node(items.find(it))
+			rider.position = seat + PersonMesh.PROCEDURAL_HIP
 			car.add_child(rider)
 		var box: MeshInstance3D = MeshInstance3D.new()
 		var bm: BoxMesh = BoxMesh.new()

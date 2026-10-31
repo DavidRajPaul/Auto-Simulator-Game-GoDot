@@ -174,24 +174,27 @@ func _add_station_activity(root: Node3D) -> void:
 		_part(root, Vector3(0.55, 1.25, 0.5), Vector3(x, 0.62, 1.6), Color(0.92, 0.88, 0.18))
 		_part(root, Vector3(0.22, 0.18, 0.22), Vector3(x, 1.34, 1.6), Color(0.1, 0.12, 0.13))
 	var models: Array[Dictionary] = [
-		{"path": "res://assets/models/traffic/hatchback.glb", "pos": Vector3(-5.2, 0.05, -2.8), "scale": 0.62},
-		{"path": "res://assets/models/traffic/share_auto.glb", "pos": Vector3(0.0, 0.05, -2.8), "scale": 0.62},
-		{"path": "res://assets/models/traffic/two_wheeler.glb", "pos": Vector3(5.0, 0.05, -2.8), "scale": 0.65},
+		{"path": "res://assets/models/traffic/hatchback.glb", "pos": Vector3(-5.2, 0.0, -2.8), "size": Vector3(1.7, 1.5, 3.8)},
+		{"path": "res://assets/models/traffic/share_auto.glb", "pos": Vector3(0.0, 0.0, -2.8), "size": Vector3(1.5, 1.8, 2.9)},
+		{"path": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb", "pos": Vector3(5.0, 0.0, -2.8), "size": Vector3(0.8, 1.2, 1.83)},
 	]
 	for i: int in models.size():
 		var item: Dictionary = models[i]
 		var path: String = str(item["path"])
 		if not ResourceLoader.exists(path):
 			continue
-		var packed: PackedScene = load(path) as PackedScene
-		if packed == null:
-			continue
-		var vehicle: Node3D = packed.instantiate() as Node3D
+		# Real size (was 0.62x: toy cars) and stood on the forecourt (raw models were centred
+		# on their origin, so the scooter sank). The holder cancels the station's own scale.
+		var vehicle: Node3D = Node3D.new()
 		vehicle.name = "RefuellingVehicle_%d" % i
 		vehicle.position = item["pos"]
-		vehicle.rotation.y = PI # traffic models are authored facing +Z; face the pump
-		vehicle.scale = Vector3.ONE * float(item["scale"])
 		root.add_child(vehicle)
+		var inv: float = 1.0 / maxf(root.global_basis.get_scale().x, 0.01) if root.is_inside_tree() else 1.0
+		vehicle.scale = Vector3.ONE * inv
+		if not TrafficModelFit.attach(vehicle, path, item["size"] as Vector3, true, true):
+			vehicle.queue_free()
+			continue
+		SignalBus.ground_snap_requested.emit(vehicle)
 
 func _part(root: Node3D, size: Vector3, pos: Vector3, colour: Color) -> void:
 	var b: BoxMesh = BoxMesh.new()
