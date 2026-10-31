@@ -31,7 +31,6 @@ var front_wheel_ray: RayCast3D
 var rear_left_wheel_ray: RayCast3D
 var rear_right_wheel_ray: RayCast3D
 
-var _driver_on_foot: bool = false
 var _cockpit_view: bool = false
 var current_speed_kmh: float = 0.0
 var forward_speed_mps: float = 0.0
@@ -110,9 +109,6 @@ func _ready() -> void:
 	if stats == null:
 		stats = VehicleStats.new()
 	add_to_group("player_auto")
-	SignalBus.on_foot_changed.connect(func(value: bool) -> void:
-		_driver_on_foot = value
-		_update_driver_visibility())
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void:
 		_cockpit_view = mode_name == "Cockpit"
 		_update_driver_visibility())
@@ -150,12 +146,12 @@ func apply_stats(new_stats: VehicleStats) -> void:
 	_apply_mass()
 	_recolour()
 
-## The seated driver shows while someone drives and the camera is outside the auto: on foot the
-## hero walks (never two of him), and in the cockpit view the camera is his eyes.
+## The seated driver always rides with the auto (first release: no on-foot mode); he hides only
+## in the cockpit view, where the camera is his eyes.
 func _update_driver_visibility() -> void:
 	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
 	if model != null and model.driver != null:
-		model.driver.visible = not _driver_on_foot and not _cockpit_view
+		model.driver.visible = not _cockpit_view
 
 func _recolour() -> void:
 	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
@@ -508,8 +504,7 @@ func _check_water_stall() -> void:
 func _emit_telemetry(delta: float) -> void:
 	SignalBus.speed_updated.emit(current_speed_kmh)
 	var fwd: Vector3 = -global_transform.basis.z
-	if not _driver_on_foot:
-		SignalBus.player_pose_updated.emit(global_position, fwd)
+	SignalBus.player_pose_updated.emit(global_position, fwd)
 	# Ride dynamics for the passenger comfort meter.
 	var dv: Vector3 = linear_velocity - _prev_velocity
 	_prev_velocity = linear_velocity

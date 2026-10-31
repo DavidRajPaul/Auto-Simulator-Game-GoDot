@@ -28,7 +28,6 @@
 
 [ext_resource type="Script" path="res://scripts/passengers/CustomNavigation.gd" id="25"]
 
-[ext_resource type="Script" path="res://scripts/hero/HeroFreeRoam.gd" id="26"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -133,9 +132,6 @@ script = ExtResource("25")
 script = ExtResource("9")
 
 [node name="TouchHUD" parent="." instance=ExtResource("5")]
-
-[node name="HeroFreeRoam" type="CanvasLayer" parent="."]
-script = ExtResource("26")
 
 [node name="PassengerHUD" parent="." instance=ExtResource("10")]
 

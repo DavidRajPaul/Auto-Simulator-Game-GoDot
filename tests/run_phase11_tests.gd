@@ -102,7 +102,7 @@ func _test_full_ride(city: Node, dir: TutorialDirector) -> void:
 	_check("Coach strip and bubble stay off the road ahead", not overlay.card.get_rect().intersects(road_band) and not overlay.bubble.get_rect().intersects(road_band),
 		"vp %s band %s strip %s bubble %s" % [vp, road_band, overlay.card.get_rect(), overlay.bubble.get_rect()])
 	_check("Coach strip shows the short task", overlay.task_label.text == tr("TUT_KICK_TASK"), overlay.task_label.text)
-	_check("Tutorial teaches in daylight (clock >= 8:00)", GameState.shift_minute >= TutorialDirector.TUTORIAL_MIN_MINUTE, "%.0f" % GameState.shift_minute)
+	_check("Tutorial teaches in daylight (clock >= 7:00)", GameState.shift_minute >= TutorialDirector.TUTORIAL_MIN_MINUTE, "%.0f" % GameState.shift_minute)
 	_check("The big status ribbon is suppressed during the tutorial", not hud._banner.visible and not hud._status_label.visible)
 	_check("SKIP is offered on the strip", overlay.skip_button.visible)
 	AdMonetizationManager.debug_advance(2000.0) # well past the first-session grace

@@ -78,8 +78,8 @@ func _ready() -> void:
 
 ## Begin (or resume) the tutorial. from_step = -1 resumes from the saved step. The actual start
 ## waits until the road graph and the player auto are live.
-## Clock for the first ride (8:00 AM, full daylight).
-const TUTORIAL_MIN_MINUTE: float = 480.0
+## Clock for the first ride: 7:00 AM, an hour after sunrise (owner's choice, Oct 31).
+const TUTORIAL_MIN_MINUTE: float = 420.0
 
 func start(from_step: int = -1) -> void:
 	_pending_start = from_step
@@ -119,8 +119,8 @@ func _begin(from_step: int) -> void:
 	total_seconds = 0.0
 	GameState.tutorial_active = true
 	GameState.tutorial_min_condition = data.min_condition
-	# The shift opens at 6:00, before sunrise: the first ride happened in near darkness and the
-	# playtester could barely see the road. Teach in full morning light.
+	# The shift opens at 6:00, exactly at sunrise: the first ride happened in near darkness and
+	# the playtester could barely see the road. Teach in morning light from 7:00.
 	if GameState.shift_minute < TUTORIAL_MIN_MINUTE:
 		GameState.shift_minute = TUTORIAL_MIN_MINUTE
 	GameState.settings["first_ride_done"] = false

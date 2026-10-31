@@ -78,6 +78,8 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 
 **Player auto** (`vehicles/`): `player_auto.glb` + 3 textures — Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0, 6.3k tris. Always the body; garage paints recolour it with `shaders/auto_paint.gdshader` and `player_auto_paint_mask.png` (made by `tools/assets/make_auto_paint_mask.py`, derived from the same model — same licence).
 
+**Hero driver** (`hero/`): `namma_auto_hero.glb` — the owner's hero character (owner-made; 78-joint rig, 33 parts, walk/run/jump/fall/wave clips; kept for the release-2 on-foot mode). `namma_auto_hero_seated.glb` + `_0.png` — the same character baked into a static seated pose at the handlebar by `tools/assets/bake_seated_hero.py` (one mesh, one material, 7k tris, 1.70 m standing height); this is the driver in release 1.
+
 **Traffic** (`traffic/`, loaded by `TrafficVehicleAI.gd` / `TrafficModelFit.gd` as visuals on the collision boxes):
 
 | File | Archetype | Source | Licence |

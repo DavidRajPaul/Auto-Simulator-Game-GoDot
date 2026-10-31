@@ -344,19 +344,27 @@ func _test_surface_heights(world: WorldChunkStreamer) -> void:
 		seen[snappedf(h, 0.001)] = true
 	_check("Surface raster has sidewalk, road and bare-ground cells", seen.has(0.08) and seen.has(0.06) and seen.has(snappedf(WorldChunkStreamer.GROUND_VISUAL_Y, 0.001)), str(seen.keys()))
 
-## The player's auto is never driverless: a seated driver shows while driving (chase camera),
-## hides on foot (the hero walks instead — never two of him) and in the cockpit view.
-
+## The player's auto is never driverless: the owner's hero, baked seated (one mesh, one draw
+## call), rides at the handlebar; he hides only in the cockpit view. No on-foot mode in release 1.
 func _test_seated_driver(city: Node) -> void:
 	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
 	var model: AutoRickshawModel = auto.get_node("Model") as AutoRickshawModel
-	_check("The player's auto has a seated driver", model.driver != null and model.driver.mesh != null)
+	_check("The seated driver is the hero model (not the placeholder)", model.driver != null and model.driver_is_hero())
+	var meshes: Array[Node] = model.driver.find_children("*", "MeshInstance3D", true, false) if model.driver != null else []
+	var surfaces: int = 0
+	for n: Node in meshes:
+		surfaces += (n as MeshInstance3D).mesh.get_surface_count()
+	_check("Seated hero is one mesh, one surface (one draw call)", meshes.size() == 1 and surfaces == 1, "%d meshes, %d surfaces" % [meshes.size(), surfaces])
+	var hb: AABB = AABB()
+	if meshes.size() == 1:
+		var mi: MeshInstance3D = meshes[0] as MeshInstance3D
+		hb = (model.global_transform.affine_inverse() * mi.global_transform) * mi.get_aabb()
+	# Seated: head ~0.8 m above the hip, within the canopy; hands reach toward the handlebar (-Z).
+	_check("Seated hero fits under the canopy and faces forward", hb.end.y < AutoRickshawModel.GROUND_Y + 1.75 and hb.position.z < model.driver.position.z - 0.4,
+		str(hb))
+	_check("No on-foot mode in this release (HeroFreeRoam removed)", city.get_node_or_null("HeroFreeRoam") == null)
 	SignalBus.camera_mode_changed.emit("Chase")
-	SignalBus.on_foot_changed.emit(false)
-	_check("Driver is visible while driving in the chase camera", model.driver.visible)
-	SignalBus.on_foot_changed.emit(true)
-	_check("Driver hides when the hero is on foot (no duplicate)", not model.driver.visible)
-	SignalBus.on_foot_changed.emit(false)
+	_check("Driver is visible in the chase camera", model.driver.visible)
 	SignalBus.camera_mode_changed.emit("Cockpit")
 	_check("Driver hides in the cockpit view (camera is his eyes)", not model.driver.visible)
 	SignalBus.camera_mode_changed.emit("Chase")
