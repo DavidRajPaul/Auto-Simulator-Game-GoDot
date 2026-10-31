@@ -45,6 +45,8 @@ var _pointer: Label
 var _chip: Label
 var _hole: Rect2 = Rect2()
 var _hole_id: String = ""
+var _strip_box: StyleBoxFlat
+var _strip_tween: Tween
 var _ring_tween: Tween
 var _bob_tween: Tween
 var _hint_tween: Tween
@@ -112,6 +114,7 @@ func _build_strip() -> void:
 	box.content_margin_right = 8
 	box.content_margin_top = 6
 	box.content_margin_bottom = 6
+	_strip_box = box
 	card.add_theme_stylebox_override("panel", box)
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -233,6 +236,23 @@ func _on_step(info: Dictionary) -> void:
 	_refresh_visibility()
 	_layout()
 	UIKit.pop_in(card)
+	_start_strip_pulse()
+
+## Animate just the coach outline, keeping its text and controls stable/readable.
+func _start_strip_pulse() -> void:
+	if _strip_tween != null:
+		_strip_tween.kill()
+	_strip_box.border_color = UIKit.YELLOW
+	_strip_tween = create_tween().set_loops()
+	_strip_tween.tween_property(_strip_box, "border_color", Color(1.0, 0.57, 0.10), 0.85).set_trans(Tween.TRANS_SINE)
+	_strip_tween.tween_property(_strip_box, "border_color", UIKit.YELLOW, 0.85).set_trans(Tween.TRANS_SINE)
+
+func _stop_strip_pulse() -> void:
+	if _strip_tween != null:
+		_strip_tween.kill()
+		_strip_tween = null
+	if _strip_box != null:
+		_strip_box.border_color = UIKit.YELLOW
 
 func _set_dots(index: int, count: int) -> void:
 	_dots.text = "●".repeat(index + 1) + "○".repeat(maxi(count - index - 1, 0))
@@ -333,6 +353,7 @@ func covered_fraction() -> float:
 	return area / maxf(vp.x * vp.y, 1.0)
 
 func _on_finished(skipped: bool) -> void:
+	_stop_strip_pulse()
 	_on_spotlight(Rect2())
 	skip_button.visible = false
 	if skipped:
