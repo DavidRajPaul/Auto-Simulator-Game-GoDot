@@ -240,6 +240,9 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 		node.free()
 		return
 	_add_imported_palms(node)
+	# Construct parking visuals/collision on the main thread; GLBs are cached by Godot.
+	if dressing_enabled:
+		RoadsideParking.populate(node, world_dir, k)
 	add_child(node)
 	loaded[k] = node
 	if node.has_meta("surface_heights"):
