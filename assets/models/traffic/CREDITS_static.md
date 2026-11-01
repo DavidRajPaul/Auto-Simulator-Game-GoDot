@@ -2,6 +2,7 @@
 
 | File | Source | Licence |
 |---|---|---|
+| `assets/models/traffic/buses/*.glb` | Owner's Tripo AI electric bus (assets_src/incoming/models/traffic/electric_bus_tripo.glb), repainted by bake_ebus.py | Owner-generated with a paid Tripo plan |
 | `assets/models/traffic/svc_ambulance.glb` | generic_civil_service_vehicles_pack | "Generic civil service vehicles pack" by Comrade1280 (Sketchfab), CC BY 4.0 |
 | `assets/models/traffic/svc_fire_truck.glb` | generic_civil_service_vehicles_pack | "Generic civil service vehicles pack" by Comrade1280 (Sketchfab), CC BY 4.0 |
 | `assets/models/traffic/svc_garbage_truck.glb` | generic_civil_service_vehicles_pack | "Generic civil service vehicles pack" by Comrade1280 (Sketchfab), CC BY 4.0 |

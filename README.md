@@ -121,6 +121,7 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 - Temple tanks and lakes use faceted low-poly water with solid concrete edge barriers; auto stands have parked autos, cars and two-wheelers.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
 - Chennai sky: humid milky haze on the horizon, drifting fair-weather cumulus with sunlit tops, peach clouds at golden hour, stars at night; rain closes it into a grey monsoon overcast. Soft (filtered) shadow edges on Medium/High graphics, plus 2x MSAA on High.
+- Real MTC bus stops (191 on the map, from Chennai One via Reclaim Chennai): GCC-style shelters with the stop name and its real routes; MTC buses pull in and dwell. Buses wear the real Chennai liveries (ordinary sky blue, pink free bus, cyan/purple electric, red electric AC, deluxe AC blue, Premium gold, yellow-red small bus) plus yellow college buses at rush hours, with real route boards (see `docs/BUSES.md`).
 - Mixed traffic (scooters with riders, cars, share autos, TNSTC/SETC buses, lorries, service vehicles) whose density follows the TomTom 2025 Chennai hourly profile; 14 animated pedestrians that walk the kerbs and jump out of the way.
 
 **Savari (the money loop)**

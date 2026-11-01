@@ -39,6 +39,8 @@ signal camera_shake(strength: float)
 # --- Navigation ------------------------------------------------------------
 ## Latest published road graph, for listeners that start after road_graph_ready fired.
 var current_road_graph: RoadGraph = null
+## The BusStops node (real MTC stops) once the city scene is up; buses ask it for the next stop.
+var current_bus_stops: Node = null
 ## Set by WorldChunkStreamer: (x, z, fallback) -> height of the drawn ground (walk/road/park/bare).
 var surface_height_provider: Callable = Callable()
 ## Set by WorldChunkStreamer: (x, z) -> false inside a building footprint.
@@ -196,3 +198,5 @@ signal engine_switched_off()
 signal scripted_hail_requested(info: Dictionary)
 ## Put a slow vehicle of `kind` ("two_wheeler") in the player's lane `ahead_m` metres ahead.
 signal scripted_traffic_requested(kind: String, ahead_m: float)
+## An MTC bus pulled in at a stop (TrafficVehicleAI): position and its route board text.
+signal bus_stopped(at: Vector3, route: String)

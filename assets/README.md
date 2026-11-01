@@ -86,6 +86,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 |---|---|---|---|
 | `two_wheeler.glb` | Scooter (procedural rider on top) | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0 |
 | `cars/*.glb` | Traffic and parked cars (sedan, SUV, sports in 7 Chennai paints) baked one-mesh by `tools/assets/bake_car_colours.py` from `quaternius_normal_car/suv/sports_car.glb` | Quaternius Cars Bundle | CC0 |
+| `buses/*.glb` | Chennai buses: MTC ordinary, pink, electric, electric AC, deluxe AC, Premium gold, small bus, college bus, all repainted from the owner's Tripo electric bus by `tools/assets/bake_ebus.py` (60 MB / 1.9 M tris -> ~0.37 MB / 11.7k tris each, one draw call). Liveries and sources: `docs/BUSES.md` | Owner-generated (Tripo AI, paid plan) | Owner |
 | `cars/bolero_*.glb`, `cars/bolero_police.glb` | Mahindra Bolero in 5 paints and the police jeep (light bar = "Beacon" surface, `shaders/police_beacon.gdshader`), baked by `tools/assets/bake_bolero.py` from the owner's 25 MB download (34.9k tris, 4k textures) to ~5.3k tris, vertex colours, ~0.5 MB | "Bolero" by Waseem Kadri (Sketchfab) | CC BY 4.0 |
 | `share_auto.glb` | Share auto / other autos | Auto Rickshaw, rSquare (Sketchfab) | CC BY 4.0 |
 | `bus_tnstc.glb`, `bus_setc.glb` | Town bus, SETC coach | Nobel Tech (Sketchfab) | CC BY 4.0 |

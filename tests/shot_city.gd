@@ -109,6 +109,42 @@ func _run() -> void:
 		rig.set_process(false)
 		var camt: Camera3D = rig.get_node("Camera") as Camera3D
 		camt.rotate_object_local(Vector3.RIGHT, deg_to_rad(float(OS.get_environment("SHOT_TILT"))))
+	if OS.has_environment("SHOT_BUSSTOP"):
+		# SHOT_BUSSTOP=<stop index>: a bus (SHOT_BUSLIV = livery index) pulls in there; the camera
+		# stands across the road looking at the shelter.
+		var bs: BusStops = city.get_node("BusStops") as BusStops
+		var tm2: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+		var st: Dictionary = bs.stops[int(OS.get_environment("SHOT_BUSSTOP"))]
+		var at: Vector3 = Vector3(float(st["x"]), 0.0, float(st["z"]))
+		var front: Vector3 = Basis(Vector3.UP, float(st["yaw"])) * Vector3(0, 0, 1)
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at - front * 4.0 + Vector3(0, 1, 0)))
+		SignalBus.player_pose_updated.emit(at, Vector3.FORWARD)
+		for i: int in 60:
+			await get_tree().physics_frame
+		bs._player = at
+		bs.refresh()
+		var bus: TrafficVehicleAI = null
+		for v: TrafficVehicleAI in tm2.pool:
+			if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS and bus == null:
+				bus = v
+			elif v.archetype != TrafficVehicleAI.Archetype.MTC_BUS:
+				v.deactivate()
+		tm2.set_physics_process(false)
+		var want: int = int(OS.get_environment("SHOT_BUSLIV")) if OS.has_environment("SHOT_BUSLIV") else 0
+		for tries: int in 60:
+			tm2.place_vehicle(bus, int(st["edge"]), float(st["s"]) - 45.0 * float(st["dir"]), int(st["dir"]), 0)
+			if bus.bus_variant == want:
+				break
+		for f: int in 60 * 12:
+			bus.tick(1.0 / 60.0)
+			if bus._dwell > 0.0:
+				break
+		rig.set_process(false)
+		var camb2: Camera3D = rig.get_node("Camera") as Camera3D
+		var along: Vector3 = Vector3(front.z, 0, -front.x)
+		camb2.global_position = at + front * 16.0 + along * 9.0 + Vector3(0, 3.0, 0)
+		camb2.look_at(at + Vector3(0, 1.8, 0))
+		(city.get_node("AutoRickshaw") as Node3D).visible = false
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
 	for i: int in 20:

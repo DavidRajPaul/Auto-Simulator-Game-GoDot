@@ -29,7 +29,7 @@ const MODEL_FILES: Array[String] = [
 	"", # TWO_WHEELER picks from TWO_WHEELER_VARIANTS
 	"res://assets/models/traffic/cars/sedan_white.glb", # HATCHBACK picks from CAR_VARIANTS
 	"res://assets/models/traffic/share_auto.glb",
-	"res://assets/models/traffic/bus_tnstc.glb",
+	"", # MTC_BUS picks from BUS_VARIANTS on every respawn
 	"res://assets/models/traffic/stray_cow.glb",
 	"res://assets/models/traffic/lorry.glb",
 	"", # SERVICE picks from SERVICE_VARIANTS
@@ -84,12 +84,29 @@ const TWO_WHEELER_VARIANTS: Array = [
 	["res://assets/models/traffic/two_wheeler_pack/sport_bike_3.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
 ]
 static var _two_wheeler_variant: int = 0
-## Tamil Nadu buses: the green-and-yellow town bus and the white SETC coach.
-const BUS_FILES: Array[String] = [
-	"res://assets/models/traffic/bus_tnstc.glb",
-	"res://assets/models/traffic/bus_setc.glb",
+## Buses on Chennai roads (Nov 2026 research, docs/BUSES.md): the owner's Tripo electric bus
+## baked into every MTC livery + a college bus (tools/assets/bake_ebus.py), plus the TNSTC town
+## bus and SETC coach passing through. [file, real size (w, h, l) m, weight, kind].
+## kind: "mtc" stops at MTC stops and shows a real route; "premium" / "small" use their own
+## routes; "college" (yellow, TN rule) runs mostly at college rush hours; "state" passes by.
+## Every bus slot carries all of them and shows one per respawn (like the service slot).
+const BUS_VARIANTS: Array = [
+	["res://assets/models/traffic/buses/mtc_ordinary.glb", Vector3(2.6, 2.95, 10.1), 5, "mtc"],
+	["res://assets/models/traffic/buses/mtc_pink.glb", Vector3(2.6, 2.95, 10.1), 4, "mtc"],
+	["res://assets/models/traffic/buses/mtc_electric.glb", Vector3(2.6, 2.95, 10.1), 3, "mtc"],
+	["res://assets/models/traffic/buses/mtc_electric_ac.glb", Vector3(2.6, 2.95, 10.1), 2, "mtc"],
+	["res://assets/models/traffic/buses/mtc_ordinary_ac.glb", Vector3(2.6, 2.95, 10.1), 1, "mtc"],
+	["res://assets/models/traffic/buses/mtc_premium.glb", Vector3(2.6, 2.95, 10.1), 1, "premium"],
+	["res://assets/models/traffic/buses/mtc_small.glb", Vector3(2.6, 2.95, 7.55), 2, "small"],
+	["res://assets/models/traffic/buses/college.glb", Vector3(2.6, 2.95, 8.8), 2, "college"],
+	["res://assets/models/traffic/bus_tnstc.glb", Vector3(2.5, 3.2, 11.0), 1, "state"],
+	["res://assets/models/traffic/bus_setc.glb", Vector3(2.5, 3.2, 11.0), 1, "state"],
 ]
-const BUS_FLIP: bool = true
+## MTC Premium routes (launched 11 Mar 2026): P570S Siruseri IT Park - CMBT, P91 Thiruvanmiyur - KCBT.
+const PREMIUM_ROUTES: Array = [["P570S", "CMBT"], ["P91", "KCBT"]]
+## Buses pull in at stops (BusStops) and dwell: look-ahead and dwell time.
+const BUS_STOP_LOOK_M: float = 70.0
+const BUS_DWELL_S: Vector2 = Vector2(6.0, 11.0)
 ## Stray cows pick one of these at random when the pool is built.
 const COW_FILES: Array[String] = [
 	"res://assets/models/traffic/stray_cow.glb",
@@ -106,6 +123,13 @@ const SCOOTER_MODEL_HEIGHT_M: float = 1.0
 const RIDER_SEAT_POS: Vector3 = Vector3(0.0, 0.72, 0.22)
 static var _rider_variant: int = 0
 static var _bus_variant: int = 0
+var bus_variant: int = -1
+var bus_route: String = ""
+var _bus_models: Array[Node3D] = []
+var _route_board: Label3D = null
+var _dwell: float = 0.0
+var _served_edge: int = -1
+var _served_s: float = -1000.0
 
 var manager: ChennaiTrafficManager
 var archetype: Archetype = Archetype.HATCHBACK
@@ -170,10 +194,6 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	var cow: int = randi() % COW_FILES.size()
 	var model_path: String = COW_FILES[cow] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
 	var flip: bool = COW_FLIP[cow] if kind == Archetype.STRAY_COW else MODEL_FLIP[kind]
-	if kind == Archetype.MTC_BUS:
-		model_path = BUS_FILES[_bus_variant % BUS_FILES.size()]
-		flip = BUS_FLIP
-		_bus_variant += 1
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
 	if kind == Archetype.HATCHBACK:
 		var car: Array = CAR_VARIANTS[_car_variant % CAR_VARIANTS.size()]
@@ -212,6 +232,29 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 				_service_models.append(holder)
 			else:
 				_service_models.append(null)
+	if kind == Archetype.MTC_BUS:
+		_mesh.visible = false
+		for v: Array in BUS_VARIANTS:
+			var state: bool = str(v[3]) == "state"
+			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true, not state):
+				var holder: Node3D = get_node("Model") as Node3D
+				holder.name = "Bus_%s" % str(v[0]).get_file().get_basename()
+				holder.visible = false
+				_bus_models.append(holder)
+			else:
+				_bus_models.append(null)
+		# Orange LED destination board over the windscreen: route number + destination.
+		_route_board = Label3D.new()
+		_route_board.name = "RouteBoard"
+		_route_board.pixel_size = 0.0055
+		_route_board.font_size = 48
+		_route_board.outline_size = 0
+		_route_board.modulate = Color(1.0, 0.62, 0.12)
+		_route_board.shaded = false
+		_route_board.double_sided = false
+		_route_board.rotation.y = PI # traffic faces -Z
+		_route_board.visibility_range_end = 60.0
+		add_child(_route_board)
 	deactivate()
 
 ## Police light bar: a model surface whose material is named "Beacon" (bolero_police.glb) gets
@@ -254,6 +297,109 @@ func pick_service_variant(rng: RandomNumberGenerator) -> void:
 	body = SERVICE_VARIANTS[pick][1] as Vector3
 	(_shape.shape as BoxShape3D).size = body
 	_shape.position.y = body.y * 0.5
+
+## MTC_BUS: show one livery (weighted; college buses mostly at college rush hours), size the
+## collision box to it and put a real route on the destination board: one that serves the MTC
+## stop nearest to where the bus appears (Premium and small buses use their own routes).
+func pick_bus_variant(rng: RandomNumberGenerator) -> void:
+	if archetype != Archetype.MTC_BUS or _bus_models.is_empty():
+		return
+	var minute: float = GameState.shift_minute
+	var rush: bool = (minute >= 420.0 and minute <= 570.0) or (minute >= 930.0 and minute <= 1080.0)
+	var weights: PackedFloat32Array = PackedFloat32Array()
+	var total: float = 0.0
+	for i: int in BUS_VARIANTS.size():
+		var w: float = float(BUS_VARIANTS[i][2])
+		if str(BUS_VARIANTS[i][3]) == "college":
+			w *= 2.5 if rush else 0.25
+		if _bus_models[i] == null:
+			w = 0.0
+		weights.append(w)
+		total += w
+	var roll: float = rng.randf() * total
+	var pick: int = 0
+	for i: int in weights.size():
+		roll -= weights[i]
+		if roll < 0.0:
+			pick = i
+			break
+	bus_variant = pick
+	for i: int in _bus_models.size():
+		if _bus_models[i] != null:
+			_bus_models[i].visible = i == pick
+	body = BUS_VARIANTS[pick][1] as Vector3
+	(_shape.shape as BoxShape3D).size = body
+	_shape.position.y = body.y * 0.5
+	_dwell = 0.0
+	_served_edge = -1
+	bus_route = _pick_route(str(BUS_VARIANTS[pick][3]), rng)
+	_route_board.visible = bus_route != ""
+	_route_board.text = bus_route
+	_route_board.position = Vector3(0.0, body.y - 0.32, -body.z * 0.5 - 0.04)
+
+func _pick_route(kind: String, rng: RandomNumberGenerator) -> String:
+	if kind == "college":
+		return "COLLEGE"
+	if kind == "state":
+		return ""
+	if kind == "premium":
+		var p: Array = PREMIUM_ROUTES[rng.randi() % PREMIUM_ROUTES.size()]
+		return "%s  %s" % [p[0], p[1]]
+	var stops: BusStops = SignalBus.current_bus_stops as BusStops
+	if stops == null or stops.stops.is_empty():
+		return ""
+	var i: int = stops.nearest(global_position)
+	if i < 0:
+		return ""
+	var rs: Array = (stops.stops[i] as Dictionary)["routes"]
+	var pool: Array = []
+	for r: Variant in rs:
+		var code: String = str(r)
+		if " " in code or "(" in code:
+			continue # depot / section variants ("18A CT SEC")
+		if (kind == "small") == code.begins_with("S"):
+			pool.append(code)
+	if pool.is_empty():
+		for r: Variant in rs:
+			if not (" " in str(r)):
+				pool.append(str(r))
+	if pool.is_empty():
+		return ""
+	var route: String = str(pool[rng.randi() % pool.size()])
+	var dest: String = str(stops.routes.get(route, ""))
+	return ("%s  %s" % [route, dest.to_upper()]).strip_edges()
+
+## Stops: the gap to the next MTC stop ahead (treated like a stopped lead vehicle), INF if none.
+## While dwelling the bus stands at the kerb. MTC liveries only.
+func _bus_stop_gap(delta: float) -> float:
+	if archetype != Archetype.MTC_BUS or turning or bus_variant < 0:
+		return INF
+	var kind: String = str(BUS_VARIANTS[bus_variant][3])
+	if kind != "mtc" and kind != "small" and kind != "premium":
+		return INF
+	var stops: BusStops = SignalBus.current_bus_stops as BusStops
+	if stops == null:
+		return INF
+	var ep: float = edge_param()
+	if _dwell > 0.0:
+		_dwell -= delta
+		return 0.0
+	var skip: float = _served_s if _served_edge == edge else -1000.0
+	var ahead: float = stops.distance_ahead(edge, dir, ep, BUS_STOP_LOOK_M, skip)
+	if ahead == INF:
+		return INF
+	if ahead < 0.8 and current_speed_mps < 0.4:
+		_dwell = randf_range(BUS_DWELL_S.x, BUS_DWELL_S.y)
+		_served_edge = edge
+		_served_s = stops.stop_param(edge, dir, ep, ahead)
+		SignalBus.bus_stopped.emit(global_position, bus_route)
+		return 0.0
+	return ahead
+
+## Kerb lane offset for a bus pulling in to a stop.
+func _kerb_lateral() -> float:
+	var half: float = manager.graph.edges[edge].width * 0.5
+	return maxf(manager.graph.sub_lane_offset(edge, dir, 0), half - half_width() - 0.35)
 
 ## Nobody rides a scooter by remote control in Chennai: one helmeted rider per two-wheeler.
 func _add_rider() -> void:
@@ -303,6 +449,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	active = true
 	visible = true
 	_apply_transform()
+	pick_bus_variant(manager.rng)
 	reset_physics_interpolation() # a recycled vehicle must not smear across the map
 	# Teleport with collision off; re-enable next tick so Jolt never sweeps a
 	# kinematic body through the world (that launched the player auto).
@@ -368,6 +515,13 @@ func tick(delta: float) -> void:
 	if signal_gap < lead_gap:
 		lead_gap = signal_gap
 		lead_speed = 0.0
+	# MTC buses pull in at real stops: the stop is a "stopped lead" FOLLOW_MIN_GAP_M further on,
+	# so the normal braking brings the bus to rest right at it.
+	var stop_gap: float = _bus_stop_gap(delta)
+	var at_stop: bool = stop_gap < INF
+	if at_stop and stop_gap + FOLLOW_MIN_GAP_M < lead_gap:
+		lead_gap = stop_gap + FOLLOW_MIN_GAP_M
+		lead_speed = 0.0
 	var safe_gap: float = FOLLOW_MIN_GAP_M + current_speed_mps * FOLLOW_TIME_S
 	var target_speed: float = cruise_speed_mps * manager.speed_factor
 	var remaining: float = manager.graph.edges[edge].length - t
@@ -419,7 +573,7 @@ func tick(delta: float) -> void:
 			return
 		_apply_turn_transform()
 		return
-	var target_lat: float = manager.graph.sub_lane_offset(edge, dir, sub_lane)
+	var target_lat: float = _kerb_lateral() if at_stop and stop_gap < 40.0 else manager.graph.sub_lane_offset(edge, dir, sub_lane)
 	lateral = move_toward(lateral, target_lat, LATERAL_SPEED_MPS * 2.0 * delta)
 	_apply_transform()
 

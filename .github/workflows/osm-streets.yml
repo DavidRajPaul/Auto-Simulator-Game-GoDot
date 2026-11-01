@@ -46,6 +46,7 @@ jobs:
           pip install mapbox-earcut numpy scipy shapely
           python3 tools/osm/build_world.py
           python3 tools/osm/build_water.py
+          python3 tools/osm/build_bus_stops.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"
