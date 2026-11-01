@@ -34,6 +34,7 @@ func _run() -> void:
 	await _test_canal_crossing(city)
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
+	await _test_bus_stops(city)
 	city.queue_free()
 	await _physics(2)
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -468,12 +469,93 @@ func _test_traffic_models(tm: ChennaiTrafficManager) -> void:
 	var bus_models: int = 0
 	var lorry: int = 0
 	for v: TrafficVehicleAI in tm.pool:
-		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS and v.get_node_or_null("Model") != null:
+		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS and v._bus_models.size() == TrafficVehicleAI.BUS_VARIANTS.size() and not v._bus_models.has(null):
 			bus_models += 1
 		if v.archetype == TrafficVehicleAI.Archetype.LORRY:
 			lorry += 1
-	_check("Buses wear the Tamil Nadu bus models (no grey boxes)", bus_models >= 2)
+	_check("Every bus slot carries all Chennai bus liveries (no grey boxes)", bus_models >= 2)
+	var kinds: Dictionary = {}
+	var one_mesh: bool = true
+	for v: Array in TrafficVehicleAI.BUS_VARIANTS:
+		kinds[str(v[3])] = true
+		if str(v[0]).contains("/buses/"):
+			var inst: Node3D = (load(str(v[0])) as PackedScene).instantiate() as Node3D
+			var surfaces: int = 0
+			for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
+				surfaces += (mi as MeshInstance3D).mesh.get_surface_count()
+			one_mesh = one_mesh and surfaces == 1
+			inst.free()
+	_check("Bus mix: MTC liveries, Premium, small bus, college bus, state buses", kinds.size() == 5, str(kinds.keys()))
+	_check("Every repainted bus is one mesh (one draw call)", one_mesh)
 	_check("Goods lorry in the traffic mix", lorry >= 1)
+
+## Nov 1: real MTC bus stops on the map, shelters with name boards, and buses that stop there.
+func _test_bus_stops(city: Node) -> void:
+	var stops: BusStops = city.get_node("BusStops") as BusStops
+	_check("Real MTC bus stops are on the map", stops != null and stops.stops.size() > 150, "%d stops" % (stops.stops.size() if stops != null else 0))
+	if stops == null:
+		return
+	var luz: int = -1
+	for i: int in stops.stops.size():
+		if str((stops.stops[i] as Dictionary)["name"]) == "Luz Corner":
+			luz = i
+	_check("Luz Corner bus stop is on the benchmark route", luz >= 0)
+	var g: RoadGraph = SignalBus.current_road_graph
+	# A stop with a long straight run-in on its own edge, for the pull-in test.
+	var pick: Dictionary = {}
+	for st: Dictionary in stops.stops:
+		var e: RoadGraph.Edge = g.edges[int(st["edge"])]
+		var run_in: float = float(st["s"]) if int(st["dir"]) > 0 else e.length - float(st["s"])
+		if run_in > 60.0 and e.width >= 6.0:
+			pick = st
+			break
+	_check("A stop with a 60 m run-in exists", not pick.is_empty())
+	if pick.is_empty():
+		return
+	var at: Vector3 = Vector3(float(pick["x"]), 0.0, float(pick["z"]))
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	traffic.set_physics_process(false)
+	for v: TrafficVehicleAI in traffic.pool:
+		v.deactivate()
+	# Stand the player behind the shelter (off the road) so the chunks there load.
+	var back: Vector3 = Basis(Vector3.UP, float(pick["yaw"])) * Vector3(0.0, 0.0, -4.0)
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at + back + Vector3(0, 1.0, 0)))
+	SignalBus.player_pose_updated.emit(at + back, Vector3.FORWARD)
+	await _physics(60)
+	stops._player = at
+	stops.refresh()
+	var near_shelter: bool = false
+	for i: int in stops.shown:
+		near_shelter = near_shelter or stops.shelter_transform(i).origin.distance_to(at) < 0.5
+	_check("The nearest shelters are shown", near_shelter and stops.shown.size() > 0)
+	var bus: TrafficVehicleAI = null
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS:
+			bus = v
+			break
+	var e_idx: int = int(pick["edge"])
+	var d: int = int(pick["dir"])
+	var stop_s: float = float(pick["s"])
+	var kind: String = ""
+	for tries: int in 40:
+		traffic.place_vehicle(bus, e_idx, stop_s - 55.0 * float(d), d, 0)
+		kind = str(TrafficVehicleAI.BUS_VARIANTS[bus.bus_variant][3])
+		if kind == "mtc":
+			break
+	_check("A city MTC bus shows a real route on its destination board", kind == "mtc" and bus.bus_route != "" and bus.get_node("RouteBoard").visible, bus.bus_route)
+	var stopped_at: float = INF
+	var dwelt: float = 0.0
+	for f: int in 60 * 30:
+		bus.tick(1.0 / 60.0)
+		if bus.current_speed_mps < 0.05 and bus._dwell > 0.0:
+			dwelt += 1.0 / 60.0
+			stopped_at = minf(stopped_at, absf(bus.edge_param() - stop_s))
+		if dwelt > 0.0 and bus._dwell <= 0.0 and bus.current_speed_mps > 2.0:
+			break
+	_check("The bus pulls in and stops at the stop", stopped_at < 2.5, "%.1f m from the stop" % stopped_at)
+	_check("It dwells for passengers, then drives on", dwelt >= TrafficVehicleAI.BUS_DWELL_S.x - 0.2 and bus.current_speed_mps > 2.0, "%.1f s" % dwelt)
+	bus.deactivate()
+	traffic.set_physics_process(true)
 
 func _test_city_props(s: WorldChunkStreamer) -> void:
 	var lm: Node = s.get_node("Landmarks")

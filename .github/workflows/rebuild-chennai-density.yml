@@ -29,6 +29,7 @@ jobs:
           python3 tools/osm/build_world.py
           python3 tools/osm/build_street_dressing.py
           python3 tools/osm/build_water.py
+          python3 tools/osm/build_bus_stops.py
           python3 tools/osm/audit_city_density.py
       - name: Commit generated city data to feature branch
         run: |

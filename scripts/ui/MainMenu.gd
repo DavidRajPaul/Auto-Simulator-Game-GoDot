@@ -13,6 +13,7 @@ const SPIN_RAD_PER_S: float = 0.35
 const CREDITS: String = """Namma Auto — Chennai Rickshaw Simulator 3D
 
 Map data © OpenStreetMap contributors, available under the Open Database Licence (ODbL).
+Bus stops and routes: CUMTA / MTC via Chennai One, from the Reclaim Chennai MTC bus map (ODbL).
 Road and lane geometry: osm2streets by the A/B Street project (Apache-2.0).
 Game engine: Godot Engine (MIT). Physics: Jolt Physics (MIT).
 Fonts: Bricolage Grotesque, Rubik, Noto Sans Tamil and Baloo Thambi 2, SIL Open Font License 1.1.

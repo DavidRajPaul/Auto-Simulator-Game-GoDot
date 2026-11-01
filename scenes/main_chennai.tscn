@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scripts/tutorial/TutorialDirector.gd" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/TutorialOverlay.gd" id="22"]
 [ext_resource type="Script" path="res://scripts/world/BuildingBoards.gd" id="23"]
+[ext_resource type="Script" path="res://scripts/world/BusStops.gd" id="bus_stops"]
 
 [ext_resource type="Script" path="res://scripts/world/MarinaSeaGuard.gd" id="24"]
 
@@ -124,6 +125,9 @@ script = ExtResource("18")
 
 [node name="BuildingBoards" type="Node3D" parent="."]
 script = ExtResource("23")
+
+[node name="BusStops" type="Node3D" parent="."]
+script = ExtResource("bus_stops")
 
 [node name="CustomNavigation" type="Node" parent="."]
 script = ExtResource("25")
