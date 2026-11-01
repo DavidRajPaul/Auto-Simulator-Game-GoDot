@@ -187,10 +187,14 @@ func _test_grounding(city: Node) -> void:
 	var spots_ok: bool = true
 	var spots: int = 0
 	var detail: String = ""
+	var car_meshes: Dictionary = {}
 	for k: Vector2i in world.loaded:
 		var park: Node = (world.loaded[k] as Node).get_node_or_null("RoadsideParking")
 		if park == null:
 			continue
+		for c: Node in park.get_children():
+			if c.name.begins_with("ParkedVehicle_1") and (c as MultiMeshInstance3D).multimesh.instance_count > 0:
+				car_meshes[(c as MultiMeshInstance3D).multimesh.mesh.get_rid()] = true
 		for kind: int in RoadsideParking.MODELS.size():
 			if not park.has_meta("fit_%d" % kind):
 				continue
@@ -218,6 +222,8 @@ func _test_grounding(city: Node) -> void:
 				spots_ok = false
 	_check("Parked vehicles: real length, lowest point on the spot (not centred, not stretched)", fits_ok and fits_seen > 0, detail)
 	_check("Parked vehicles stand on the drawn ground at their spots", spots_ok and spots > 50, "%d spots" % spots)
+	# Nov 1 device test: parked cars are the traffic cars in several paints, not the green hatchback.
+	_check("Parked cars come in several paints", car_meshes.size() >= 3, "%d car meshes" % car_meshes.size())
 	var stand_ok: bool = true
 	var stand_n: int = 0
 	for n: Node in (city.get_node("SavariManager") as Node).get_children():

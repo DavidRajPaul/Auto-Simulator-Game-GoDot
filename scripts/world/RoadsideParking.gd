@@ -50,7 +50,11 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 	# [kind, file, records]: cars are split across the paint files by spot order.
 	var groups: Array = []
 	for kind: int in MODELS.size():
-		var files: Array[String] = CAR_FILES if kind == 1 else [MODELS[kind]]
+		var files: Array[String] = []
+		if kind == 1:
+			files.assign(CAR_FILES)
+		else:
+			files.append(MODELS[kind])
 		var split: Array = []
 		for f: String in files:
 			split.append([])
@@ -103,7 +107,7 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 			mm.mesh = mi.mesh
 			mm.instance_count = records.size()
 			var inst: MultiMeshInstance3D = MultiMeshInstance3D.new()
-			inst.name = "ParkedVehicle_%d" % kind
+			inst.name = "ParkedVehicle_%d_%s" % [kind, model_path.get_file().get_basename()]
 			inst.multimesh = mm
 			inst.material_override = mi.material_override
 			inst.visibility_range_end = VISIBILITY_M
