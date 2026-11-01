@@ -313,6 +313,19 @@ func _test_landmark_kit() -> void:
 	_check("Parked two-wheelers are distributed near businesses", parked >= 10, "%d placements" % parked)
 	_check("Parked two-wheelers are single real-size bikes (scale 1, file exists)", parked_single)
 	_check("Maintenance vehicles appear at service forecourts", maintenance >= 4, "%d displays" % maintenance)
+	for landmark_mesh: ArrayMesh in [LandmarkKit.lic_building(), LandmarkKit.vivekananda_house(), LandmarkKit.napier_bridge()]:
+		_check("Heritage mesh is batched and nonempty", landmark_mesh.get_surface_count() == 1 and landmark_mesh.get_aabb().size.length() > 10.0)
+	var heritage_counts: Dictionary = {}
+	for file_name: String in DirAccess.get_files_at("res://data/world/chunks"):
+		if not file_name.ends_with(".json"):
+			continue
+		var f: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		var chunk: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+		for building: Dictionary in chunk.get("blds", []):
+			var style: String = WorldChunkStreamer.heritage_style(building)
+			if style != "":
+				heritage_counts[style] = int(heritage_counts.get(style, 0)) + 1
+	_check("Heritage styles match only their four shipped OSM footprints", heritage_counts == {"senate": 1, "palace": 2, "cathedral": 1}, str(heritage_counts))
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))

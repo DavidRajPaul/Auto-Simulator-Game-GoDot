@@ -624,3 +624,7 @@ Roads, buildings, coastline, water, parks and place names come from **OpenStreet
 ## 📜 Licence & credits
 
 Code licence: TBD. Third-party assets are listed with their licences in [`assets/README.md`](assets/README.md) and the per-folder `CREDITS_*.md` files, and credited in the in-game Credits screen. Fonts are SIL OFL 1.1. Map data © OpenStreetMap contributors (ODbL).
+
+### Chennai architectural landmarks
+
+The landmark test pass improves Kapaleeshwarar gopuram reliefs in Mylapore, LIC, Vivekananda House and Napier Bridge, and adds architectural roof silhouettes to the existing OSM footprints of Santhome Basilica, Senate House and both Chepauk Palace buildings. See [landmark playtest route and limitations](docs/CHENNAI_ARCHITECTURE_AUDIT.md). These are procedural approximations, with device visual review still required.

@@ -182,3 +182,5 @@ Open items found while writing this catalog — fix before a store release (road
 - `man_casual.glb` comes from a model named after a real actor. The face is repainted, but the project rule bans likenesses of real people; consider replacing it.
 
 Architectural approximation pass: `LandmarkKit.lic_building()` and `vivekananda_house()` replace the existing plain landmark boxes with original procedural geometry. See `docs/CHENNAI_ARCHITECTURE_AUDIT.md` for limitations and pending reference/visual validation. No third-party photographs are bundled by this pass.
+
+The same pass adds original procedural Kapaleeshwarar reliefs and Napier arches, plus Santhome/Senate House/Chepauk roof accents in `WorldChunkStreamer`. These use the original OSM footprint and shared atlas/material; no downloaded photo assets are included.

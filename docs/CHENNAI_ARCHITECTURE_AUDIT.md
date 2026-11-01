@@ -25,3 +25,16 @@ Reference pages:
 - https://chennai.nic.in/tourism/tourist-places/
 
 These are reference links, not licences to redistribute their photos.
+
+## APK test pass: implemented coverage
+
+- Mylapore: Kapaleeshwarar entrance piers and repeated sculptural relief on the gopuram tiers.
+- Marina: Vivekananda House curved frontage and Napier Bridge repeated white arches; existing imported lighthouse remains.
+- Anna Salai: LIC window grid and projecting floor bands.
+- Santhome: pale church walls, west entrance tower, spire and cross on the existing OSM cathedral footprint.
+- University waterfront: Senate House red walls and corner pavilions.
+- Chepauk: both palace footprints receive red walls, cornices and capped corner towers.
+
+The last four footprint treatments are baked into each existing chunk building mesh with no extra draw calls. Existing footprint collision and pedestrian exclusion remain in effect. The matcher requires both OSM-derived seed and a nearby footprint centroid, and a phase 9 content test verifies all four matches. An OSM rebuild that moves/removes these footprints must revisit the anchors.
+
+Test route: Mylapore temple → Santhome → Lighthouse → Vivekananda House → Chepauk → Senate House → Napier Bridge → LIC. Use the map/custom destination controls. Inspect daylight and dusk; check driving clearance and that no tower intersects its neighbours. The new geometry is an architectural interpretation, not a measured reproduction. Original painted atlas textures remain; no photographic textures or new third-party images have been shipped. Parthasarathy and Valluvar Kottam are still pending verified placement and dedicated models.
