@@ -333,6 +333,9 @@ func _add_imported_palms(chunk: Node3D) -> void:
 	palms.name = "GeneratedCoconutPalms"
 	palms.multimesh = mm
 	palms.visibility_range_end = 180.0
+	# This textured 8.5k-vertex source is repeated with MultiMesh; rendering its
+	# entire chunk again into the sun shadow map costs more than its soft foliage shadow adds.
+	palms.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for i: int in markers.get_child_count():
 		var marker: Node3D = markers.get_child(i) as Node3D
 		var scale: float = 7.5 * float(marker.get_meta("palm_scale", 1.0))
@@ -562,6 +565,9 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 			var tree_node: MeshInstance3D = MeshInstance3D.new()
 			tree_node.name = "RoadsideTrees"
 			tree_node.mesh = fm
+			# Thousands of street crowns are already shaded by their vertex colours.
+			# Shadow-map rendering of the whole 250 m batch is expensive on mobile.
+			tree_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			holder.add_child(tree_node)
 		_imported_palm_markers(holder, dress)
 	if m.verts.is_empty():
@@ -784,16 +790,16 @@ func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
 ## Rain tree (wide umbrella crown, very common on Chennai roads) or neem (rounder, denser),
 ## picked by seed. Thick trunk that forks into the crown.
 func _shade_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.34, 0.27, 0.2)
+	var bark: Color = Color(0.34, 0.27, 0.2) if seed_i % 2 == 0 else Color(0.39, 0.33, 0.25)
 	var rain: bool = seed_i % 2 == 0
 	var trunk_h: float = (3.6 if rain else 3.0) * s
 	var top: Vector3 = base + Vector3(0.0, trunk_h, 0.0)
 	_trunk(m, base, top, 0.26 * s, 0.16 * s, bark)
-	var greens: Array[Color] = [Color(0.26, 0.46, 0.19), Color(0.21, 0.4, 0.17), Color(0.31, 0.5, 0.21), Color(0.24, 0.43, 0.22)]
+	var greens: Array[Color] = [Color(0.25, 0.41, 0.18), Color(0.20, 0.36, 0.16), Color(0.29, 0.45, 0.20), Color(0.23, 0.39, 0.19)]
 	var lobes: int = 5 if rain else 4
 	for k: int in lobes:
-		var a: float = float(seed_i % 7) + float(k) * TAU / float(lobes)
-		var r: float = (1.9 if rain else 1.1) * s
+		var a: float = float(seed_i % 7) + float(k) * TAU / float(lobes) + 0.13 * sin(float(seed_i + k * 5))
+		var r: float = (1.9 if rain else 1.1) * s * (0.88 + 0.06 * float((seed_i + k) % 5))
 		# Forked limbs out to each lobe.
 		var tip: Vector3 = top + Vector3(cos(a) * r * 0.7, (0.9 if rain else 0.8) * s, sin(a) * r * 0.7)
 		_trunk(m, top - Vector3(0.0, 0.3 * s, 0.0), tip, 0.1 * s, 0.06 * s, bark)
@@ -806,25 +812,26 @@ func _shade_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 func _mast_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 	var h: float = 8.0 * s + float(seed_i % 5) * 0.3
 	_trunk(m, base, base + Vector3(0.0, 1.4 * s, 0.0), 0.13 * s, 0.1 * s, Color(0.3, 0.24, 0.18))
-	var green: Color = Color(0.13, 0.3, 0.12)
+	var green: Color = Color(0.15, 0.29, 0.13)
 	var tiers: int = 4
 	for k: int in tiers:
 		var f: float = float(k) / float(tiers - 1)
 		var y: float = 1.6 * s + f * (h - 2.4 * s)
-		var w: float = lerpf(1.5, 0.6, f) * s
-		_blob(m, base + Vector3(0.0, y + 0.6 * s, 0.0), Vector3(w, 2.2 * s, w), green.lightened(0.05 * float(k % 2)))
+		var w: float = lerpf(1.8, 0.65, f) * s
+		var offset: Vector3 = Vector3(sin(float(seed_i + k * 3)) * 0.12 * s, 0.0, cos(float(seed_i + k * 7)) * 0.12 * s)
+		_blob(m, base + offset + Vector3(0.0, y + 0.6 * s, 0.0), Vector3(w, 2.35 * s, w), green.lightened(0.035 * float(k % 2)))
 
 ## Copper-pod / gulmohar: spreading flat crown, yellow or flame-orange flowers on top.
 func _copper_pod(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 	var bark: Color = Color(0.4, 0.33, 0.25)
 	var top: Vector3 = base + Vector3(0.0, 3.6 * s, 0.0)
 	_trunk(m, base, top, 0.2 * s, 0.13 * s, bark)
-	var leaf: Color = Color(0.3, 0.5, 0.2)
-	var bloom: Color = Color(0.98, 0.78, 0.1) if seed_i % 3 != 0 else Color(0.95, 0.35, 0.12)
+	var leaf: Color = Color(0.27, 0.42, 0.18)
+	var bloom: Color = Color(0.77, 0.61, 0.20) if seed_i % 3 != 0 else Color(0.76, 0.38, 0.20)
 	_blob(m, top + Vector3(0.0, 0.7 * s, 0.0), Vector3(4.6, 1.3, 4.6) * s, leaf)
 	for k: int in 3:
 		var a: float = float(seed_i % 11) + float(k) * 2.1
-		_blob(m, top + Vector3(cos(a) * 1.2 * s, 1.3 * s, sin(a) * 1.2 * s), Vector3(1.6, 0.6, 1.6) * s, bloom if k != 1 else leaf.lightened(0.1))
+		_blob(m, top + Vector3(cos(a) * 1.2 * s, 1.28 * s, sin(a) * 1.2 * s), Vector3(1.25, 0.38, 1.25) * s, bloom if k != 1 else leaf.lightened(0.08))
 
 ## Pungai (Pongamia pinnata): broad irregular shade canopy with multiple branch forks.
 ## Seeded asymmetry avoids identical trees without new materials or draw calls.
@@ -853,8 +860,8 @@ func _gulmohar_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 		var tip: Vector3 = crown + Vector3(cos(angle) * reach, 0.5 * s, sin(angle) * reach)
 		_trunk(m, crown, tip, 0.10 * s, 0.04 * s, bark)
 		_blob(m, tip, Vector3(2.3, 0.85, 2.2) * s, green.lightened(float(k % 3) * 0.035))
-		if (seed_i + k) % 3 != 0:
-			_blob(m, tip + Vector3(0.0, 0.48 * s, 0.0), Vector3(1.15, 0.25, 1.1) * s, Color(0.87, 0.26, 0.10))
+		if (seed_i + k) % 3 == 0:
+			_blob(m, tip + Vector3(0.0, 0.40 * s, 0.0), Vector3(0.9, 0.22, 0.85) * s, Color(0.75, 0.28, 0.14))
 	_blob(m, crown + Vector3(0.0, 0.85 * s, 0.0), Vector3(3.0, 0.9, 3.0) * s, green)
 
 ## Coconut palm: leaning trunk, drooping fronds.
@@ -889,32 +896,37 @@ func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 
 func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color) -> void:
 	var sides: int = 5
+	var grain: float = sin(a.x * 1.21 + a.z * 0.79 + b.y * 1.87)
 	for k: int in sides:
 		var a0: float = TAU * float(k) / float(sides)
 		var a1: float = TAU * float(k + 1) / float(sides)
 		var d0: Vector3 = Vector3(cos(a0), 0.0, sin(a0))
 		var d1: Vector3 = Vector3(cos(a1), 0.0, sin(a1))
 		var out: Vector3 = (d0 + d1).normalized()
-		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, col.lightened(0.06 * out.x))
+		var shade: Color = col.lightened(0.055 * maxf(out.x, 0.0))
+		shade = shade.darkened(0.045 * maxf(-out.x, 0.0) + 0.025 * maxf(sin(float(k) * 2.7 + grain), 0.0))
+		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, shade)
 
-## Hexagonal bipyramid "leaf blob" (12 faces).
+## Irregular eight-sided crown with a sunlit ridge and shaded underside (16 faces).
+## Opaque triangles keep the leaves readable without mobile alpha overdraw.
 func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
 	var ring: Array[Vector3] = []
 	var seed_f: float = c.x * 1.73 + c.z * 2.19 + c.y * 0.61
 	var twist: float = sin(seed_f * 0.17) * 0.28
-	for k: int in 6:
-		var a: float = TAU * float(k) / 6.0 + 0.3 + twist
-		var radius: float = 0.82 + 0.18 * sin(seed_f + float(k) * 2.47)
-		var rise: float = 0.13 * size.y * sin(seed_f * 0.47 + float(k) * 2.11)
+	for k: int in 8:
+		var a: float = TAU * float(k) / 8.0 + 0.3 + twist
+		var radius: float = 0.79 + 0.21 * sin(seed_f + float(k) * 2.47)
+		var rise: float = 0.17 * size.y * sin(seed_f * 0.47 + float(k) * 2.11)
 		ring.append(c + Vector3(cos(a) * size.x * 0.5 * radius, rise, sin(a) * size.z * 0.5 * radius))
-	var top: Vector3 = c + Vector3(0.12 * size.x * sin(seed_f), size.y * 0.58, 0.09 * size.z * cos(seed_f))
+	var top: Vector3 = c + Vector3(0.12 * size.x * sin(seed_f), size.y * 0.55, 0.09 * size.z * cos(seed_f))
 	var bot: Vector3 = c + Vector3(-0.08 * size.x * cos(seed_f), -size.y * 0.44, 0.07 * size.z * sin(seed_f))
-	for k: int in 6:
+	for k: int in 8:
 		var p0: Vector3 = ring[k]
-		var p1: Vector3 = ring[(k + 1) % 6]
-		var tint: float = 0.025 * sin(seed_f + float(k) * 1.9)
-		_tri_out(m, p0, p1, top, c, col.lightened(0.08 + maxf(tint, 0.0)))
-		_tri_out(m, p0, p1, bot, c, col.darkened(0.12 + maxf(-tint, 0.0)))
+		var p1: Vector3 = ring[(k + 1) % 8]
+		var tint: float = 0.045 * sin(seed_f + float(k) * 1.9)
+		var sun: float = maxf(0.0, (p0.x + p1.x - 2.0 * c.x) / maxf(size.x, 0.01))
+		_tri_out(m, p0, p1, top, c, col.lightened(0.055 + sun * 0.10 + maxf(tint, 0.0)))
+		_tri_out(m, p0, p1, bot, c, col.darkened(0.18 + maxf(-tint, 0.0)))
 
 ## Triangle wound to face away from `centre`.
 func _tri_out(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, centre: Vector3, col: Color) -> void:
