@@ -126,6 +126,11 @@ const RIDER_SEAT_POS: Vector3 = Vector3(0.0, 0.72, 0.22)
 static var _rider_variant: int = 0
 static var _bus_variant: int = 0
 var bus_variant: int = -1
+## Paint shown this respawn (alpha 0 = the model's own colours) and whether this NPC auto is an
+## electric one (blue / teal body; EVs carry green number plates).
+var paint: Color = Color(0, 0, 0, 0)
+var electric: bool = false
+var _paintable: bool = false
 var bus_route: String = ""
 var _bus_models: Array[Node3D] = []
 var _route_board: Label3D = null
@@ -219,6 +224,9 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		rider_seat = tw[5] as Vector3
 	if TrafficModelFit.attach(self, model_path, fit_size, flip, uniform):
 		_mesh.visible = false
+		# Colour variety (Nov 1): two-wheelers and NPC autos repaint per respawn (PaintSwap).
+		if kind in [Archetype.TWO_WHEELER, Archetype.SHARE_AUTO]:
+			_paintable = PaintSwap.prepare(get_node("Model"), PaintSwap.key_of(model_path)) > 0
 	# Autos should never look driverless.  Reuse the compact seated mesh used by
 	# scooters; its low-poly silhouette reads clearly through the open auto side.
 	if kind in [Archetype.TWO_WHEELER, Archetype.SHARE_AUTO]:
@@ -299,6 +307,24 @@ func pick_service_variant(rng: RandomNumberGenerator) -> void:
 	body = SERVICE_VARIANTS[pick][1] as Vector3
 	(_shape.shape as BoxShape3D).size = body
 	_shape.position.y = body.y * 0.5
+
+## Two-wheelers: a Chennai street colour (or the model's own); NPC autos: mostly the stock
+## yellow, ~30 % electric (blue / teal), ~8 % women-driven pink autos.
+func pick_paint(rng: RandomNumberGenerator) -> void:
+	electric = false
+	paint = PaintSwap.NO_PAINT
+	if not _paintable:
+		return
+	if archetype == Archetype.TWO_WHEELER:
+		paint = PaintSwap.TWO_WHEELER_PAINTS[rng.randi() % PaintSwap.TWO_WHEELER_PAINTS.size()]
+	elif archetype == Archetype.SHARE_AUTO:
+		var roll: float = rng.randf()
+		if roll < 0.3:
+			electric = true
+			paint = PaintSwap.AUTO_ELECTRIC[rng.randi() % PaintSwap.AUTO_ELECTRIC.size()]
+		elif roll < 0.38:
+			paint = PaintSwap.AUTO_PINK
+	PaintSwap.set_paint(get_node("Model"), paint)
 
 ## MTC_BUS: show one livery (weighted; college buses mostly at college rush hours), size the
 ## collision box to it and put a real route on the destination board: one that serves the MTC
@@ -452,6 +478,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	visible = true
 	_apply_transform()
 	pick_bus_variant(manager.rng)
+	pick_paint(manager.rng)
 	reset_physics_interpolation() # a recycled vehicle must not smear across the map
 	# Teleport with collision off; re-enable next tick so Jolt never sweeps a
 	# kinematic body through the world (that launched the player auto).

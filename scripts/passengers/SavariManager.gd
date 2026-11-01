@@ -165,6 +165,16 @@ func _build_parked_stand_autos() -> void:
 			if not TrafficModelFit.attach(parked, path, files[i][1] as Vector3, true, true):
 				parked.queue_free()
 				continue
+			# Colour variety: some stand autos are electric (blue / teal), scooters vary.
+			var pk: String = PaintSwap.key_of(path)
+			if PaintSwap.prepare(parked, pk) > 0:
+				var h: int = absi(hash(str(stand["id"]) + str(i)))
+				var paint: Color = PaintSwap.NO_PAINT
+				if pk == "share_auto":
+					paint = PaintSwap.AUTO_ELECTRIC[h % 2] if h % 3 == 0 else PaintSwap.NO_PAINT
+				else:
+					paint = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
+				PaintSwap.set_paint(parked, paint)
 			# Was raw GLBs at scale 1 and y 0.05: the traffic scooter (a 1 m box centred on its
 			# origin) sat half buried. Stand every parked vehicle on the drawn ground.
 			SignalBus.ground_snap_requested.emit(parked)

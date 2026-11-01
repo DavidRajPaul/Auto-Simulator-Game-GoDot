@@ -1,0 +1,39 @@
+{
+ "woman_saree_green": {
+  "stand_hip": 0.843,
+  "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured"
+ },
+ "woman_saree_maroon": {
+  "stand_hip": 0.821,
+  "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured"
+ },
+ "woman_saree_violet": {
+  "stand_hip": 0.832,
+  "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0"
+ },
+ "man_casual": {
+  "stand_hip": 0.897,
+  "credit": "\"Dhanush 3d model\" by Peter Charles (Sketchfab), CC BY 4.0 \u2014 face repainted as a generic character",
+  "sit_drop": 0.522
+ },
+ "old_man_veshti": {
+  "stand_hip": 0.96,
+  "credit": "\"Indian Old man walking\" by anandmohan662 (Sketchfab), CC BY 4.0",
+  "sit_drop": 0.563
+ },
+ "young_man": {
+  "stand_hip": 0.96,
+  "credit": "\"Alex Texel A-pose\" by alex.texelsales (Sketchfab), CC BY 4.0",
+  "sit_drop": 0.56
+ },
+ "girl_churidar": {
+  "stand_hip": 0.85,
+  "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
+  "sit_drop": 0.506
+ },
+ "woman_modern": {
+  "stand_hip": 0.847,
+  "credit": "\"Modern Indian Woman\" by Pixel_Monster (Sketchfab), CC BY 4.0",
+  "sit_drop": 0.486
+ }
+}

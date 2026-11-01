@@ -35,6 +35,7 @@ func _run() -> void:
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
 	await _test_bus_stops(city)
+	_test_colour_variety(city)
 	city.queue_free()
 	await _physics(2)
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -556,6 +557,59 @@ func _test_bus_stops(city: Node) -> void:
 	_check("It dwells for passengers, then drives on", dwelt >= TrafficVehicleAI.BUS_DWELL_S.x - 0.2 and bus.current_speed_mps > 2.0, "%.1f s" % dwelt)
 	bus.deactivate()
 	traffic.set_physics_process(true)
+
+## Nov 1: colour variety: two-wheelers, electric / pink NPC autos, dresses and sarees, people
+## waiting at bus stops.
+func _test_colour_variety(city: Node) -> void:
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var auto_v: TrafficVehicleAI = null
+	var bike: TrafficVehicleAI = null
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.SHARE_AUTO and auto_v == null:
+			auto_v = v
+		if v.archetype == TrafficVehicleAI.Archetype.TWO_WHEELER and bike == null and v._paintable:
+			bike = v
+	_check("NPC autos and two-wheelers carry the paint-swap material", auto_v != null and auto_v._paintable and bike != null)
+	if auto_v == null or bike == null:
+		return
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7
+	var electric: int = 0
+	var pink: int = 0
+	var bike_paints: Dictionary = {}
+	for i: int in 300:
+		auto_v.pick_paint(rng)
+		electric += 1 if auto_v.electric else 0
+		pink += 1 if auto_v.paint == PaintSwap.AUTO_PINK else 0
+		bike.pick_paint(rng)
+		bike_paints[bike.paint] = true
+	_check("About 30 % of NPC autos are electric (blue / teal), some are pink", electric > 60 and electric < 130 and pink > 8, "%d electric, %d pink of 300" % [electric, pink])
+	_check("Two-wheelers come in many colours", bike_paints.size() >= 8, "%d" % bike_paints.size())
+	var mi: MeshInstance3D = auto_v.get_node("Model").find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	_check("Electric paint reaches the auto's shader", mi.get_surface_override_material(0) is ShaderMaterial)
+	auto_v.deactivate()
+	bike.deactivate()
+	var pm: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
+	var sarees: int = 0
+	var painted: int = 0
+	for w: PedestrianManager.Walker in pm.people:
+		if w.paintable:
+			painted += 1
+			sarees += 1 if w.id.begins_with("woman_saree") else 0
+	_check("Pedestrians' dresses and sarees can change colour", painted >= 10 and sarees >= 4, "%d paintable, %d sarees" % [painted, sarees])
+	# People wait at the nearest stops: some on the bench, some standing.
+	var stops: BusStops = city.get_node("BusStops") as BusStops
+	GameState.shift_minute = 510.0 # 8:30, morning rush
+	var seen: int = 0
+	var sitting: int = 0
+	for st: int in mini(stops.stops.size(), 40):
+		var d: Dictionary = stops.stops[st]
+		stops._player = Vector3(float(d["x"]), 0.0, float(d["z"]))
+		stops.refresh()
+		seen += stops.waiting.size()
+		for w: Array in stops.waiting:
+			sitting += 1 if bool(stops._wait_poses[int(w[0])][1]) else 0
+	_check("People wait at bus stops, sitting and standing", seen > 40 and sitting > 5 and seen - sitting > 5, "%d people, %d seated" % [seen, sitting])
 
 func _test_city_props(s: WorldChunkStreamer) -> void:
 	var lm: Node = s.get_node("Landmarks")

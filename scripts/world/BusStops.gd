@@ -41,6 +41,19 @@ var _bodies: Array[StaticBody3D] = []
 var _labels: Array[Label3D] = []
 var shown: PackedInt32Array = PackedInt32Array()
 
+## People waiting at the nearest stops (Nov 1): static baked poses (tools/assets/
+## bake_waiting_people.py), standing at the kerb or seated on the bench, dress and saree colours
+## varied by PaintSwap. WAITING slots in all, each pre-instancing every pose (nothing is
+## instanced while driving); one draw call per visible person, only within WAIT_VISIBLE_M.
+const WAITING: int = 5
+const WAIT_VISIBLE_M: float = 65.0
+const WAIT_DIR: String = "res://assets/models/people/waiting/"
+var _wait_meta: Dictionary = {}
+var _wait_poses: Array = [] # [id, sit(bool), PackedScene]
+var _wait_slots: Array = [] # per slot: Array[Node3D] (one per pose)
+## Per shown person: [pose index, stop index], for tests.
+var waiting: Array = []
+
 func _ready() -> void:
 	_load()
 	SignalBus.current_bus_stops = self
@@ -85,6 +98,7 @@ func _ready() -> void:
 		l.visible = false
 		add_child(l)
 		_labels.append(l)
+	_build_waiting()
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player = p)
 
 func _exit_tree() -> void:
@@ -189,6 +203,93 @@ func refresh() -> void:
 		l.text = "%s\n%s" % [str(s["name"]).to_upper(), line2]
 		# On the fascia, facing the road.
 		l.global_transform = shelter_transform(i) * Transform3D(Basis.IDENTITY, Vector3(0.0, ROOF_M - 0.32, DEPTH_M * 0.5 + 0.34))
+	_place_waiting()
+
+func _build_waiting() -> void:
+	var f: FileAccess = FileAccess.open(WAIT_DIR + "waiting.json", FileAccess.READ)
+	if f == null:
+		return
+	_wait_meta = JSON.parse_string(f.get_as_text()) as Dictionary
+	var ids: Array = _wait_meta.keys()
+	ids.sort()
+	for id: Variant in ids:
+		for sit: bool in [false, true]:
+			var path: String = WAIT_DIR + "%s_%s.glb" % [id, "sit" if sit else "stand"]
+			if ResourceLoader.exists(path):
+				_wait_poses.append([str(id), sit, load(path) as PackedScene])
+	for k: int in WAITING:
+		var nodes: Array[Node3D] = []
+		for p: Array in _wait_poses:
+			var n: Node3D = (p[2] as PackedScene).instantiate() as Node3D
+			n.visible = false
+			for mi: Node in n.find_children("*", "MeshInstance3D", true, false):
+				(mi as GeometryInstance3D).visibility_range_end = WAIT_VISIBLE_M
+				(mi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			PaintSwap.prepare(n, str(p[0]))
+			add_child(n)
+			nodes.append(n)
+		_wait_slots.append(nodes)
+
+## Who waits at stop `i`: [[pose index, local transform, paint], ...]. Deterministic per stop
+## and hour, more people at rush hours: up to 2 on the bench, the rest standing at the kerb
+## looking up or down the road for the bus.
+func _waiting_at(i: int) -> Array:
+	if _wait_poses.is_empty():
+		return []
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	var hour: int = int(GameState.shift_minute / 60.0)
+	rng.seed = i * 7919 + hour
+	var rush: bool = (hour >= 7 and hour < 10) or (hour >= 16 and hour < 20)
+	var n: int = rng.randi_range(2, 4) if rush else rng.randi_range(1, 2)
+	var out: Array = []
+	var seats: Array = [-1.4, 0.2]
+	var spots: Array = [1.4, 2.2, -2.0]
+	var sitters: Array[int] = []
+	var standers: Array[int] = []
+	for pi: int in _wait_poses.size():
+		if bool(_wait_poses[pi][1]):
+			sitters.append(pi)
+		else:
+			standers.append(pi)
+	for k: int in n:
+		var sit: bool = k < 2 and rng.randf() < 0.6 and not seats.is_empty()
+		var pool: Array[int] = sitters if sit else standers
+		if pool.is_empty() or (not sit and spots.is_empty()):
+			continue
+		var pi: int = pool[rng.randi() % pool.size()]
+		var id: String = str(_wait_poses[pi][0])
+		var meta: Dictionary = _wait_meta.get(id, {})
+		var xf: Transform3D
+		if sit:
+			var drop: float = float(meta.get("sit_drop", 0.5))
+			xf = Transform3D(Basis.IDENTITY, Vector3(float(seats.pop_front()), clampf(drop - 0.02, 0.5, 0.6), -DEPTH_M * 0.5 + 0.3))
+		else:
+			var yaw: float = rng.randf_range(-1.2, 1.2)
+			xf = Transform3D(Basis(Vector3.UP, yaw), Vector3(float(spots.pop_front()), float(meta.get("stand_hip", 0.85)), DEPTH_M * 0.5 + 0.55))
+		var pal: Array[Color] = PaintSwap.palette_for_person(id)
+		var paint: Color = PaintSwap.NO_PAINT if pal.is_empty() or rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
+		out.append([pi, xf, paint])
+	return out
+
+func _place_waiting() -> void:
+	waiting = []
+	var used: int = 0
+	for k: int in mini(NAMED, shown.size()):
+		var i: int = shown[k]
+		for w: Array in _waiting_at(i):
+			if used >= _wait_slots.size():
+				break
+			var nodes: Array = _wait_slots[used]
+			for pi: int in nodes.size():
+				(nodes[pi] as Node3D).visible = pi == int(w[0])
+			var n: Node3D = nodes[int(w[0])]
+			n.global_transform = shelter_transform(i) * (w[1] as Transform3D)
+			PaintSwap.set_paint(n, w[2] as Color)
+			waiting.append([int(w[0]), i])
+			used += 1
+	for k: int in range(used, _wait_slots.size()):
+		for n: Variant in _wait_slots[k]:
+			(n as Node3D).visible = false
 
 ## Shelter transform: drawn footpath height, front (+Z) facing the road.
 func shelter_transform(i: int) -> Transform3D:
