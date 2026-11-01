@@ -683,6 +683,22 @@ func _test_city_props(s: WorldChunkStreamer) -> void:
 
 func _test_dressing(s: WorldChunkStreamer) -> void:
 	_check("Street dressing data exists for the loaded chunks", DirAccess.get_files_at("res://data/world/dress").size() > 400)
+	var almond_count: int = 0
+	var poovarasu_count: int = 0
+	for file_name: String in DirAccess.get_files_at("res://data/world/dress"):
+		if not file_name.ends_with(".json"):
+			continue
+		var f: FileAccess = FileAccess.open("res://data/world/dress/" + file_name, FileAccess.READ)
+		if f == null:
+			continue
+		var dress: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+		for tree_data: Array in dress.get("trees", []):
+			if int(tree_data[2]) == 6:
+				almond_count += 1
+			elif int(tree_data[2]) == 7:
+				poovarasu_count += 1
+	_check("Indian almond and poovarasu are shipped throughout the map", almond_count > 1000 and poovarasu_count > 200,
+		"almond=%d, poovarasu=%d" % [almond_count, poovarasu_count])
 
 func _test_ambience(a: AmbienceAudio) -> void:
 	_check("City traffic bed is playing", a.players.has("city"))

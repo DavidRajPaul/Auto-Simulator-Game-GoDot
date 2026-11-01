@@ -766,6 +766,8 @@ func _street_trees(m: MeshBuf, dress: Dictionary) -> void:
 			3: _copper_pod(m, base2, float(t[3]), int(t[4]))
 			4: _pungai_tree(m, base2, float(t[3]), int(t[4]))
 			5: _gulmohar_tree(m, base2, float(t[3]), int(t[4]))
+			6: _indian_almond_tree(m, base2, float(t[3]), int(t[4]))
+			7: _poovarasu_tree(m, base2, float(t[3]), int(t[4]))
 			_: _shade_tree(m, base2, float(t[3]), int(t[4]))
 
 func _imported_palm_markers(holder: Node3D, dress: Dictionary) -> void:
@@ -1014,6 +1016,41 @@ func _gulmohar_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 		if (seed_i + k) % 3 == 0:
 			_blob(m, tip + Vector3(0.0, 0.40 * s, 0.0), Vector3(0.9, 0.22, 0.85) * s, Color(0.75, 0.28, 0.14))
 	_blob(m, crown + Vector3(0.0, 0.85 * s, 0.0), Vector3(3.0, 0.9, 3.0) * s, green)
+
+## Naattu badam / Indian almond: distinct horizontal whorls, with lower leaves turning
+## copper on some trees. The spaced tiers read clearly from the driving camera.
+func _indian_almond_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.43, 0.36, 0.29)
+	var top: Vector3 = base + Vector3(0.0, 7.2 * s, 0.0)
+	_trunk(m, base, top, 0.22 * s, 0.065 * s, bark)
+	for tier: int in 3:
+		var y: float = (3.2 + float(tier) * 1.55) * s
+		var reach: float = (2.7 - float(tier) * 0.55) * s
+		var hue: Color = Color(0.27, 0.42, 0.21) if tier != 0 or seed_i % 4 != 0 else Color(0.58, 0.38, 0.21)
+		for k: int in 3:
+			var a: float = float(seed_i % 37) * 0.11 + float(k) * TAU / 3.0 + float(tier) * 0.34
+			var centre: Vector3 = base + Vector3(cos(a) * reach, y + 0.12 * s, sin(a) * reach)
+			_trunk(m, base + Vector3(0.0, y - 0.28 * s, 0.0), centre, 0.075 * s, 0.025 * s, bark)
+			_blob(m, centre, Vector3(2.5 - float(tier) * 0.30, 0.72, 2.4 - float(tier) * 0.30) * s,
+				hue.lightened(0.035 * float(k)))
+	_blob(m, top - Vector3(0.0, 0.32 * s, 0.0), Vector3(1.25, 0.95, 1.25) * s, Color(0.29, 0.45, 0.22))
+
+## Poovarasu / Indian tulip tree: wind-rounded coastal crown, broad leaf clusters and
+## a few small yellow blooms. Kept opaque and batched with the other street trees.
+func _poovarasu_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.43, 0.35, 0.28)
+	var fork: Vector3 = base + Vector3(0.0, 3.1 * s, 0.0)
+	_trunk(m, base, fork, 0.25 * s, 0.14 * s, bark)
+	for k: int in 5:
+		var a: float = float(seed_i % 23) * 0.18 + float(k) * TAU / 5.0
+		var reach: float = (1.35 + float((seed_i + k) % 3) * 0.18) * s
+		var tip: Vector3 = fork + Vector3(cos(a) * reach, (0.65 + float(k % 2) * 0.23) * s, sin(a) * reach)
+		_trunk(m, fork, tip, 0.09 * s, 0.04 * s, bark)
+		_blob(m, tip, Vector3(2.2, 1.42, 2.2) * s, Color(0.22, 0.39, 0.19).lightened(0.035 * float(k % 3)))
+		if (seed_i + k) % 3 == 0:
+			_blob(m, tip + Vector3(0.32 * s, 0.65 * s, 0.0), Vector3(0.43, 0.17, 0.43) * s,
+				Color(0.82, 0.70, 0.25))
+	_blob(m, fork + Vector3(0.0, 1.10 * s, 0.0), Vector3(2.8, 1.5, 2.7) * s, Color(0.25, 0.42, 0.20))
 
 ## Coconut palm: leaning trunk, drooping fronds.
 func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
