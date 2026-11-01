@@ -102,6 +102,8 @@ const BUS_VARIANTS: Array = [
 	["res://assets/models/traffic/bus_tnstc.glb", Vector3(2.5, 3.2, 11.0), 1, "state"],
 	["res://assets/models/traffic/bus_setc.glb", Vector3(2.5, 3.2, 11.0), 1, "state"],
 ]
+## Every bus file faces +Z (side renders), so all are turned to drive along -Z.
+const BUS_FLIP: bool = true
 ## MTC Premium routes (launched 11 Mar 2026): P570S Siruseri IT Park - CMBT, P91 Thiruvanmiyur - KCBT.
 const PREMIUM_ROUTES: Array = [["P570S", "CMBT"], ["P91", "KCBT"]]
 ## Buses pull in at stops (BusStops) and dwell: look-ahead and dwell time.
@@ -236,7 +238,7 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		_mesh.visible = false
 		for v: Array in BUS_VARIANTS:
 			var state: bool = str(v[3]) == "state"
-			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true, not state):
+			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, BUS_FLIP, not state):
 				var holder: Node3D = get_node("Model") as Node3D
 				holder.name = "Bus_%s" % str(v[0]).get_file().get_basename()
 				holder.visible = false
