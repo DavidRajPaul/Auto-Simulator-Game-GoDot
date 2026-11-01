@@ -8,6 +8,14 @@ extends Node3D
 ## ribbons as a fallback) and one building mesh (real OSM footprints extruded) + a trimesh collider.
 
 ## Visual layering (ground plane sits at -0.15 so far-away flat layers never z-fight).
+## OSM footprint anchors, verified against the shipped chunks. Seed plus position prevents
+## unrelated buildings sharing the modulo seed from receiving landmark architecture.
+const HERITAGE_SITES: Array[Dictionary] = [
+	{"seed": 9138, "point": Vector2(2594.32, -1778.52), "style": "senate"},
+	{"seed": 3505, "point": Vector2(2443.58, -1676.04), "style": "palace"},
+	{"seed": 3507, "point": Vector2(2462.20, -1573.74), "style": "palace"},
+	{"seed": 3634, "point": Vector2(2041.64, 1702.52), "style": "cathedral"},
+]
 const GROUND_VISUAL_Y: float = -0.15
 const ROAD_Y: float = 0.06
 const SIDEWALK_Y: float = 0.08
@@ -515,7 +523,10 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 		var kind: String = str(b.get("k", ""))
 		var zone: String = str(b.get("z", ""))
 		var seed_i: int = int(b.get("s", 0))
+		var heritage: String = heritage_style(b)
 		var colour: Color = building_colour(kind, zone, float(seed_i))
+		if heritage != "":
+			colour = Color(0.87, 0.85, 0.80) if heritage == "cathedral" else Color(0.66, 0.34, 0.25)
 		var skin: Dictionary = facade_skin(kind, zone, h, seed_i)
 		# Signed area tells us the winding, so walls always face outwards.
 		var area2: float = 0.0
@@ -558,7 +569,9 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 			faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
 				Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
 		var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
-		if detailed and kind != "temple":
+		if heritage != "":
+			_heritage_roof(m, pts, h, heritage)
+		elif detailed and kind != "temple":
 			_roof_details(m, pts, tri, h, colour, seed_i, absf(area2) * 0.5, outward_sign)
 		var roof: Color = ROOF_COLOUR.lerp(colour, 0.35).darkened(fposmod(float(seed_i) * 0.13, 0.12))
 		var rcell: Vector2 = ROOF_CELLS[seed_i % ROOF_CELLS.size()]
@@ -1724,16 +1737,18 @@ func _build_landmarks() -> void:
 			"gopuram":
 				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
 			"tower":
-				_part(node, holder, _box(Vector3(18, 54, 18)), Vector3(0, 27, 0), Color(0.82, 0.8, 0.74), true)
+				_kit_part(node, holder, LandmarkKit.lic_building(), Vector3(18, 54, 18))
 			"bridge":
-				_part(node, holder, _box(Vector3(3, 6, 40)), Vector3(9, 3, 0), Color(0.3, 0.45, 0.85), false)
-				_part(node, holder, _box(Vector3(3, 6, 40)), Vector3(-9, 3, 0), Color(0.95, 0.95, 0.95), false)
+				var bridge_mesh: MeshInstance3D = MeshInstance3D.new()
+				bridge_mesh.mesh = LandmarkKit.napier_bridge()
+				bridge_mesh.visibility_range_end = LANDMARK_VISIBLE_M
+				node.add_child(bridge_mesh)
 			"flyover":
 				_part(node, holder, _box(Vector3(20, 1.2, 70)), Vector3(0, 7.5, 0), Color(0.6, 0.6, 0.6), false)
 				_part(node, holder, _box(Vector3(2, 7, 2)), Vector3(12, 3.5, 0), Color(0.55, 0.55, 0.55), true)
 				_part(node, holder, _box(Vector3(2, 7, 2)), Vector3(-12, 3.5, 0), Color(0.55, 0.55, 0.55), true)
 			"heritage":
-				_part(node, holder, _box(Vector3(30, 9, 18)), Vector3(0, 4.5, 0), Color(0.95, 0.9, 0.75), true)
+				_kit_part(node, holder, LandmarkKit.vivekananda_house(), Vector3(30, 9, 18))
 			"tank", "park":
 				pass # drawn by the water / park areas
 			_:
@@ -1988,3 +2003,53 @@ func _cyl(top: float, bottom: float, h: float) -> CylinderMesh:
 	m.height = h
 	m.radial_segments = 12
 	return m
+
+
+static func heritage_style(b: Dictionary) -> String:
+	var flat: Array = b.get("p", [])
+	if flat.size() < 6:
+		return ""
+	var centre: Vector2 = Vector2.ZERO
+	for i: int in range(0, flat.size(), 2):
+		centre += Vector2(float(flat[i]), float(flat[i + 1]))
+	centre /= float(flat.size() / 2)
+	for site: Dictionary in HERITAGE_SITES:
+		if int(b.get("s", -1)) == int(site["seed"]) and centre.distance_to(site["point"] as Vector2) < 20.0:
+			return str(site["style"])
+	return ""
+
+## Architectural roof accents are merged into the original footprint mesh. Ground-floor
+## geometry, collision and road clearance are inherited from the actual OSM building.
+func _heritage_roof(m: MeshBuf, pts: PackedVector2Array, h: float, style: String) -> void:
+	var centre: Vector2 = Vector2.ZERO
+	for p: Vector2 in pts:
+		centre += p
+	centre /= float(pts.size())
+	var cream: Color = Color(0.84, 0.79, 0.65)
+	var red: Color = Color(0.62, 0.30, 0.21)
+	for i: int in pts.size():
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % pts.size()]
+		var d: Vector2 = b - a
+		var mid: Vector2 = (a + b) * 0.5
+		_dbox(m, Vector3(mid.x, h + 0.25, mid.y), Vector3(d.length(), 0.5, 0.45), d.normalized(), cream)
+	if style == "cathedral":
+		# West-facing entrance tower within the original church footprint.
+		var west: Vector2 = pts[0]
+		for p: Vector2 in pts:
+			if p.x < west.x:
+				west = p
+		var tower: Vector2 = west.lerp(centre, 0.28)
+		var base: Vector3 = Vector3(tower.x, h, tower.y)
+		_dbox(m, base + Vector3(0, 8, 0), Vector3(4.0, 16.0, 4.0), Vector2.RIGHT, Color(0.87, 0.85, 0.80))
+		_trunk(m, base + Vector3(0, 16, 0), base + Vector3(0, 31, 0), 2.9, 0.05, Color(0.80, 0.80, 0.77))
+		_dbox(m, base + Vector3(0, 32, 0), Vector3(0.16, 2.2, 0.16), Vector2.RIGHT, cream)
+		_dbox(m, base + Vector3(0, 32.4, 0), Vector3(1.2, 0.16, 0.16), Vector2.RIGHT, cream)
+	else:
+		# Corner pavilions, with faceted domed caps, distinguish the red heritage skyline.
+		for i: int in mini(4, pts.size()):
+			var p: Vector2 = pts[i].lerp(centre, 0.16)
+			var base: Vector3 = Vector3(p.x, h, p.y)
+			_trunk(m, base, base + Vector3(0, 5, 0), 1.6, 1.6, red)
+			_trunk(m, base + Vector3(0, 5, 0), base + Vector3(0, 6, 0), 1.9, 2.1, cream)
+			_trunk(m, base + Vector3(0, 6, 0), base + Vector3(0, 8.5, 0), 2.1, 0.25, cream)
