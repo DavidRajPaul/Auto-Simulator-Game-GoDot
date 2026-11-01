@@ -27,19 +27,28 @@ const ROAD_VISUAL_Y: float = 0.06
 ## Optimised models per archetype (assets/models/traffic). "" keeps the box. Buses pick from BUS_FILES.
 const MODEL_FILES: Array[String] = [
 	"", # TWO_WHEELER picks from TWO_WHEELER_VARIANTS
-	"res://assets/models/traffic/hatchback.glb",
+	"res://assets/models/traffic/cars/sedan_white.glb", # HATCHBACK picks from CAR_VARIANTS
 	"res://assets/models/traffic/share_auto.glb",
 	"res://assets/models/traffic/bus_tnstc.glb",
 	"res://assets/models/traffic/stray_cow.glb",
 	"res://assets/models/traffic/lorry.glb",
 	"", # SERVICE picks from SERVICE_VARIANTS
 ]
-## CC0 Quaternius passenger cars (retain fallback if assets are not imported).
+## Passenger cars: the three CC0 Quaternius bodies in Chennai street colours, baked to one mesh
+## each by tools/assets/bake_car_colours.py (one draw call per car; was ~13). Nov 1 device test:
+## the Kenney hatchback (green, flared grey arches) looked odd and is gone. White and silver
+## come round most often, like on Chennai roads.
 const CAR_VARIANTS: Array = [
- ["res://assets/models/traffic/hatchback.glb", Vector3(1.7, 1.5, 3.8)],
- ["res://assets/models/traffic/quaternius_normal_car.glb", Vector3(1.8, 1.5, 4.2)],
- ["res://assets/models/traffic/quaternius_suv.glb", Vector3(1.95, 1.9, 4.6)],
- ["res://assets/models/traffic/quaternius_sports_car.glb", Vector3(1.9, 1.25, 4.3)],
+ ["res://assets/models/traffic/cars/sedan_white.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/cars/suv_silver.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/cars/sports_red.glb", Vector3(1.9, 1.25, 4.3)],
+ ["res://assets/models/traffic/cars/sedan_silver.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/cars/suv_white.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/cars/sedan_maroon.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/cars/sports_grey.glb", Vector3(1.9, 1.25, 4.3)],
+ ["res://assets/models/traffic/cars/sedan_blue.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/cars/suv_black.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/cars/sports_white.glb", Vector3(1.9, 1.25, 4.3)],
 ]
 static var _car_variant: int = 0
 ## Civil service vehicles (tools/assets/process_city.py, all baked front-to-+Z at real size):
@@ -48,9 +57,10 @@ static var _car_variant: int = 0
 const SERVICE_VARIANTS: Array = [
 	["res://assets/models/traffic/svc_garbage_truck.glb", Vector3(2.4, 2.66, 7.2), 3],
 	["res://assets/models/traffic/svc_school_bus.glb", Vector3(2.6, 3.2, 9.5), 3],
-	# Police SUV is baked at real size (2.1 x 2.19 x 4.5 m) and fitted uniformly so it is never
-	# squashed into a saloon box; the collision box ignores the mirrors.
-	["res://assets/models/traffic/police_car/svc_police_car.glb", Vector3(1.95, 2.19, 4.5), 3, true],
+	# Police: the traffic SUV in Tamil Nadu police white, blue/red waist stripe and a light bar
+	# (bake_car_colours.py), fitted uniformly to 4.5 m. Nov 1 device test: the Tripo police SUV
+	# rendered shredded (broken simplified mesh + noisy texture) and was removed.
+	["res://assets/models/traffic/cars/police_suv.glb", Vector3(2.0, 1.85, 4.5), 3, true],
 	["res://assets/models/traffic/svc_tow_truck.glb", Vector3(2.19, 2.21, 6.4), 2],
 	["res://assets/models/traffic/svc_ambulance.glb", Vector3(2.2, 2.2, 5.9), 2],
 	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],

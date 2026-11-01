@@ -85,12 +85,12 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | File | Archetype | Source | Licence |
 |---|---|---|---|
 | `two_wheeler.glb` | Scooter (procedural rider on top) | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0 |
-| `hatchback.glb` | Car | Kenney Car Kit | CC0 |
+| `cars/*.glb` | Traffic and parked cars (sedan, SUV, sports in 7 Chennai paints) and the police SUV, baked one-mesh by `tools/assets/bake_car_colours.py` from `quaternius_normal_car/suv/sports_car.glb` | Quaternius Cars Bundle | CC0 |
 | `share_auto.glb` | Share auto / other autos | Auto Rickshaw, rSquare (Sketchfab) | CC BY 4.0 |
 | `bus_tnstc.glb`, `bus_setc.glb` | Town bus, SETC coach | Nobel Tech (Sketchfab) | CC BY 4.0 |
 | `lorry.glb` | Goods lorry | Oren garage (Sketchfab) | CC BY 4.0 |
 | `stray_cow.glb`, `stray_cow_fadly.glb` | Stray cattle (off by default: `stray_cattle_enabled = false`) | Quaternius (CC0); Fadly.W (Sketchfab, CC BY 4.0) | |
-| `svc_ambulance, svc_fire_truck, svc_garbage_truck, svc_police_car, svc_school_bus, svc_tow_truck.glb` | Civil service vehicles | "Generic civil service vehicles pack", Comrade1280 (Sketchfab) | CC BY 4.0 |
+| `svc_ambulance, svc_fire_truck, svc_garbage_truck, svc_school_bus, svc_tow_truck.glb` | Civil service vehicles | "Generic civil service vehicles pack", Comrade1280 (Sketchfab) | CC BY 4.0 |
 
 **People** (`people/`, `PedestrianManager.gd`, `TrafficPolice.gd`; pace and credits in `people.json`):
 

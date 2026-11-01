@@ -27,8 +27,6 @@ GLTF = TOOLS / "node_modules" / ".bin" / "gltf-transform"
 # out path, raw source (under assets_src/incoming/models), simplify ratio or None,
 # texture size in px, static prop (drop skins/animations), credit
 SPECS = [
-    ("traffic/hatchback.glb", "traffic/kenney_hatchback-sports.glb", 0.4, 512, False,
-     "Kenney Car Kit (hatchback-sports), kenney.nl, CC0"),
     ("traffic/share_auto.glb", "traffic/rsquare_auto_rickshaw/scene.gltf", 0.15, 256, False,
      "Auto Rickshaw by rSquare (Sketchfab), CC BY 4.0"),
     ("traffic/two_wheeler.glb", "traffic/shiveloper_scooter.glb", 0.15, 256, False,
