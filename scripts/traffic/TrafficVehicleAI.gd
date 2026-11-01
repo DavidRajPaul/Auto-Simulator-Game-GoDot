@@ -37,17 +37,23 @@ const MODEL_FILES: Array[String] = [
 ## Passenger cars: the three CC0 Quaternius bodies in Chennai street colours, baked to one mesh
 ## each by tools/assets/bake_car_colours.py (one draw call per car; was ~13). Nov 1 device test:
 ## the Kenney hatchback (green, flared grey arches) looked odd and is gone. White and silver
-## come round most often, like on Chennai roads.
+## come round most often, like on Chennai roads. Mahindra Boleros (the owner's model,
+## tools/assets/bake_bolero.py) are real size and fitted uniformly: entries with a third `true`.
 const CAR_VARIANTS: Array = [
  ["res://assets/models/traffic/cars/sedan_white.glb", Vector3(1.8, 1.5, 4.2)],
+ ["res://assets/models/traffic/cars/bolero_white.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/suv_silver.glb", Vector3(1.95, 1.9, 4.6)],
  ["res://assets/models/traffic/cars/sports_red.glb", Vector3(1.9, 1.25, 4.3)],
+ ["res://assets/models/traffic/cars/bolero_silver.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/sedan_silver.glb", Vector3(1.8, 1.5, 4.2)],
  ["res://assets/models/traffic/cars/suv_white.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/cars/bolero_black.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/sedan_maroon.glb", Vector3(1.8, 1.5, 4.2)],
  ["res://assets/models/traffic/cars/sports_grey.glb", Vector3(1.9, 1.25, 4.3)],
+ ["res://assets/models/traffic/cars/bolero_maroon.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/sedan_blue.glb", Vector3(1.8, 1.5, 4.2)],
  ["res://assets/models/traffic/cars/suv_black.glb", Vector3(1.95, 1.9, 4.6)],
+ ["res://assets/models/traffic/cars/bolero_green.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/sports_white.glb", Vector3(1.9, 1.25, 4.3)],
 ]
 static var _car_variant: int = 0
@@ -57,10 +63,10 @@ static var _car_variant: int = 0
 const SERVICE_VARIANTS: Array = [
 	["res://assets/models/traffic/svc_garbage_truck.glb", Vector3(2.4, 2.66, 7.2), 3],
 	["res://assets/models/traffic/svc_school_bus.glb", Vector3(2.6, 3.2, 9.5), 3],
-	# Police: the traffic SUV in Tamil Nadu police white, blue/red waist stripe and a light bar
-	# (bake_car_colours.py), fitted uniformly to 4.5 m. Nov 1 device test: the Tripo police SUV
-	# rendered shredded (broken simplified mesh + noisy texture) and was removed.
-	["res://assets/models/traffic/cars/police_suv.glb", Vector3(2.0, 1.85, 4.5), 3, true],
+	# Police: a Mahindra Bolero jeep like Chennai patrol vehicles, always the same livery (white,
+	# blue/red waist band) with a flashing red/blue light bar (bake_bolero.py, _light_beacon),
+	# fitted uniformly at real size. The Tripo police SUV rendered shredded and was removed.
+	["res://assets/models/traffic/cars/bolero_police.glb", Vector3(1.75, 2.0, 4.3), 3, true],
 	["res://assets/models/traffic/svc_tow_truck.glb", Vector3(2.19, 2.21, 6.4), 2],
 	["res://assets/models/traffic/svc_ambulance.glb", Vector3(2.2, 2.2, 5.9), 2],
 	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],
@@ -180,7 +186,7 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 			_shape.position.y = body.y * 0.5
 			_mesh.scale = body
 			_mesh.position.y = body.y * 0.5
-	var uniform: bool = false
+	var uniform: bool = kind == Archetype.HATCHBACK and CAR_VARIANTS[(_car_variant - 1) % CAR_VARIANTS.size()].size() > 2
 	if kind == Archetype.TWO_WHEELER:
 		var tw: Array = two_wheeler_variant(_two_wheeler_variant)
 		_two_wheeler_variant += 1
@@ -201,11 +207,31 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 			if TrafficModelFit.attach(self, str(v[0]), v[1] as Vector3, true, v.size() > 3 and bool(v[3])):
 				var holder: Node3D = get_node("Model") as Node3D
 				holder.name = "Service_%s" % str(v[0]).get_file().get_basename()
+				_light_beacon(holder)
 				holder.visible = false
 				_service_models.append(holder)
 			else:
 				_service_models.append(null)
 	deactivate()
+
+## Police light bar: a model surface whose material is named "Beacon" (bolero_police.glb) gets
+## the flashing red/blue shader. Nov 1: "add some lights so it looks like a police car".
+const BEACON_SHADER: Shader = preload("res://shaders/police_beacon.gdshader")
+static var _beacon_material: ShaderMaterial = null
+
+static func _light_beacon(root: Node) -> int:
+	var lit: int = 0
+	for n: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = n as MeshInstance3D
+		for i: int in mi.mesh.get_surface_count():
+			var m: Material = mi.mesh.surface_get_material(i)
+			if m != null and m.resource_name == "Beacon":
+				if _beacon_material == null:
+					_beacon_material = ShaderMaterial.new()
+					_beacon_material.shader = BEACON_SHADER
+				mi.set_surface_override_material(i, _beacon_material)
+				lit += 1
+	return lit
 
 ## SERVICE: show one variant (weighted pick) and size the collision box to it.
 func pick_service_variant(rng: RandomNumberGenerator) -> void:

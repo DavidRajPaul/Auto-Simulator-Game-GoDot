@@ -102,7 +102,8 @@ the way to get the "Madras Soul" sounds.
 | Archetype | File | Source | Licence |
 |---|---|---|---|
 | Two-wheeler | `two_wheeler.glb` | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0. The file itself has no licence text, so check the Sketchfab page |
-| Cars + police SUV | `cars/*.glb` | Quaternius Cars Bundle, recoloured one-mesh bake (`bake_car_colours.py`) | CC0 |
+| Mahindra Bolero + police jeep | `cars/bolero_*.glb` | "Bolero" by Waseem Kadri (Sketchfab), baked by `bake_bolero.py` | CC BY 4.0 |
+| Cars | `cars/*.glb` | Quaternius Cars Bundle, recoloured one-mesh bake (`bake_car_colours.py`) | CC0 |
 | Share auto | `share_auto.glb` | Auto Rickshaw, rSquare (Sketchfab), the yellow Chennai auto | CC BY 4.0 |
 | Stray cow | `stray_cow.glb` | Cow, Quaternius (poly.pizza), converted from FBX | CC0 |
 | Stray cow (variant) | `stray_cow_fadly.glb` | Cow - LowPoly, Fadly.W (Sketchfab). The file holds two cows; the pipeline keeps "cow 2" only. Stray cows pick either cow at random | CC BY 4.0 |

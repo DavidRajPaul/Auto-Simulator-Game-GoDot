@@ -318,7 +318,7 @@ All shipped art and sound is in [`assets/`](assets/), one folder per kind. The f
 |---|---|---|---|
 | `assets/audio/` (1.9 MB) | Engine (LPG, diesel), kick-start, horns, indicator, crashes, city/sea/market/rain ambience, UI sounds | kalhan (Freesound), Pixabay, BigSoundBank, Kenney | CC BY 4.0, Pixabay, CC0 |
 | `assets/models/vehicles/` | Player auto (stock yellow) | rSquare (Sketchfab) | CC BY 4.0 |
-| `assets/models/traffic/` | Scooter, cars in Chennai paints + police SUV, share auto, TNSTC/SETC buses, lorry, cows, 6 service vehicles | Shiveloper, rSquare, Nobel Tech, Oren garage, Quaternius, Fadly.W, Comrade1280 | CC BY 4.0, CC0 |
+| `assets/models/traffic/` | Scooter, cars and Mahindra Boleros in Chennai paints, Bolero police jeep, share auto, TNSTC/SETC buses, lorry, cows, 6 service vehicles | Shiveloper, Waseem Kadri, rSquare, Nobel Tech, Oren garage, Quaternius, Fadly.W, Comrade1280 | CC BY 4.0, CC0 |
 | `assets/models/people/` | 9 walking Chennai characters (veshti, sarees, churidar, pavadai…), 2 police | Sketchfab CC BY authors | CC BY 4.0 |
 | `assets/models/city/` | Mylapore garage workshop, water tower, canal settlement, gas station | Sketchfab CC BY authors | CC BY 4.0 |
 | `assets/fx/` | Sparks, smoke, dust, puffs | Kenney particle packs | CC0 |

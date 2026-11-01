@@ -103,7 +103,7 @@ func _test_two_wheeler_and_police_models() -> void:
 	var pb: AABB = _model_bounds(pcar) if fitted else AABB()
 	pcar.free()
 	# Uniform fit to 4.5 m keeps the SUV's own proportions (never squashed into a saloon box).
-	_check("Police SUV keeps its proportions (uniform fit, 4.5 m, h/l > 0.36)", fitted and absf(pb.size.z - 4.5) < 0.1 and pb.size.y / pb.size.z > 0.36, str(pb.size))
+	_check("Police jeep keeps its proportions (uniform fit, real length, h/l > 0.4)", fitted and absf(pb.size.z - (police[1] as Vector3).z) < 0.1 and pb.size.y / pb.size.z > 0.4, str(pb.size))
 	var tris: int = 0
 	var scene: PackedScene = load(str(police[0])) as PackedScene if not police.is_empty() else null
 	if scene != null:
@@ -113,7 +113,7 @@ func _test_two_wheeler_and_police_models() -> void:
 			for s: int in m.get_surface_count():
 				tris += (m.surface_get_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
 		inst.free()
-	_check("Police SUV is inside the traffic triangle budget (<= 6000)", tris > 0 and tris <= 6000, "%d triangles" % tris)
+	_check("Police jeep is inside the traffic triangle budget (<= 6000)", tris > 0 and tris <= 6000, "%d triangles" % tris)
 
 func _model_bounds(car: Node3D) -> AABB:
 	var out: AABB = AABB()
@@ -271,7 +271,15 @@ func _test_landmark_kit() -> void:
 	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
 	# Nov 1 device test: the Tripo police SUV rendered shredded and the Kenney hatchback looked
 	# odd. Police and cars now come from the Quaternius bodies (tools/assets/bake_car_colours.py).
-	_check("Police car is the baked police SUV", ResourceLoader.exists("res://assets/models/traffic/cars/police_suv.glb"))
+	_check("Police car is the Bolero police jeep", ResourceLoader.exists("res://assets/models/traffic/cars/bolero_police.glb"))
+	var pol: Node3D = (load("res://assets/models/traffic/cars/bolero_police.glb") as PackedScene).instantiate() as Node3D
+	_check("Police jeep's light bar gets the flashing beacon", TrafficVehicleAI._light_beacon(pol) == 1)
+	pol.free()
+	var boleros: int = 0
+	for v: Array in TrafficVehicleAI.CAR_VARIANTS:
+		if str(v[0]).contains("bolero"):
+			boleros += 1
+	_check("Public Boleros drive in several colours", boleros >= 4, "%d" % boleros)
 	_check("Odd Kenney hatchback and broken Tripo police car are gone",
 		not ResourceLoader.exists("res://assets/models/traffic/hatch" + "back.glb") and not ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_" + "car.glb"))
 	var paints: Dictionary = {}
