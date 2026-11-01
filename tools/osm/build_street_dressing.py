@@ -44,9 +44,11 @@ PALM_ZONES = {"mylapore": 0.05}
 PALM_DEFAULT = 0.02
 PALM_BEACH = 0.3
 BEACH_PALM_M = 200.0
-# Non-palm mix: 0 rain/neem, 2 mast, 3 copperpod, 4 pungai, 5 gulmohar.
+# Non-palm mix: 0 rain/neem, 2 mast, 3 copperpod, 4 pungai, 5 gulmohar,
+# 6 Indian almond (naattu badam), 7 poovarasu (coastal Indian tulip tree).
 # These are visual design weights, not surveyed species counts.
-SPECIES = [(0, 0.30), (2, 0.18), (3, 0.15), (4, 0.27), (5, 0.10)]
+SPECIES = [(0, 0.25), (2, 0.15), (3, 0.12), (4, 0.20), (5, 0.08), (6, 0.16), (7, 0.04)]
+COASTAL_SPECIES = [(0, 0.18), (2, 0.11), (3, 0.10), (4, 0.17), (5, 0.06), (6, 0.16), (7, 0.22)]
 
 
 def point_in(px, pz, poly) -> bool:
@@ -101,11 +103,12 @@ def main() -> int:
                    for p in beach_pts)
 
     def species(x: float, z: float) -> int:
-        chance = PALM_BEACH if near_beach(x, z) else PALM_ZONES.get(zone_of(x, z), PALM_DEFAULT)
+        coastal = near_beach(x, z)
+        chance = PALM_BEACH if coastal else PALM_ZONES.get(zone_of(x, z), PALM_DEFAULT)
         if rng.random() < chance:
             return 1
         r = rng.random()
-        for kind, w in SPECIES:
+        for kind, w in COASTAL_SPECIES if coastal else SPECIES:
             if r < w:
                 return kind
             r -= w
