@@ -11,7 +11,7 @@ config/version="0.5.0-mvp"
 config/quit_on_go_back=false
 run/main_scene="res://scenes/splash.tscn"
 run/max_fps=60
-config/features=PackedStringArray("4.4", "Mobile")
+config/features=PackedStringArray("4.5", "Mobile")
 config/icon="res://assets/icon/icon.png"
 boot_splash/bg_color=Color(0.118, 0.098, 0.129, 1)
 boot_splash/image="res://assets/icon/boot_splash.png"
@@ -23,6 +23,7 @@ boot_splash/show_image=true
 
 SignalBus="*res://autoloads/SignalBus.gd"
 GameState="*res://autoloads/GameState.gd"
+CrashReporter="*res://autoloads/CrashReporter.gd"
 AdMonetizationManager="*res://autoloads/AdMonetizationManager.gd"
 
 [debug]
@@ -107,6 +108,10 @@ locale/fallback="en"
 3d_physics/layer_5="Waterlogging_Zones"
 3d_physics/layer_6="Pickup_Dropoff_Triggers"
 
+[namma_auto]
+
+crash_reporting/send_smoke_test_on_boot=false
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
@@ -127,3 +132,21 @@ rendering_device/fallback_to_opengl3=true
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=0
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
+
+[sentry]
+
+; Crash reporting — see docs/CRASH_REPORTING.md. Read by the Sentry addon (addons/sentry) at boot.
+; DSN placeholder: leave EMPTY in git. CI injects the GitHub secret SENTRY_DSN at export time,
+; so tests, the editor and forks never send anything. Release/environment are stamped by CI too.
+options/dsn=""
+options/release="namma-auto@0.5.0"
+options/dist=""
+options/environment="development"
+options/skip_auto_init_on_editor_play=true
+options/send_default_pii=false
+options/attach_log=true
+options/attach_scene_tree=true
+options/max_breadcrumbs=100
+options/app_hang/tracking=true
+android/application_not_responding/enable_detection=true
+experimental/attach_screenshot=false

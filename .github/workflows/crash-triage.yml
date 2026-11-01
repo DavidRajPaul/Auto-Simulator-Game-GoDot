@@ -1,0 +1,78 @@
+name: Crash Triage (AI)
+
+# OPTIONAL autonomous loop: every night an AI agent pulls the top unresolved Sentry crash,
+# reproduces it with a headless test, fixes it and opens a PR for review (never merges).
+# It follows .claude/commands/fix-crash.md. See docs/CRASH_REPORTING.md → "Step 5".
+#
+# USER STEP to turn it on (off by default, so this workflow is a no-op until then):
+#   • secrets:   ANTHROPIC_API_KEY, SENTRY_AUTH_TOKEN (scopes: org:read, project:read, event:read)
+#   • variables: ENABLE_CRASH_TRIAGE = true, SENTRY_ORG, SENTRY_PROJECT
+
+on:
+  schedule:
+    - cron: "30 21 * * *" # 03:00 IST
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Sentry issue short id or URL (empty = top unresolved)"
+        required: false
+        default: ""
+
+concurrency:
+  group: crash-triage
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: "4.5.1"
+  GODOT_BIN: /home/runner/godot/godot
+
+jobs:
+  triage:
+    if: vars.ENABLE_CRASH_TRIAGE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 50
+
+      - name: Cache Godot editor
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/godot
+          key: godot-editor-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/godot && cd /home/runner/godot
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
+
+      - name: Install Sentry addon + import project
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_PLATFORMS: "android linux"
+        run: |
+          tools/sentry/install_sentry_addon.sh
+          ${GODOT_BIN} --headless --path . --import
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            /fix-crash ${{ inputs.issue }}
+            Sentry org: ${{ vars.SENTRY_ORG }}, project: ${{ vars.SENTRY_PROJECT }}.
+            Godot is at ${{ env.GODOT_BIN }} (already imported). Always wrap Godot runs in `timeout`.
+            If no unresolved issue needs work, stop without changes.
+          claude_args: |
+            --max-turns 60
+            --mcp-config .claude/ci-mcp.json
+            --allowedTools Read,Glob,Grep,Edit,Write,mcp__sentry,Bash(timeout *),Bash(git *),Bash(gh pr *),Bash(python3 *)

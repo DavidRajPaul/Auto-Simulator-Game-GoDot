@@ -16,3 +16,6 @@ tools/assets/node_modules/
 assets_src/incoming/models/
 assets_src/incoming/textures/
 assets_src/incoming/art/
+
+# Sentry Godot SDK: installed by tools/sentry/install_sentry_addon.sh (CI does this), never committed.
+addons/sentry/
