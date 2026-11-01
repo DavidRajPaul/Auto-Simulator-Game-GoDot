@@ -50,8 +50,14 @@ const SKYLINE_DIST_M: float = 370.0
 const CITY_FOOTPRINT: Dictionary = {
 	"water_tower": Vector3(8.0, 18.0, 6.5),
 	"slum_cluster": Vector3(30.0, 4.0, 18.0),
-	"tea_kadai": Vector3(3.3, 3.0, 3.3)
+	# Roadside shops (tools/assets/bake_street_shops.py): the booth / cart / stall body only,
+	# benches and customers stay walk-through.
+	"tea_stall": Vector3(2.6, 2.6, 2.4),
+	"fruit_cart": Vector3(1.6, 1.2, 1.2),
+	"biryani_stall": Vector3(3.2, 2.4, 3.0)
 }
+## Street shops are many and small: draw them only close by, never into the shadow pass.
+const SHOP_VISIBLE_M: Dictionary = {"tea_stall": 100.0, "biryani_stall": 100.0, "fruit_cart": 75.0}
 const KIND_PALETTES: Dictionary = {
 	"temple": [Color(0.96, 0.82, 0.5), Color(0.93, 0.7, 0.45), Color(0.98, 0.93, 0.8)],
 	"office": [Color(0.6, 0.68, 0.74), Color(0.75, 0.78, 0.8), Color(0.55, 0.6, 0.62)],
@@ -90,6 +96,20 @@ const AWNING_COLOURS: Array[Color] = [Color(0.13, 0.35, 0.78), Color(0.1, 0.5, 0
 const AC_COLOUR: Color = Color(0.9, 0.9, 0.87)
 const POLE_H: float = 8.5
 const POLE_ARM_Y: float = 7.9
+## TNEB double-pole (DP) distribution transformer structure (data/world/dress "xfmr", made by
+## tools/osm/build_street_dressing.py). Real layout: two 9 m PSC poles ~2.6 m apart in the EB
+## pole line, steel channel platform ~3.2 m up carrying the tank, AB switch and its operating rod,
+## lightning arresters and DO fuses above, jumpers down to the HV bushings, LT box low on a pole,
+## danger board, anti-climbing collars and earth pipes. The tank is the owner's model baked by
+## tools/assets/bake_street_shops.py; everything merges into the chunk's one building mesh.
+const XFMR_TANK: String = "res://assets/models/city/eb_transformer.glb"
+const XFMR_POLE_H: float = 9.0
+const XFMR_HALF_SPAN: float = 1.3
+const XFMR_OUT: float = 0.55
+const XFMR_PLATFORM_Y: float = 3.2
+const XFMR_STEEL: Color = Color(0.24, 0.25, 0.26)
+const XFMR_PORCELAIN: Color = Color(0.45, 0.25, 0.15)
+const XFMR_GALV: Color = Color(0.72, 0.74, 0.75)
 
 @export var world_dir: String = "res://data/world"
 @export var player_path: NodePath
@@ -109,6 +129,14 @@ var _water_mat: ShaderMaterial
 var _road_mat: StandardMaterial3D
 var _bld_mat: ShaderMaterial
 var _tree_mat: StandardMaterial3D
+## Baked transformer tank as plain triangles (sRGB vertex colours), read once in _ready and
+## only read afterwards (chunk meshes are built on worker threads).
+var _xfmr_verts: PackedVector3Array = PackedVector3Array()
+var _xfmr_norms: PackedVector3Array = PackedVector3Array()
+var _xfmr_cols: PackedColorArray = PackedColorArray()
+## Street-shop footprints per chunk (Vector2i -> Array[PackedVector2Array]): pedestrians treat
+## them like buildings (walk mask). Filled by _build_city_props before any chunk streams in.
+var _prop_blocks: Dictionary = {}
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 ## Visual ground height per loaded chunk (SURFACE_CELL_M grid of the drawn walk / road / junction
@@ -154,6 +182,7 @@ func _ready() -> void:
 	_tree_mat.vertex_color_is_srgb = true
 	_tree_mat.roughness = 0.95
 	_tree_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_load_transformer_tank()
 	_build_ground()
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
@@ -716,6 +745,9 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 		var base: Vector3 = Vector3(float(p[0]), 0.0, float(p[1]))
 		var along: Vector2 = Vector2(sin(float(p[2])), cos(float(p[2])))
 		_pole(m, base, along, concrete)
+	for x: Array in dress.get("xfmr", []):
+		_transformer(m, Vector3(float(x[0]), 0.0, float(x[1])), Vector2(sin(float(x[2])), cos(float(x[2]))),
+			Vector2(float(x[3]), float(x[4])), concrete)
 	for w: Array in dress.get("wires", []):
 		var a: Vector3 = Vector3(float(w[0]), 0.0, float(w[1]))
 		var b: Vector3 = Vector3(float(w[2]), 0.0, float(w[3]))
@@ -780,6 +812,131 @@ func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
 		_face(m, q, side, col)
 		_face(m, q, -side, col)
 		prev = p
+
+## Reads the baked tank (one vertex-coloured surface) into flat triangle arrays.
+func _load_transformer_tank() -> void:
+	if not ResourceLoader.exists(XFMR_TANK):
+		return
+	var scene: PackedScene = load(XFMR_TANK) as PackedScene
+	if scene == null:
+		return
+	var root: Node3D = scene.instantiate() as Node3D
+	for node: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		var xf: Transform3D = Transform3D.IDENTITY
+		var n: Node = mi
+		while n != root and n is Node3D:
+			xf = (n as Node3D).transform * xf
+			n = n.get_parent()
+		for sidx: int in mi.mesh.get_surface_count():
+			var arr: Array = mi.mesh.surface_get_arrays(sidx)
+			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var nn: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+			var c: PackedColorArray = arr[Mesh.ARRAY_COLOR] if arr[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+			var count: int = idx.size() if not idx.is_empty() else v.size()
+			for k: int in count:
+				var i: int = idx[k] if not idx.is_empty() else k
+				_xfmr_verts.append(xf * v[i])
+				_xfmr_norms.append((xf.basis * nn[i]).normalized())
+				# glTF vertex colours are linear; the chunk mesh takes sRGB paint.
+				_xfmr_cols.append((c[i] if not c.is_empty() else Color(0.66, 0.68, 0.67)).linear_to_srgb())
+	root.free()
+
+## One DP transformer structure. base = pole-line centre on the ground, along = road direction,
+## out = unit vector away from the road (the tank and LT box sit on that side).
+func _transformer(m: MeshBuf, base: Vector3, along: Vector2, out2: Vector2, concrete: Color) -> void:
+	var u: Vector3 = Vector3(along.x, 0.0, along.y)
+	var o: Vector3 = Vector3(out2.x, 0.0, out2.y)
+	var up: Vector3 = Vector3.UP
+	var poles: Array[Vector3] = [base + u * XFMR_HALF_SPAN, base - u * XFMR_HALF_SPAN]
+	for k: int in 2:
+		var p: Vector3 = poles[k]
+		_dp_pole(m, p, along, concrete)
+		_dbox(m, p + up * 0.15, Vector3(0.5, 0.3, 0.5), along, concrete.darkened(0.1)) # muffing
+		# Anti-climbing barbed-wire collars.
+		for y: float in [2.35, 2.6]:
+			_dbox(m, p + up * y, Vector3(0.36, 0.07, 0.36), along, Color(0.18, 0.18, 0.18))
+		# Earth pipe beside the foot, its pit cover, and the earth strip up the pole.
+		var pipe: Vector3 = p + u * (0.45 if k == 0 else -0.45) + o * 0.35
+		_dbox(m, pipe + up * 0.03, Vector3(0.45, 0.06, 0.45), along, concrete.lightened(0.08))
+		_trunk(m, pipe, pipe + up * 0.5, 0.045, 0.04, XFMR_GALV)
+		_dbox(m, p - o * 0.13 + up * 3.4, Vector3(0.05, 6.8, 0.012), along, Color(0.3, 0.3, 0.3))
+		# Cantilever arm from the pole to the back channel, with a diagonal brace.
+		_dbox(m, p + o * 0.55 + up * (XFMR_PLATFORM_Y - 0.06), Vector3(0.12, 0.12, 1.2), along, XFMR_STEEL)
+		_trunk(m, p + up * 2.0 + o * 0.08, p + o * 1.05 + up * (XFMR_PLATFORM_Y - 0.12), 0.035, 0.035, XFMR_STEEL)
+	# Platform: two channels along the road carrying the tank.
+	for w: float in [0.05, 1.05]:
+		_dbox(m, base + o * w + up * (XFMR_PLATFORM_Y - 0.06), Vector3(2.9, 0.12, 0.1), along, XFMR_STEEL)
+	# The tank (owner's model), long side along the road.
+	var tc: Vector3 = base + o * XFMR_OUT + up * XFMR_PLATFORM_Y
+	var w3: Vector3 = u.cross(up) # local +Z
+	for i: int in _xfmr_verts.size():
+		var v: Vector3 = _xfmr_verts[i]
+		var nn: Vector3 = _xfmr_norms[i]
+		m.add(tc + u * v.x + up * v.y + w3 * v.z, (u * nn.x + up * nn.y + w3 * nn.z), _xfmr_cols[i], PLAIN_UV, PLAIN_CELL)
+	# Top girder where the street's overhead lines end, cross arm and pin insulators.
+	var top: float = POLE_ARM_Y + 0.05
+	_dbox(m, base + up * top, Vector3(2.9, 0.1, 0.1), along, XFMR_STEEL)
+	_dbox(m, base + up * (top - 0.02), Vector3(0.1, 0.1, 1.6), along, XFMR_STEEL)
+	for s: float in [-0.55, 0.55]:
+		_dbox(m, base + o * s + up * (top + 0.14), Vector3(0.09, 0.18, 0.09), along, XFMR_PORCELAIN)
+	# AB switch: frame, three post insulators with blades, operating rod down pole 0 to a handle.
+	var ab_y: float = 7.25
+	_dbox(m, base + up * ab_y, Vector3(2.7, 0.1, 0.1), along, XFMR_STEEL)
+	var phases: Array[float] = [-0.6, 0.0, 0.6]
+	for t: float in phases:
+		var q: Vector3 = base + u * t + up * ab_y
+		_trunk(m, q + up * 0.05, q + up * 0.36, 0.05, 0.04, XFMR_PORCELAIN)
+		_dbox(m, q + up * 0.4 + o * 0.12, Vector3(0.04, 0.03, 0.28), along, XFMR_GALV)
+	var rod_top: Vector3 = poles[0] + o * 0.16 + up * ab_y
+	_trunk(m, rod_top - up * (ab_y - 1.25), rod_top, 0.022, 0.022, XFMR_GALV)
+	_dbox(m, poles[0] + o * 0.2 + up * 1.15, Vector3(0.12, 0.22, 0.12), along, XFMR_STEEL)
+	# Lightning arresters and DO fuse set, each on its own channel.
+	var la_y: float = 6.65
+	var do_y: float = 5.95
+	_dbox(m, base + up * la_y, Vector3(2.7, 0.08, 0.08), along, XFMR_STEEL)
+	_dbox(m, base + up * do_y, Vector3(2.7, 0.08, 0.08), along, XFMR_STEEL)
+	for t: float in phases:
+		var la: Vector3 = base + u * t + up * la_y
+		_trunk(m, la + up * 0.04, la + up * 0.42, 0.06, 0.05, Color(0.55, 0.55, 0.55))
+		var f0: Vector3 = base + u * t + o * 0.08 + up * (do_y - 0.28)
+		var f1: Vector3 = base + u * t + o * 0.22 + up * (do_y + 0.28)
+		_trunk(m, f0, f1, 0.04, 0.04, Color(0.32, 0.2, 0.12))
+		# Jumpers: AB switch -> arrester -> fuse -> HV bushing on the tank.
+		var bushing: Vector3 = tc + u * (0.2 + t * 0.4) + up * 1.62
+		_trunk(m, base + u * t + up * (ab_y + 0.36) + o * 0.02, la + up * 0.42, 0.012, 0.012, Color(0.1, 0.1, 0.1))
+		_trunk(m, f1, la + up * 0.04, 0.012, 0.012, Color(0.1, 0.1, 0.1))
+		_trunk(m, bushing, f0, 0.012, 0.012, Color(0.1, 0.1, 0.1))
+	# LT side: distribution box low on pole 1, cable from the tank, cables up to the street lines
+	# and down into the ground.
+	var box: Vector3 = poles[1] + o * 0.28 + up * 1.9
+	_dbox(m, box, Vector3(0.65, 0.85, 0.32), along, Color(0.42, 0.5, 0.45))
+	_dbox(m, box + up * 0.47, Vector3(0.75, 0.06, 0.4), along, Color(0.36, 0.42, 0.38)) # rain hood
+	var lt: Color = Color(0.06, 0.06, 0.06)
+	_trunk(m, box + up * 0.43, tc - u * 0.75 + up * 1.0, 0.035, 0.035, lt)
+	_trunk(m, box + up * 0.43 + u * 0.15, poles[1] + o * 0.18 + up * top, 0.03, 0.03, lt)
+	_trunk(m, poles[1] + o * 0.18 + u * 0.12, box - up * 0.42 + u * 0.12, 0.035, 0.035, lt)
+	# Danger board on pole 0, facing the road (red band, white plate).
+	var board: Vector3 = poles[0] - o * 0.16 + up * 2.0
+	_dbox(m, board, Vector3(0.3, 0.38, 0.02), along, Color(0.95, 0.95, 0.92))
+	_dbox(m, board + up * 0.13 - o * 0.012, Vector3(0.3, 0.1, 0.012), along, Color(0.8, 0.1, 0.1))
+	_dbox(m, board - up * 0.06 - o * 0.012, Vector3(0.12, 0.12, 0.012), along, Color(0.75, 0.12, 0.1))
+
+## Tapered square PSC pole for the DP structure (no cross-arm of its own).
+func _dp_pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
+	var u: Vector3 = Vector3(along.x, 0.0, along.y)
+	var w: Vector3 = Vector3(-along.y, 0.0, along.x)
+	var top: Vector3 = base + Vector3(0.0, XFMR_POLE_H, 0.0)
+	var r0: float = 0.14
+	var r1: float = 0.08
+	var c0: Array[Vector3] = [base - u * r0 - w * r0, base + u * r0 - w * r0, base + u * r0 + w * r0, base - u * r0 + w * r0]
+	var c1: Array[Vector3] = [top - u * r1 - w * r1, top + u * r1 - w * r1, top + u * r1 + w * r1, top - u * r1 + w * r1]
+	for k: int in 4:
+		var j: int = (k + 1) % 4
+		var mid: Vector3 = (c0[k] + c0[j]) * 0.5 - base
+		_face(m, [c0[k], c0[j], c1[j], c1[k]], mid.normalized(), col if k % 2 == 0 else col.darkened(0.12))
+	_face(m, [c1[0], c1[1], c1[2], c1[3]], Vector3.UP, col)
 
 ## Rain tree (wide umbrella crown, very common on Chennai roads) or neem (rounder, denser),
 ## picked by seed. Thick trunk that forks into the crown.
@@ -1101,6 +1258,10 @@ func _building_mask(k: Vector2i, blds: Array) -> PackedByteArray:
 		var idx: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
 		for t: int in range(0, idx.size(), 3):
 			_mask_triangle(mask, n, origin, pts[idx[t]], pts[idx[t + 1]], pts[idx[t + 2]])
+	# Street shops stand on the pavement like little buildings: walkers go round them.
+	for poly: PackedVector2Array in _prop_blocks.get(k, []):
+		_mask_triangle(mask, n, origin, poly[0], poly[1], poly[2])
+		_mask_triangle(mask, n, origin, poly[0], poly[2], poly[3])
 	return mask
 
 func _mask_triangle(mask: PackedByteArray, n: int, origin: Vector2, a: Vector2, b: Vector2, c: Vector2) -> void:
@@ -1602,8 +1763,12 @@ func _build_city_props(holder: StaticBody3D) -> void:
 			node.transform = Transform3D(Basis(Vector3.UP, float(p.get("yaw", 0.0))), Vector3(float(p["x"]), 0.0, float(p["z"])))
 			_base_collider(node, holder, size)
 			node.free()
+		var view_m: float = float(SHOP_VISIBLE_M.get(model, LANDMARK_VISIBLE_M))
 		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
-			(mi as MeshInstance3D).visibility_range_end = LANDMARK_VISIBLE_M
+			(mi as MeshInstance3D).visibility_range_end = view_m
+		if SHOP_VISIBLE_M.has(model):
+			_set_cast_shadow(inst, false)
+			_block_footprint(p)
 		if bool(p.get("landmark", false)):
 			_set_cast_shadow(inst, false)
 		if bool(p.get("parked_two_wheeler", false)):
@@ -1614,6 +1779,24 @@ func _build_city_props(holder: StaticBody3D) -> void:
 		if bool(p.get("biryani_cluster", false)):
 			_set_cast_shadow(inst, false)
 			_add_biryani_customers(holder, p, index)
+
+## Records a shop's footprint (rotated rectangle, "block" = half sizes) for the chunk's walk mask.
+func _block_footprint(p: Dictionary) -> void:
+	var half: Array = p.get("block", [])
+	if half.size() < 2:
+		return
+	var yaw: float = float(p.get("yaw", 0.0))
+	var c: Vector2 = Vector2(float(p["x"]), float(p["z"]))
+	var ax: Vector2 = Vector2(cos(yaw), -sin(yaw)) * float(half[0]) # local +X on the ground
+	var az: Vector2 = Vector2(sin(yaw), cos(yaw)) * float(half[1])  # local +Z on the ground
+	var poly: PackedVector2Array = PackedVector2Array([c - ax - az, c + ax - az, c + ax + az, c - ax + az])
+	var keys: Dictionary = {}
+	for q: Vector2 in poly:
+		keys[Vector2i(floori(q.x / chunk_size), floori(q.y / chunk_size))] = true
+	for k: Vector2i in keys:
+		if not _prop_blocks.has(k):
+			_prop_blocks[k] = []
+		(_prop_blocks[k] as Array).append(poly)
 
 ## A compact, low-draw-call fallback while the uploaded Tripo tea model is optimized.
 ## All parts share one mesh and material; no physics interactions are needed for patrons.
@@ -1668,7 +1851,7 @@ func _add_tea_crowd(holder: StaticBody3D, p: Dictionary, index: int) -> void:
 		for m: Node in bike.find_children("*", "MeshInstance3D", true, false):
 			(m as MeshInstance3D).visibility_range_end = 88.0
 
-## Owner and cooking props already live in biryani_shop.glb.
+## Owner and cooking props already live in the biryani stall model (shops/biryani_stall_<v>.glb).
 ## Two shared-mesh visitors and a pair of parked scooters add pavement activity
 ## without animation or shadow overhead. The generator reserves this whole area.
 func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> void:
@@ -1683,7 +1866,7 @@ func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> 
 		person.mesh = PersonMesh.standing(
 			PersonMesh.Style.SHIRT_TROUSERS if i == 0 else PersonMesh.Style.VESHTI,
 			index + i, false)
-		person.position = Vector3(-1.35 + float(i) * 2.7, 0.08, -2.25)
+		person.position = Vector3(-1.2 + float(i) * 2.4, 0.08, -2.75)
 		person.rotation.y = PI
 		person.visibility_range_end = 85.0
 		person.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -1697,7 +1880,7 @@ func _add_biryani_customers(holder: StaticBody3D, p: Dictionary, index: int) -> 
 	for i: int in 2:
 		var bike: Node3D = bike_scene.instantiate() as Node3D
 		bike.name = "BiryaniParkedScooter_%d" % i
-		bike.position = Vector3(-3.4 + float(i) * 1.7, 0.0, 2.6)
+		bike.position = Vector3(-1.0 + float(i) * 2.0, 0.0, 2.9)
 		bike.rotation.y = PI * 0.5
 		spot.add_child(bike)
 		request_ground_snap(bike)

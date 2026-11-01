@@ -111,6 +111,11 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 **City** (`city/`, placed from `data/world/city_props.json`; `city_models.json` holds sizes and credits):
 `chennai_central.glb` (SudharsanArivalagan), `water_tower.glb` (TamilarasanRG), `slum_cluster.glb` (aswin.baskaran),
 `gas_station.glb` (Karim.Fares, rebranded as the fictional NAMMA GAS) — all Sketchfab, CC BY 4.0.
+Roadside shops `shops/tea_stall_<a-d>.glb`, `shops/fruit_cart_<a-d>.glb`, `shops/biryani_stall_<a-d>.glb` and the
+transformer tank `eb_transformer.glb`: the owner's own models (Tripo tea stall, fruit cart and transformer; the
+biryani stall, source kept at `assets_src/models/biryani_shop_src.glb`), baked by `tools/assets/bake_street_shops.py`
+(simplified 1.9 M → 1.4–9k triangles, vertex-painted liveries, painted Tamil signs in Baloo Thambi 2). Used by
+`WorldChunkStreamer` (shops via `city_props.json`, the tank merged into chunk meshes on the DP pole structures).
 The Marina lighthouse and Kapaleeshwarar-style gopuram are **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
 
 Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/people/CREDITS_people.md`, `models/people/CREDITS_static.md`, `models/traffic/CREDITS_static.md`.

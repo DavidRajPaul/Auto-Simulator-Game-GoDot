@@ -88,3 +88,82 @@ class WaterDataTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StreetShopsAndTransformersTests(unittest.TestCase):
+    """Roadside shops (tools/osm/place_city_props.py add_street_shops) and TNEB transformer
+    structures (tools/osm/build_street_dressing.py "xfmr"): Nov 1 request, shops at many places
+    and transformers mounted above the ground like the real ones."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import json
+        import math
+        world = ROOT / "data" / "world"
+        cls.props = json.loads((world / "city_props.json").read_text())["props"]
+        graph = json.loads((world / "road_graph.json").read_text())
+        cls.segs = []
+        for e in graph["edges"]:
+            pts = e["pts"]
+            for i in range(1, len(pts)):
+                cls.segs.append((pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], float(e["w"]) * 0.5))
+        cls.xfmr = []
+        cls.poles = []
+        for f in sorted((world / "dress").glob("c_*.json")):
+            d = json.loads(f.read_text())
+            cls.xfmr += d.get("xfmr", [])
+            cls.poles += d.get("poles", [])
+        cls.math = math
+
+    def _road_gap(self, x: float, z: float) -> float:
+        """Distance from (x, z) to the nearest carriageway edge (negative = on the road)."""
+        best = 1e9
+        for ax, az, bx, bz, hw in self.segs:
+            if min(ax, bx) - 30 > x or max(ax, bx) + 30 < x or min(az, bz) - 30 > z or max(az, bz) + 30 < z:
+                continue
+            dx, dz = bx - ax, bz - az
+            L = dx * dx + dz * dz
+            t = 0.0 if L == 0 else max(0.0, min(1.0, ((x - ax) * dx + (z - az) * dz) / L))
+            best = min(best, self.math.hypot(x - (ax + dx * t), z - (az + dz * t)) - hw)
+        return best
+
+    def test_many_shops_of_every_kind_and_colour(self) -> None:
+        for kind, least in (("tea_stall", 30), ("fruit_cart", 30), ("biryani_stall", 10)):
+            with self.subTest(kind=kind):
+                shops = [p for p in self.props if p["model"] == kind]
+                self.assertGreaterEqual(len(shops), least)
+                variants = {p["asset"] for p in shops}
+                self.assertGreaterEqual(len(variants), 4, "every livery is used")
+                for a in variants:
+                    self.assertTrue((ROOT / a.replace("res://", "")).exists(), a)
+
+    def test_shops_stand_off_the_carriageway(self) -> None:
+        m = self.math
+        for p in self.props:
+            if p["model"] not in ("tea_stall", "fruit_cart", "biryani_stall") or "block" not in p:
+                continue
+            hx, hz = p["block"]
+            yaw = float(p["yaw"])
+            for sx, sz in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+                cx = p["x"] + sx * hx * m.cos(yaw) + sz * hz * m.sin(yaw)
+                cz = p["z"] - sx * hx * m.sin(yaw) + sz * hz * m.cos(yaw)
+                self.assertGreater(self._road_gap(cx, cz), 0.5, f"{p['model']} at {p['x']},{p['z']}")
+
+    def test_no_old_tea_kadai_model(self) -> None:
+        self.assertFalse(any(p["model"] == "tea_kadai" for p in self.props))
+        self.assertFalse((ROOT / "assets" / "models" / "city" / "tea_kadai.glb").exists())
+
+    def test_transformers_are_spread_and_off_the_road(self) -> None:
+        m = self.math
+        self.assertGreaterEqual(len(self.xfmr), 100)
+        for x, z, yaw, ox, oz in self.xfmr[::5]:
+            self.assertAlmostEqual(m.hypot(ox, oz), 1.0, places=2)
+            # The tank (1.04 m deep, centred 0.55 m behind the pole line) never hangs over traffic.
+            self.assertGreater(self._road_gap(x + ox * 0.03, z + oz * 0.03), 0.0, f"xfmr at {x},{z}")
+        pts = [(q[0], q[1]) for q in self.xfmr]
+        for i, (x, z) in enumerate(pts[:60]):
+            near = min(m.hypot(x - a, z - b) for j, (a, b) in enumerate(pts) if j != i)
+            self.assertGreaterEqual(near, 279.0)
+        # The structure replaces its pole: no plain pole left at the same spot.
+        pole_at = {(round(p[0], 1), round(p[1], 1)) for p in self.poles}
+        self.assertFalse(any((round(x, 1), round(z, 1)) in pole_at for x, z, *_ in self.xfmr))

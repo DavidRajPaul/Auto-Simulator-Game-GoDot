@@ -634,6 +634,52 @@ func _test_city_props(s: WorldChunkStreamer) -> void:
 			removed_models_absent = false
 	_check("Removed Central/Ripon models have no spawned props", removed_models_absent)
 	_check("No Chennai Central skyline proxy", s.skyline == null)
+	# Roadside shops (Nov 1): many tea stalls, fruit carts and biryani stalls in four liveries each,
+	# light (<= 10k triangles, <= 3 surfaces), short view range, no shadow pass, walkers go round.
+	var shops: Dictionary = {}
+	var shop_ok: bool = true
+	for child: Node in lm.get_children():
+		for kind: String in ["tea_stall", "fruit_cart", "biryani_stall"]:
+			if child.name.begins_with(kind):
+				shops[kind] = int(shops.get(kind, 0)) + 1
+				for mi: Node in child.find_children("*", "MeshInstance3D", true, false):
+					var g: MeshInstance3D = mi as MeshInstance3D
+					shop_ok = shop_ok and g.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and g.visibility_range_end <= 100.0
+	_check("Street shops spawn city-wide (tea, fruit, biryani)", int(shops.get("tea_stall", 0)) >= 30 and int(shops.get("fruit_cart", 0)) >= 30 and int(shops.get("biryani_stall", 0)) >= 10, str(shops))
+	_check("Street shops: no shadows, drawn within 100 m", shop_ok)
+	var light: bool = true
+	for kind: String in ["tea_stall", "fruit_cart", "biryani_stall"]:
+		for v: String in ["a", "b", "c", "d"]:
+			var path: String = "res://assets/models/city/shops/%s_%s.glb" % [kind, v]
+			var scene: PackedScene = load(path) as PackedScene
+			if scene == null:
+				light = false
+				continue
+			var inst: Node = scene.instantiate()
+			var tris: int = 0
+			var surfaces: int = 0
+			for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
+				var mesh: Mesh = (mi as MeshInstance3D).mesh
+				for si: int in mesh.get_surface_count():
+					surfaces += 1
+					var arr: Array = mesh.surface_get_arrays(si)
+					var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+					tris += (idx.size() if not idx.is_empty() else (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3
+			light = light and tris <= 10000 and surfaces <= 3
+			inst.free()
+	_check("Every shop livery exists and is mobile-light (<= 10k tris, <= 3 surfaces)", light)
+	_check("Shop footprints feed the pedestrian walk mask", s._prop_blocks.size() > 50, "%d chunks" % s._prop_blocks.size())
+	# TNEB transformers: the owner's tank is loaded once and merged into chunk meshes.
+	_check("Transformer tank loaded for the DP structures (< 2k triangles)", s._xfmr_verts.size() > 300 and s._xfmr_verts.size() / 3 < 2000, "%d tris" % (s._xfmr_verts.size() / 3))
+	var m: WorldChunkStreamer.MeshBuf = WorldChunkStreamer.MeshBuf.new()
+	s._transformer(m, Vector3.ZERO, Vector2(0.0, 1.0), Vector2(1.0, 0.0), Color(0.66, 0.65, 0.62))
+	var top_y: float = 0.0
+	var tank_low: float = 1e9
+	for i: int in m.verts.size():
+		top_y = maxf(top_y, m.verts[i].y)
+	for v: Vector3 in s._xfmr_verts:
+		tank_low = minf(tank_low, v.y)
+	_check("DP structure: ~9 m poles, tank on the platform above the ground", top_y > 8.5 and top_y < 9.5 and tank_low + WorldChunkStreamer.XFMR_PLATFORM_Y > 3.0, "top %.1f m" % top_y)
 
 func _test_dressing(s: WorldChunkStreamer) -> void:
 	_check("Street dressing data exists for the loaded chunks", DirAccess.get_files_at("res://data/world/dress").size() > 400)

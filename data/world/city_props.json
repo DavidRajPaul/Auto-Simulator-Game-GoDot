@@ -359,189 +359,2213 @@
       "maintenance_display": true
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
-      "x": -1772.2,
-      "z": 346.8,
-      "yaw": 1.571,
-      "scale": 3,
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -1751.9,
+      "z": 330.96,
+      "yaw": -1.051,
+      "scale": 1.0,
       "zone": "anna_salai",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
-        3.3
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
       ]
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
-      "x": 896.4,
-      "z": -1858.3,
-      "yaw": 1.571,
-      "scale": 3,
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": 903.31,
+      "z": -1861.16,
+      "yaw": 2.346,
+      "scale": 1.0,
       "zone": "t_nagar",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
-        3.3
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
       ]
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
-      "x": -2130,
-      "z": 327.4,
-      "yaw": 1.571,
-      "scale": 3,
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -2123.17,
+      "z": 315.15,
+      "yaw": -0.904,
+      "scale": 1.0,
       "zone": "royapettah",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
-        3.3
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
       ]
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
       "x": 1576.7,
       "z": -1542.9,
       "yaw": 1.571,
-      "scale": 3,
+      "scale": 1.0,
       "zone": "mylapore",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
-        3.3
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
       ]
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
       "x": -1723.4,
       "z": -855.6,
       "yaw": 1.571,
-      "scale": 3,
+      "scale": 1.0,
       "zone": "mylapore",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
-        3.3
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
       ]
     },
     {
-      "model": "tea_kadai",
-      "asset": "res://assets/models/city/tea_kadai.glb",
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
       "x": -1209.6,
       "z": 343.7,
       "yaw": 1.571,
-      "scale": 3,
+      "scale": 1.0,
       "zone": "anna_salai",
       "tea_cluster": true,
       "near_parking": true,
       "landmark_footprint": [
-        3.3,
-        3,
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "x": 1682.72,
+      "z": 219.19,
+      "yaw": -1.55,
+      "scale": 1.0,
+      "zone": "marina",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
         3.3
       ]
     },
     {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": -2619.02,
-      "z": 883.92,
-      "yaw": -0.119,
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "x": -2221.08,
+      "z": 1558.9,
+      "yaw": 0.561,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_c.glb",
+      "x": 777.01,
+      "z": 156.35,
+      "yaw": -1.211,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_d.glb",
+      "x": 1008.38,
+      "z": -2158.83,
+      "yaw": -0.305,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "x": 1665.53,
+      "z": 2120.48,
+      "yaw": -1.328,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "x": -2035.67,
+      "z": 461.94,
+      "yaw": -0.149,
       "scale": 1.0,
       "zone": "t_nagar",
       "biryani_cluster": true,
       "landmark_footprint": [
-        4.3,
+        3.7,
         3.0,
-        3.7
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
       ]
     },
     {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": -2822.02,
-      "z": 772.29,
-      "yaw": -0.212,
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_c.glb",
+      "x": 151.47,
+      "z": 1100.44,
+      "yaw": -2.813,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_d.glb",
+      "x": 1939.9,
+      "z": 276.12,
+      "yaw": 1.075,
+      "scale": 1.0,
+      "zone": "marina",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "x": -2457.17,
+      "z": 659.32,
+      "yaw": -2.648,
       "scale": 1.0,
       "zone": "t_nagar",
       "biryani_cluster": true,
       "landmark_footprint": [
-        4.3,
+        3.7,
         3.0,
-        3.7
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
       ]
     },
     {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": 1122.27,
-      "z": 1799.18,
-      "yaw": 1.369,
-      "scale": 1.0,
-      "zone": "mylapore",
-      "biryani_cluster": true,
-      "landmark_footprint": [
-        4.3,
-        3.0,
-        3.7
-      ]
-    },
-    {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": 962.39,
-      "z": 1730.53,
-      "yaw": 1.357,
-      "scale": 1.0,
-      "zone": "mylapore",
-      "biryani_cluster": true,
-      "landmark_footprint": [
-        4.3,
-        3.0,
-        3.7
-      ]
-    },
-    {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": -259.72,
-      "z": -1216.64,
-      "yaw": -1.252,
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "x": -562.54,
+      "z": -614.56,
+      "yaw": -2.501,
       "scale": 1.0,
       "zone": "anna_salai",
       "biryani_cluster": true,
       "landmark_footprint": [
-        4.3,
+        3.7,
         3.0,
-        3.7
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
       ]
     },
     {
-      "model": "biryani_shop",
-      "asset": "res://assets/models/city/biryani_shop.glb",
-      "x": -170.19,
-      "z": -1036.64,
-      "yaw": 1.981,
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_c.glb",
+      "x": 2736.34,
+      "z": -2050.89,
+      "yaw": -1.734,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_d.glb",
+      "x": -407.1,
+      "z": -878.5,
+      "yaw": 1.934,
       "scale": 1.0,
       "zone": "anna_salai",
       "biryani_cluster": true,
       "landmark_footprint": [
-        4.3,
+        3.7,
         3.0,
-        3.7
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "x": -3130.58,
+      "z": -60.54,
+      "yaw": 1.531,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "x": 2380.87,
+      "z": -948.84,
+      "yaw": -0.138,
+      "scale": 1.0,
+      "zone": "marina",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_c.glb",
+      "x": 2003.17,
+      "z": -1003.38,
+      "yaw": -0.177,
+      "scale": 1.0,
+      "zone": "marina",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_d.glb",
+      "x": -853.19,
+      "z": -335.11,
+      "yaw": 2.696,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "x": -986.61,
+      "z": 2222.27,
+      "yaw": 1.076,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "biryani_stall",
+      "asset": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "x": -1783.56,
+      "z": -838.51,
+      "yaw": -1.792,
+      "scale": 1.0,
+      "zone": "",
+      "biryani_cluster": true,
+      "landmark_footprint": [
+        3.7,
+        3.0,
+        4.3
+      ],
+      "block": [
+        2.6,
+        3.3
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": 1424.46,
+      "z": 2220.28,
+      "yaw": -0.631,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": 1863.85,
+      "z": 245.11,
+      "yaw": 3.008,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": 281.84,
+      "z": 964.44,
+      "yaw": -1.345,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 1414.12,
+      "z": 1218.1,
+      "yaw": 2.277,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": 636.08,
+      "z": 2230.41,
+      "yaw": -0.041,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -2859.96,
+      "z": 256.48,
+      "yaw": 2.987,
+      "scale": 1.0,
+      "zone": "t_nagar",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": 1190.05,
+      "z": 1280.52,
+      "yaw": 1.418,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 306.93,
+      "z": -114.08,
+      "yaw": -1.754,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -1025.92,
+      "z": 36.48,
+      "yaw": -1.858,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": 560.17,
+      "z": 389.11,
+      "yaw": 2.973,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -1391.61,
+      "z": 2143.11,
+      "yaw": 2.984,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": -1068.66,
+      "z": -2498.93,
+      "yaw": -2.938,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -1537.4,
+      "z": 471.12,
+      "yaw": -1.769,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -1508.45,
+      "z": 254.04,
+      "yaw": 2.895,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -1838.04,
+      "z": -1456.84,
+      "yaw": 0.095,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": -1678.02,
+      "z": 596.35,
+      "yaw": 3.003,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -3352.57,
+      "z": -557.62,
+      "yaw": 0.484,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -796.59,
+      "z": 1141.63,
+      "yaw": -1.669,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -601.94,
+      "z": 1329.17,
+      "yaw": -1.951,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 1428.59,
+      "z": 1654.99,
+      "yaw": -0.241,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": 1050.44,
+      "z": -1498.72,
+      "yaw": -0.162,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -107.04,
+      "z": 1727.44,
+      "yaw": -3.069,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -1641.17,
+      "z": 1323.58,
+      "yaw": 1.355,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 467.59,
+      "z": 636.35,
+      "yaw": -1.599,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -2707.09,
+      "z": 840.88,
+      "yaw": 1.451,
+      "scale": 1.0,
+      "zone": "t_nagar",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -2841.82,
+      "z": 1184.13,
+      "yaw": -0.215,
+      "scale": 1.0,
+      "zone": "t_nagar",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": 1961.71,
+      "z": -729.75,
+      "yaw": 1.355,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 1875.27,
+      "z": -1555.66,
+      "yaw": 1.068,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -811.0,
+      "z": -432.45,
+      "yaw": -2.53,
+      "scale": 1.0,
+      "zone": "anna_salai",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": 1181.93,
+      "z": -2121.75,
+      "yaw": -0.114,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -520.99,
+      "z": 520.9,
+      "yaw": -1.596,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": -233.21,
+      "z": 1388.66,
+      "yaw": 1.608,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -0.15,
+      "z": -2074.58,
+      "yaw": 0.825,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -2203.89,
+      "z": -1372.51,
+      "yaw": -1.661,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": 1220.21,
+      "z": 868.89,
+      "yaw": 0.744,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": -2344.27,
+      "z": -240.82,
+      "yaw": -0.12,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -2162.76,
+      "z": 1501.54,
+      "yaw": -2.681,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -1364.82,
+      "z": 933.99,
+      "yaw": 1.296,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": 105.98,
+      "z": 379.46,
+      "yaw": 3.073,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": 2703.17,
+      "z": -1846.53,
+      "yaw": 1.345,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_a.glb",
+      "x": -3247.09,
+      "z": 1529.3,
+      "yaw": -0.114,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_b.glb",
+      "x": -1567.05,
+      "z": -72.37,
+      "yaw": 2.94,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_c.glb",
+      "x": -1613.17,
+      "z": -2091.01,
+      "yaw": -2.778,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "tea_stall",
+      "asset": "res://assets/models/city/shops/tea_stall_d.glb",
+      "x": -1095.45,
+      "z": 2209.88,
+      "yaw": -0.218,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        3.8,
+        3.5,
+        3.5
+      ],
+      "block": [
+        2.2,
+        1.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": -256.15,
+      "z": -167.43,
+      "yaw": 0.082,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -2350.25,
+      "z": -1984.5,
+      "yaw": 0.025,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -3123.87,
+      "z": -1335.32,
+      "yaw": -1.53,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -1925.1,
+      "z": -1886.37,
+      "yaw": 1.75,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 779.77,
+      "z": 755.98,
+      "yaw": -1.548,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -444.42,
+      "z": 251.44,
+      "yaw": 1.267,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -2035.21,
+      "z": 414.0,
+      "yaw": 2.111,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": 528.51,
+      "z": -2283.89,
+      "yaw": -1.525,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 1427.24,
+      "z": 139.13,
+      "yaw": -1.643,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -2886.99,
+      "z": 685.8,
+      "yaw": -1.623,
+      "scale": 1.0,
+      "zone": "t_nagar",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 216.53,
+      "z": 1670.1,
+      "yaw": -1.705,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": 1637.35,
+      "z": -2396.55,
+      "yaw": 0.894,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": -2885.88,
+      "z": -569.23,
+      "yaw": 3.022,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": 1185.16,
+      "z": 1203.24,
+      "yaw": 1.456,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 2442.76,
+      "z": -2014.17,
+      "yaw": 0.955,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -2834.65,
+      "z": 2309.74,
+      "yaw": 1.659,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 1494.38,
+      "z": 1482.99,
+      "yaw": -0.18,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -3181.47,
+      "z": -558.47,
+      "yaw": -3.11,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 798.93,
+      "z": 2257.86,
+      "yaw": 1.37,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -2348.2,
+      "z": 1756.55,
+      "yaw": 0.022,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 967.06,
+      "z": -351.94,
+      "yaw": -0.007,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -2328.88,
+      "z": -1350.02,
+      "yaw": 2.416,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 566.17,
+      "z": -2144.35,
+      "yaw": -1.558,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": 1878.18,
+      "z": 680.9,
+      "yaw": -1.842,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 2364.01,
+      "z": -358.41,
+      "yaw": -0.079,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": 2373.24,
+      "z": -155.93,
+      "yaw": 1.449,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -3356.31,
+      "z": -1790.31,
+      "yaw": 2.91,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -38.08,
+      "z": -867.22,
+      "yaw": -2.888,
+      "scale": 1.0,
+      "zone": "anna_salai",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": -1184.74,
+      "z": -2081.73,
+      "yaw": -2.482,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -3013.75,
+      "z": -968.43,
+      "yaw": -0.118,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -1664.45,
+      "z": 1032.14,
+      "yaw": -2.027,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": 652.57,
+      "z": -174.53,
+      "yaw": -1.583,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": -54.03,
+      "z": -2078.08,
+      "yaw": -0.783,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": 1398.86,
+      "z": 2320.14,
+      "yaw": -0.001,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 541.19,
+      "z": -485.45,
+      "yaw": 1.481,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -1206.14,
+      "z": 840.92,
+      "yaw": 3.071,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": -347.37,
+      "z": 1680.22,
+      "yaw": -1.639,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": 1485.27,
+      "z": 801.23,
+      "yaw": -0.17,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -1489.08,
+      "z": -1058.2,
+      "yaw": 1.568,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -257.54,
+      "z": -1847.98,
+      "yaw": -0.74,
+      "scale": 1.0,
+      "zone": "anna_salai",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 1120.17,
+      "z": -2125.12,
+      "yaw": -1.95,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": -423.47,
+      "z": 1994.73,
+      "yaw": -0.025,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": 927.32,
+      "z": -1525.89,
+      "yaw": -1.897,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": 1239.05,
+      "z": 1683.36,
+      "yaw": 1.322,
+      "scale": 1.0,
+      "zone": "mylapore",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "x": 1609.99,
+      "z": -675.93,
+      "yaw": 1.548,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "x": 1997.76,
+      "z": -914.36,
+      "yaw": 1.327,
+      "scale": 1.0,
+      "zone": "marina",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "x": -2788.19,
+      "z": 1592.25,
+      "yaw": -0.132,
+      "scale": 1.0,
+      "zone": "t_nagar",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
+      ]
+    },
+    {
+      "model": "fruit_cart",
+      "asset": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "x": -2379.2,
+      "z": -2253.9,
+      "yaw": -3.08,
+      "scale": 1.0,
+      "zone": "",
+      "street_shop": true,
+      "landmark_footprint": [
+        1.75,
+        2.3,
+        1.4
+      ],
+      "block": [
+        1.1,
+        0.9
       ]
     }
   ]

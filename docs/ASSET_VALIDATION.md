@@ -19,8 +19,8 @@ Godot creates `.glb.import` metadata on asset import. The raw GLBs **are already
 Extract `Namma_Auto_All_4_Missing_Models.zip` at the repo root (folder paths are included):
 
 - `assets/models/city/ripon_building.glb`
-- `assets/models/city/tea_kadai.glb`
-- `assets/models/city/biryani_shop.glb`
+- `assets/models/city/tea_kadai.glb` (replaced Nov 1 by `shops/tea_stall_<v>.glb`, see `docs/STREET_SHOPS_AND_TRANSFORMERS.md`)
+- `assets/models/city/biryani_shop.glb` (replaced Nov 1 by `shops/biryani_stall_<v>.glb`)
 - `assets/models/hero/namma_auto_hero.glb`
 
 These source files were provided by the user. The first three are optimized derivatives and the hero remains the uploaded source. Confirm licensing and mobile rendering in the editor, especially the hero animations.

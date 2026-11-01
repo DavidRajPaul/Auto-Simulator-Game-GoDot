@@ -5,7 +5,7 @@
 This change is authored to load these exact two project paths:
 
 - `assets/models/city/ripon_building.glb`
-- `assets/models/city/tea_kadai.glb`
+- `assets/models/city/tea_kadai.glb` — **superseded (Nov 1):** the vertex-clustered kadai smeared its texture; the stall is re-baked as `assets/models/city/shops/tea_stall_<a-d>.glb` (`docs/STREET_SHOPS_AND_TRANSFORMERS.md`)
 
 Both original Tripo exports are ~57–60 MB, ~1.8–1.9 million triangles; **never ship the originals**. The user-supplied models were downsampled via vertex clustering and the base-color texture reduced for mobile:
 

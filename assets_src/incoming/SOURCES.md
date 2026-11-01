@@ -13,3 +13,9 @@ For every file add a row (the full list of recommended downloads is in `docs/ASS
 | audio/vehicle/3bd58344-recordx_media-diesel-auto-rickshaw-sound-199866.mp3 | https://pixabay.com/sound-effects/city-diesel-auto-rickshaw-sound-199866/ | recordx_media (Pixabay) | Pixabay Content Licence |
 | audio/vehicle/161817__xserra__auto-rickshaw-trip.wav | https://freesound.org/people/xserra/sounds/161817/ | xserra | CC BY 4.0 (credit required) |
 | audio/vehicle/kalhan pack (19 WAV, Freesound #16017, see docs/ASSETS.md section 1) | https://freesound.org/people/kalhan/packs/16017/ | kalhan | CC BY 4.0 (credit required) |
+
+## city_new (Nov 1, 2026) — owner's Tripo models, kept local (gitignored)
+
+`models/city_new/power_transformer_3d_model.glb`, `street_food_stall_3d_model.glb`,
+`street_fruit_stall_3d_model.glb` (~60 MB each). Baked by `tools/assets/bake_street_shops.py`
+into `assets/models/city/shops/` and `assets/models/city/eb_transformer.glb`.
