@@ -533,6 +533,14 @@ func _install_tamil_font() -> void:
 
 ## Graphics presets: 0 Low (no shadows, 70% 3D resolution), 1 Medium, 2 High.
 const GRAPHICS_SCALE: Array[float] = [0.7, 0.85, 1.0]
+## Shadow edges per preset. Oct 31 device test: shadows looked jagged. On Android the engine's
+## ".mobile" default is HARD (unfiltered) directional shadows and no anti-aliasing, so every
+## shadow edge stair-stepped. Medium and High use soft PCF (the "very low" level dithers into
+## visible grain on car bodies, so it is skipped). High also doubles the
+## shadow map and adds 2x MSAA (tile GPUs resolve it on-chip).
+const SHADOW_FILTER: Array[int] = [RenderingServer.SHADOW_QUALITY_HARD, RenderingServer.SHADOW_QUALITY_SOFT_LOW, RenderingServer.SHADOW_QUALITY_SOFT_LOW]
+const SHADOW_ATLAS: Array[int] = [1024, 2048, 4096]
+const MSAA_3D: Array[int] = [Viewport.MSAA_DISABLED, Viewport.MSAA_DISABLED, Viewport.MSAA_2X]
 
 func _apply_settings() -> void:
 	TranslationServer.set_locale(str(settings.get("language", "en")))
@@ -540,6 +548,9 @@ func _apply_settings() -> void:
 	get_tree().root.scaling_3d_scale = GRAPHICS_SCALE[gfx]
 	for n: Node in get_tree().get_nodes_in_group("sun_light"):
 		(n as DirectionalLight3D).shadow_enabled = gfx > 0
+	RenderingServer.directional_soft_shadow_filter_set_quality(SHADOW_FILTER[gfx])
+	RenderingServer.directional_shadow_atlas_set_size(SHADOW_ATLAS[gfx], true)
+	get_tree().root.msaa_3d = MSAA_3D[gfx] as Viewport.MSAA
 	var master: int = AudioServer.get_bus_index("Master")
 	AudioServer.set_bus_volume_db(master, linear_to_db(maxf(float(settings.get("master_volume", 0.9)), 0.001)))
 

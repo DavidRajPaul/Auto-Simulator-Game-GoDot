@@ -6,6 +6,14 @@ func _ready() -> void:
 
 func _run() -> void:
 	GameState.reset_profile()
+	# SHOT_DEVICE=1: what an Android phone gets from the engine's ".mobile" defaults (desktop
+	# renders never see those overrides): hard 2048 directional shadows, 0.85 3D scale, no MSAA.
+	if OS.get_environment("SHOT_DEVICE") == "1":
+		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_HARD)
+		RenderingServer.directional_shadow_atlas_set_size(2048, true)
+		get_tree().root.scaling_3d_scale = 0.85
+	if OS.has_environment("SHOT_GFX"):
+		GameState.set_setting("graphics", int(OS.get_environment("SHOT_GFX")))
 	if OS.has_environment("SHOT_MIN"):
 		GameState.shift_minute = float(OS.get_environment("SHOT_MIN"))
 	var city: Node = (load("res://scenes/main_chennai.tscn") as PackedScene).instantiate()
@@ -91,6 +99,16 @@ func _run() -> void:
 		camb.look_at(at)
 		(city.get_node("AutoRickshaw") as Node3D).visible = false
 		print("BOARD ", s)
+	if OS.has_environment("SHOT_RAIN"):
+		# SHOT_RAIN=0..1: weather blend for the sky / fog / light (Atmosphere.apply).
+		var atmo: Atmosphere = city.get_node("Atmosphere") as Atmosphere
+		atmo.set_process(false)
+		atmo.apply(GameState.shift_minute, float(OS.get_environment("SHOT_RAIN")))
+	if OS.has_environment("SHOT_TILT"):
+		# SHOT_TILT=deg: lift the camera's view up into the sky (sky / cloud check).
+		rig.set_process(false)
+		var camt: Camera3D = rig.get_node("Camera") as Camera3D
+		camt.rotate_object_local(Vector3.RIGHT, deg_to_rad(float(OS.get_environment("SHOT_TILT"))))
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
 	for i: int in 20:
