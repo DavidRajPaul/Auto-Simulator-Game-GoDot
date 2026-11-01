@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
 	_test_grounding(city)
+	await _test_canal_crossing(city)
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
 	city.queue_free()
@@ -123,6 +124,58 @@ func _model_bounds(car: Node3D) -> AABB:
 		out = local if first else out.merge(local)
 		first = false
 	return out
+
+## Oct 31 device test: driving to a pin, the auto stopped dead at the Buckingham-canal bridge on
+## Venkatesa Agraharam Road — every water edge had a solid kerb (and its visuals were erased, so
+## it was an invisible wall). Drive straight across that bridge; check banks, rails and water.
+func _test_canal_crossing(city: Node) -> void:
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
+	_check("Low-poly water mesh is built (water.json)", world.get_node_or_null("Area_water") != null and world._water_mat != null)
+	var banks: Node = world.get_node_or_null("WaterBanks")
+	_check("Water banks are VISIBLE meshes (not collision only)", banks != null and banks.get_child_count() > 10)
+	var g: RoadGraph = SignalBus.current_road_graph
+	var road: RoadGraph.Edge = null
+	for e: RoadGraph.Edge in g.edges:
+		if e.road_name == "Venkatesa Agraharam Road" and e.points[0].distance_to(Vector3(579.1, 0, 1746.0)) < 3.0:
+			road = e
+	_check("Found the Venkatesa Agraharam Road canal crossing", road != null)
+	if road == null:
+		return
+	var start: Vector3 = road.points[0]
+	var end: Vector3 = road.points[road.points.size() - 1]
+	var fwd: Vector3 = (end - start).normalized()
+	# Clear the moving traffic for this check (a stopped car in the lane is not a wall).
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	traffic.set_physics_process(false)
+	for v: TrafficVehicleAI in traffic.pool:
+		v.deactivate()
+	# 20 m before the near bank, heading across, then full throttle for 6 s.
+	SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(fwd, Vector3.UP), start - fwd * 20.0 + Vector3(0, 1.0, 0)))
+	await _physics(90) # let the chunks there stream in
+	GameState.tutorial_active = false
+	SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(fwd, Vector3.UP), start - fwd * 20.0 + Vector3(0, 1.0, 0)))
+	await _physics(10)
+	Input.action_press("accelerate")
+	await _physics(360)
+	Input.action_release("accelerate")
+	var travelled: float = (auto.global_position - (start - fwd * 20.0)).dot(fwd)
+	var crossing: float = start.distance_to(end)
+	_check("The auto drives straight across the canal bridge", travelled > 20.0 + crossing + 5.0, "%.1f m along, bridge ends at %.1f m" % [travelled, 20.0 + crossing])
+	# Bridge rails: driving sideways off the bridge into the canal is blocked.
+	var mid: Vector3 = (start + end) * 0.5
+	var side: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
+	SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(side, Vector3.UP), mid + Vector3(0, 1.0, 0)))
+	await _physics(10)
+	Input.action_press("accelerate")
+	await _physics(240)
+	Input.action_release("accelerate")
+	var off_axis: float = absf((auto.global_position - mid).dot(side))
+	_check("Bridge parapets stop the auto driving off into the canal", off_axis < road.width * 0.5 + 1.0, "%.1f m sideways (road half-width %.1f)" % [off_axis, road.width * 0.5])
+	Input.action_press("brake")
+	await _physics(60)
+	Input.action_release("brake")
+	traffic.set_physics_process(true)
 
 ## Oct 31 device test: parked scooters showed only seat and handlebar, cars sat half in the road.
 ## Every parked vehicle, stand vehicle and city prop near the player stands ON the drawn ground.

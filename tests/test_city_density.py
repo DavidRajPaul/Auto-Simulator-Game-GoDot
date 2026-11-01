@@ -39,5 +39,52 @@ class CityDensityTests(unittest.TestCase):
         self.assertLessEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.96)
 
 
+
+
+class WaterDataTests(unittest.TestCase):
+    """data/world/water.json (tools/osm/build_water.py): Oct 31 device test, an invisible wall
+    across the Venkatesa Agraharam Road canal bridge."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import json
+        world = Path(__file__).resolve().parents[1] / "data" / "world"
+        cls.water = json.loads((world / "water.json").read_text())
+        cls.graph = json.loads((world / "road_graph.json").read_text())
+
+    @staticmethod
+    def _seg_dist(p, a, b) -> float:
+        ax, az = a
+        bx, bz = b
+        px, pz = p
+        dx, dz = bx - ax, bz - az
+        L2 = dx * dx + dz * dz
+        t = 0.0 if L2 == 0 else ((px - ax) * dx + (pz - az) * dz) / L2
+        if t < 0.0 or t > 1.0:
+            return float("inf")  # beyond a segment end: a wall at a road's dead end is fine
+        cx, cz = ax + t * dx, az + t * dz
+        return ((px - cx) ** 2 + (pz - cz) ** 2) ** 0.5
+
+    def test_no_bank_across_a_road(self) -> None:
+        """No bank wall comes within a carriageway half-width of any road centre-line."""
+        bad = []
+        for b in self.water["banks"]:
+            mid = ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
+            for e in self.graph["edges"]:
+                pts = e["pts"]
+                if min(abs(mid[0] - p[0]) + abs(mid[1] - p[1]) for p in pts) > 60:
+                    continue
+                for a, c in zip(pts, pts[1:]):
+                    for q in ((b[0], b[1]), mid, (b[2], b[3])):
+                        if self._seg_dist(q, a, c) < e["w"] * 0.5 - 0.05:
+                            bad.append((e.get("n", ""), q))
+        self.assertEqual(bad, [], f"bank walls on carriageways: {bad[:5]}")
+
+    def test_bridges_have_parapets(self) -> None:
+        self.assertGreaterEqual(len(self.water["rails"]), 2)
+        self.assertGreater(len(self.water["banks"]), 100)
+        self.assertGreater(len(self.water["surface"]["i"]) // 3, 5000)
+
+
 if __name__ == "__main__":
     unittest.main()

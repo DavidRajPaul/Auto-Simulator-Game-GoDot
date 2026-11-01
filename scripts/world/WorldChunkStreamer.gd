@@ -105,6 +105,7 @@ var _available: Dictionary = {} # Vector2i -> true (chunks that exist in data)
 var _player: Node3D
 var _timer: float = 0.0
 var wetness: float = 0.0
+var _water_mat: ShaderMaterial
 var _road_mat: StandardMaterial3D
 var _bld_mat: ShaderMaterial
 var _tree_mat: StandardMaterial3D
@@ -181,6 +182,8 @@ func _update_wetness(delta: float) -> void:
 	_road_mat.albedo_color = Color.WHITE.lerp(Color(0.8, 0.82, 0.86), wetness)
 	_road_mat.roughness = lerpf(0.95, 0.3, wetness)
 	_road_mat.metallic_specular = lerpf(0.5, 0.9, wetness)
+	if _water_mat != null:
+		_water_mat.set_shader_parameter("monsoon", wetness)
 
 ## Request/unload chunks around the player. `blocking` builds synchronously (first frame / tests).
 func update_streaming(blocking: bool) -> void:
@@ -1147,9 +1150,10 @@ func _build_areas() -> void:
 		"sea": [Color(0.18, 0.42, 0.6), -0.05], "water": [Color(0.22, 0.45, 0.55), -0.02],
 		"beach": [Color(0.93, 0.85, 0.62), -0.08], "park": [Color(0.42, 0.62, 0.32), -0.07],
 	}
+	var built_water: bool = _build_water()
 	for kind: String in specs:
 		var polys: Array = areas.get(kind, [])
-		if polys.is_empty():
+		if polys.is_empty() or (kind == "water" and built_water):
 			continue
 		var st: SurfaceTool = SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -1195,6 +1199,216 @@ func _build_areas() -> void:
 
 ## Low retaining edge around ponds and lakes: a visible concrete curb and a solid collision
 ## barrier. Water remains a visual-only surface, so the player cannot drive over a lake.
+## Low-poly canals / ponds / temple tanks from data/world/water.json (tools/osm/build_water.py):
+## one faceted water mesh, one mesh for every bank wall, tank ghat and bridge parapet (vertex
+## colours, one draw call), one concave collision shape for the walls. Banks are open where
+## roads cross water (Oct 31: an invisible wall blocked the Venkatesa Agraharam Road bridge).
+## Returns false when the file is missing (the legacy flat water + kerbs are used then).
+const WATER_Y: float = -0.02
+const BANK_H: float = 0.95
+const BANK_T: float = 0.32
+const RAIL_H: float = 1.0
+const POST_EVERY_M: float = 6.0
+## Banks are built per BANK_TILE_M tile and drawn only within BANK_VISIBLE_M (8.5 km of canal
+## wall in one always-drawn mesh was ~200k vertices).
+const BANK_TILE_M: float = 250.0
+const BANK_VISIBLE_M: float = 350.0
+const STRIPE_M: float = 1.6
+const GHAT_STEPS: int = 5
+const CANAL_WHITE: Color = Color(0.86, 0.85, 0.80)
+const CANAL_CAP: Color = Color(0.55, 0.55, 0.52)
+const TANK_RED: Color = Color(0.70, 0.17, 0.12) # temple kavi stripes
+const TANK_WHITE: Color = Color(0.93, 0.90, 0.84)
+const GHAT_STONE: Color = Color(0.50, 0.48, 0.45) # granite
+const HAZARD_YELLOW: Color = Color(0.96, 0.78, 0.10)
+const HAZARD_BLACK: Color = Color(0.10, 0.10, 0.10)
+
+func _build_water() -> bool:
+	var f: FileAccess = FileAccess.open(world_dir.path_join("water.json"), FileAccess.READ)
+	if f == null:
+		return false
+	var data: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	var surf: Dictionary = data.get("surface", {})
+	var v: Array = surf.get("v", [])
+	var d: Array = surf.get("d", [])
+	var ix: Array = surf.get("i", [])
+	if not ix.is_empty():
+		var verts: PackedVector3Array = PackedVector3Array()
+		var uvs: PackedVector2Array = PackedVector2Array()
+		var normals: PackedVector3Array = PackedVector3Array()
+		for i: int in d.size():
+			verts.append(Vector3(float(v[i * 2]), WATER_Y, float(v[i * 2 + 1])))
+			uvs.append(Vector2(float(d[i]), 0.0))
+			normals.append(Vector3.UP)
+		var idx: PackedInt32Array = PackedInt32Array()
+		for t: Variant in ix:
+			idx.append(int(t))
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = verts
+		arrays[Mesh.ARRAY_NORMAL] = normals
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
+		arrays[Mesh.ARRAY_INDEX] = idx
+		var mesh: ArrayMesh = ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		_water_mat = ShaderMaterial.new()
+		_water_mat.shader = load("res://shaders/water_lowpoly.gdshader") as Shader
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.name = "Area_water"
+		mi.mesh = mesh
+		mi.material_override = _water_mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+	var tiles: Dictionary = {} # Vector2i -> SurfaceTool
+	var faces: PackedVector3Array = PackedVector3Array()
+	for b: Variant in data.get("banks", []):
+		var seg: Array = b
+		var a: Vector2 = Vector2(float(seg[0]), float(seg[1]))
+		var c: Vector2 = Vector2(float(seg[2]), float(seg[3]))
+		_bank_wall(_tile_st(tiles, (a + c) * 0.5), faces, a, c, int(seg[4]))
+	for r: Variant in data.get("rails", []):
+		var seg: Array = r
+		var a: Vector2 = Vector2(float(seg[0]), float(seg[1]))
+		var c: Vector2 = Vector2(float(seg[2]), float(seg[3]))
+		_bridge_rail(_tile_st(tiles, (a + c) * 0.5), faces, a, c)
+	for ring: Variant in data.get("steps", []):
+		var rr: Array = ring
+		_ghat(_tile_st(tiles, Vector2(float(rr[0]), float(rr[1]))), rr)
+	var walls_mat: StandardMaterial3D = StandardMaterial3D.new()
+	walls_mat.vertex_color_use_as_albedo = true
+	walls_mat.vertex_color_is_srgb = true
+	walls_mat.roughness = 0.92
+	var holder: Node3D = Node3D.new()
+	holder.name = "WaterBanks"
+	add_child(holder)
+	for key: Vector2i in tiles:
+		var walls: MeshInstance3D = MeshInstance3D.new()
+		walls.name = "Banks_%d_%d" % [key.x, key.y]
+		walls.mesh = MeshKit.finish(tiles[key] as SurfaceTool, walls_mat)
+		walls.visibility_range_end = BANK_VISIBLE_M
+		holder.add_child(walls)
+	if not faces.is_empty():
+		var body: StaticBody3D = StaticBody3D.new()
+		body.name = "WaterBarriers"
+		body.collision_layer = 1
+		body.collision_mask = 0
+		var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+		shape.backface_collision = true
+		shape.set_faces(faces)
+		var cs: CollisionShape3D = CollisionShape3D.new()
+		cs.shape = shape
+		body.add_child(cs)
+		add_child(body)
+	return true
+
+func _tile_st(tiles: Dictionary, p: Vector2) -> SurfaceTool:
+	var key: Vector2i = Vector2i(floori(p.x / BANK_TILE_M), floori(p.y / BANK_TILE_M))
+	if not tiles.has(key):
+		tiles[key] = MeshKit.begin()
+	return tiles[key] as SurfaceTool
+
+## A wall along a-b: whitewashed canal parapet with posts, or a red/white striped tank wall.
+func _bank_wall(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vector2, kind: int) -> void:
+	var e: Vector2 = b - a
+	var length: float = e.length()
+	if length < 0.05:
+		return
+	var yaw: float = -atan2(e.y, e.x)
+	var basis: Basis = Basis(Vector3.UP, yaw)
+	var dir: Vector3 = Vector3(e.x, 0.0, e.y) / length
+	var base: float = WorldChunkStreamer.GROUND_VISUAL_Y
+	if kind == 1:
+		# Temple tank: vertical kavi (red and white) stripes, a stone coping on top.
+		# One white wall box, then the red stripes as thin face quads on both sides of it.
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, BANK_H, BANK_T), TANK_WHITE, basis)
+		var side: Vector3 = Vector3(-dir.z, 0.0, dir.x) * (BANK_T * 0.5 + 0.01)
+		var n: int = maxi(1, int(roundf(length / STRIPE_M)))
+		for k: int in range(0, n, 2):
+			var p0: Vector3 = Vector3(a.x, 0.0, a.y) + dir * length * float(k) / float(n)
+			var p1: Vector3 = Vector3(a.x, 0.0, a.y) + dir * length * float(k + 1) / float(n)
+			for sgn: float in [-1.0, 1.0]:
+				var o: Vector3 = side * sgn
+				_quad_facing(st, p0 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base + BANK_H, 0), p0 + o + Vector3(0, base + BANK_H, 0), o, TANK_RED)
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H + 0.05, (a.y + b.y) * 0.5), Vector3(length + 0.1, 0.1, BANK_T + 0.12), GHAT_STONE, basis)
+	else:
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, BANK_H, BANK_T), CANAL_WHITE, basis)
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H + 0.04, (a.y + b.y) * 0.5), Vector3(length + 0.06, 0.08, BANK_T + 0.08), CANAL_CAP, basis)
+		var posts: int = int(length / POST_EVERY_M)
+		for k: int in range(1, posts + 1):
+			var c: Vector3 = Vector3(a.x, 0.0, a.y) + dir * float(k) * POST_EVERY_M
+			MeshKit.box(st, c + Vector3(0, base + (BANK_H + 0.18) * 0.5, 0), Vector3(0.4, BANK_H + 0.18, BANK_T + 0.14), CANAL_WHITE.darkened(0.08), basis)
+	_wall_faces(faces, a, b, base, BANK_H + 0.1, BANK_T)
+
+## Bridge parapet along a road over water, yellow/black hazard blocks at both ends.
+func _bridge_rail(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vector2) -> void:
+	var e: Vector2 = b - a
+	var length: float = e.length()
+	if length < 0.05:
+		return
+	var basis: Basis = Basis(Vector3.UP, -atan2(e.y, e.x))
+	var dir: Vector3 = Vector3(e.x, 0.0, e.y) / length
+	var y0: float = ROAD_Y
+	MeshKit.box(st, Vector3((a.x + b.x) * 0.5, y0 + RAIL_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, RAIL_H, 0.28), CANAL_WHITE, basis)
+	MeshKit.box(st, Vector3((a.x + b.x) * 0.5, y0 + RAIL_H + 0.04, (a.y + b.y) * 0.5), Vector3(length + 0.06, 0.08, 0.36), CANAL_CAP, basis)
+	for end: Vector3 in [Vector3(a.x, 0.0, a.y) + dir * 0.35, Vector3(b.x, 0.0, b.y) - dir * 0.35]:
+		for k: int in 4:
+			MeshKit.box(st, end + Vector3(0, y0 + 0.15 + 0.3 * float(k), 0), Vector3(0.7, 0.3, 0.34), HAZARD_YELLOW if k % 2 == 0 else HAZARD_BLACK, basis)
+	_wall_faces(faces, a, b, y0, RAIL_H + 0.1, 0.28)
+
+## Temple-tank ghat: GHAT_STEPS concentric steps from the wall down to the water line.
+func _ghat(st: SurfaceTool, ring: Array) -> void:
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i: int in range(0, ring.size(), 2):
+		pts.append(Vector2(float(ring[i]), float(ring[i + 1])))
+	if pts.size() < 3:
+		return
+	var centre: Vector2 = Vector2.ZERO
+	for p: Vector2 in pts:
+		centre += p
+	centre /= float(pts.size())
+	# The ring is the ghat's INNER edge (3 m inside the bank). Step j is the band from j to j+1
+	# thirds... of the way out, its tread higher than the one below: stairs climbing from the
+	# water to the striped wall, like the Kapaleeshwarar tank's granite ghats.
+	var width: float = 5.0 # = tools/osm/build_water.py GHAT_INSET_M
+	for j: int in GHAT_STEPS:
+		var r0: float = width * float(j) / float(GHAT_STEPS)
+		var r1: float = width * float(j + 1) / float(GHAT_STEPS)
+		var top: float = WATER_Y + 0.1 + 0.22 * float(j)
+		var below: float = WATER_Y - 0.1 if j == 0 else WATER_Y + 0.1 + 0.22 * float(j - 1)
+		var tread: Color = GHAT_STONE.darkened(0.07 * float(j % 2))
+		for i: int in pts.size():
+			var a: Vector2 = pts[i - 1]
+			var b: Vector2 = pts[i]
+			var a0: Vector2 = a + (a - centre).normalized() * r0
+			var b0: Vector2 = b + (b - centre).normalized() * r0
+			var a1: Vector2 = a + (a - centre).normalized() * r1
+			var b1: Vector2 = b + (b - centre).normalized() * r1
+			_quad_facing(st, Vector3(a0.x, top, a0.y), Vector3(b0.x, top, b0.y), Vector3(b1.x, top, b1.y), Vector3(a1.x, top, a1.y), Vector3.UP, tread)
+			# Riser facing the water.
+			var to_c: Vector2 = centre - (a0 + b0) * 0.5
+			_quad_facing(st, Vector3(a0.x, below, a0.y), Vector3(b0.x, below, b0.y), Vector3(b0.x, top, b0.y), Vector3(a0.x, top, a0.y), Vector3(to_c.x, 0.0, to_c.y), tread.darkened(0.25))
+
+## MeshKit.quad with its winding chosen so the face normal points along `facing` (tank rings
+## come in either orientation from OSM).
+func _quad_facing(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, facing: Vector3, colour: Color) -> void:
+	# MeshKit.quad's outside is where a-b-c looks counter-clockwise: normal = (b - a) x (c - a).
+	if (b - a).cross(c - a).dot(facing) >= 0.0:
+		MeshKit.quad(st, a, b, c, d, colour)
+	else:
+		MeshKit.quad(st, a, d, c, b, colour)
+
+## Collision for a wall a-b (an oriented box as 12 triangles).
+func _wall_faces(faces: PackedVector3Array, a: Vector2, b: Vector2, y0: float, h: float, t: float) -> void:
+	var e: Vector2 = (b - a).normalized()
+	var n: Vector2 = Vector2(-e.y, e.x) * t * 0.5
+	var c: Array[Vector3] = []
+	for p: Vector2 in [a - n, b - n, b + n, a + n]:
+		c.append(Vector3(p.x, y0, p.y))
+	for p: Vector2 in [a - n, b - n, b + n, a + n]:
+		c.append(Vector3(p.x, y0 + h, p.y))
+	for q: Array in [[0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7], [4, 5, 6, 7], [3, 2, 1, 0]]:
+		faces.append_array(PackedVector3Array([c[q[0]], c[q[1]], c[q[2]], c[q[0]], c[q[2]], c[q[3]]]))
+
 func _build_water_barriers(polys: Array, water_y: float) -> void:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "WaterBarriers"
@@ -1220,6 +1434,7 @@ func _build_water_barriers(polys: Array, water_y: float) -> void:
 	curb_draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(curb_draw)
 	var instance_index: int = 0
+	var xforms: Array[Transform3D] = []
 	for poly: Array in polys:
 		for i: int in poly.size():
 			var a: Vector2 = Vector2(float(poly[i][0]), float(poly[i][1]))
@@ -1236,9 +1451,13 @@ func _build_water_barriers(polys: Array, water_y: float) -> void:
 			shape.position = pos
 			shape.rotation.y = yaw
 			holder.add_child(shape)
-			curb_multi.set_instance_transform(instance_index, Transform3D(Basis(Vector3.UP, yaw) * Basis.IDENTITY.scaled(Vector3(edge.length(), 1.0, 1.0)), pos))
+			xforms.append(Transform3D(Basis(Vector3.UP, yaw) * Basis.IDENTITY.scaled(Vector3(edge.length(), 1.0, 1.0)), pos))
 			instance_index += 1
+	# Set the count BEFORE writing transforms: changing instance_count clears the buffer, which
+	# left these kerbs invisible while their collision stayed (an invisible wall).
 	curb_multi.instance_count = instance_index
+	for i: int in xforms.size():
+		curb_multi.set_instance_transform(i, xforms[i])
 
 ## Placeholder landmark silhouettes (replaced by low-poly GLTF hero models in Phase 5).
 func _build_landmarks() -> void:

@@ -43,7 +43,8 @@ res://
 │       ├── manifest.json, road_graph.json, areas.json   # manifest: map_scale 1.0, stands, services, flood_spots
 │       ├── chunks/c_<i>_<j>.json    # 250 m chunks: "surf" (pre-triangulated lanes/walks/junctions/markings) + "blds" (footprints + heights)
 │       ├── dress/c_<i>_<j>.json     # EB poles, wires, trees per chunk (tools/osm/build_street_dressing.py)
-│       └── city_props.json          # water towers, canal-side settlements, Central skyline (tools/osm/place_city_props.py)
+│       ├── city_props.json          # water towers, canal-side settlements, Central skyline (tools/osm/place_city_props.py)
+│       └── water.json               # low-poly water mesh, banks, bridge parapets, tank ghats (tools/osm/build_water.py)
 ├── tools/osm/                       # fetch_osm.py, run_osm2streets.py, build_world.py, streets.py, preview_map.py, config.py,
 │                                    # place_city_props.py, build_street_dressing.py (re-run both after an OSM rebuild)
 ├── tools/art/                       # make_facade_atlas.py, make_ui_icons.py, import_game_art.py (Stitch art → atlas, icons, logo)
@@ -196,6 +197,8 @@ res://
 * Two-wheeler riders are `PersonMesh.rider_node()` (baked real characters, origin at the hip, facing -Z); the procedural `seated_rider()` is only its fallback. Parked sport-bike files face +Z, so their riders turn round.
 * People never stand inside buildings: `SignalBus.walkable(x, z)` reads a per-chunk 0.5 m mask of the building footprints (`WorldChunkStreamer._building_mask`, built on the worker thread). Walkers keep their kerb distance only where it is clear, else the widest strip between the road edge and the wall. Anything that places people at a kerb offset must check it.
 * The chase camera recentres behind the auto by itself once you drive (`CameraRig._recenter`: 0.6 s after the last drag, above 1.2 m/s). Don't add a free-look that sticks while driving.
+* Water (canals, ponds, temple tanks) comes from `data/world/water.json` (`tools/osm/build_water.py`, run after `build_world.py`; the OSM workflows run it): a ~4 m low-poly lattice with per-vertex bank distance (`shaders/water_lowpoly.gdshader`, flat-shaded facets, shallow→deep, foam), bank walls with gaps where roads CROSS water (bridges get parapets), water pulled back from roads that run ALONG a bank, ghat steps in temple tanks. Banks are tiled per 250 m and only drawn within 350 m. Never put a wall on every water edge again: it made an invisible wall across the Venkatesa Agraharam Road bridge. `tests/test_city_density.py` checks no bank sits on a carriageway; phase 9 drives across that bridge.
+* Changing a `MultiMesh.instance_count` clears its transforms: set the count first, then write every transform.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---
