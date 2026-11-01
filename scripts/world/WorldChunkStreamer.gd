@@ -732,6 +732,8 @@ func _street_trees(m: MeshBuf, dress: Dictionary) -> void:
 			1: pass # artist-generated palms are instanced separately
 			2: _mast_tree(m, base2, float(t[3]), int(t[4]))
 			3: _copper_pod(m, base2, float(t[3]), int(t[4]))
+			4: _pungai_tree(m, base2, float(t[3]), int(t[4]))
+			5: _gulmohar_tree(m, base2, float(t[3]), int(t[4]))
 			_: _shade_tree(m, base2, float(t[3]), int(t[4]))
 
 func _imported_palm_markers(holder: Node3D, dress: Dictionary) -> void:
@@ -823,6 +825,37 @@ func _copper_pod(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
 	for k: int in 3:
 		var a: float = float(seed_i % 11) + float(k) * 2.1
 		_blob(m, top + Vector3(cos(a) * 1.2 * s, 1.3 * s, sin(a) * 1.2 * s), Vector3(1.6, 0.6, 1.6) * s, bloom if k != 1 else leaf.lightened(0.1))
+
+## Pungai (Pongamia pinnata): broad irregular shade canopy with multiple branch forks.
+## Seeded asymmetry avoids identical trees without new materials or draw calls.
+func _pungai_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.36, 0.29, 0.22)
+	var crown: Vector3 = base + Vector3(0.0, 3.2 * s, 0.0)
+	_trunk(m, base, crown, 0.25 * s, 0.14 * s, bark)
+	var leaves: Array[Color] = [Color(0.19, 0.39, 0.16), Color(0.26, 0.45, 0.19), Color(0.23, 0.42, 0.17)]
+	for k: int in 6:
+		var angle: float = float(seed_i % 31) * 0.21 + float(k) * TAU / 6.0
+		var reach: float = (1.3 + float((seed_i + k * 7) % 5) * 0.16) * s
+		var tip: Vector3 = crown + Vector3(cos(angle) * reach, (0.45 + float(k % 3) * 0.2) * s, sin(angle) * reach)
+		_trunk(m, crown, tip, 0.10 * s, 0.045 * s, bark)
+		_blob(m, tip + Vector3(0.0, 0.35 * s, 0.0), Vector3(2.2, 1.65, 2.1) * s, leaves[(seed_i + k) % leaves.size()])
+	_blob(m, crown + Vector3(0.0, 1.4 * s, 0.0), Vector3(2.6, 1.55, 2.5) * s, leaves[seed_i % leaves.size()])
+
+## Gulmohar: airy, horizontal umbrella with restrained red-orange flower patches.
+func _gulmohar_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
+	var bark: Color = Color(0.39, 0.29, 0.22)
+	var crown: Vector3 = base + Vector3(0.0, 3.7 * s, 0.0)
+	_trunk(m, base, crown, 0.22 * s, 0.12 * s, bark)
+	var green: Color = Color(0.29, 0.46, 0.18)
+	for k: int in 7:
+		var angle: float = float(seed_i % 17) * 0.19 + float(k) * TAU / 7.0
+		var reach: float = (2.0 + float((seed_i + k) % 4) * 0.18) * s
+		var tip: Vector3 = crown + Vector3(cos(angle) * reach, 0.5 * s, sin(angle) * reach)
+		_trunk(m, crown, tip, 0.10 * s, 0.04 * s, bark)
+		_blob(m, tip, Vector3(2.3, 0.85, 2.2) * s, green.lightened(float(k % 3) * 0.035))
+		if (seed_i + k) % 3 != 0:
+			_blob(m, tip + Vector3(0.0, 0.48 * s, 0.0), Vector3(1.15, 0.25, 1.1) * s, Color(0.87, 0.26, 0.10))
+	_blob(m, crown + Vector3(0.0, 0.85 * s, 0.0), Vector3(3.0, 0.9, 3.0) * s, green)
 
 ## Coconut palm: leaning trunk, drooping fronds.
 func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:

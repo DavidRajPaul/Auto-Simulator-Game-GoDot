@@ -31,8 +31,9 @@ PALM_ZONES = {"mylapore": 0.05}
 PALM_DEFAULT = 0.02
 PALM_BEACH = 0.3
 BEACH_PALM_M = 200.0
-# Non-palm species mix: 0 rain tree / neem, 2 Ashoka (mast tree), 3 copper-pod / gulmohar.
-SPECIES = [(0, 0.55), (2, 0.25), (3, 0.20)]
+# Non-palm mix: 0 rain/neem, 2 mast, 3 copperpod, 4 pungai, 5 gulmohar.
+# These are visual design weights, not surveyed species counts.
+SPECIES = [(0, 0.30), (2, 0.18), (3, 0.15), (4, 0.27), (5, 0.10)]
 
 
 def point_in(px, pz, poly) -> bool:
