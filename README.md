@@ -120,6 +120,7 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 - Landmarks: procedural Marina lighthouse and gopuram, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
 - Temple tanks and lakes use faceted low-poly water with solid concrete edge barriers; auto stands have parked autos, cars and two-wheelers.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
+- Chennai sky: humid milky haze on the horizon, drifting fair-weather cumulus with sunlit tops, peach clouds at golden hour, stars at night; rain closes it into a grey monsoon overcast. Soft (filtered) shadow edges on Medium/High graphics, plus 2x MSAA on High.
 - Mixed traffic (scooters with riders, cars, share autos, TNSTC/SETC buses, lorries, service vehicles) whose density follows the TomTom 2025 Chennai hourly profile; 14 animated pedestrians that walk the kerbs and jump out of the way.
 
 **Savari (the money loop)**

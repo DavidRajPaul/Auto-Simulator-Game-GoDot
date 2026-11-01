@@ -179,7 +179,31 @@ func _test_atmosphere(main: Node) -> void:
 	_check("Headlight off at noon, on at night", not noon_lights and light.visible)
 	atmo.apply(720.0, 1.0)
 	_check("Headlight on in heavy rain", light.visible)
+	# Oct 31 device test: "no clouds". The Chennai sky shader carries visible cumulus and follows
+	# the weather: rain closes the cover and greys the zenith; night brings the stars.
+	var sky: ShaderMaterial = env.sky.sky_material as ShaderMaterial
+	_check("Sky is the Chennai sky shader", sky != null and sky.shader != null and sky.shader.resource_path.ends_with("chennai_sky.gdshader"))
+	if sky != null:
+		_check("Sky has its cloud noise", sky.get_shader_parameter("cloud_noise") is NoiseTexture2D)
+		var rain_cover: float = float(sky.get_shader_parameter("coverage"))
+		var rain_zenith: Color = sky.get_shader_parameter("zenith_colour") as Color
+		atmo.apply(720.0, 0.0)
+		var dry_cover: float = float(sky.get_shader_parameter("coverage"))
+		var dry_zenith: Color = sky.get_shader_parameter("zenith_colour") as Color
+		_check("Dry day: scattered clouds, blue zenith", dry_cover > 0.3 and dry_cover < 0.6 and dry_zenith.b > dry_zenith.r + 0.3, "cover %.2f" % dry_cover)
+		_check("Monsoon rain closes the cloud cover and greys the sky", rain_cover > 0.9 and rain_zenith.b - rain_zenith.r < 0.15, "cover %.2f" % rain_cover)
+		atmo.apply(1260.0, 0.0)
+		_check("Night sky shows stars", float(sky.get_shader_parameter("night")) > 0.9)
 	atmo.apply(720.0, 0.0)
+	# Oct 31 device test: jagged shadows. Medium/High filter them (soft PCF) and High adds MSAA.
+	var gfx0: int = int(GameState.settings.get("graphics", 1))
+	GameState.set_setting("graphics", 2)
+	_check("High graphics: 2x MSAA, full 3D resolution", get_tree().root.msaa_3d == Viewport.MSAA_2X and is_equal_approx(get_tree().root.scaling_3d_scale, 1.0))
+	_check("Medium and High use soft shadow filtering, 2-4k shadow maps",
+		GameState.SHADOW_FILTER[1] != RenderingServer.SHADOW_QUALITY_HARD and GameState.SHADOW_FILTER[2] != RenderingServer.SHADOW_QUALITY_HARD and GameState.SHADOW_ATLAS[1] >= 2048 and GameState.SHADOW_ATLAS[2] >= 4096)
+	GameState.set_setting("graphics", 0)
+	_check("Low graphics: no MSAA", get_tree().root.msaa_3d == Viewport.MSAA_DISABLED)
+	GameState.set_setting("graphics", gfx0)
 
 func _test_monsoon(main: Node, world: WorldChunkStreamer, auto: AutoRickshawController, m: Dictionary) -> void:
 	var fx: MonsoonFX = main.get_node("MonsoonFX") as MonsoonFX
