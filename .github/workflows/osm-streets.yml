@@ -43,8 +43,9 @@ jobs:
         run: python3 tools/osm/run_osm2streets.py
       - name: Rebuild world chunks with the new geometry
         run: |
-          pip install mapbox-earcut numpy
+          pip install mapbox-earcut numpy scipy shapely
           python3 tools/osm/build_world.py
+          python3 tools/osm/build_water.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"

@@ -28,7 +28,7 @@ jobs:
         if: inputs.refetch || hashFiles('data/osm/chennai_mvp.osm.json.gz') == ''
         run: python3 tools/osm/fetch_osm.py
       - name: Install pipeline deps
-        run: pip install mapbox-earcut numpy
+        run: pip install mapbox-earcut numpy scipy shapely
       - name: Build world chunks
         run: |
           if [ -f tools/osm/build_world.py ]; then python3 tools/osm/build_world.py; else echo "build_world.py not present yet"; fi
@@ -36,6 +36,7 @@ jobs:
         run: |
           python3 tools/osm/build_street_dressing.py
           python3 tools/osm/build_roadside_parking.py
+          python3 tools/osm/build_water.py
       - name: Commit results
         run: |
           git config user.name "osm-import[bot]"
