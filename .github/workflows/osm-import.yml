@@ -36,6 +36,7 @@ jobs:
         run: |
           python3 tools/osm/build_street_dressing.py
           python3 tools/osm/build_roadside_parking.py
+          python3 tools/osm/append_street_shops.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
       - name: Commit results

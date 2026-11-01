@@ -46,7 +46,7 @@ A culturally authentic auto-rickshaw driving and economy simulator set in real-s
 
 The kerbside parking pass uses reproducible OSM road-edge sampling instead of unconstrained random positions. The generated `data/world/dress/c_*.json` `parking` entries contain scooters, cars and autos, with district/road-class densities, junction setbacks and building-footprint clearance. The chunk streamer draws actual traffic GLB meshes through MultiMesh and combines stationary collision into one hull per chunk; parked scenery does not count toward the moving 18-vehicle AI budget.
 
-**Build the map data:** run `python3 tools/osm/build_street_dressing.py` then `python3 tools/osm/build_roadside_parking.py`, or use the OSM Import workflow on this branch. The parking generator must run **after** street dressing, which replaces its output files. Generated `data/world/dress/` JSON changes must be committed before shipped Android builds show parking. **Acceptance still pending:** device screenshots and playtest on Kapaleeshwarar tank → Luz Corner → R.K. Mutt Road; confirm vehicles align and are grounded, intersections and sidewalks remain navigable, and frame/draw-call budgets pass. Procedural density is a visual tuning hypothesis, not measured parking inventory.
+**Build the map data:** run `python3 tools/osm/build_street_dressing.py` then `python3 tools/osm/build_roadside_parking.py` then `python3 tools/osm/append_street_shops.py`, or use the OSM Import workflow on this branch. The parking generator must run **after** street dressing, which replaces its output files. Generated `data/world/dress/` JSON changes must be committed before shipped Android builds show parking. **Acceptance still pending:** device screenshots and playtest on Kapaleeshwarar tank → Luz Corner → R.K. Mutt Road; confirm vehicles align and are grounded, intersections and sidewalks remain navigable, and frame/draw-call budgets pass. Procedural density is a visual tuning hypothesis, not measured parking inventory.
 
 ### Chennai Street Life implementation order
 
@@ -116,8 +116,9 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 **Chennai**
 - Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads.
 - OSM building footprints plus procedural infill (28,355 total in the latest density build) with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
-- EB poles with sagging wires, neem trees and palms, Greater Chennai Corporation street-name boards with real OSM names (Tamil + English), name boards on real named buildings.
+- EB poles with sagging wires and **TNEB double-pole transformer structures** (245 city-wide: the owner's transformer tank on a steel platform ~3.2 m up, AB switch, DO fuses, lightning arresters, jumpers, LT box, danger board, anti-climb collars, earth pipes), neem trees and palms, Greater Chennai Corporation street-name boards with real OSM names (Tamil + English), name boards on real named buildings.
 - Landmarks: procedural Marina lighthouse and gopuram, TWAD water towers, canal-side settlements, NAMMA GAS stations; traffic police at big junctions.
+- Roadside shops on real kerbs across the map: 50 tea stalls, 48 fruit push-carts and 18 biryani stalls, four hand-painted liveries each with clean Tamil signboards (`docs/STREET_SHOPS_AND_TRANSFORMERS.md`).
 - Temple tanks and lakes use faceted low-poly water with solid concrete edge barriers; auto stands have parked autos, cars and two-wheelers.
 - Day/night on the shift clock (noon glare → golden Marina evening → night) and the Northeast Monsoon (rain, windscreen drops + working wiper, wet roads, 5 real flood-prone spots).
 - Chennai sky: humid milky haze on the horizon, drifting fair-weather cumulus with sunlit tops, peach clouds at golden hour, stars at night; rain closes it into a grey monsoon overcast. Soft (filtered) shadow edges on Medium/High graphics, plus 2x MSAA on High.
@@ -323,6 +324,7 @@ All shipped art and sound is in [`assets/`](assets/), one folder per kind. The f
 | `assets/models/traffic/` | Scooter, cars and Mahindra Boleros in Chennai paints, Bolero police jeep, share auto, TNSTC/SETC buses, lorry, cows, 6 service vehicles | Shiveloper, Waseem Kadri, rSquare, Nobel Tech, Oren garage, Quaternius, Fadly.W, Comrade1280 | CC BY 4.0, CC0 |
 | `assets/models/people/` | 9 walking Chennai characters (veshti, sarees, churidar, pavadai…), 2 police | Sketchfab CC BY authors | CC BY 4.0 |
 | `assets/models/city/` | Mylapore garage workshop, water tower, canal settlement, gas station | Sketchfab CC BY authors | CC BY 4.0 |
+| `assets/models/city/shops/`, `eb_transformer.glb` | Tea stalls, fruit carts, biryani stalls (4 liveries each), TNEB transformer tank | owner-generated (Tripo) + owner's biryani stall, baked by `tools/assets/bake_street_shops.py` | ours |
 | `assets/fx/` | Sparks, smoke, dust, puffs | Kenney particle packs | CC0 |
 | `assets/textures/` | Chennai facade atlas + night glow | generated (`tools/art`) | ours |
 | `assets/ui/`, `assets/icon/` | Controls, HUD dials, rewards, portraits, logo, loading art, app icon, splash | Google Stitch art for this project | ours |
@@ -359,7 +361,7 @@ Suite numbers follow the order they were written, not the roadmap phases.
 | `run_phase6_tests` | Gears, indicators, give-way, driver levels, goals, facades, sounds | 66 |
 | `run_phase7_tests` | UI kit and screens: home, haggle, ride complete, level-up, menus hide HUD | 22 |
 | `run_phase8_tests` | Play-test pass: camera, shadows, splash, riders, bargaining, time-of-day traffic, rewards, ads | 55 |
-| `run_phase9_tests` | Chennai people, building detail, street dressing, buses, lorry, landmarks | 35 |
+| `run_phase9_tests` | Chennai people, building detail, street dressing, transformers, street shops, buses, lorry, landmarks | 98 |
 | `run_phase10_tests` | Play-test round 2: street boards on the footpath, GCC look, tree mix, impact FX, icons | 28 |
 | `run_phase11_tests` | First-ride tutorial: bot plays all 10 steps, skip, replay, resume, scripted world, coach-mode overlay never covers the road | 54 |
 | `run_perf_probe` | Draw calls and traffic pool while driving the city and the greybox (needs a display) | 98 / 150 max (Oct 27) |

@@ -5,6 +5,8 @@
                 buildings and roads.
   slum_cluster  canal-side settlements: along the Buckingham Canal / Cooum banks, long side
                 parallel to the water, canal wall facing it.
+  street shops  tea stalls, fruit carts and biryani stalls on real kerbs city-wide
+                (add_street_shops; needs data/world/dress, so run build_street_dressing.py first).
                 seen on the skyline from the north end of Kamarajar Salai and Napier Bridge.
 
 Reads only generated world data (chunks, road graph, areas) - re-run after an OSM rebuild.
@@ -152,69 +154,197 @@ def clear_buildings(manifest, cx, cz, yaw, hx, hz) -> int:
     return removed
 
 
-def add_biryani_props(manifest, blds, segs, areas, props):
-    """Place stalls only where the full kerbside footprint passes collision checks."""
+# Roadside shops (tools/assets/bake_street_shops.py): kind -> variants, half footprint (x along the
+# kerb, z across it, model front at -Z facing the road), how many, spacing, which road classes.
+# The footprint includes the customer/parking apron each kind brings.
+SHOP_KINDS = {
+    "biryani_stall": {"variants": "abcd", "half": (2.6, 3.3), "count": 18, "spacing": 260.0,
+                      "classes": ("primary", "secondary", "tertiary"), "flag": "biryani_cluster",
+                      "footprint": [3.7, 3.0, 4.3]},
+    "tea_stall": {"variants": "abcd", "half": (2.2, 1.9), "count": 44, "spacing": 170.0,
+                  "classes": ("primary", "secondary", "tertiary", "residential"), "flag": "street_shop",
+                  "footprint": [3.8, 3.5, 3.5]},
+    "fruit_cart": {"variants": "abcd", "half": (1.1, 0.9), "count": 48, "spacing": 140.0,
+                   "classes": ("primary", "secondary", "tertiary", "residential", "living_street"),
+                   "flag": "street_shop", "footprint": [1.75, 2.3, 1.4]},
+}
+SHOP_SIDEWALK_GAP = 0.9   # carriageway edge -> shop front (people and parked bikes stand here)
+SHOP_MIN_GAP = 45.0       # any two shops
+SHOP_SEED = 600004
+
+
+def _load_dress_points():
+    """Kerb clutter from data/world/dress as (x, z, clearance radius): EB poles, trees,
+    transformer structures and parked vehicles (run build_street_dressing.py and
+    build_roadside_parking.py first)."""
+    pts = []
+    for f in sorted((WORLD / "dress").glob("c_*.json")):
+        d = json.loads(f.read_text())
+        pts += [(float(q[0]), float(q[1]), 0.3) for q in d.get("poles", [])]
+        pts += [(float(q[0]), float(q[1]), 0.9) for q in d.get("trees", [])]
+        pts += [(float(q[0]), float(q[1]), 2.2) for q in d.get("xfmr", [])]
+        pts += [(float(q[0]), float(q[1]), 1.0 if int(q[3]) == 0 else 2.2) for q in d.get("parking", [])]
+    return Grid(pts, lambda q: (q[0], q[1], q[0], q[1]), cell=20.0)
+
+
+def add_street_shops(manifest, blds, segs, areas, props):
+    """Tea stalls, fruit carts and biryani stalls on real kerbs across the whole map.
+
+    Each shop sits beside an actual OSM road of a fitting class, front to the road, its whole
+    footprint (with customers / parked bikes) clear of buildings, the carriageway, water, beach,
+    EB poles, trees, transformers and every other prop. Deterministic (seeded) so re-runs match.
+    No real businesses are named or placed: signs carry generic words only.
+    """
+    import random
     bgrid = Grid(blds, lambda b: (b[0], b[1], b[2], b[3]))
     sgrid = Grid(segs, lambda sg: (min(sg[0], sg[2]) - sg[4], min(sg[1], sg[3]) - sg[4],
                                    max(sg[0], sg[2]) + sg[4], max(sg[1], sg[3]) + sg[4]))
     water = [[(q[0], q[1]) for q in poly] for poly in
              areas.get("water", []) + areas.get("sea", []) + areas.get("beach", [])]
-    # Deterministic biryani stalls in busy mixed-use neighborhoods. Each candidate
-    # is beside an actual OSM road, with a checked 9m x 7m footprint for the
-    # stall, patrons and parked scooters. No fabricated shop-name/geolocation.
-    # Keep away from landmark compounds and from other placed roadside props.
-    biryani_zones = ("t_nagar", "mylapore", "anna_salai")
-    for zone_id in biryani_zones:
-        zone = next((z for z in manifest.get("zones", []) if z["id"] == zone_id), None)
-        if zone is None:
-            continue
-        zx, zz = float(zone["x"]), float(zone["z"])
-        radius = min(500.0, float(zone["r"]) * 0.7)
-        candidates = sorted(
-            (sg for sg in segs if seg_dist(zx, zz, sg) <= radius),
-            key=lambda sg: (int(seg_dist(zx, zz, sg) // 50),
-                            round(sg[0], 1), round(sg[1], 1),
-                            round(sg[2], 1), round(sg[3], 1)))
-        picked = []
-        for sg in candidates:
-            ax, az, bx, bz, half_width = sg
+    dress = _load_dress_points()
+    marks = [(float(l["x"]), float(l["z"])) for l in manifest.get("landmarks", [])]
+    marks += [(float(s["x"]), float(s["z"])) for s in manifest.get("auto_stands", [])]
+    graph = json.loads((WORLD / "road_graph.json").read_text())
+    by_class: dict = {}
+    for e in graph["edges"]:
+        pts = e["pts"]
+        for i in range(1, len(pts)):
+            by_class.setdefault(e["c"], []).append(
+                (pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], float(e["w"]) * 0.5))
+    zones = manifest.get("zones", [])
+
+    def zone_of(x, z):
+        best, bd = "", 1e9
+        for zz in zones:
+            d = math.hypot(x - zz["x"], z - zz["z"])
+            if d < zz["r"] and d < bd:
+                best, bd = zz["id"], d
+        return best
+
+    def dress_clear(cx, cz, yaw, hx, hz):
+        c, s = math.cos(-yaw), math.sin(-yaw)
+        r = math.hypot(hx, hz) + 2.5
+        for (x, z, rad) in dress.near(cx - r, cz - r, cx + r, cz + r):
+            lx = (x - cx) * c + (z - cz) * s
+            lz = -(x - cx) * s + (z - cz) * c
+            if abs(lx) < hx + rad and abs(lz) < hz + rad:
+                return False
+        return True
+
+    rng = random.Random(SHOP_SEED)
+    shops = [(float(p["x"]), float(p["z"])) for p in props
+             if p.get("street_shop") or p.get("biryani_cluster") or p.get("tea_cluster")]
+    others = [(float(p["x"]), float(p["z"])) for p in props]
+    report = {}
+    for kind, cfg in SHOP_KINDS.items():
+        hx, hz = cfg["half"]
+        cands = sorted(sg for cls in cfg["classes"] for sg in by_class.get(cls, [])
+                       if math.hypot(sg[2] - sg[0], sg[3] - sg[1]) >= 2.0 * hx + 8.0)
+        rng.shuffle(cands)
+        mine = []
+        for sg in cands:
+            if len(mine) >= cfg["count"]:
+                break
+            ax, az, bx, bz, hw = sg
             length = math.hypot(bx - ax, bz - az)
-            if length < 20.0:
-                continue
             dx, dz = (bx - ax) / length, (bz - az) / length
-            for fraction in (0.35, 0.65):
-                mx = ax + fraction * (bx - ax)
-                mz = az + fraction * (bz - az)
+            done = False
+            for frac in (0.5, 0.3, 0.7):
+                mx, mz = ax + dx * length * frac, az + dz * length * frac
+                for side in ((1.0, -1.0) if rng.random() < 0.5 else (-1.0, 1.0)):
+                    nx, nz = -dz * side, dx * side
+                    off = hw + SHOP_SIDEWALK_GAP + hz
+                    px, pz = mx + nx * off, mz + nz * off
+                    if any(math.hypot(px - qx, pz - qz) < cfg["spacing"] for qx, qz in mine):
+                        continue
+                    if any(math.hypot(px - qx, pz - qz) < SHOP_MIN_GAP for qx, qz in shops):
+                        continue
+                    if any(math.hypot(px - qx, pz - qz) < 15.0 for qx, qz in others):
+                        continue
+                    if any(math.hypot(px - qx, pz - qz) < 40.0 for qx, qz in marks):
+                        continue
+                    yaw = math.atan2(nx, nz)  # local +Z away from the road: the front faces it
+                    if not free(px, pz, yaw, hx, hz, bgrid, sgrid, water, SHOP_SIDEWALK_GAP - 0.1):
+                        continue
+                    if not dress_clear(px, pz, yaw, hx, hz):
+                        continue
+                    variant = cfg["variants"][len(mine) % len(cfg["variants"])]
+                    prop = {"model": kind, "asset": f"res://assets/models/city/shops/{kind}_{variant}.glb",
+                            "x": round(px, 2), "z": round(pz, 2), "yaw": round(yaw, 3), "scale": 1.0,
+                            "zone": zone_of(px, pz), cfg["flag"]: True,
+                            "landmark_footprint": cfg["footprint"], "block": [hx, hz]}
+                    props.append(prop)
+                    mine.append((px, pz))
+                    shops.append((px, pz))
+                    others.append((px, pz))
+                    done = True
+                    break
+                if done:
+                    break
+        report[kind] = len(mine)
+    print("street shops:", report)
+    return report
+
+
+def restyle_tea_clusters(props) -> None:
+    """The hand-authored tea kadais (with their regulars) use the re-baked stall now."""
+    k = 0
+    for p in props:
+        if p.get("tea_cluster"):
+            v = "abcd"[k % 4]
+            k += 1
+            p.update({"model": "tea_stall", "asset": f"res://assets/models/city/shops/tea_stall_{v}.glb",
+                      "scale": 1.0, "landmark_footprint": SHOP_KINDS["tea_stall"]["footprint"],
+                      "block": list(SHOP_KINDS["tea_stall"]["half"])})
+
+
+def settle_tea_clusters(manifest, blds, segs, areas, props) -> None:
+    """Hand-authored kadais were placed by hand at the old model's size: some now overlap the
+    carriageway. Move each one to the nearest clear kerb spot (front to the road), within 60 m."""
+    bgrid = Grid(blds, lambda b: (b[0], b[1], b[2], b[3]))
+    sgrid = Grid(segs, lambda sg: (min(sg[0], sg[2]) - sg[4], min(sg[1], sg[3]) - sg[4],
+                                   max(sg[0], sg[2]) + sg[4], max(sg[1], sg[3]) + sg[4]))
+    water = [[(q[0], q[1]) for q in poly] for poly in
+             areas.get("water", []) + areas.get("sea", []) + areas.get("beach", [])]
+    dress = _load_dress_points()
+    hx, hz = SHOP_KINDS["tea_stall"]["half"]
+    for p in props:
+        if not p.get("tea_cluster"):
+            continue
+        x0, z0, yaw0 = float(p["x"]), float(p["z"]), float(p["yaw"])
+        others = [(float(q["x"]), float(q["z"])) for q in props if q is not p]
+        if free(x0, z0, yaw0, hx, hz, bgrid, sgrid, water, SHOP_SIDEWALK_GAP - 0.1):
+            continue
+        best = None
+        for sg in sgrid.near(x0 - 60, z0 - 60, x0 + 60, z0 + 60):
+            ax, az, bx, bz, hw = sg
+            L = math.hypot(bx - ax, bz - az)
+            if L < 2 * hx + 4:
+                continue
+            dx, dz = (bx - ax) / L, (bz - az) / L
+            for i in range(1, 12):
+                t = i / 12.0
+                mx, mz = ax + (bx - ax) * t, az + (bz - az) * t
                 for side in (1.0, -1.0):
                     nx, nz = -dz * side, dx * side
-                    # Entire stall, customers and bikes must remain outside the carriageway.
-                    px = mx + nx * (half_width + 6.8)
-                    pz = mz + nz * (half_width + 6.8)
-                    if math.hypot(px - zx, pz - zz) > radius:
+                    off = hw + SHOP_SIDEWALK_GAP + hz
+                    px, pz = mx + nx * off, mz + nz * off
+                    d = math.hypot(px - x0, pz - z0)
+                    if d > 60 or (best is not None and d >= best[0]):
                         continue
-                    if any(math.hypot(px - qx, pz - qz) < 140.0 for qx, qz in picked):
-                        continue
-                    if any(math.hypot(px - float(p["x"]), pz - float(p["z"])) < 15.0
-                           for p in props):
+                    if any(math.hypot(px - qx, pz - qz) < 12.0 for qx, qz in others):
                         continue
                     yaw = math.atan2(nx, nz)
-                    if not free(px, pz, yaw, 4.5, 3.5, bgrid, sgrid, water, 1.0):
-                        continue
-                    props.append({
-                        "model": "biryani_shop",
-                        "asset": "res://assets/models/city/biryani_shop.glb",
-                        "x": round(px, 2), "z": round(pz, 2),
-                        "yaw": round(yaw, 3), "scale": 1.0,
-                        "zone": zone_id, "biryani_cluster": True,
-                        "landmark_footprint": [4.3, 3.0, 3.7]
-                    })
-                    picked.append((px, pz))
-                    break
-                if len(picked) >= 2:
-                    break
-            if len(picked) >= 2:
-                break
-        print(f"biryani stalls for {zone_id}: {len(picked)}")
+                    if free(px, pz, yaw, hx, hz, bgrid, sgrid, water, SHOP_SIDEWALK_GAP - 0.1):
+                        best = (d, px, pz, yaw)
+        if best is not None:
+            p.update({"x": round(best[1], 2), "z": round(best[2], 2), "yaw": round(best[3], 3)})
+            print(f"  tea kadai moved {best[0]:.0f} m to a clear kerb")
+        else:
+            p["tea_cluster"] = False
+            p["street_shop"] = False
+            print(f"  tea kadai at {x0},{z0}: no clear kerb nearby, dropped")
+    props[:] = [p for p in props if p.get("tea_cluster") is not False]
 
 
 def main() -> int:
@@ -337,7 +467,6 @@ def main() -> int:
                         break
             if not done:
                 print(f"  gas_station: no lot near {sv['id']}, keeps the marker")
-    add_biryani_props(manifest, blds, segs, areas, props)
     # Keep hand-authored street dressing that the procedural rebuild does not own.
     # Do not restore removed station landmarks from previously generated props.
     if OUT.exists():
@@ -347,6 +476,9 @@ def main() -> int:
                     p.get("tea_cluster") or p.get("parked_two_wheeler")
                     or p.get("maintenance_display") or (p.get("barricade_type") and not p.get("generated_safety_barrier"))):
                 props.append(p)
+    restyle_tea_clusters(props)
+    settle_tea_clusters(manifest, blds, segs, areas, props)
+    add_street_shops(manifest, blds, segs, areas, props)
     OUT.write_text(json.dumps({"_note": "made by tools/osm/place_city_props.py", "props": props}, indent=1))
     for p in props:
         print(p)

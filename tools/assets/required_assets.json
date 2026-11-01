@@ -3,12 +3,56 @@
   "description": "Required custom art: do not silently ship placeholder substitutes. Missing files are a PR-blocking error.",
   "required": [
     {
-      "path": "res://assets/models/city/tea_kadai.glb",
-      "purpose": "Roadside tea shops"
+      "path": "res://assets/models/city/shops/tea_stall_a.glb",
+      "purpose": "Roadside tea stalls (livery a)"
     },
     {
-      "path": "res://assets/models/city/biryani_shop.glb",
-      "purpose": "Biryani stalls on Chennai pavements"
+      "path": "res://assets/models/city/shops/tea_stall_b.glb",
+      "purpose": "Roadside tea stalls (livery b)"
+    },
+    {
+      "path": "res://assets/models/city/shops/tea_stall_c.glb",
+      "purpose": "Roadside tea stalls (livery c)"
+    },
+    {
+      "path": "res://assets/models/city/shops/tea_stall_d.glb",
+      "purpose": "Roadside tea stalls (livery d)"
+    },
+    {
+      "path": "res://assets/models/city/shops/fruit_cart_a.glb",
+      "purpose": "Fruit push-carts (livery a)"
+    },
+    {
+      "path": "res://assets/models/city/shops/fruit_cart_b.glb",
+      "purpose": "Fruit push-carts (livery b)"
+    },
+    {
+      "path": "res://assets/models/city/shops/fruit_cart_c.glb",
+      "purpose": "Fruit push-carts (livery c)"
+    },
+    {
+      "path": "res://assets/models/city/shops/fruit_cart_d.glb",
+      "purpose": "Fruit push-carts (livery d)"
+    },
+    {
+      "path": "res://assets/models/city/shops/biryani_stall_a.glb",
+      "purpose": "Biryani stalls on Chennai pavements (livery a)"
+    },
+    {
+      "path": "res://assets/models/city/shops/biryani_stall_b.glb",
+      "purpose": "Biryani stalls on Chennai pavements (livery b)"
+    },
+    {
+      "path": "res://assets/models/city/shops/biryani_stall_c.glb",
+      "purpose": "Biryani stalls on Chennai pavements (livery c)"
+    },
+    {
+      "path": "res://assets/models/city/shops/biryani_stall_d.glb",
+      "purpose": "Biryani stalls on Chennai pavements (livery d)"
+    },
+    {
+      "path": "res://assets/models/city/eb_transformer.glb",
+      "purpose": "TNEB distribution transformer tank on the DP pole structures"
     },
     {
       "path": "res://assets/models/hero/namma_auto_hero.glb",
