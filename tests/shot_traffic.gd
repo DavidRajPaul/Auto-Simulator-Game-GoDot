@@ -23,9 +23,10 @@ func _ready() -> void:
 	add_child(ground)
 	var items: Array = []
 	if OS.get_environment("SHOT_CARS") == "1":
-		# Passenger cars + the police SUV (car pool and kerb parking check).
+		# Passenger cars + the police jeep (car pool and kerb parking check).
 		for v: Array in TrafficVehicleAI.CAR_VARIANTS:
-			items.append([v[0], v[1] as Vector3, true, false, Vector3.ZERO])
+			if OS.get_environment("SHOT_ONLY") == "" or str(v[0]).contains(OS.get_environment("SHOT_ONLY")):
+				items.append([v[0], v[1] as Vector3, true, v.size() > 2, Vector3.ZERO])
 	for i: int in (0 if OS.get_environment("SHOT_CARS") == "1" else TrafficVehicleAI.TWO_WHEELER_VARIANTS.size()):
 		var v: Array = TrafficVehicleAI.TWO_WHEELER_VARIANTS[i]
 		items.append([v[0], v[1] as Vector3, v[2] as bool, v[3] as bool, v[5] as Vector3])
@@ -43,6 +44,7 @@ func _ready() -> void:
 		if side:
 			car.rotation.y = PI * 0.5 # nose to -X: the camera sees the left flank
 		TrafficModelFit.attach(car, it[0] as String, size, it[2] as bool, it[3] as bool)
+		TrafficVehicleAI._light_beacon(car)
 		var seat: Vector3 = it[4]
 		if seat != Vector3.ZERO and OS.get_environment("SHOT_RIDERS") != "0":
 			var rider: Node3D = PersonMesh.rider_node(items.find(it))

@@ -11,7 +11,8 @@ Each source car is ~13 meshes with 7 flat-coloured materials (= ~13 draw calls).
 material colours into vertex colours and merges everything into one primitive with one
 material: one draw call per car, a recolour is just a different file, no textures.
 
-Output: assets/models/traffic/cars/<body>_<paint>.glb and police_suv.glb (facing +Z, source size).
+Output: assets/models/traffic/cars/<body>_<paint>.glb (facing +Z, source size). The police SUV
+bake below was superseded on Nov 1 by the Bolero police jeep (bake_bolero.py).
 Usage: python3 tools/assets/bake_car_colours.py
 """
 from __future__ import annotations
@@ -153,7 +154,7 @@ def bake_police() -> dict:
 
 def main() -> int:
     report = [bake_paint(b, p) for b, p in VARIANTS]
-    report.append(bake_police())
+    # The police vehicle is the Bolero now (bake_bolero.py); bake_police() is kept for reference.
     print(json.dumps(report, indent=1))
     return 0
 
