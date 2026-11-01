@@ -32,6 +32,14 @@ var _shake_t: float = 0.0
 ## Free look for the chase camera. Drag to look around without changing the auto's heading.
 var _orbit_yaw: float = 0.0
 var _orbit_pitch: float = -0.12
+const DEFAULT_PITCH: float = -0.12
+## Auto-recentre (Oct 31 device test): after looking around, the chase camera swings back behind
+## the auto by itself once you drive, like other driving games. It waits RECENTER_DELAY_S after
+## the last drag, only while moving faster than RECENTER_MIN_MPS, and eases faster with speed.
+const RECENTER_DELAY_S: float = 0.6
+const RECENTER_MIN_MPS: float = 1.2
+const RECENTER_RATE: float = 2.2
+var _since_look: float = 99.0
 var _look_drag_mouse: bool = false
 var _look_touch: int = -1
 var _last_look_pos: Vector2 = Vector2.ZERO
@@ -72,6 +80,7 @@ func _process(delta: float) -> void:
 		Mode.TOP_DOWN:
 			desired = xf.origin + basis_flat * TOP_DOWN_OFFSET
 		_:
+			_recenter(delta)
 			var orbit: Basis = Basis(Vector3.UP, _orbit_yaw) * Basis(Vector3.RIGHT, _orbit_pitch)
 			desired = xf.origin + (basis_flat * orbit) * CHASE_OFFSET
 	var t: float = 1.0 - exp(-follow_sharpness * delta)
@@ -113,7 +122,23 @@ func _input(event: InputEvent) -> void:
 			_apply_look_delta(drag.position - _last_look_pos)
 			_last_look_pos = drag.position
 
+func is_looking() -> bool:
+	return _look_drag_mouse or _look_touch >= 0
+
+func _recenter(delta: float) -> void:
+	if is_looking():
+		_since_look = 0.0
+		return
+	_since_look += delta
+	var speed: float = (_target as RigidBody3D).linear_velocity.length() if _target is RigidBody3D else 0.0
+	if _since_look < RECENTER_DELAY_S or speed < RECENTER_MIN_MPS:
+		return
+	var k: float = 1.0 - exp(-RECENTER_RATE * clampf(speed / 6.0, 0.5, 2.0) * delta)
+	_orbit_yaw = lerp_angle(_orbit_yaw, 0.0, k)
+	_orbit_pitch = lerpf(_orbit_pitch, DEFAULT_PITCH, k)
+
 func _apply_look_delta(delta: Vector2) -> void:
+	_since_look = 0.0
 	_orbit_yaw = wrapf(_orbit_yaw - delta.x * 0.006, -PI, PI)
 	_orbit_pitch = clampf(_orbit_pitch - delta.y * 0.004, -0.72, 0.55)
 

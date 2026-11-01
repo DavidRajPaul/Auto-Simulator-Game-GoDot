@@ -41,6 +41,13 @@ signal camera_shake(strength: float)
 var current_road_graph: RoadGraph = null
 ## Set by WorldChunkStreamer: (x, z, fallback) -> height of the drawn ground (walk/road/park/bare).
 var surface_height_provider: Callable = Callable()
+## Set by WorldChunkStreamer: (x, z) -> false inside a building footprint.
+var walkable_provider: Callable = Callable()
+
+## Can a person stand at (x, z)? (not inside a building). True when no world is streaming.
+func walkable(x: float, z: float) -> bool:
+	return bool(walkable_provider.call(x, z)) if walkable_provider.is_valid() else true
+
 ## Ask the world to stand a model on the drawn ground at its (x, z) once that chunk's surface
 ## heights are known (now if loaded, else when the chunk streams in). Used by every static prop
 ## and parked vehicle so nothing is buried in, or floats above, the road or kerb.

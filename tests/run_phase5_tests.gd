@@ -33,6 +33,7 @@ func _run() -> void:
 	var world: WorldChunkStreamer = main.get_node("World") as WorldChunkStreamer
 	await _physics(60)
 	_test_chunk_meshes(world)
+	await _test_camera_recenter(main, auto)
 	await _test_hints_and_arrow(main, auto)
 	await _test_flip_recovery(auto)
 	await _test_stuck_offer(auto)
@@ -111,6 +112,27 @@ func _test_hints_and_arrow(main: Node, auto: AutoRickshawController) -> void:
 	await _physics(2)
 	_check("Guide setting hides the distance readout", not arrow.visible and not hud._guidance_distance.visible)
 	GameState.settings["guidance_arrow"] = true
+
+## Oct 31 device test: after dragging the camera round, it should swing back behind the auto by
+## itself once you drive (it stayed wherever it was left).
+func _test_camera_recenter(main: Node, auto: AutoRickshawController) -> void:
+	var rig: CameraRig = main.get_node("CameraRig") as CameraRig
+	while rig.mode != CameraRig.Mode.CHASE:
+		rig.cycle_mode()
+	rig._orbit_yaw = 2.2
+	rig._orbit_pitch = 0.4
+	rig._since_look = 99.0
+	auto.linear_velocity = Vector3.ZERO
+	await _frames(20)
+	_check("Parked: a looked-around camera stays where the player left it", absf(rig._orbit_yaw - 2.2) < 0.01, "%.2f" % rig._orbit_yaw)
+	Input.action_press("accelerate")
+	await _physics(150)
+	Input.action_release("accelerate")
+	_check("Driving: the camera swings back behind the auto by itself", absf(rig._orbit_yaw) < 0.25 and absf(rig._orbit_pitch - CameraRig.DEFAULT_PITCH) < 0.15,
+		"yaw %.2f pitch %.2f at %.1f m/s" % [rig._orbit_yaw, rig._orbit_pitch, auto.linear_velocity.length()])
+	Input.action_press("brake")
+	await _physics(90)
+	Input.action_release("brake")
 
 func _test_flip_recovery(auto: AutoRickshawController) -> void:
 	await _brake_to_stop(auto)
