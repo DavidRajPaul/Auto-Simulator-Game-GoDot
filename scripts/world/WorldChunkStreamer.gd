@@ -333,9 +333,6 @@ func _add_imported_palms(chunk: Node3D) -> void:
 	palms.name = "GeneratedCoconutPalms"
 	palms.multimesh = mm
 	palms.visibility_range_end = 180.0
-	# This textured 8.5k-vertex source is repeated with MultiMesh; rendering its
-	# entire chunk again into the sun shadow map costs more than its soft foliage shadow adds.
-	palms.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for i: int in markers.get_child_count():
 		var marker: Node3D = markers.get_child(i) as Node3D
 		var scale: float = 7.5 * float(marker.get_meta("palm_scale", 1.0))
@@ -565,9 +562,6 @@ func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
 			var tree_node: MeshInstance3D = MeshInstance3D.new()
 			tree_node.name = "RoadsideTrees"
 			tree_node.mesh = fm
-			# Thousands of street crowns are already shaded by their vertex colours.
-			# Shadow-map rendering of the whole 250 m batch is expensive on mobile.
-			tree_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			holder.add_child(tree_node)
 		_imported_palm_markers(holder, dress)
 	if m.verts.is_empty():
@@ -907,7 +901,7 @@ func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color
 		shade = shade.darkened(0.045 * maxf(-out.x, 0.0) + 0.025 * maxf(sin(float(k) * 2.7 + grain), 0.0))
 		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, shade)
 
-## Irregular eight-sided crown with a sunlit ridge and shaded underside (16 faces).
+## Irregular eight-sided crown with a brighter upper ridge and shaded underside (16 faces).
 ## Opaque triangles keep the leaves readable without mobile alpha overdraw.
 func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
 	var ring: Array[Vector3] = []
