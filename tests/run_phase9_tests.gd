@@ -102,8 +102,8 @@ func _test_two_wheeler_and_police_models() -> void:
 	var fitted: bool = police.size() > 3 and bool(police[3]) and TrafficModelFit.attach(pcar, str(police[0]), police[1] as Vector3, true, true)
 	var pb: AABB = _model_bounds(pcar) if fitted else AABB()
 	pcar.free()
-	# Real SUV proportions: ~4.5 m long, height/length ~0.49 (was squashed to 0.36).
-	_check("Police SUV keeps real proportions (uniform fit, h/l > 0.42)", fitted and absf(pb.size.z - 4.5) < 0.1 and pb.size.y / pb.size.z > 0.42, str(pb.size))
+	# Uniform fit to 4.5 m keeps the SUV's own proportions (never squashed into a saloon box).
+	_check("Police SUV keeps its proportions (uniform fit, 4.5 m, h/l > 0.36)", fitted and absf(pb.size.z - 4.5) < 0.1 and pb.size.y / pb.size.z > 0.36, str(pb.size))
 	var tris: int = 0
 	var scene: PackedScene = load(str(police[0])) as PackedScene if not police.is_empty() else null
 	if scene != null:
@@ -187,10 +187,14 @@ func _test_grounding(city: Node) -> void:
 	var spots_ok: bool = true
 	var spots: int = 0
 	var detail: String = ""
+	var car_meshes: Dictionary = {}
 	for k: Vector2i in world.loaded:
 		var park: Node = (world.loaded[k] as Node).get_node_or_null("RoadsideParking")
 		if park == null:
 			continue
+		for c: Node in park.get_children():
+			if c.name.begins_with("ParkedVehicle_1") and (c as MultiMeshInstance3D).multimesh.instance_count > 0:
+				car_meshes[(c as MultiMeshInstance3D).multimesh.mesh.get_rid()] = true
 		for kind: int in RoadsideParking.MODELS.size():
 			if not park.has_meta("fit_%d" % kind):
 				continue
@@ -218,6 +222,8 @@ func _test_grounding(city: Node) -> void:
 				spots_ok = false
 	_check("Parked vehicles: real length, lowest point on the spot (not centred, not stretched)", fits_ok and fits_seen > 0, detail)
 	_check("Parked vehicles stand on the drawn ground at their spots", spots_ok and spots > 50, "%d spots" % spots)
+	# Nov 1 device test: parked cars are the traffic cars in several paints, not the green hatchback.
+	_check("Parked cars come in several paints", car_meshes.size() >= 3, "%d car meshes" % car_meshes.size())
 	var stand_ok: bool = true
 	var stand_n: int = 0
 	for n: Node in (city.get_node("SavariManager") as Node).get_children():
@@ -263,7 +269,22 @@ func _test_grounding(city: Node) -> void:
 func _test_landmark_kit() -> void:
 	_check("Artist Chennai lighthouse asset is present", ResourceLoader.exists("res://assets/models/city/lighthouse/chennai_lighthouse.glb"))
 	_check("Artist barricade asset is present", ResourceLoader.exists("res://assets/models/city/barricade/roadside_barricade.glb"))
-	_check("Artist police car asset is present", ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_car.glb"))
+	# Nov 1 device test: the Tripo police SUV rendered shredded and the Kenney hatchback looked
+	# odd. Police and cars now come from the Quaternius bodies (tools/assets/bake_car_colours.py).
+	_check("Police car is the baked police SUV", ResourceLoader.exists("res://assets/models/traffic/cars/police_suv.glb"))
+	_check("Odd Kenney hatchback and broken Tripo police car are gone",
+		not ResourceLoader.exists("res://assets/models/traffic/hatch" + "back.glb") and not ResourceLoader.exists("res://assets/models/traffic/police_car/svc_police_" + "car.glb"))
+	var paints: Dictionary = {}
+	var one_mesh: bool = true
+	for v: Array in TrafficVehicleAI.CAR_VARIANTS:
+		paints[str(v[0]).get_file().get_basename().get_slice("_", 1)] = true
+		var inst: Node3D = (load(str(v[0])) as PackedScene).instantiate() as Node3D
+		var surfaces: int = 0
+		for mi: Node in inst.find_children("*", "MeshInstance3D", true, false):
+			surfaces += (mi as MeshInstance3D).mesh.get_surface_count()
+		one_mesh = one_mesh and surfaces == 1
+		inst.free()
+	_check("Traffic cars come in several paints, one draw call each", paints.size() >= 5 and one_mesh, str(paints.keys()))
 	# Built from parts so tools/assets/check_required_assets.py doesn't read it as a required file.
 	var raw_pack: String = "res://assets/models/traffic/two_wheeler_pack".path_join("two_wheeler_pack" + ".glb")
 	_check("Raw two-wheeler showroom pack is not shipped", not ResourceLoader.exists(raw_pack))

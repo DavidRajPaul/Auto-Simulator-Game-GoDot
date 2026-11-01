@@ -174,7 +174,7 @@ func _add_station_activity(root: Node3D) -> void:
 		_part(root, Vector3(0.55, 1.25, 0.5), Vector3(x, 0.62, 1.6), Color(0.92, 0.88, 0.18))
 		_part(root, Vector3(0.22, 0.18, 0.22), Vector3(x, 1.34, 1.6), Color(0.1, 0.12, 0.13))
 	var models: Array[Dictionary] = [
-		{"path": "res://assets/models/traffic/hatchback.glb", "pos": Vector3(-5.2, 0.0, -2.8), "size": Vector3(1.7, 1.5, 3.8)},
+		{"path": "res://assets/models/traffic/cars/sedan_silver.glb", "pos": Vector3(-5.2, 0.0, -2.8), "size": Vector3(1.8, 1.5, 3.9)},
 		{"path": "res://assets/models/traffic/share_auto.glb", "pos": Vector3(0.0, 0.0, -2.8), "size": Vector3(1.5, 1.8, 2.9)},
 		{"path": "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb", "pos": Vector3(5.0, 0.0, -2.8), "size": Vector3(0.8, 1.2, 1.83)},
 	]

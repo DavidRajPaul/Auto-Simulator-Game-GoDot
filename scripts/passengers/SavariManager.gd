@@ -135,7 +135,7 @@ func _build_parked_stand_autos() -> void:
 	var files: Array = [
 		["res://assets/models/traffic/share_auto.glb", Vector3(1.5, 1.8, 2.9)],
 		["res://assets/models/traffic/share_auto.glb", Vector3(1.5, 1.8, 2.9)],
-		["res://assets/models/traffic/hatchback.glb", Vector3(1.7, 1.5, 3.8)],
+		["res://assets/models/traffic/cars/sedan_white.glb", Vector3(1.8, 1.5, 3.9)],
 		["res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb", Vector3(0.8, 1.2, 1.83)],
 	]
 	for stand: Dictionary in manifest.get("auto_stands", []):

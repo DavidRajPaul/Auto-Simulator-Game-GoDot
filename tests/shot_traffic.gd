@@ -22,7 +22,11 @@ func _ready() -> void:
 	ground.material_override = gm
 	add_child(ground)
 	var items: Array = []
-	for i: int in TrafficVehicleAI.TWO_WHEELER_VARIANTS.size():
+	if OS.get_environment("SHOT_CARS") == "1":
+		# Passenger cars + the police SUV (car pool and kerb parking check).
+		for v: Array in TrafficVehicleAI.CAR_VARIANTS:
+			items.append([v[0], v[1] as Vector3, true, false, Vector3.ZERO])
+	for i: int in (0 if OS.get_environment("SHOT_CARS") == "1" else TrafficVehicleAI.TWO_WHEELER_VARIANTS.size()):
 		var v: Array = TrafficVehicleAI.TWO_WHEELER_VARIANTS[i]
 		items.append([v[0], v[1] as Vector3, v[2] as bool, v[3] as bool, v[5] as Vector3])
 	for v: Array in TrafficVehicleAI.SERVICE_VARIANTS:
@@ -53,6 +57,7 @@ func _ready() -> void:
 		wm.albedo_color = Color(1, 0.2, 0.2, 0.07)
 		wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		box.material_override = wm
+		box.visible = OS.get_environment("SHOT_CARS") != "1"
 		car.add_child(box)
 		x += span + 1.2
 	var cam: Camera3D = Camera3D.new()

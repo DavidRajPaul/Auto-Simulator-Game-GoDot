@@ -9,10 +9,20 @@ extends RefCounted
 ## a fixed box, so parked scooters showed only seat and handlebar and cars sat half in the road.
 const MODELS: Array[String] = [
 	"res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
-	"res://assets/models/traffic/hatchback.glb",
+	"res://assets/models/traffic/cars/sedan_white.glb", # kind 1 picks from CAR_FILES
 	"res://assets/models/traffic/share_auto.glb"
 ]
-## Real lengths: Activa-class scooter 1.83 m, hatchback 3.8 m, Ape-type share auto 2.9 m.
+## Parked cars: the traffic cars' Chennai paint mix (tools/assets/bake_car_colours.py), one
+## MultiMesh (= one draw call) per file. Nov 1 device test: the Kenney hatchback looked odd.
+const CAR_FILES: Array[String] = [
+	"res://assets/models/traffic/cars/sedan_white.glb",
+	"res://assets/models/traffic/cars/sedan_silver.glb",
+	"res://assets/models/traffic/cars/suv_white.glb",
+	"res://assets/models/traffic/cars/sedan_maroon.glb",
+	"res://assets/models/traffic/cars/sedan_blue.glb",
+	"res://assets/models/traffic/cars/suv_silver.glb",
+]
+## Real lengths: Activa-class scooter 1.83 m, compact car 3.8 m, Ape-type share auto 2.9 m.
 const LENGTHS_M: Array[float] = [1.83, 3.8, 2.9]
 const VISIBILITY_M: float = 165.0
 
@@ -37,14 +47,31 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 	holder.name = "RoadsideParking"
 	chunk.add_child(holder)
 	var faces: PackedVector3Array = PackedVector3Array()
+	# [kind, file, records]: cars are split across the paint files by spot order.
+	var groups: Array = []
 	for kind: int in MODELS.size():
-		var records: Array = []
+		var files: Array[String] = []
+		if kind == 1:
+			files.assign(CAR_FILES)
+		else:
+			files.append(MODELS[kind])
+		var split: Array = []
+		for f: String in files:
+			split.append([])
+		var n: int = 0
 		for record: Array in parking:
 			if int(record[3]) == kind and not _near(record, keep_clear):
-				records.append(record)
-		if records.is_empty() or not ResourceLoader.exists(MODELS[kind]):
+				(split[n % files.size()] as Array).append(record)
+				n += 1
+		for i: int in files.size():
+			groups.append([kind, files[i], split[i]])
+	for group: Array in groups:
+		var kind: int = int(group[0])
+		var model_path: String = str(group[1])
+		var records: Array = group[2]
+		if records.is_empty() or not ResourceLoader.exists(model_path):
 			continue
-		var scene: PackedScene = load(MODELS[kind]) as PackedScene
+		var scene: PackedScene = load(model_path) as PackedScene
 		if scene == null:
 			continue
 		var source: Node3D = scene.instantiate() as Node3D
@@ -80,7 +107,7 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 			mm.mesh = mi.mesh
 			mm.instance_count = records.size()
 			var inst: MultiMeshInstance3D = MultiMeshInstance3D.new()
-			inst.name = "ParkedVehicle_%d" % kind
+			inst.name = "ParkedVehicle_%d_%s" % [kind, model_path.get_file().get_basename()]
 			inst.multimesh = mm
 			inst.material_override = mi.material_override
 			inst.visibility_range_end = VISIBILITY_M

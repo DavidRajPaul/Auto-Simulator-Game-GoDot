@@ -216,7 +216,9 @@ def bake_police() -> dict:
 
 
 def main() -> int:
-    report = {"two_wheelers": split_two_wheelers(), "police": bake_police()}
+    # The Tripo police SUV (bake_police) was removed on Nov 1: it rendered shredded on the
+    # device. The police car is now baked from the Quaternius SUV by bake_car_colours.py.
+    report = {"two_wheelers": split_two_wheelers()}
     print(json.dumps(report, indent=2))
     return 0
 
