@@ -104,12 +104,17 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 				continue
 			var mm: MultiMesh = MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
+			# Parked scooters and autos vary in colour (PaintSwap via MultiMesh custom data);
+			# set before the count (changing the count clears instance data).
+			var pkey: String = PaintSwap.key_of(model_path)
+			var swap: ShaderMaterial = PaintSwap.material_for(mi.mesh.surface_get_material(0), pkey, true) if pkey != "" and mi.mesh.get_surface_count() == 1 else null
+			mm.use_custom_data = swap != null
 			mm.mesh = mi.mesh
 			mm.instance_count = records.size()
 			var inst: MultiMeshInstance3D = MultiMeshInstance3D.new()
 			inst.name = "ParkedVehicle_%d_%s" % [kind, model_path.get_file().get_basename()]
 			inst.multimesh = mm
-			inst.material_override = mi.material_override
+			inst.material_override = swap if swap != null else mi.material_override
 			inst.visibility_range_end = VISIBILITY_M
 			holder.add_child(inst)
 			var relative: Transform3D = _relative(mi, holder)
@@ -120,6 +125,14 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 				var placement: Transform3D = Transform3D(Basis(Vector3.UP, yaw), origin)
 				var fit_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(fit), -anchor * fit)
 				mm.set_instance_transform(i, placement * fit_transform * relative)
+				if swap != null:
+					var h: int = absi(int(origin.x * 13.0) * 31 + int(origin.z * 7.0))
+					var pc: Color = PaintSwap.NO_PAINT
+					if pkey == "share_auto":
+						pc = PaintSwap.AUTO_ELECTRIC[h % 2] if h % 3 == 0 else PaintSwap.NO_PAINT
+					else:
+						pc = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
+					mm.set_instance_custom_data(i, pc)
 		# Collider for all parked vehicles in this chunk, without a body per vehicle.
 		for rec: Array in records:
 			_append_box(faces, _spot(rec, ground), float(rec[2]), dim)

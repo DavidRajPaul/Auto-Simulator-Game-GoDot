@@ -86,6 +86,8 @@ class Walker:
 	var heading: Vector3 = Vector3.FORWARD
 	var startle: float = 0.0
 	var dodge: Vector3 = Vector3.ZERO
+	var paintable: bool = false
+	var paint: Color = Color(0, 0, 0, 0)
 
 func _ready() -> void:
 	rng.seed = 600028
@@ -107,6 +109,8 @@ func _ready() -> void:
 		add_child(w.node)
 		w.anim = w.node.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		w.mesh = w.node.find_child("Body", true, false) as MeshInstance3D
+		# Dress and saree colours vary per spawn (PaintSwap: the garment's block in the texture).
+		w.paintable = PaintSwap.prepare(w.node, w.id) > 0
 		if w.mesh != null:
 			w.mesh.visibility_range_end = VISIBLE_M
 			w.mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -219,6 +223,11 @@ func _spawn(w: Walker) -> bool:
 		return false
 	w.active = true
 	w.node.visible = true
+	if w.paintable:
+		# One in four keeps the model's own colours; the rest wear a palette colour.
+		var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
+		w.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
+		PaintSwap.set_paint(w.node, w.paint)
 	_apply(w)
 	if w.anim != null:
 		var clip: String = "idle" if w.idle else "walk"
