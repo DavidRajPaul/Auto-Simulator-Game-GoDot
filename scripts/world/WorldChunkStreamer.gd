@@ -1724,7 +1724,7 @@ func _build_landmarks() -> void:
 			"gopuram":
 				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
 			"tower":
-				_part(node, holder, _box(Vector3(18, 54, 18)), Vector3(0, 27, 0), Color(0.82, 0.8, 0.74), true)
+				_kit_part(node, holder, LandmarkKit.lic_building(), Vector3(18, 54, 18))
 			"bridge":
 				_part(node, holder, _box(Vector3(3, 6, 40)), Vector3(9, 3, 0), Color(0.3, 0.45, 0.85), false)
 				_part(node, holder, _box(Vector3(3, 6, 40)), Vector3(-9, 3, 0), Color(0.95, 0.95, 0.95), false)
@@ -1733,7 +1733,7 @@ func _build_landmarks() -> void:
 				_part(node, holder, _box(Vector3(2, 7, 2)), Vector3(12, 3.5, 0), Color(0.55, 0.55, 0.55), true)
 				_part(node, holder, _box(Vector3(2, 7, 2)), Vector3(-12, 3.5, 0), Color(0.55, 0.55, 0.55), true)
 			"heritage":
-				_part(node, holder, _box(Vector3(30, 9, 18)), Vector3(0, 4.5, 0), Color(0.95, 0.9, 0.75), true)
+				_kit_part(node, holder, LandmarkKit.vivekananda_house(), Vector3(30, 9, 18))
 			"tank", "park":
 				pass # drawn by the water / park areas
 			_:

@@ -180,3 +180,5 @@ Open items found while writing this catalog — fix before a store release (road
 - The Credits text in `MainMenu.gd` lists *"Indian Woman in Saree" by Pixel_Monster (Sketchfab Standard licence)*, but the shipped file is *"Modern Indian Woman"* by Pixel_Monster, **CC BY 4.0**. Standard-licence assets are not allowed; correct the credit line.
 - Not yet in the Credits text: Peter Charles (`man_casual`), Umar and `@MgsGamer5` (police), Comrade1280 (service vehicles), Karim.Fares (gas station), Kenney particle packs (CC0, optional).
 - `man_casual.glb` comes from a model named after a real actor. The face is repainted, but the project rule bans likenesses of real people; consider replacing it.
+
+Architectural approximation pass: `LandmarkKit.lic_building()` and `vivekananda_house()` replace the existing plain landmark boxes with original procedural geometry. See `docs/CHENNAI_ARCHITECTURE_AUDIT.md` for limitations and pending reference/visual validation. No third-party photographs are bundled by this pass.
