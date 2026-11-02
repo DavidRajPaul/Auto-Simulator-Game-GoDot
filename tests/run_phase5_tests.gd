@@ -78,7 +78,10 @@ func _test_world_data(m: Dictionary) -> void:
 	_check("Stand chunk has real building footprints", real >= 20, "%d real of %d" % [real, blds.size()])
 
 func _test_chunk_meshes(world: WorldChunkStreamer) -> void:
-	_check("Artist coconut palm asset is available", ResourceLoader.exists("res://assets/models/city/coconut_palm.glb"))
+	var tree_models: bool = true
+	for n: String in ["neem", "coconut_palm", "ashoka_a", "ashoka_b", "pungai"]:
+		tree_models = tree_models and ResourceLoader.exists("res://assets/models/city/trees/%s.glb" % n)
+	_check("Owner's tree models are available (neem, palm, 2 Ashoka, pungai)", tree_models)
 	var road_tris: int = 0
 	var bld_tris: int = 0
 	for k: Vector2i in world.loaded:

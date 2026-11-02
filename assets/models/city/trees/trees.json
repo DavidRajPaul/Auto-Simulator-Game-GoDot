@@ -1,0 +1,41 @@
+{
+ "views": 4,
+ "rows": 5,
+ "species": {
+  "0": {
+   "name": "neem",
+   "height": 10.0,
+   "radius": 5.03,
+   "row": 0,
+   "tris": 5983
+  },
+  "1": {
+   "name": "coconut_palm",
+   "height": 8.0,
+   "radius": 5.16,
+   "row": 1,
+   "tris": 4447
+  },
+  "2": {
+   "name": "ashoka_a",
+   "height": 8.5,
+   "radius": 5.24,
+   "row": 2,
+   "tris": 7380
+  },
+  "3": {
+   "name": "ashoka_b",
+   "height": 10.0,
+   "radius": 3.73,
+   "row": 3,
+   "tris": 5164
+  },
+  "4": {
+   "name": "pungai",
+   "height": 8.5,
+   "radius": 4.76,
+   "row": 4,
+   "tris": 5786
+  }
+ }
+}

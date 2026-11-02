@@ -54,6 +54,8 @@ res://
 ├── tools/assets/process_people.py   # Sketchfab people → 22-bone rig, retargeted walk/idle, 1 atlas, people.json (gltf_rig.py = reader/maths)
 ├── tools/assets/process_city.py     # landmark scenes → one-draw-call static GLBs (atlas + hard-edge clustering)
 ├── tools/assets/bake_street_shops.py # owner's tea stall / fruit cart / biryani stall → 4 liveries each + painted Tamil signs; transformer tank
+├── tools/assets/bake_trees.py       # owner's tree models (assets_src/models/trees) → real-size GLBs + far impostor atlas (bake_tree.mjs)
+├── shaders/tree_impostor.gdshader   # Far trees: crossed cards, species row from INSTANCE_CUSTOM
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
 ├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
 ├── assets/                          # ALL shipped art + sound: audio/, fonts/, fx/, icon/ (app icon too), models/, textures/, ui/
@@ -88,6 +90,7 @@ res://
 │   │   └── TrafficVehicleAI.gd
 │   ├── world/
 │   │   ├── WorldChunkStreamer.gd    # Streams data/world chunks (threaded), areas, landmarks, spawn
+│   │   ├── StreetTrees.gd           # Owner's tree models: near MultiMesh per species + one far impostor batch
 │   │   ├── RoadGraph.gd             # Drivable graph, left-hand sub-lanes, spawn grid, A* GPS
 │   │   ├── ServicePoints.gd         # LPG bunks, EV kiosks, garages; tow
 │   │   ├── Atmosphere.gd            # Sun/sky/fog/ambient over the shift clock; headlights
@@ -184,7 +187,8 @@ res://
 * In tests, `await get_tree().physics_frame` resumes **before** nodes' `_physics_process` that frame: wait 2 frames after `Input.action_press` before asserting `is_action_just_pressed` effects.
 * Real audio files override the synth automatically when present (`VehicleAudio.stream_or()`); keep the synth fallback so tests and builds never depend on downloads.
 * Never gate core play (free roam, Savari, the King Deluxe) behind Driver Level — only cosmetics and the EV.
-* Building detail (sunshades, parapets, head-room + Sintex tank, AC units, awnings) and street dressing (poles, wires, trees) go into the chunk's **one** building mesh using the plain atlas cell (`PLAIN_CELL`) + vertex paint. Don't add per-prop nodes or MultiMeshes per chunk.
+* Building detail (sunshades, parapets, head-room + Sintex tank, AC units, awnings) and street dressing (poles, wires, transformers) go into the chunk's **one** building mesh using the plain atlas cell (`PLAIN_CELL`) + vertex paint. Don't add per-prop nodes or MultiMeshes per chunk.
+* Trees are the owner's Tripo models (neem, coconut palm, Ashoka A spreading / B slim, pungai; dress tree codes 0–4 = `bake_trees.py` `SPECIES`), drawn by `StreetTrees` through a FIXED set of world MultiMeshes refilled around the camera every 5 m: the full model per species within `NEAR_M` (60 m, casts shadows) and one impostor MultiMesh for every species beyond (4 crossed cards, `tree_impostors.png`, no shadows) — 6 draw calls for 33k trees. Never simplify these models: each leaf card is its own UV island, so meshoptimizer stalls (locked borders) or shreds the cards (free borders); a "fewer, bigger leaf cards" mid LOD looked shredded too (Nov 2). Chunks hand their trees over as `"trees"` meta (`StreetTrees.records`), y from `surface_height` on attach. Retired procedural codes 5–7 draw as neem. Trees have no collision (as before).
 * People: characters face **+Z**; walkers set `speed_scale = pace / people.json walk_speed` so feet stay planted. Pedestrian nodes move in `_process`, so they have physics interpolation off.
 * Read a SkeletonModifier3D's result in `Skeleton3D.skeleton_updated`; outside it you get the pre-modifier pose.
 * Licences: CC0 / CC BY / Pixabay only. Sketchfab "Standard", any NC model, and likenesses of real people (e.g. TV characters) stay out even if downloaded.
@@ -218,7 +222,7 @@ res://
 * Colour variety goes through `PaintSwap` + `shaders/paint_swap.gdshader` (per-instance HSV move of one source colour inside a UV rect; instance uniform, or MultiMesh custom data with `use_custom_data` set BEFORE the count). Add a model by listing its source colour / rect in `PaintSwap.CONFIG`, never by duplicating textures or models. Two-wheelers and NPC autos repaint per respawn (~30 % of autos electric blue/teal, some pink), pedestrians per spawn.
 * People waiting at bus stops are static baked poses (`tools/assets/bake_waiting_people.py`, `assets/models/people/waiting/`); sarees never sit (the skirt follows the thighs). Only the two named stops get people (one draw call each, `BusStops.WAITING` slots, pre-instanced).
 * Changing a `MultiMesh.instance_count` clears its transforms: set the count first, then write every transform.
-* Roadside shops (`docs/STREET_SHOPS_AND_TRANSFORMERS.md`) come from `tools/assets/bake_street_shops.py`: one vertex-painted surface per livery + a painted sign quad (Baloo Thambi 2 via Raqm, generic shop words, never a real business name). Shop fronts face **-Z** (road side under `place_city_props` yaw); the old biryani GLB faced +X so its sign looked along the road. New liveries are a new `*_LIVERIES` entry, never a new texture. Placement (`add_street_shops`) reads dress poles/trees/transformers/parking, so run `build_street_dressing.py` → `build_roadside_parking.py` → `append_street_shops.py`. Shops: no shadows, ≤ 100 m view range, footprint in `_prop_blocks` (pedestrian walk mask).
+* Roadside shops (`docs/STREET_SHOPS_AND_TRANSFORMERS.md`) come from `tools/assets/bake_street_shops.py`: one vertex-painted surface per livery + a painted sign quad (Baloo Thambi 2 via Raqm, generic shop words, never a real business name). Shop fronts face **-Z** (road side under `place_city_props` yaw); the old biryani GLB faced +X so its sign looked along the road. New liveries are a new `*_LIVERIES` entry, never a new texture. Placement (`add_street_shops`) reads dress poles/trees/transformers/parking, so run `build_street_dressing.py` → `build_roadside_parking.py` → `append_street_shops.py`. Every workflow that runs `build_street_dressing.py` must run the other two right after it (it rewrites every dress file; the Nov 2 `rebuild-chennai-density` run without them wiped all 21k parked vehicles on main). That workflow now fails before committing if trees, parking or shops come out empty. Shops: no shadows, ≤ 100 m view range, footprint in `_prop_blocks` (pedestrian walk mask).
 * TNEB transformers are a double-pole structure in the EB pole line (`dress` `"xfmr"`: centre, yaw, outward unit vector); the structure replaces that pole and the tank sits `XFMR_OUT` behind the pole line, checked clear of every carriageway (a pole on one road's kerb can sit in a side road's mouth). `_transformer()` merges the owner's tank (`eb_transformer.glb`, read once in `_ready`; glTF colours are linear, the chunk mesh wants sRGB) into the chunk building mesh: no nodes, no draw calls.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 

@@ -116,6 +116,10 @@ transformer tank `eb_transformer.glb`: the owner's own models (Tripo tea stall, 
 biryani stall, source kept at `assets_src/models/biryani_shop_src.glb`), baked by `tools/assets/bake_street_shops.py`
 (simplified 1.9 M → 1.4–9k triangles, vertex-painted liveries, painted Tamil signs in Baloo Thambi 2). Used by
 `WorldChunkStreamer` (shops via `city_props.json`, the tank merged into chunk meshes on the DP pole structures).
+Street trees `trees/neem.glb`, `trees/coconut_palm.glb`, `trees/ashoka_a.glb`, `trees/ashoka_b.glb`, `trees/pungai.glb`
+and the far impostor atlas `trees/tree_impostors.png` (+ `trees/trees.json`): the owner's own Tripo models (sources in
+`assets_src/models/trees/`), baked to real height with the origin at the trunk base by `tools/assets/bake_trees.py`.
+Used by `scripts/world/StreetTrees.gd` (placements in `data/world/dress`).
 The Marina lighthouse and Kapaleeshwarar-style gopuram are **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
 
 Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/people/CREDITS_people.md`, `models/people/CREDITS_static.md`, `models/traffic/CREDITS_static.md`.
@@ -152,7 +156,7 @@ Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/peop
 | What | Where |
 |---|---|
 | Player auto body for custom paints, wheels | `scripts/vehicle/AutoRickshawModel.gd`, `WheelModel.gd`, `MeshKit.gd` |
-| City: roads, 21.6k buildings, detail (sunshades, parapets, Sintex tanks, awnings), EB poles, wires, trees | `scripts/world/WorldChunkStreamer.gd` from `data/world/` (OpenStreetMap, ODbL) |
+| City: roads, 21.6k buildings, detail (sunshades, parapets, Sintex tanks, awnings), EB poles, wires (trees: owner's models, see above) | `scripts/world/WorldChunkStreamer.gd` from `data/world/` (OpenStreetMap, ODbL) |
 | Lighthouse, gopuram | `scripts/world/LandmarkKit.gd` |
 | Scooter riders, waving riders at pickups | `scripts/world/PersonMesh.gd` |
 | Street-name boards, building name boards | `scripts/world/StreetSigns.gd`, `BuildingBoards.gd` (real OSM names) |

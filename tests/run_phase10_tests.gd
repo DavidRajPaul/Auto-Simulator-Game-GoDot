@@ -74,7 +74,7 @@ func _test_trees() -> void:
 		total += int(counts[k])
 	var palms: float = float(counts.get(1, 0)) / maxf(float(total), 1.0)
 	_check("Coconut palms are rare (< 6 % of street trees)", palms < 0.06, "%.1f %%" % (palms * 100.0))
-	_check("Chennai street tree mix: rain/neem, Ashoka, copper-pod all present", int(counts.get(0, 0)) > 0 and int(counts.get(2, 0)) > 0 and int(counts.get(3, 0)) > 0, str(counts))
+	_check("Chennai street tree mix: neem, both Ashoka variants, pungai all present", int(counts.get(0, 0)) > 0 and int(counts.get(2, 0)) > 0 and int(counts.get(3, 0)) > 0 and int(counts.get(4, 0)) > 0, str(counts))
 
 func _test_fx(city: Node) -> void:
 	var fx: CollisionFX = city.get_node("AutoRickshaw/CollisionFX") as CollisionFX
