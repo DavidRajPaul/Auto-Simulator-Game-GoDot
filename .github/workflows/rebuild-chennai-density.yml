@@ -27,10 +27,30 @@ jobs:
       - name: Rebuild map and street trees from checked-in OSM sources
         run: |
           python3 tools/osm/build_world.py
+          # build_street_dressing.py rewrites every data/world/dress file, so parking and street
+          # shops MUST be rebuilt after it, in this order (without them the Nov 2 run on main
+          # dropped all 21k parked vehicles).
           python3 tools/osm/build_street_dressing.py
+          python3 tools/osm/build_roadside_parking.py
+          python3 tools/osm/append_street_shops.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
           python3 tools/osm/audit_city_density.py
+      - name: Check dressing kept trees, parking and street shops
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          totals = {"trees": 0, "parking": 0, "poles": 0}
+          for f in glob.glob("data/world/dress/c_*.json"):
+              d = json.load(open(f))
+              for k in totals:
+                  totals[k] += len(d.get(k, []))
+          shops = sum(1 for p in json.load(open("data/world/city_props.json")).get("props", []) if p.get("street_shop") or p.get("biryani_cluster"))
+          print(totals, "street shops:", shops)
+          bad = [k for k, v in totals.items() if v < 1000] + (["street shops"] if shops < 100 else [])
+          if bad:
+              raise SystemExit(f"Generated dressing is missing {', '.join(bad)}; not committing")
+          PY
       - name: Commit generated city data to feature branch
         run: |
           git config user.name "city-rebuild[bot]"
