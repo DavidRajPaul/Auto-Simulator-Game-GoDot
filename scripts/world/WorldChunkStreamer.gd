@@ -145,6 +145,7 @@ var _xfmr_cols: PackedColorArray = PackedColorArray()
 ## Street-shop footprints per chunk (Vector2i -> Array[PackedVector2Array]): pedestrians treat
 ## them like buildings (walk mask). Filled by _build_city_props before any chunk streams in.
 var _prop_blocks: Dictionary = {}
+var _compounds: Dictionary = {}
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 ## Visual ground height per loaded chunk (SURFACE_CELL_M grid of the drawn walk / road / junction
@@ -173,6 +174,9 @@ func _ready() -> void:
 		push_error("WorldChunkStreamer: missing manifest — run the OSM Import workflow")
 		return
 	manifest = JSON.parse_string(f.get_as_text()) as Dictionary
+	var cf: FileAccess = FileAccess.open(world_dir.path_join("compounds.json"), FileAccess.READ)
+	if cf != null:
+		_compounds = (JSON.parse_string(cf.get_as_text()) as Dictionary).get("chunks", {})
 	chunk_size = float(manifest["chunk_size"])
 	for c: Array in manifest["chunks"]:
 		_available[Vector2i(int(c[0]), int(c[1]))] = true
@@ -401,7 +405,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		root.set_meta("surface_heights", _surface_heights(k, data["surf"] as Dictionary))
 	elif data.has("roads"):
 		mesh = _road_mesh(data["roads"] as Array)
-	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array))
+	var walls: Array = _compounds.get("%d,%d" % [k.x, k.y], [])
+	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls))
 	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Roads"
@@ -413,8 +418,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var df: FileAccess = FileAccess.open(world_dir.path_join("dress/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
-	if not blds.is_empty() or not dress.is_empty():
-		root.add_child(_buildings(blds, dress))
+	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty():
+		root.add_child(_buildings(blds, dress, walls))
 	return root
 
 ## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
@@ -505,13 +510,23 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 ## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
 ## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
 ## One mesh + one trimesh wall collider per chunk.
-func _buildings(blds: Array, dress: Dictionary = {}) -> Node3D:
+func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
 	holder.collision_mask = 0
 	var m: MeshBuf = MeshBuf.new()
 	var faces: PackedVector3Array = PackedVector3Array()
+	for wall: Array in walls:
+		var a: Vector2 = Vector2(float(wall[0]), float(wall[1]))
+		var b: Vector2 = Vector2(float(wall[2]), float(wall[3]))
+		var mid: Vector2 = (a + b) * 0.5
+		var h: float = float(wall[4])
+		var thickness: float = float(wall[5])
+		var colour: Color = Color(0.63, 0.57, 0.46) if str(wall[6]) == "osm" else Color(0.68, 0.65, 0.57)
+		_dbox(m, Vector3(mid.x, h * 0.5, mid.y), Vector3(a.distance_to(b), h, thickness), (b - a).normalized(), colour)
+		_dbox(m, Vector3(mid.x, h, mid.y), Vector3(a.distance_to(b), 0.12, thickness + 0.12), (b - a).normalized(), colour.darkened(0.15))
+		_wall_faces(faces, a, b, 0.0, h + 0.06, thickness)
 	for b: Dictionary in blds:
 		var flat: Array = b["p"]
 		var pts: PackedVector2Array = PackedVector2Array()
@@ -1298,12 +1313,19 @@ func is_walkable(x: float, z: float) -> bool:
 	return mask[cj * n + ci] == 0
 
 ## Worker-thread raster of this chunk's building footprints (same polygons as the walls).
-func _building_mask(k: Vector2i, blds: Array) -> PackedByteArray:
+func _building_mask(k: Vector2i, blds: Array, walls: Array = []) -> PackedByteArray:
 	var n: int = int(ceil(chunk_size / BLOCK_CELL_M))
 	var mask: PackedByteArray = PackedByteArray()
 	mask.resize(n * n)
 	mask.fill(0)
 	var origin: Vector2 = Vector2(float(k.x), float(k.y)) * chunk_size
+	for wall: Array in walls:
+		var a: Vector2 = Vector2(float(wall[0]), float(wall[1]))
+		var b: Vector2 = Vector2(float(wall[2]), float(wall[3]))
+		var d: Vector2 = (b - a).normalized()
+		var side: Vector2 = Vector2(-d.y, d.x) * (float(wall[5]) * 0.5 + BLOCK_CELL_M)
+		_mask_triangle(mask, n, origin, a - side, b - side, b + side)
+		_mask_triangle(mask, n, origin, a - side, b + side, a + side)
 	for b: Variant in blds:
 		var flat: Array = (b as Dictionary)["p"]
 		var pts: PackedVector2Array = PackedVector2Array()

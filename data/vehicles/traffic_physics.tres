@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrafficPhysics" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/vehicles/TrafficPhysics.gd" id="1"]
+[resource]
+script = ExtResource("1")
+masses_kg = PackedFloat32Array(180, 1200, 650, 10000, 450, 3500, 2800)
+restitution = 0.12
+max_recoil_mps = 3.0
+recoil_deceleration = 4.0
+emergency_interval_s = 100.0
+emergency_range_m = 65.0
+emergency_speed_mps = 12.5
+yield_time_s = 2.0
+pedestrian_contact_m = 1.0
+pedestrian_recovery_s = 2.5
+pedestrian_max_push_mps = 2.0

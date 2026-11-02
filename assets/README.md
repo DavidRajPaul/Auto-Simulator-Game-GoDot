@@ -184,3 +184,10 @@ Open items found while writing this catalog — fix before a store release (road
 Architectural approximation pass: `LandmarkKit.lic_building()` and `vivekananda_house()` replace the existing plain landmark boxes with original procedural geometry. See `docs/CHENNAI_ARCHITECTURE_AUDIT.md` for limitations and pending reference/visual validation. No third-party photographs are bundled by this pass.
 
 The same pass adds original procedural Kapaleeshwarar reliefs and Napier arches, plus Santhome/Senate House/Chepauk roof accents in `WorldChunkStreamer`. These use the original OSM footprint and shared atlas/material; no downloaded photo assets are included.
+
+P0 physics pass: original shader dents/scratches reuse the existing player-auto texture and
+mask; engine smoke reuses the credited particle textures. The ambulance reuses svc_ambulance.glb
+with an original procedural beacon and synthesized siren (no new third-party art/audio).
+Compound geometry is generated into the shared building mesh from OSM barriers plus explicitly
+labelled procedural separators. The OSM access extract remains © OpenStreetMap contributors,
+ODbL. See docs/P0_PHYSICS_PLAYTEST.md for regeneration and fidelity limits.

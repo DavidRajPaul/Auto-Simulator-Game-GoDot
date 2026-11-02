@@ -20,6 +20,7 @@ var _sparks: CPUParticles3D
 var _flash: CPUParticles3D
 var _dust: CPUParticles3D
 var _debris: CPUParticles3D
+var _engine_smoke: CPUParticles3D
 var _scrape_level: float = 0.0
 var _scrape_target: float = 0.0
 static var _soft_dot: Texture2D
@@ -34,6 +35,13 @@ func _ready() -> void:
 	_flash = _build_flash()
 	_dust = _build_dust()
 	_debris = _build_debris()
+	_engine_smoke = _build_dust()
+	_engine_smoke.name = "DamagedEngineSmoke"
+	_engine_smoke.one_shot = false
+	_engine_smoke.explosiveness = 0.0
+	_engine_smoke.amount = 6
+	_engine_smoke.position = Vector3(0.0, -0.2, 0.9)
+	add_child(_engine_smoke)
 	for p: CPUParticles3D in [_sparks, _flash, _dust, _debris]:
 		p.top_level = true # stays where the hit happened while the auto drives on
 		add_child(p)
@@ -86,6 +94,7 @@ func _on_scrape(speed_mps: float, at: Vector3) -> void:
 			_burst(_sparks, at + Vector3(0, 0.3, 0), Vector3(0, 0.6, 0), 6)
 
 func _process(delta: float) -> void:
+	_engine_smoke.emitting = float(GameState.damage_state()["engine"]) >= 60.0 and GameState.fuel_level > 0.0
 	_scrape_level = move_toward(_scrape_level, _scrape_target, delta * 6.0)
 	if _scrape.stream == null:
 		return

@@ -77,6 +77,9 @@ var paints_owned: PackedInt32Array = [0]
 var paint_equipped: int = 0
 var fuel_level: float = -1.0 # -1 = fill on first spawn
 var condition: float = 100.0
+const DAMAGE: DamageTuning = preload("res://data/vehicles/damage.tres")
+## Per-vehicle wear; zero is pristine. Old saves start with no component faults.
+var component_damage: Dictionary = {}
 
 var day: int = 1
 var shift_minute: float = SHIFT_START_MIN
@@ -106,6 +109,7 @@ func _ready() -> void:
 	if persistence_enabled:
 		load_game()
 	SignalBus.player_collision.connect(_on_collision)
+	SignalBus.player_impact.connect(_on_component_impact)
 	SignalBus.signalled_turn.connect(func(_d: int) -> void:
 		add_respect(SIGNAL_RESPECT_XP)
 		add_driver_xp(DriverProgress.SIGNAL_XP)
@@ -409,7 +413,10 @@ func buy_paint(index: int) -> bool:
 	return true
 
 func repair_cost() -> int:
-	return ceili((100.0 - condition) * REPAIR_COST_PER_POINT)
+	var points: float = 100.0 - condition
+	for value: Variant in damage_state().values():
+		points = maxf(points, float(value) / DAMAGE.component_multiplier)
+	return ceili(points * REPAIR_COST_PER_POINT)
 
 ## Repairs as much as the wallet allows (₹3 per condition point).
 func repair() -> bool:
@@ -417,6 +424,10 @@ func repair() -> bool:
 	if pay <= 0:
 		return false
 	spend(pay)
+	var fraction: float = minf(1.0, float(pay) / maxf(float(repair_cost()), 1.0))
+	var wear: Dictionary = damage_state()
+	for key: String in wear:
+		wear[key] = float(wear[key]) * (1.0 - fraction)
 	condition = minf(100.0, condition + float(pay) / REPAIR_COST_PER_POINT)
 	day_stats["repairs"] = int(day_stats["repairs"]) + pay
 	SignalBus.condition_changed.emit(condition)
@@ -445,10 +456,36 @@ func fuel_cost_to_fill() -> int:
 
 func _on_collision(impulse: float) -> void:
 	var floor_c: float = minf(tutorial_min_condition, condition) if tutorial_active else 0.0
-	condition = maxf(floor_c, condition - clampf(impulse * 1.2, 0.5, 15.0))
+	var previous: float = condition
+	condition = maxf(floor_c, condition - DAMAGE.points(impulse))
 	SignalBus.condition_changed.emit(condition)
-	if condition < 40.0 and condition + clampf(impulse * 1.2, 0.5, 15.0) >= 40.0:
+	if condition < 40.0 and previous >= 40.0:
 		_loadout_changed() # crossed into "worn out"
+
+func damage_state() -> Dictionary:
+	if not component_damage.has(active_vehicle):
+		component_damage[active_vehicle] = clean_damage({})
+	return component_damage[active_vehicle] as Dictionary
+
+func clean_damage(raw: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	for key: String in ["front", "rear", "left", "right", "engine", "steering", "suspension", "tyres", "lights"]:
+		var value: float = float(raw.get(key, 0.0))
+		result[key] = clampf(value, 0.0, 100.0) if is_finite(value) else 0.0
+	return result
+
+func _on_component_impact(info: Dictionary) -> void:
+	if tutorial_active:
+		return
+	var hit: Vector3 = info.get("local_point", Vector3(0, 0, -1))
+	var amount: float = DAMAGE.points(float(info.get("speed_mps", 0.0))) * DAMAGE.component_multiplier
+	var zone: String = ("front" if hit.z < 0.0 else "rear") if absf(hit.z) >= absf(hit.x) else ("left" if hit.x < 0.0 else "right")
+	var wear: Dictionary = damage_state()
+	wear[zone] = minf(100.0, float(wear[zone]) + amount)
+	var mechanical: String = "steering" if zone == "front" else ("engine" if zone == "rear" else "suspension")
+	wear[mechanical] = minf(100.0, float(wear[mechanical]) + amount)
+	wear["tyres"] = minf(100.0, float(wear["tyres"]) + amount * 0.25)
+	wear["lights"] = minf(100.0, float(wear["lights"]) + amount * (0.7 if zone == "front" else 0.1))
 
 # --- Shift clock ------------------------------------------------------------------------
 
@@ -564,7 +601,7 @@ func to_dict() -> Dictionary:
 		"version": SAVE_VERSION, "wallet": wallet_inr, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
-		"fuel": fuel_level, "condition": condition, "day": day, "minute": shift_minute, "day_stats": day_stats,
+		"fuel": fuel_level, "condition": condition, "damage": component_damage.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
 		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
 		"rewards": rewards.to_dict(), "no_ads": no_ads,
 	}
@@ -585,6 +622,9 @@ func from_dict(d: Dictionary) -> void:
 	paint_equipped = int(d.get("paint", 0)) if paints_owned.has(int(d.get("paint", 0))) else 0
 	fuel_level = float(d.get("fuel", -1.0))
 	condition = float(d.get("condition", 100.0))
+	component_damage = (d.get("damage", {}) as Dictionary).duplicate(true)
+	for vehicle: String in component_damage:
+		component_damage[vehicle] = clean_damage(component_damage[vehicle] as Dictionary)
 	day = int(d.get("day", 1))
 	shift_minute = float(d.get("minute", SHIFT_START_MIN))
 	day_stats = d.get("day_stats", day_stats)

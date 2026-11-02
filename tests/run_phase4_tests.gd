@@ -262,11 +262,11 @@ func _test_mylapore_workshop(services: ServicePoints) -> void:
 func _test_condition(_auto: AutoRickshawController) -> void:
 	GameState.condition = 100.0
 	SignalBus.player_collision.emit(10.0)
-	_check("Crashes wear the auto (−12%)", is_equal_approx(GameState.condition, 88.0))
+	_check("Crashes wear the auto by normal impact energy", is_equal_approx(GameState.condition, 100.0 - GameState.DAMAGE.points(10.0)))
 	var cost: int = GameState.repair_cost()
 	GameState.add_inr(100)
 	var wallet: int = GameState.wallet_inr
-	_check("Repair ₹3 per point restores condition", cost == 36 and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - 36)
+	_check("Repair ₹3 per point restores condition", cost == ceili(GameState.DAMAGE.points(10.0) * 3.0) and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - cost)
 	await _physics(1)
 
 func _test_shift_clock() -> void:

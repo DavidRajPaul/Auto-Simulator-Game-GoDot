@@ -158,18 +158,18 @@ def clear_buildings(manifest, cx, cz, yaw, hx, hz) -> int:
 # kerb, z across it, model front at -Z facing the road), how many, spacing, which road classes.
 # The footprint includes the customer/parking apron each kind brings.
 SHOP_KINDS = {
-    "biryani_stall": {"variants": "abcd", "half": (2.6, 3.3), "count": 18, "spacing": 260.0,
+    "biryani_stall": {"variants": "abcd", "half": (2.6, 3.3), "count": 55, "spacing": 130.0,
                       "classes": ("primary", "secondary", "tertiary"), "flag": "biryani_cluster",
                       "footprint": [3.7, 3.0, 4.3]},
-    "tea_stall": {"variants": "abcd", "half": (2.2, 1.9), "count": 44, "spacing": 170.0,
+    "tea_stall": {"variants": "abcd", "half": (2.2, 1.9), "count": 180, "spacing": 65.0,
                   "classes": ("primary", "secondary", "tertiary", "residential"), "flag": "street_shop",
                   "footprint": [3.8, 3.5, 3.5]},
-    "fruit_cart": {"variants": "abcd", "half": (1.1, 0.9), "count": 48, "spacing": 140.0,
+    "fruit_cart": {"variants": "abcd", "half": (1.1, 0.9), "count": 220, "spacing": 50.0,
                    "classes": ("primary", "secondary", "tertiary", "residential", "living_street"),
                    "flag": "street_shop", "footprint": [1.75, 2.3, 1.4]},
 }
 SHOP_SIDEWALK_GAP = 0.9   # carriageway edge -> shop front (people and parked bikes stand here)
-SHOP_MIN_GAP = 45.0       # any two shops
+SHOP_MIN_GAP = 18.0       # distinct shops, with a clear walking apron
 SHOP_SEED = 600004
 
 
@@ -241,6 +241,8 @@ def add_street_shops(manifest, blds, segs, areas, props):
         cands = sorted(sg for cls in cfg["classes"] for sg in by_class.get(cls, [])
                        if math.hypot(sg[2] - sg[0], sg[3] - sg[1]) >= 2.0 * hx + 8.0)
         rng.shuffle(cands)
+        # Dense market districts fill first; retain the quieter coast's open character.
+        cands.sort(key=lambda sg: 0 if zone_of((sg[0] + sg[2]) / 2, (sg[1] + sg[3]) / 2) in ("mylapore", "t_nagar") else 1)
         mine = []
         for sg in cands:
             if len(mine) >= cfg["count"]:

@@ -43,6 +43,7 @@ var _honk: AudioStreamPlayer3D
 var _respawn_queue: Array[TrafficVehicleAI] = []
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
+var emergency_cooldown: float = 0.0
 var _near_miss_cooldown: Dictionary = {} # vehicle -> seconds left
 ## Time-of-day traffic (TrafficDensity). Off = fixed `active_count` (greybox + old tests).
 @export var dynamic_density: bool = true
@@ -195,6 +196,8 @@ func active_vehicle_count() -> int:
 func _physics_process(delta: float) -> void:
 	if _player == null:
 		return
+	emergency_cooldown = maxf(0.0, emergency_cooldown - delta)
+	_yield_to_emergency()
 	for v: TrafficVehicleAI in pool:
 		if not v.active:
 			continue
@@ -506,11 +509,31 @@ func _on_bumped(v: Node3D, impact_mps: float) -> void:
 	var tv: TrafficVehicleAI = v as TrafficVehicleAI
 	if tv == null or not pool.has(tv):
 		return
-	tv.bumped(impact_mps)
+	var push: Vector3 = (tv.global_position - _player.global_position).normalized() if _player != null else Vector3.ZERO
+	var player_mass: float = (_player as RigidBody3D).mass if _player is RigidBody3D else 365.0
+	tv.bumped(impact_mps, push, player_mass)
 	if _honk != null and tv.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
 		_honk.global_position = tv.global_position
 		_honk.pitch_scale = 0.8 if tv.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)
 		_honk.play()
+
+func claim_emergency() -> bool:
+	if GameState.tutorial_active or emergency_cooldown > 0.0:
+		return false
+	return true
+
+func _yield_to_emergency() -> void:
+	for ambulance: TrafficVehicleAI in pool:
+		if not ambulance.active or not ambulance.emergency_active:
+			continue
+		for v: TrafficVehicleAI in pool:
+			if v == ambulance or not v.active or v.edge != ambulance.edge or v.dir != ambulance.dir:
+				continue
+			var ahead: float = v.t - ambulance.t
+			if ahead > 0.0 and ahead < TrafficVehicleAI.PHYSICS.emergency_range_m:
+				v.give_way(TrafficVehicleAI.PHYSICS.yield_time_s)
+				v._try_shift(-1, true) # move left only when the existing safety check permits it
+		ambulance._try_shift(1, true)
 
 func is_sub_lane_free(me: TrafficVehicleAI, lane: int) -> bool:
 	var lat: float = graph.sub_lane_offset(me.edge, me.dir, lane)

@@ -86,6 +86,7 @@ class Walker:
 	var heading: Vector3 = Vector3.FORWARD
 	var startle: float = 0.0
 	var dodge: Vector3 = Vector3.ZERO
+	var recovery: float = 0.0
 	var paintable: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
 
@@ -200,6 +201,7 @@ func _spawn(w: Walker) -> bool:
 	w.pace = rng.randf_range(pr.x, pr.y)
 	w.startle = 0.0
 	w.dodge = Vector3.ZERO
+	w.recovery = 0.0
 	if w.idle and (w.s < IDLE_JUNCTION_CLEAR_M or w.s > e.length - IDLE_JUNCTION_CLEAR_M):
 		return false
 	var target: Array[Vector3] = _target(w)
@@ -277,7 +279,16 @@ func _clear(p: Vector3, out: Vector3) -> bool:
 
 func _step(w: Walker, delta: float) -> void:
 	_check_startle(w, delta)
-	if w.idle:
+	if w.recovery > 0.0:
+		w.recovery = maxf(0.0, w.recovery - delta)
+		var displaced: Vector3 = w.pos + w.dodge * delta
+		if SignalBus.walkable(displaced.x, displaced.z):
+			w.pos = displaced
+		w.dodge = w.dodge.move_toward(Vector3.ZERO, TrafficVehicleAI.PHYSICS.recoil_deceleration * delta)
+		_apply(w)
+		w.node.rotate_object_local(Vector3.FORWARD, deg_to_rad(18.0) * minf(w.recovery, 1.0))
+		return
+	if w.idle and w.startle <= 0.0:
 		_apply(w)
 		return
 	if w.startle > 0.0:
@@ -286,7 +297,7 @@ func _step(w: Walker, delta: float) -> void:
 		var step: Vector3 = w.pos + w.dodge * delta
 		if SignalBus.walkable(step.x, step.z):
 			w.pos = step
-		if w.startle <= 0.0 and w.anim != null:
+		if w.startle <= 0.0 and w.anim != null and not w.idle:
 			w.anim.play("walk")
 			w.anim.speed_scale = w.pace / float(_native_pace.get(w.id, 1.2))
 		_apply(w)
@@ -300,7 +311,12 @@ func _step(w: Walker, delta: float) -> void:
 	var to_t: Vector3 = target[0] - w.pos
 	to_t.y = 0.0
 	var max_move: float = w.pace * delta * 1.6
-	w.pos += to_t.limit_length(max_move) if to_t.length() > max_move else to_t
+	var next_pos: Vector3 = w.pos + (to_t.limit_length(max_move) if to_t.length() > max_move else to_t)
+	if SignalBus.walkable(next_pos.x, next_pos.z):
+		w.pos = next_pos
+	else:
+		w.dir = -w.dir
+		w.side = -w.side
 	var want: Vector3 = target[1]
 	if to_t.length() > 0.3:
 		want = (target[1] + to_t.normalized()).normalized()
@@ -334,6 +350,14 @@ func _check_startle(w: Walker, delta: float) -> void:
 	if d > STARTLE_M or d < 0.01:
 		return
 	var closing: float = _player_vel.dot(to_w / d)
+	if d < TrafficVehicleAI.PHYSICS.pedestrian_contact_m and closing > STARTLE_SPEED_MPS and w.recovery <= 0.0:
+		w.recovery = TrafficVehicleAI.PHYSICS.pedestrian_recovery_s
+		w.dodge = (to_w / d) * minf(closing * 0.3, TrafficVehicleAI.PHYSICS.pedestrian_max_push_mps)
+		w.startle = w.recovery
+		if w.anim != null and w.anim.has_animation("idle"):
+			w.anim.play("idle", 0.1)
+		SignalBus.pedestrian_startled.emit(w.pos)
+		return
 	if closing < STARTLE_SPEED_MPS or w.startle > 0.0:
 		return
 	# Step sideways, away from the auto's path.
