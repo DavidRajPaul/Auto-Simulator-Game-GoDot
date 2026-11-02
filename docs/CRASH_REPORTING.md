@@ -1,99 +1,100 @@
-# Crash Reporting (Sentry) — setup & AI fix loop
+# Crash Reporting (GlitchTip) and the AI fix loop
 
-Namma Auto reports crashes, GDScript errors and Android ANRs to **Sentry** using the official
-Sentry Godot SDK. An AI agent (Claude Code, locally or in CI) reads those reports through the
-**Sentry MCP server**, reproduces the crash with a headless test, fixes it and opens a PR.
+Namma Auto reports crashes, GDScript errors and Android ANRs to **GlitchTip**, an open-source
+(MIT) error tracker that accepts the Sentry protocol. The game uses the official Sentry Godot SDK
+addon, so switching hosts later is a DSN change. An AI agent reads the reports through the
+**GlitchTip MCP server**, reproduces each crash with a headless test, fixes it and opens a PR.
 
 ```
-Phone crash ──► Sentry (stack trace + breadcrumbs + tags + log + scene tree)
+Phone crash ──► GlitchTip (stack trace + breadcrumbs + tags + player context + log)
                    │
-                   ▼  Sentry MCP
-           Claude Code /fix-crash ──► failing headless test ──► fix ──► all suites ──► PR "Fixes NAMMA-AUTO-1A"
+                   ▼  glitchtip MCP
+           Claude /fix-crash ──► failing headless test ──► fix ──► all suites ──► PR "GlitchTip issue 1234"
+                                                                                       │
+                                                       after merge + release: resolve in GlitchTip
 ```
 
 ## Status
 
 | Piece | Where | State |
 |---|---|---|
-| Engine on Godot 4.5.1 (Sentry 1.x/2.x minimum) | `android-build.yml`, `project.godot` | Done — all 11 suites pass on 4.5.1 |
+| Godot 4.5.1 (Sentry SDK 1.x/2.x minimum) | `android-build.yml`, `project.godot` | Done, all suites pass |
 | `CrashReporter` autoload (breadcrumbs, tags, player context) | `autoloads/CrashReporter.gd` | Done |
-| Addon install (pinned 2.4.0, git-ignored) | `tools/sentry/install_sentry_addon.sh` | Done — CI runs it |
-| DSN / release / environment stamped at export | `tools/sentry/stamp_sentry_settings.py` | Done — **waits for secret `SENTRY_DSN`** |
-| Gradle build + INTERNET permission on both Android presets | `export_presets.cfg` | Done |
-| Tests (work with and without the addon) | `tests/run_crash_reporter_tests.tscn` | Done — 15 checks |
-| Sentry release + suspect commits | `android-build.yml` | **Waits for `SENTRY_AUTH_TOKEN`** (optional) |
-| Claude Code local loop | `.mcp.json`, `.claude/commands/fix-crash.md` | **Waits for your Sentry sign-in** |
-| Nightly AI triage in CI | `.github/workflows/crash-triage.yml` | Off — **waits for secrets + `ENABLE_CRASH_TRIAGE`** (optional) |
+| SDK addon, pinned 2.4.0, git-ignored | `tools/sentry/install_sentry_addon.sh` | Done, CI installs it |
+| DSN stamped at export from the secret | `tools/sentry/stamp_sentry_settings.py` | Done, **waits for `GLITCHTIP_DSN`** |
+| Gradle build + INTERNET on both Android presets | `export_presets.cfg` | Done |
+| Tests, pass with or without the addon | `tests/run_crash_reporter_tests.tscn` | Done, 15 checks |
+| Claude Code local loop | `.mcp.json`, `.claude/commands/fix-crash.md` | **Waits for your GlitchTip token** |
+| Nightly AI triage in CI | `.github/workflows/crash-triage.yml` | Off, **waits for secrets + `ENABLE_CRASH_TRIAGE`** |
 
-## Owner steps (placeholders to fill)
+## Phone-only setup (no laptop needed)
 
-### Step 1 — Create the Sentry project (5 min)
-1. Sign up at https://sentry.io (free Developer plan is enough to start).
-2. Create a project: platform **Godot Engine**, name **`namma-auto`**.
-3. Copy the **DSN** (Project Settings → Client Keys). It looks like
-   `https://<PUBLIC_KEY>@o<ORG_ID>.ingest.<region>.sentry.io/<PROJECT_ID>`.
+Everything below works in a phone browser. Use "Desktop site" in the browser menu for GitHub
+settings pages if the mobile layout hides a button.
 
-### Step 2 — Give CI the DSN
-GitHub repo → Settings → Secrets and variables → Actions → **New repository secret**
+1. **Create the GlitchTip project.** Sign up at glitchtip.com (free cloud tier). Create an
+   organization, then a project named `namma-auto` with platform **Godot** (or any Sentry SDK
+   platform). Open the project's **Client Keys (DSN)** page and copy the DSN.
+2. **Add the DSN to GitHub.** github.com → repo → Settings → Secrets and variables → Actions →
+   **New repository secret**: name `GLITCHTIP_DSN`, value = the DSN.
+3. **Merge PR #71** once its checks are green (Actions tab, tap the PR).
+4. **Get a test build.** Actions → **Android Build** → *Run workflow* → tick
+   `sentry_smoke_test` → Run. When the run finishes, open it, download the `NammaAuto-android-…`
+   artifact, and install the APK on your phone. Your phone must allow installs from your browser
+   (Android Settings → Apps → Special access → Install unknown apps).
+5. **Check it arrived.** Open the game once with internet on. A GlitchTip issue titled
+   "Namma Auto Sentry smoke test" should appear within a minute.
+6. **Reproduce the real crash** on that build. It shows up as its own GlitchTip issue.
 
-| Name | Value |
-|---|---|
-| `SENTRY_DSN` | `<PASTE_DSN_HERE>` |
+## Laptop or cloud Claude setup (later, optional)
 
-Never paste the DSN into `project.godot`; `tests/run_crash_reporter_tests` fails if you do.
+1. Create a GlitchTip API token (GlitchTip → profile → Auth Tokens). Give it project read and
+   issue write access.
+2. For local Claude Code, export `GLITCHTIP_AUTH_TOKEN`, `GLITCHTIP_API_URL`,
+   `GLITCHTIP_ORGANIZATION` and `GLITCHTIP_PROJECT` in your shell profile, then run `claude`,
+   approve the `glitchtip` server from `.mcp.json`, and use `/fix-crash`. Set
+   `GLITCHTIP_API_URL` to the API base URL shown in your GlitchTip instance's docs (it ends with
+   a slash).
+3. For cloud Claude sessions, set the same four values in the environment settings.
 
-### Step 3 — Prove it works
-1. Actions → **Android Build** → *Run workflow* → tick **sentry_smoke_test**.
-2. Install that run's debug APK on your phone and open the game once (with internet on).
-3. Sentry → Issues should show **"Namma Auto Sentry smoke test (0.5.0)"** with tags
-   `vehicle`, `graphics_preset`, `scene`.
-4. Now reproduce your real crash on that build; it shows up as its own issue.
+## Nightly AI triage (optional, CI)
 
-### Step 4 — Connect Claude Code to Sentry (local)
-The repo's `.mcp.json` already declares the hosted Sentry MCP server. In a terminal in the repo:
-```bash
-claude            # approve the "sentry" MCP server from .mcp.json when asked
-/mcp              # pick sentry → Authenticate → sign in to Sentry in the browser
-/fix-crash        # or: /fix-crash NAMMA-AUTO-1A
-```
+Add these, then the triage runs at 03:00 IST and opens at most one fix PR a night. It never merges.
 
-### Step 5 — (Optional) suspect commits + nightly AI triage
 | Kind | Name | Value |
 |---|---|---|
-| Secret | `SENTRY_AUTH_TOKEN` | Sentry → Settings → Auth Tokens (scopes `project:releases`, `org:read`, `project:read`, `event:read`) |
-| Variable | `SENTRY_ORG` | `<your-org-slug>` |
-| Variable | `SENTRY_PROJECT` | `namma-auto` |
-| Secret | `ANTHROPIC_API_KEY` | only for the nightly triage workflow |
-| Variable | `ENABLE_CRASH_TRIAGE` | `true` to turn the nightly triage on |
+| Secret | `GLITCHTIP_AUTH_TOKEN` | the API token from step 1 above |
+| Secret | `ANTHROPIC_API_KEY` | your Anthropic API key |
+| Variable | `GLITCHTIP_API_URL` | GlitchTip API base URL, ends with `/` |
+| Variable | `GLITCHTIP_ORGANIZATION` | your organization slug |
+| Variable | `GLITCHTIP_PROJECT` | `namma-auto` |
+| Variable | `ENABLE_CRASH_TRIAGE` | `true` |
 
-With these set, every main/tag build creates a Sentry release linked to its commits, and
-**Crash Triage (AI)** opens at most one fix PR per night. It never merges.
+## Before Play launch
 
-### Step 6 — Play Store compliance (before Phase 11)
-Data Safety form: declare **Crash logs** and **Diagnostics** (collected, not shared, not used
-for tracking, for app functionality/analytics). `send_default_pii=false`, so no IP-linked
-user data, names or save contents are sent.
+Data Safety form: declare **Crash logs** and **Diagnostics**, collected, not shared, not used for
+tracking. `send_default_pii=false`, so names, save contents and IP-linked user data are not sent.
 
 ## How it works
 
-* The Sentry addon is a GDExtension that auto-initialises from `[sentry]` in `project.godot`
-  before any autoload. With an empty DSN it stays disabled — that is the state of git, the
-  editor and every test run.
-* `autoloads/CrashReporter.gd` adds context only, listening on `SignalBus`:
-  * **Breadcrumbs** (`category: message`): `vehicle` (stall, restart, LPG empty, impacts ≥ 6 m/s,
-    tow, teleport, gears), `savari` (haggle, boarding, ride, shift end), `world` (zone change),
-    `weather`, `ui` (modal, pause, back), `ads`, `tutorial`, `navigation` (scene change).
-  * **Tags**: `app_version`, `vehicle`, `zone`, `scene`, `graphics_preset`, `language`,
-    `raining`, `camera`, `renderer`, `debug_build`.
-  * **Context `player`** every 5 s: position, speed, shift day/minute, zone, session time.
-* Release = `namma-auto@<version/name>+<CI run number>`, dist = run number, environment =
+* The SDK addon initialises from `[sentry]` in `project.godot` before any autoload. With an empty
+  DSN it stays off, which is the state of git, the editor and every test run. The `sentry/...`
+  names are the Sentry SDK's own settings and stay as they are.
+* `autoloads/CrashReporter.gd` adds context only, from `SignalBus`:
+  * **Breadcrumbs** (`category: message`): `vehicle` (stalls, restarts, LPG empty, impacts at
+    6 m/s or more, tow, teleport, gears), `savari` (haggle, boarding, ride, shift end), `world`
+    (zone change), `weather`, `ui`, `ads`, `tutorial`, `navigation` (scene change).
+  * **Tags:** `app_version`, `vehicle`, `zone`, `scene`, `graphics_preset`, `language`, `raining`,
+    `camera`, `renderer`, `debug_build`.
+  * **Context `player`** every 5 seconds: position, speed, shift day and minute, zone, session time.
+* Release is `namma-auto@<version>+<CI run>`, dist is the CI run number, and environment is
   `production` (tags `v*`), `main`, or `pr`.
-* Native Android crashes come through Android tombstones / NDK; GDScript errors arrive with
-  script stack traces; ANRs are on by default.
+* Native Android crashes come through tombstones and the NDK. GDScript errors arrive with script
+  stack traces. ANR detection is on.
 
-## Running locally without CI
-```bash
-tools/sentry/install_sentry_addon.sh          # needs Godot 4.5+
-SENTRY_DSN=<dsn> godot --path .               # the SDK also reads SENTRY_DSN from the environment
-```
-On a phone there is no environment variable, so device builds always get the DSN from CI.
+## Known differences from Sentry
+
+* GlitchTip supports only part of the Sentry event format. Events that use unsupported features
+  are accepted and then silently dropped. Smoke-test each build before relying on it.
+* No suspect-commit tracking, so the agent finds the likely commit from the release tags.
+* Alerts are email and webhook only.

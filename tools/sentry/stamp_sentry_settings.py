@@ -4,7 +4,8 @@
     SENTRY_DSN=... python3 tools/sentry/stamp_sentry_settings.py \
         --release namma-auto@0.5.0+123 --dist 123 --environment ci-debug
 
-The DSN comes from the environment (GitHub secret SENTRY_DSN), so it never lands in git.
+The DSN comes from the environment (GitHub secret GLITCHTIP_DSN, passed as SENTRY_DSN), so it never lands in git.
+GlitchTip speaks the Sentry protocol, so the Sentry SDK addon works unchanged.
 With no DSN the build still works; it just sends nothing (the summary says so).
 """
 import argparse
@@ -48,7 +49,7 @@ def main() -> int:
     text = set_key(text, "sentry", "options/environment", a.environment)
     text = set_key(text, "namma_auto", "crash_reporting/send_smoke_test_on_boot", a.smoke_test)
     PROJECT.write_text(text, encoding="utf-8")
-    state = "ENABLED" if dsn else "DISABLED (no SENTRY_DSN secret yet)"
+    state = "ENABLED" if dsn else "DISABLED (no GLITCHTIP_DSN secret yet)"
     print(f"Sentry crash reporting {state}: release={a.release} dist={a.dist} env={a.environment} smoke_test={a.smoke_test}")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:

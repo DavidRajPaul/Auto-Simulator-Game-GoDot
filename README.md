@@ -560,7 +560,7 @@ Each mission: `.tres` data, 6–12 voice lines, portrait, 1/2/3-star thresholds,
 - ✅ `RewardsEngine`: idempotent ledger, daily caps, 7-day login calendar, 11 achievements, rewarded 2× fare / half tank / free tow.
 - ⬜ Install the AdMob (or AppLovin MAX / CAS.AI) plugin and switch `provider`; UMP consent (GDPR / India DPDP).
 - ⬜ Play Billing: `no_ads_forever`, `starter_pack_chennai`, garage bundle, Madras Monsoon Pass.
-- 🟨 Crash reporting: **Sentry** (not Crashlytics — Godot SDK + MCP for the AI fix loop) wired in code and CI; waits for the `SENTRY_DSN` secret. See [`docs/CRASH_REPORTING.md`](docs/CRASH_REPORTING.md).
+- 🟨 Crash reporting: **GlitchTip** (open-source, MIT, Sentry SDK compatible) wired in code and CI; waits for the `GLITCHTIP_DSN` secret. See [`docs/CRASH_REPORTING.md`](docs/CRASH_REPORTING.md).
 - ⬜ Play Games Services v2 (cloud save, achievements, leaderboards); Firebase Analytics, Remote Config (ad caps, prices).
 - **Gate:** test ads fill in sandbox; UPI license-test purchase succeeds; 0 % ANR in internal testing.
 

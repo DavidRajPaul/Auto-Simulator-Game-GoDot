@@ -1,11 +1,14 @@
 {
   "mcpServers": {
-    "sentry": {
+    "glitchtip": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@sentry/mcp-server@latest"],
+      "command": "/tmp/glitchtip-mcp/bin/mcp-server-glitchtip",
+      "args": [],
       "env": {
-        "SENTRY_ACCESS_TOKEN": "${SENTRY_AUTH_TOKEN}"
+        "GLITCHTIP_AUTH_TOKEN": "${GLITCHTIP_AUTH_TOKEN}",
+        "GLITCHTIP_API_URL": "${GLITCHTIP_API_URL}",
+        "GLITCHTIP_ORGANIZATION": "${GLITCHTIP_ORGANIZATION}",
+        "GLITCHTIP_PROJECT": "${GLITCHTIP_PROJECT}"
       }
     }
   }

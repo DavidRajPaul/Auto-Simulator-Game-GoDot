@@ -24,7 +24,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.5.1"
-  # Sentry Godot SDK (crash reporting). 1.x/2.x need Godot 4.5+. See docs/CRASH_REPORTING.md.
+  # Crash reporting: Sentry Godot SDK, sent to GlitchTip (Sentry-compatible, MIT). See docs/CRASH_REPORTING.md.
   SENTRY_GODOT_VERSION: "2.4.0"
   GODOT_BIN: /home/runner/godot/godot
 
@@ -115,7 +115,6 @@ jobs:
     timeout-minutes: 45
     env:
       HAS_RELEASE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-      HAS_SENTRY_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -180,17 +179,15 @@ jobs:
 
       - name: Stamp Sentry DSN / release / environment
         env:
-          # USER STEP: add the repo secret SENTRY_DSN (Sentry → Project → Client Keys).
+          # USER STEP: add the repo secret GLITCHTIP_DSN (GlitchTip → project → Client Keys).
           # Until then builds still pass and simply report nothing.
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_DSN: ${{ secrets.GLITCHTIP_DSN }}
         run: |
           NAME=$(grep -m1 '^version/name=' export_presets.cfg | cut -d'"' -f2)
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then ENVIRONMENT=production; elif [ "$GITHUB_REF" = refs/heads/main ]; then ENVIRONMENT=main; else ENVIRONMENT=pr; fi
           python3 tools/sentry/stamp_sentry_settings.py \
             --release "namma-auto@${NAME}+${{ github.run_number }}" --dist "${{ github.run_number }}" \
             --environment "$ENVIRONMENT" --smoke-test "${{ inputs.sentry_smoke_test || false }}"
-          echo "SENTRY_RELEASE=namma-auto@${NAME}+${{ github.run_number }}" >> "$GITHUB_ENV"
-          echo "SENTRY_ENVIRONMENT=$ENVIRONMENT" >> "$GITHUB_ENV"
 
       - name: Import project
         run: ${GODOT_BIN} --headless --path . --import
@@ -258,20 +255,6 @@ jobs:
           SIZE=$(stat -c %s build/android/NammaAuto-debug.apk)
           echo "Debug APK: $((SIZE / 1024 / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
           for f in build/android/*.aab; do echo "$(basename $f): $(( $(stat -c %s $f) / 1024 / 1024 )) MB" | tee -a "$GITHUB_STEP_SUMMARY"; done
-
-      - name: Create Sentry release + link commits (optional)
-        # USER STEP (optional): secrets SENTRY_AUTH_TOKEN + repo variables SENTRY_ORG, SENTRY_PROJECT.
-        # Lets Sentry show "suspect commits" so the fix agent knows which change broke what.
-        if: env.HAS_SENTRY_TOKEN == 'true' && github.event_name != 'pull_request'
-        uses: getsentry/action-release@v3
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
-        with:
-          release: ${{ env.SENTRY_RELEASE }}
-          environment: ${{ env.SENTRY_ENVIRONMENT }}
-          ignore_missing: true
 
       - uses: actions/upload-artifact@v5
         with:

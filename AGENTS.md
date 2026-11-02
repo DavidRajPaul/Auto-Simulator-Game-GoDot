@@ -153,9 +153,10 @@ res://
 * New context comes from `SignalBus` listeners in CrashReporter (breadcrumb category = subsystem: `vehicle`, `savari`, `world`, `ui`, `ads`, `tutorial`, `weather`, `navigation`). Throttle anything that can fire every frame; Sentry keeps only 100 breadcrumbs.
 * Handled-but-wrong states (corrupt save, missing resource, impossible value) call `CrashReporter.capture_message(...)` and carry on; don't `push_error` and hope.
 * No personal data: `send_default_pii=false`, no names, save contents or raw device ids in tags/context.
-* The committed DSN is **empty**. CI stamps `SENTRY_DSN` (secret), release `namma-auto@<version>+<run>` and environment at export (`tools/sentry/stamp_sentry_settings.py`). Never commit a DSN; the crash-reporter suite fails if you do.
+* The committed DSN is **empty**. CI stamps the `GLITCHTIP_DSN` secret (passed to the export as `SENTRY_DSN`), release `namma-auto@<version>+<run>` and environment at export (`tools/sentry/stamp_sentry_settings.py`). Never commit a DSN; the crash-reporter suite fails if you do.
 * Every Android preset needs `gradle_build/use_gradle_build=true` and `permissions/internet=true` (Sentry Android plugin).
-* **Fixing a crash** = `.claude/commands/fix-crash.md`: read the Sentry issue (stack, breadcrumbs, tags, player context, log, suspect commit) → a failing headless check that replays it → root-cause fix → full §4 protocol → PR with `Fixes <SENTRY-SHORT-ID>`. One issue per PR.
+* **Fixing a crash** = `.claude/commands/fix-crash.md`: read the GlitchTip issue (stack, breadcrumbs, tags, player context, release) → a failing headless check that replays it → root-cause fix → full §4 protocol → PR naming the issue id. Resolve the issue in GlitchTip only after the fix ships. One issue per PR.
+* Crash backend is **GlitchTip** (MIT, Sentry-compatible): the Sentry SDK addon sends to it, and the `glitchtip` MCP server reads it. Only the DSN changes if we move hosts.
 
 ### Lessons recorded (do not regress)
 * Pooled `AnimatableBody3D` traffic must be teleported with its collision shape **disabled** and re-enabled the next tick. Teleporting with collision on made Jolt launch the player auto at ~260 m/s.

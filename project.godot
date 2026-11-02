@@ -136,7 +136,7 @@ lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
 [sentry]
 
 ; Crash reporting — see docs/CRASH_REPORTING.md. Read by the Sentry addon (addons/sentry) at boot.
-; DSN placeholder: leave EMPTY in git. CI injects the GitHub secret SENTRY_DSN at export time,
+; DSN placeholder: leave EMPTY in git. CI injects the GitHub secret GLITCHTIP_DSN at export time,
 ; so tests, the editor and forks never send anything. Release/environment are stamped by CI too.
 options/dsn=""
 options/release="namma-auto@0.5.0"
