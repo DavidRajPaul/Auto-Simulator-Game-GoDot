@@ -12,13 +12,20 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      sentry_smoke_test:
+        description: "Send one Sentry test event on first launch of this build"
+        type: boolean
+        default: false
 
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  GODOT_VERSION: "4.4.1"
+  GODOT_VERSION: "4.5.1"
+  # Crash reporting: Sentry Godot SDK, sent to GlitchTip (Sentry-compatible, MIT). See docs/CRASH_REPORTING.md.
+  SENTRY_GODOT_VERSION: "2.4.0"
   GODOT_BIN: /home/runner/godot/godot
 
 jobs:
@@ -54,6 +61,12 @@ jobs:
           curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
 
+      - name: Install Sentry addon (crash reporting; no DSN in tests, so nothing is sent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_PLATFORMS: "android linux"
+        run: tools/sentry/install_sentry_addon.sh
+
       - name: Verify Chennai density policy
         run: python3 -m unittest discover -s tests -p 'test_city_density.py' -v
 
@@ -68,11 +81,11 @@ jobs:
           ${GODOT_BIN} --headless --path . --quit-after 120 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load" boot.log; then exit 1; fi
 
-      - name: Run test suites (phases 1–11)
+      - name: Run test suites (crash reporter + phases 1–11)
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          for suite in run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests; do
+          for suite in run_crash_reporter_tests run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests; do
             echo "::group::$suite"
             timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
             echo "::endgroup::"
@@ -139,7 +152,7 @@ jobs:
           echo "Using Android SDK at $SDK, Java at $JAVA_HOME"
           ls "$SDK/build-tools" | tail -3
           mkdir -p ~/.config/godot
-          for f in editor_settings-4.4.tres editor_settings-4.tres; do
+          for f in editor_settings-${GODOT_VERSION%.*}.tres editor_settings-4.tres; do
             cat > ~/.config/godot/$f <<EOF
           [gd_resource type="EditorSettings" format=3]
 
@@ -158,13 +171,33 @@ jobs:
       - name: Stamp version code
         run: sed -i "s/^version\/code=.*/version\/code=${{ github.run_number }}/" export_presets.cfg
 
+      - name: Install Sentry addon
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_PLATFORMS: "android linux"
+        run: tools/sentry/install_sentry_addon.sh
+
+      - name: Stamp Sentry DSN / release / environment
+        env:
+          # USER STEP: add the repo secret GLITCHTIP_DSN (GlitchTip → project → Client Keys).
+          # Until then builds still pass and simply report nothing.
+          SENTRY_DSN: ${{ secrets.GLITCHTIP_DSN }}
+        run: |
+          NAME=$(grep -m1 '^version/name=' export_presets.cfg | cut -d'"' -f2)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then ENVIRONMENT=production; elif [ "$GITHUB_REF" = refs/heads/main ]; then ENVIRONMENT=main; else ENVIRONMENT=pr; fi
+          python3 tools/sentry/stamp_sentry_settings.py \
+            --release "namma-auto@${NAME}+${{ github.run_number }}" --dist "${{ github.run_number }}" \
+            --environment "$ENVIRONMENT" --smoke-test "${{ inputs.sentry_smoke_test || false }}"
+
       - name: Import project
         run: ${GODOT_BIN} --headless --path . --import
 
       - name: Export debug APK
         run: |
           mkdir -p build/android
-          ${GODOT_BIN} --headless --path . --export-debug "Android" build/android/NammaAuto-debug.apk 2>&1 | tee export.log
+          # Gradle build (required by the Sentry Android plugin) needs the build template, installed once.
+          TPL=$([ -d android/build ] || echo --install-android-build-template)
+          ${GODOT_BIN} --headless --path . $TPL --export-debug "Android" build/android/NammaAuto-debug.apk 2>&1 | tee export.log
           test -f build/android/NammaAuto-debug.apk || { echo "::error::Debug APK was not produced"; exit 1; }
           ls -lh build/android/
 
@@ -191,7 +224,8 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
           export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
-          ${GODOT_BIN} --headless --path . --export-release "Android" build/android/NammaAuto-release.apk
+          TPL=$([ -d android/build ] || echo --install-android-build-template)
+          ${GODOT_BIN} --headless --path . $TPL --export-release "Android" build/android/NammaAuto-release.apk
           test -f build/android/NammaAuto-release.apk
           rm -f "$RUNNER_TEMP/release.keystore"
 
@@ -204,14 +238,15 @@ jobs:
           set -o pipefail
           # --install-android-build-template only works together with an --export-* flag
           # (on its own it opens the editor and never exits).
+          TPL=$([ -d android/build ] || echo --install-android-build-template)
           if [ "$HAS_RELEASE_KEY" = "true" ]; then
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
-            ${GODOT_BIN} --headless --path . --install-android-build-template --export-release "Android AAB" build/android/NammaAuto-release.aab 2>&1 | tee aab.log
+            ${GODOT_BIN} --headless --path . $TPL --export-release "Android AAB" build/android/NammaAuto-release.aab 2>&1 | tee aab.log
             rm -f "$RUNNER_TEMP/release.keystore"
           else
             # No upload key yet: a debug-signed bundle still proves the Play Store pipeline works.
-            ${GODOT_BIN} --headless --path . --install-android-build-template --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
+            ${GODOT_BIN} --headless --path . $TPL --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
           fi
           ls -lh build/android/*.aab || { echo "::error::AAB was not produced"; tail -50 aab.log; exit 1; }
 

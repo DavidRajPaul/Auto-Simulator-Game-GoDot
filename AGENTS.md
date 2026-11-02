@@ -6,7 +6,7 @@
 You are an autonomous AI game engineering agent building **Namma Auto: Chennai Rickshaw Simulator 3D**, a culturally authentic, 60 FPS Android driving and auto-rickshaw economic simulator set in Chennai, Tamil Nadu, India.
 
 * **Target Platform:** **Android only** (Google Play). Do not add iOS, desktop or web export presets, plugins or code paths.
-* **Target Engine:** Godot Engine **4.4.1** (pinned in CI), `mobile` renderer with OpenGL ES 3 fallback, **Jolt Physics 3D**.
+* **Target Engine:** Godot Engine **4.5.1** (pinned in CI; Sentry SDK needs 4.5+), `mobile` renderer with OpenGL ES 3 fallback, **Jolt Physics 3D**.
 * **Primary Language:** Statically-typed **GDScript 2.0** (strict typing enforced on all variables, parameters, and return types).
 * **Target Hardware Baseline:** Budget Indian Android smartphones (MediaTek Helio G85 / Snapdragon 680, 3 GB–4 GB RAM, OpenGL ES 3.0 / Vulkan 1.1, 60 FPS target, <85 MB initial download).
 
@@ -27,6 +27,7 @@ res://
 ├── autoloads/
 │   ├── SignalBus.gd                 # Global typed event bus (ZERO direct cross-scene get_node calls)
 │   ├── GameState.gd                 # Profile: wallet, garage loadout, fuel, condition, shift clock, settings, encrypted save
+│   ├── CrashReporter.gd             # Sentry breadcrumbs/tags/context (only file that talks to the SDK)
 │   └── AdMonetizationManager.gd     # (Phase 6) Mediated ads, cooldowns & rewarded hooks
 ├── data/
 │   ├── vehicles/
@@ -147,6 +148,16 @@ res://
 * ≤ **18 pooled AI vehicles** within **120 m** of the player. Never `instantiate()`/`queue_free()` during driving frames.
 * Physics at a fixed **60 Hz**. Primitive colliders (`BoxShape3D`, `CapsuleShape3D`) on moving bodies.
 
+### Rule 6: Crash Reporting (Sentry) — `docs/CRASH_REPORTING.md`
+* `autoloads/CrashReporter.gd` is the **only** code that touches the Sentry SDK. Never write `SentrySDK`/`SentryBreadcrumb` anywhere: the addon (`addons/sentry`, git-ignored, installed by `tools/sentry/install_sentry_addon.sh`) is absent in tests and fresh checkouts, and a bare class name is a parse error there. CrashReporter reaches it through `Engine.get_singleton("SentrySDK")` + `call()`.
+* New context comes from `SignalBus` listeners in CrashReporter (breadcrumb category = subsystem: `vehicle`, `savari`, `world`, `ui`, `ads`, `tutorial`, `weather`, `navigation`). Throttle anything that can fire every frame; Sentry keeps only 100 breadcrumbs.
+* Handled-but-wrong states (corrupt save, missing resource, impossible value) call `CrashReporter.capture_message(...)` and carry on; don't `push_error` and hope.
+* No personal data: `send_default_pii=false`, no names, save contents or raw device ids in tags/context.
+* The committed DSN is **empty**. CI stamps the `GLITCHTIP_DSN` secret (passed to the export as `SENTRY_DSN`), release `namma-auto@<version>+<run>` and environment at export (`tools/sentry/stamp_sentry_settings.py`). Never commit a DSN; the crash-reporter suite fails if you do.
+* Every Android preset needs `gradle_build/use_gradle_build=true` and `permissions/internet=true` (Sentry Android plugin).
+* **Fixing a crash** = `.claude/commands/fix-crash.md`: read the GlitchTip issue (stack, breadcrumbs, tags, player context, release) → a failing headless check that replays it → root-cause fix → full §4 protocol → PR naming the issue id. Resolve the issue in GlitchTip only after the fix ships. One issue per PR.
+* Crash backend is **GlitchTip** (MIT, Sentry-compatible): the Sentry SDK addon sends to it, and the `glitchtip` MCP server reads it. Only the DSN changes if we move hosts.
+
 ### Lessons recorded (do not regress)
 * Pooled `AnimatableBody3D` traffic must be teleported with its collision shape **disabled** and re-enabled the next tick. Teleporting with collision on made Jolt launch the player auto at ~260 m/s.
 * Apply longitudinal (drive/brake) wheel forces at **CoM height**; at contact height the trike wheelies.
@@ -221,6 +232,7 @@ res://
    ```
 2. **Phase test suite** (exit code 0 = pass):
    ```bash
+   godot --headless --path . --fixed-fps 60 res://tests/run_crash_reporter_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase2_tests.tscn
    godot --headless --path . --fixed-fps 60 res://tests/run_phase3_tests.tscn

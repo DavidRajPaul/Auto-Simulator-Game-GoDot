@@ -2,7 +2,7 @@
 
 [![Android Build](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml/badge.svg)](https://github.com/DavidRajPaul/Auto-Simulator-Game-GoDot/actions/workflows/android-build.yml)
 
-A culturally authentic auto-rickshaw driving and economy simulator set in real-size Chennai, built in **Godot 4.4.1** for budget Android phones. Most of the code is written by AI coding agents (Claude Code, Codex, Cursor) working under the rules in [`AGENTS.md`](AGENTS.md).
+A culturally authentic auto-rickshaw driving and economy simulator set in real-size Chennai, built in **Godot 4.5.1** for budget Android phones. Most of the code is written by AI coding agents (Claude Code, Codex, Cursor) working under the rules in [`AGENTS.md`](AGENTS.md).
 
 > **Pitch:** Drive a yellow-and-black Bajaj RE through Mylapore, Marina Beach and Anna Salai on the real OpenStreetMap street grid. Haggle fares in Tanglish ("Meter Podu vs. Bargain"), squeeze through gaps between TNSTC buses, survive the Northeast Monsoon, and build your Auto Stand reputation. Free Roam and Savari (passenger) mode are open from minute one, with no parking-gate grind.
 
@@ -85,7 +85,7 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 |---|---|
 | **Genre** | Open-city driving + economy sim (hybrid-casual / mid-core) |
 | **Platform** | **Android only** (Google Play), arm64-v8a + armeabi-v7a |
-| **Engine** | Godot 4.4.1 (pinned in CI), Mobile renderer + GLES3 fallback, Jolt Physics 3D |
+| **Engine** | Godot 4.5.1 (pinned in CI), Mobile renderer + GLES3 fallback, Jolt Physics 3D |
 | **Language** | Fully statically typed GDScript 2.0 (untyped declarations are errors) |
 | **Target device** | Helio G85 / Snapdragon 680, 3–4 GB RAM, 60 FPS |
 | **Budgets** | ≤ 150 draw calls · ≤ 18 pooled AI vehicles · < 85 MB `.aab` |
@@ -256,7 +256,7 @@ flowchart LR
 
 | Layer | Choice |
 |---|---|
-| Engine / physics | Godot 4.4.1 + Jolt; custom 3-point raycast delta-trike (based on `DAShoe1/Godot-Easy-Vehicle-Physics`) |
+| Engine / physics | Godot 4.5.1 + Jolt; custom 3-point raycast delta-trike (based on `DAShoe1/Godot-Easy-Vehicle-Physics`) |
 | Roads & lanes | [`a-b-street/osm2streets`](https://github.com/a-b-street/osm2streets) (Apache-2.0), built in CI; lane counts and widths drive the AI traffic |
 | Map pipeline | OpenStreetMap (Overpass) → osm2streets + `tools/osm/build_world.py` → pre-triangulated JSON chunks (250 m, 3×3 streaming), 1 : 1 scale |
 | UI | Code-built screens on one cached `UIKit` theme ("Namma Auto Arcade" design from Google Stitch), painted atlases |
@@ -345,7 +345,7 @@ godot --headless --path . --fixed-fps 60 res://tests/run_phase1_tests.tscn    # 
 xvfb-run -a godot --path . --rendering-method gl_compatibility --fixed-fps 60 res://tests/run_perf_probe.tscn
 ```
 
-Open the folder in **Godot 4.4.1** and press Play (keyboard controls above). The game starts on the splash, then the menu.
+Open the folder in **Godot 4.5.1** and press Play (keyboard controls above). The game starts on the splash, then the menu.
 
 ### Test suites
 
@@ -371,7 +371,7 @@ Suite numbers follow the order they were written, not the roadmap phases.
 Every push and PR to `main` runs **[Android Build](.github/workflows/android-build.yml)**:
 
 1. **Tests + perf budget:** import, boot the main scene, run all 11 suites, then drive the city and the greybox under a virtual display and fail above 150 draw calls. Results go in the run summary.
-2. **Export:** Godot 4.4.1 + export templates (cached) + JDK 17 → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a) and a Gradle-built `NammaAuto-debug.aab`. The CI checks the APK contains the map data and reports the size against the 85 MB budget. Version code = run number.
+2. **Export:** Godot 4.5.1 + export templates (cached) + JDK 17 → `NammaAuto-debug.apk` (arm64-v8a + armeabi-v7a) and a Gradle-built `NammaAuto-debug.aab`. The CI checks the APK contains the map data and reports the size against the 85 MB budget. Version code = run number.
 3. **Download:** Actions → latest run → *Artifacts* → `NammaAuto-android-<run>`; `adb install -r NammaAuto-debug.apk`.
 4. **Release builds:** with repo secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`, `ANDROID_KEYSTORE_PASSWORD`, CI also signs `NammaAuto-release.apk` / `.aab` (the one for Play).
 5. **Tags:** pushing `v*` attaches the APK and AAB to a GitHub Release.
@@ -560,7 +560,8 @@ Each mission: `.tres` data, 6–12 voice lines, portrait, 1/2/3-star thresholds,
 - ✅ `RewardsEngine`: idempotent ledger, daily caps, 7-day login calendar, 11 achievements, rewarded 2× fare / half tank / free tow.
 - ⬜ Install the AdMob (or AppLovin MAX / CAS.AI) plugin and switch `provider`; UMP consent (GDPR / India DPDP).
 - ⬜ Play Billing: `no_ads_forever`, `starter_pack_chennai`, garage bundle, Madras Monsoon Pass.
-- ⬜ Play Games Services v2 (cloud save, achievements, leaderboards); Firebase Analytics, Crashlytics, Remote Config (ad caps, prices).
+- 🟨 Crash reporting: **GlitchTip** (open-source, MIT, Sentry SDK compatible) wired in code and CI; waits for the `GLITCHTIP_DSN` secret. See [`docs/CRASH_REPORTING.md`](docs/CRASH_REPORTING.md).
+- ⬜ Play Games Services v2 (cloud save, achievements, leaderboards); Firebase Analytics, Remote Config (ad caps, prices).
 - **Gate:** test ads fill in sandbox; UPI license-test purchase succeeds; 0 % ANR in internal testing.
 
 ### Phase 11 · Compliance & store readiness ⬜

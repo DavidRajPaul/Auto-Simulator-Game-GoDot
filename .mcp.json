@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "glitchtip": {
+      "type": "stdio",
+      "command": "mcp-server-glitchtip",
+      "args": [],
+      "env": {
+        "GLITCHTIP_AUTH_TOKEN": "${GLITCHTIP_AUTH_TOKEN}",
+        "GLITCHTIP_API_URL": "${GLITCHTIP_API_URL}",
+        "GLITCHTIP_ORGANIZATION": "${GLITCHTIP_ORGANIZATION}",
+        "GLITCHTIP_PROJECT": "${GLITCHTIP_PROJECT}"
+      }
+    }
+  }
+}

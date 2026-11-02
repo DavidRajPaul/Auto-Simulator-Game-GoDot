@@ -1,0 +1,86 @@
+name: Crash Triage (AI)
+
+# OPTIONAL autonomous loop: every night an AI agent pulls the top unresolved GlitchTip crash,
+# reproduces it with a headless test, fixes it and opens a PR for review (never merges).
+# It follows .claude/commands/fix-crash.md. See docs/CRASH_REPORTING.md → "Step 5".
+#
+# USER STEP to turn it on (off by default, so this workflow is a no-op until then):
+#   • secrets:   ANTHROPIC_API_KEY, GLITCHTIP_AUTH_TOKEN (GlitchTip → Profile → Auth Tokens)
+#   • variables: ENABLE_CRASH_TRIAGE = true, GLITCHTIP_API_URL, GLITCHTIP_ORGANIZATION, GLITCHTIP_PROJECT
+
+on:
+  schedule:
+    - cron: "30 21 * * *" # 03:00 IST
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "GlitchTip issue id or URL (empty = top unresolved)"
+        required: false
+        default: ""
+
+concurrency:
+  group: crash-triage
+  cancel-in-progress: false
+
+env:
+  GODOT_VERSION: "4.5.1"
+  GODOT_BIN: /home/runner/godot/godot
+
+jobs:
+  triage:
+    if: vars.ENABLE_CRASH_TRIAGE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 50
+
+      - name: Cache Godot editor
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/godot
+          key: godot-editor-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/godot && cd /home/runner/godot
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
+
+      - name: Install Sentry addon + import project
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_PLATFORMS: "android linux"
+        run: |
+          tools/sentry/install_sentry_addon.sh
+          ${GODOT_BIN} --headless --path . --import
+
+      - name: Install GlitchTip MCP server
+        run: |
+          python3 -m venv /tmp/glitchtip-mcp
+          /tmp/glitchtip-mcp/bin/pip install -q mcp-server-glitchtip
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GLITCHTIP_AUTH_TOKEN: ${{ secrets.GLITCHTIP_AUTH_TOKEN }}
+          GLITCHTIP_API_URL: ${{ vars.GLITCHTIP_API_URL }}
+          GLITCHTIP_ORGANIZATION: ${{ vars.GLITCHTIP_ORGANIZATION }}
+          GLITCHTIP_PROJECT: ${{ vars.GLITCHTIP_PROJECT }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            /fix-crash ${{ inputs.issue }}
+            GlitchTip organization: ${{ vars.GLITCHTIP_ORGANIZATION }}, project: ${{ vars.GLITCHTIP_PROJECT }}.
+            Godot is at ${{ env.GODOT_BIN }} (already imported). Always wrap Godot runs in `timeout`.
+            If no unresolved issue needs work, stop without changes.
+          claude_args: |
+            --max-turns 60
+            --mcp-config .claude/ci-mcp.json
+            --allowedTools Read,Glob,Grep,Edit,Write,mcp__glitchtip,Bash(timeout *),Bash(git *),Bash(gh pr *),Bash(python3 *)
