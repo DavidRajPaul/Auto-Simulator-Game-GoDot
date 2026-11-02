@@ -50,7 +50,6 @@ const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1)
 const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
 const CITY_MODEL_DIR: String = "res://assets/models/city/"
-const COCONUT_PALM_SCENE: String = "res://assets/models/city/coconut_palm.glb"
 const MARINA_LIGHTHOUSE_SCENE: String = "res://assets/models/city/lighthouse/chennai_lighthouse.glb"
 const LANDMARK_VISIBLE_M: float = 420.0
 const SKYLINE_DIST_M: float = 370.0
@@ -136,7 +135,8 @@ var wetness: float = 0.0
 var _water_mat: ShaderMaterial
 var _road_mat: StandardMaterial3D
 var _bld_mat: ShaderMaterial
-var _tree_mat: StandardMaterial3D
+## Roadside and park trees (owner's models, near model + far impostors, see StreetTrees.gd).
+var trees: StreetTrees
 ## Baked transformer tank as plain triangles (sRGB vertex colours), read once in _ready and
 ## only read afterwards (chunk meshes are built on worker threads).
 var _xfmr_verts: PackedVector3Array = PackedVector3Array()
@@ -189,11 +189,9 @@ func _ready() -> void:
 	_bld_mat.shader = load("res://shaders/building_facade.gdshader") as Shader
 	_bld_mat.set_shader_parameter("atlas", load("res://assets/textures/facade_atlas.png") as Texture2D)
 	_bld_mat.set_shader_parameter("glow", load("res://assets/textures/facade_glow.png") as Texture2D)
-	_tree_mat = StandardMaterial3D.new()
-	_tree_mat.vertex_color_use_as_albedo = true
-	_tree_mat.vertex_color_is_srgb = true
-	_tree_mat.roughness = 0.95
-	_tree_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	trees = StreetTrees.new()
+	trees.name = "StreetTrees"
+	add_child(trees)
 	_load_transformer_tank()
 	_build_ground()
 	_build_areas()
@@ -209,6 +207,12 @@ func _process(delta: float) -> void:
 	_update_wetness(delta)
 	_bld_mat.set_shader_parameter("night", 1.0 - smoothstep(-0.05, 0.2, Atmosphere.sun_height(GameState.shift_minute)))
 	_update_skyline()
+	if trees != null:
+		var cam: Camera3D = get_viewport().get_camera_3d()
+		if cam != null:
+			trees.update(cam.global_position)
+		elif _player != null:
+			trees.update(_player.global_position)
 	_timer += delta
 	if _timer >= CHECK_INTERVAL_S:
 		_timer = 0.0
@@ -250,6 +254,8 @@ func update_streaming(blocking: bool) -> void:
 		if absi(k.x - c.x) > load_radius_chunks + 1 or absi(k.y - c.y) > load_radius_chunks + 1:
 			(loaded[k] as Node3D).queue_free()
 			loaded.erase(k)
+			if trees != null:
+				trees.remove_chunk(k)
 			_heights.erase(k)
 			_blocked.erase(k)
 
@@ -297,11 +303,17 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 	if loaded.has(k):
 		node.free()
 		return
-	_add_imported_palms(node)
-	# Heights first: parked vehicles and waiting props stand on this chunk's drawn ground.
+	# Heights first: parked vehicles, trees and waiting props stand on this chunk's drawn ground.
 	if node.has_meta("surface_heights"):
 		_heights[k] = node.get_meta("surface_heights")
 		node.remove_meta("surface_heights")
+	if node.has_meta("trees"):
+		var recs: PackedFloat32Array = node.get_meta("trees")
+		node.remove_meta("trees")
+		for i: int in range(0, recs.size(), StreetTrees.REC):
+			recs[i + 1] = surface_height(recs[i], recs[i + 2], 0.0) - StreetTrees.SINK_M
+		if trees != null:
+			trees.add_chunk(k, recs)
 	if node.has_meta("building_mask"):
 		_blocked[k] = node.get_meta("building_mask")
 		node.remove_meta("building_mask")
@@ -349,41 +361,6 @@ func _ground_under(node: Node3D) -> float:
 	var p: Vector3 = node.global_position
 	return surface_height(p.x, p.z, SIDEWALK_Y)
 
-func _add_imported_palms(chunk: Node3D) -> void:
-	var markers: Node3D = chunk.get_node_or_null("Buildings/ImportedPalmMarkers") as Node3D
-	if markers == null or markers.get_child_count() == 0 or not ResourceLoader.exists(COCONUT_PALM_SCENE):
-		return
-	var palm_scene: PackedScene = load(COCONUT_PALM_SCENE) as PackedScene
-	if palm_scene == null:
-		return
-	var source: Node3D = palm_scene.instantiate() as Node3D
-	if source == null:
-		return
-	var source_mesh: MeshInstance3D = null
-	var mesh_nodes: Array[Node] = source.find_children("*", "MeshInstance3D", true, false)
-	if not mesh_nodes.is_empty():
-		source_mesh = mesh_nodes[0] as MeshInstance3D
-	if source_mesh == null or source_mesh.mesh == null:
-		source.free()
-		return
-	var mm: MultiMesh = MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = source_mesh.mesh
-	mm.instance_count = markers.get_child_count()
-	var palms: MultiMeshInstance3D = MultiMeshInstance3D.new()
-	palms.name = "GeneratedCoconutPalms"
-	palms.multimesh = mm
-	palms.visibility_range_end = 180.0
-	for i: int in markers.get_child_count():
-		var marker: Node3D = markers.get_child(i) as Node3D
-		var scale: float = 7.5 * float(marker.get_meta("palm_scale", 1.0))
-		var yaw: float = float(marker.get_meta("palm_yaw", 0.0))
-		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale),
-			marker.position + Vector3(0.0, scale * 0.5, 0.0)))
-	markers.queue_free()
-	source.free()
-	chunk.get_node("Buildings").call_deferred("add_child", palms)
-
 func _exit_tree() -> void:
 	for k: Vector2i in _pending:
 		WorkerThreadPool.wait_for_task_completion(int(_pending[k]))
@@ -420,6 +397,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty():
 		root.add_child(_buildings(blds, dress, walls))
+	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
+		root.set_meta("trees", StreetTrees.records(dress["trees"] as Array))
 	return root
 
 ## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
@@ -602,25 +581,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	if dressing_enabled:
 		_street_dressing(m, dress)
-	# Foliage must not sample the facade atlas: its colours are vertex-painted.
-	# Keep trees in one separate mesh per chunk, independent of building textures.
-	if dressing_enabled and not dress.get("trees", []).is_empty():
-		var foliage: MeshBuf = MeshBuf.new()
-		_street_trees(foliage, dress)
-		if not foliage.verts.is_empty():
-			var fa: Array = []
-			fa.resize(Mesh.ARRAY_MAX)
-			fa[Mesh.ARRAY_VERTEX] = foliage.verts
-			fa[Mesh.ARRAY_NORMAL] = foliage.norms
-			fa[Mesh.ARRAY_COLOR] = foliage.cols
-			var fm: ArrayMesh = ArrayMesh.new()
-			fm.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, fa)
-			fm.surface_set_material(0, _tree_mat)
-			var tree_node: MeshInstance3D = MeshInstance3D.new()
-			tree_node.name = "RoadsideTrees"
-			tree_node.mesh = fm
-			holder.add_child(tree_node)
-		_imported_palm_markers(holder, dress)
+	# Trees are not part of the chunk mesh: StreetTrees draws the owner's models for every
+	# loaded chunk (see _build_chunk "trees" meta and _attach).
 	if m.verts.is_empty():
 		return holder
 	var arrays: Array = []
@@ -765,7 +727,7 @@ func _roof_details(m: MeshBuf, pts: PackedVector2Array, tri: PackedInt32Array, h
 		_dbox(m, Vector3(p.x, base_y + 0.15, p.y), Vector3(r * 2.1, 0.3, r * 2.1), along, Color(0.62, 0.6, 0.57))
 		_tank(m, Vector3(p.x, base_y + 0.3, p.y), r, th, col)
 
-## EB poles with sagging overhead wires and roadside trees (data/world/dress, made by
+## EB poles with sagging overhead wires and TNEB transformers (data/world/dress, made by
 ## tools/osm/build_street_dressing.py), merged into the chunk mesh like everything else.
 func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 	var concrete: Color = Color(0.66, 0.65, 0.62)
@@ -784,33 +746,6 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 		for k: int in 2:
 			var off: Vector3 = across * (float(k) - 0.5) * 1.1 + Vector3(0.0, POLE_ARM_Y + 0.05, 0.0)
 			_wire(m, a + off, b + off, 0.35 + 0.12 * float(k))
-
-func _street_trees(m: MeshBuf, dress: Dictionary) -> void:
-	for t: Array in dress.get("trees", []):
-		var base2: Vector3 = Vector3(float(t[0]), 0.0, float(t[1]))
-		match int(t[2]):
-			1: pass # artist-generated palms are instanced separately
-			2: _mast_tree(m, base2, float(t[3]), int(t[4]))
-			3: _copper_pod(m, base2, float(t[3]), int(t[4]))
-			4: _pungai_tree(m, base2, float(t[3]), int(t[4]))
-			5: _gulmohar_tree(m, base2, float(t[3]), int(t[4]))
-			6: _indian_almond_tree(m, base2, float(t[3]), int(t[4]))
-			7: _poovarasu_tree(m, base2, float(t[3]), int(t[4]))
-			_: _shade_tree(m, base2, float(t[3]), int(t[4]))
-
-func _imported_palm_markers(holder: Node3D, dress: Dictionary) -> void:
-	var palms: Node3D = Node3D.new()
-	palms.name = "ImportedPalmMarkers"
-	for t: Array in dress.get("trees", []):
-		if int(t[2]) != 1:
-			continue
-		var marker: Node3D = Node3D.new()
-		marker.position = Vector3(float(t[0]), 0.0, float(t[1]))
-		marker.set_meta("palm_scale", float(t[3]))
-		marker.set_meta("palm_yaw", float(int(t[4]) % 360) * 0.0174533)
-		palms.add_child(marker)
-	if palms.get_child_count() > 0:
-		holder.add_child(palms)
 
 func _pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
 	var u: Vector3 = Vector3(along.x, 0.0, along.y)
@@ -968,148 +903,6 @@ func _dp_pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
 		_face(m, [c0[k], c0[j], c1[j], c1[k]], mid.normalized(), col if k % 2 == 0 else col.darkened(0.12))
 	_face(m, [c1[0], c1[1], c1[2], c1[3]], Vector3.UP, col)
 
-## Rain tree (wide umbrella crown, very common on Chennai roads) or neem (rounder, denser),
-## picked by seed. Thick trunk that forks into the crown.
-func _shade_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.34, 0.27, 0.2) if seed_i % 2 == 0 else Color(0.39, 0.33, 0.25)
-	var rain: bool = seed_i % 2 == 0
-	var trunk_h: float = (3.6 if rain else 3.0) * s
-	var top: Vector3 = base + Vector3(0.0, trunk_h, 0.0)
-	_trunk(m, base, top, 0.26 * s, 0.16 * s, bark)
-	var greens: Array[Color] = [Color(0.25, 0.41, 0.18), Color(0.20, 0.36, 0.16), Color(0.29, 0.45, 0.20), Color(0.23, 0.39, 0.19)]
-	var lobes: int = 5 if rain else 4
-	for k: int in lobes:
-		var a: float = float(seed_i % 7) + float(k) * TAU / float(lobes) + 0.13 * sin(float(seed_i + k * 5))
-		var r: float = (1.9 if rain else 1.1) * s * (0.88 + 0.06 * float((seed_i + k) % 5))
-		# Forked limbs out to each lobe.
-		var tip: Vector3 = top + Vector3(cos(a) * r * 0.7, (0.9 if rain else 0.8) * s, sin(a) * r * 0.7)
-		_trunk(m, top - Vector3(0.0, 0.3 * s, 0.0), tip, 0.1 * s, 0.06 * s, bark)
-		var size: Vector3 = Vector3(2.6, 1.2, 2.6) * s if rain else Vector3(2.0, 1.7, 2.0) * s
-		_blob(m, top + Vector3(cos(a) * r, (1.1 if rain else 1.0 + float(k % 2) * 0.5) * s, sin(a) * r), size, greens[(seed_i + k) % greens.size()])
-	_blob(m, top + Vector3(0.0, (1.5 if rain else 1.8) * s, 0.0), Vector3(3.0, 1.2, 3.0) * s if rain else Vector3(2.2, 1.8, 2.2) * s, greens[seed_i % greens.size()].lightened(0.04))
-
-## Ashoka / mast tree (Polyalthia longifolia): the tall, slim, dark-green column lining Chennai
-## avenues and compound walls.
-func _mast_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var h: float = 8.0 * s + float(seed_i % 5) * 0.3
-	_trunk(m, base, base + Vector3(0.0, 1.4 * s, 0.0), 0.13 * s, 0.1 * s, Color(0.3, 0.24, 0.18))
-	var green: Color = Color(0.15, 0.29, 0.13)
-	var tiers: int = 4
-	for k: int in tiers:
-		var f: float = float(k) / float(tiers - 1)
-		var y: float = 1.6 * s + f * (h - 2.4 * s)
-		var w: float = lerpf(1.8, 0.65, f) * s
-		var offset: Vector3 = Vector3(sin(float(seed_i + k * 3)) * 0.12 * s, 0.0, cos(float(seed_i + k * 7)) * 0.12 * s)
-		_blob(m, base + offset + Vector3(0.0, y + 0.6 * s, 0.0), Vector3(w, 2.35 * s, w), green.lightened(0.035 * float(k % 2)))
-
-## Copper-pod / gulmohar: spreading flat crown, yellow or flame-orange flowers on top.
-func _copper_pod(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.4, 0.33, 0.25)
-	var top: Vector3 = base + Vector3(0.0, 3.6 * s, 0.0)
-	_trunk(m, base, top, 0.2 * s, 0.13 * s, bark)
-	var leaf: Color = Color(0.27, 0.42, 0.18)
-	var bloom: Color = Color(0.77, 0.61, 0.20) if seed_i % 3 != 0 else Color(0.76, 0.38, 0.20)
-	_blob(m, top + Vector3(0.0, 0.7 * s, 0.0), Vector3(4.6, 1.3, 4.6) * s, leaf)
-	for k: int in 3:
-		var a: float = float(seed_i % 11) + float(k) * 2.1
-		_blob(m, top + Vector3(cos(a) * 1.2 * s, 1.28 * s, sin(a) * 1.2 * s), Vector3(1.25, 0.38, 1.25) * s, bloom if k != 1 else leaf.lightened(0.08))
-
-## Pungai (Pongamia pinnata): broad irregular shade canopy with multiple branch forks.
-## Seeded asymmetry avoids identical trees without new materials or draw calls.
-func _pungai_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.36, 0.29, 0.22)
-	var crown: Vector3 = base + Vector3(0.0, 3.2 * s, 0.0)
-	_trunk(m, base, crown, 0.25 * s, 0.14 * s, bark)
-	var leaves: Array[Color] = [Color(0.19, 0.39, 0.16), Color(0.26, 0.45, 0.19), Color(0.23, 0.42, 0.17)]
-	for k: int in 6:
-		var angle: float = float(seed_i % 31) * 0.21 + float(k) * TAU / 6.0
-		var reach: float = (1.3 + float((seed_i + k * 7) % 5) * 0.16) * s
-		var tip: Vector3 = crown + Vector3(cos(angle) * reach, (0.45 + float(k % 3) * 0.2) * s, sin(angle) * reach)
-		_trunk(m, crown, tip, 0.10 * s, 0.045 * s, bark)
-		_blob(m, tip + Vector3(0.0, 0.35 * s, 0.0), Vector3(2.2, 1.65, 2.1) * s, leaves[(seed_i + k) % leaves.size()])
-	_blob(m, crown + Vector3(0.0, 1.4 * s, 0.0), Vector3(2.6, 1.55, 2.5) * s, leaves[seed_i % leaves.size()])
-
-## Gulmohar: airy, horizontal umbrella with restrained red-orange flower patches.
-func _gulmohar_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.39, 0.29, 0.22)
-	var crown: Vector3 = base + Vector3(0.0, 3.7 * s, 0.0)
-	_trunk(m, base, crown, 0.22 * s, 0.12 * s, bark)
-	var green: Color = Color(0.29, 0.46, 0.18)
-	for k: int in 7:
-		var angle: float = float(seed_i % 17) * 0.19 + float(k) * TAU / 7.0
-		var reach: float = (2.0 + float((seed_i + k) % 4) * 0.18) * s
-		var tip: Vector3 = crown + Vector3(cos(angle) * reach, 0.5 * s, sin(angle) * reach)
-		_trunk(m, crown, tip, 0.10 * s, 0.04 * s, bark)
-		_blob(m, tip, Vector3(2.3, 0.85, 2.2) * s, green.lightened(float(k % 3) * 0.035))
-		if (seed_i + k) % 3 == 0:
-			_blob(m, tip + Vector3(0.0, 0.40 * s, 0.0), Vector3(0.9, 0.22, 0.85) * s, Color(0.75, 0.28, 0.14))
-	_blob(m, crown + Vector3(0.0, 0.85 * s, 0.0), Vector3(3.0, 0.9, 3.0) * s, green)
-
-## Naattu badam / Indian almond: distinct horizontal whorls, with lower leaves turning
-## copper on some trees. The spaced tiers read clearly from the driving camera.
-func _indian_almond_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.43, 0.36, 0.29)
-	var top: Vector3 = base + Vector3(0.0, 7.2 * s, 0.0)
-	_trunk(m, base, top, 0.22 * s, 0.065 * s, bark)
-	for tier: int in 3:
-		var y: float = (3.2 + float(tier) * 1.55) * s
-		var reach: float = (2.7 - float(tier) * 0.55) * s
-		var hue: Color = Color(0.27, 0.42, 0.21) if tier != 0 or seed_i % 4 != 0 else Color(0.58, 0.38, 0.21)
-		for k: int in 3:
-			var a: float = float(seed_i % 37) * 0.11 + float(k) * TAU / 3.0 + float(tier) * 0.34
-			var centre: Vector3 = base + Vector3(cos(a) * reach, y + 0.12 * s, sin(a) * reach)
-			_trunk(m, base + Vector3(0.0, y - 0.28 * s, 0.0), centre, 0.075 * s, 0.025 * s, bark)
-			_blob(m, centre, Vector3(2.5 - float(tier) * 0.30, 0.72, 2.4 - float(tier) * 0.30) * s,
-				hue.lightened(0.035 * float(k)))
-	_blob(m, top - Vector3(0.0, 0.32 * s, 0.0), Vector3(1.25, 0.95, 1.25) * s, Color(0.29, 0.45, 0.22))
-
-## Poovarasu / Indian tulip tree: wind-rounded coastal crown, broad leaf clusters and
-## a few small yellow blooms. Kept opaque and batched with the other street trees.
-func _poovarasu_tree(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var bark: Color = Color(0.43, 0.35, 0.28)
-	var fork: Vector3 = base + Vector3(0.0, 3.1 * s, 0.0)
-	_trunk(m, base, fork, 0.25 * s, 0.14 * s, bark)
-	for k: int in 5:
-		var a: float = float(seed_i % 23) * 0.18 + float(k) * TAU / 5.0
-		var reach: float = (1.35 + float((seed_i + k) % 3) * 0.18) * s
-		var tip: Vector3 = fork + Vector3(cos(a) * reach, (0.65 + float(k % 2) * 0.23) * s, sin(a) * reach)
-		_trunk(m, fork, tip, 0.09 * s, 0.04 * s, bark)
-		_blob(m, tip, Vector3(2.2, 1.42, 2.2) * s, Color(0.22, 0.39, 0.19).lightened(0.035 * float(k % 3)))
-		if (seed_i + k) % 3 == 0:
-			_blob(m, tip + Vector3(0.32 * s, 0.65 * s, 0.0), Vector3(0.43, 0.17, 0.43) * s,
-				Color(0.82, 0.70, 0.25))
-	_blob(m, fork + Vector3(0.0, 1.10 * s, 0.0), Vector3(2.8, 1.5, 2.7) * s, Color(0.25, 0.42, 0.20))
-
-## Coconut palm: leaning trunk, drooping fronds.
-func _palm(m: MeshBuf, base: Vector3, s: float, seed_i: int) -> void:
-	var lean_a: float = float(seed_i % 360) * 0.0174533
-	var lean: Vector3 = Vector3(cos(lean_a), 0.0, sin(lean_a)) * 0.9 * s
-	var h: float = 7.5 * s
-	var mid: Vector3 = base + Vector3(0.0, h * 0.5, 0.0) + lean * 0.3
-	var top: Vector3 = base + Vector3(0.0, h, 0.0) + lean
-	var bark: Color = Color(0.5, 0.42, 0.32)
-	_trunk(m, base, mid, 0.2 * s, 0.17 * s, bark)
-	_trunk(m, mid, top, 0.17 * s, 0.14 * s, bark.darkened(0.08))
-	var frond: Color = Color(0.3, 0.52, 0.2)
-	for k: int in 6:
-		var a: float = TAU * float(k) / 6.0 + float(seed_i % 10) * 0.1
-		var dir: Vector3 = Vector3(cos(a), 0.0, sin(a))
-		var tip: Vector3 = top + dir * 2.6 * s - Vector3(0.0, 1.3 * s, 0.0)
-		var mid2: Vector3 = top + dir * 1.4 * s + Vector3(0.0, 0.35 * s, 0.0)
-		var wv: Vector3 = Vector3(-dir.z, 0.0, dir.x) * 0.45 * s
-		var col: Color = frond if k % 2 == 0 else frond.darkened(0.15)
-		# Two tapered leaf panels per frond create a curved, drooping profile
-		# instead of one rigid kite. No textures or extra draw calls.
-		var root_left: Vector3 = top - wv * 0.2
-		var root_right: Vector3 = top + wv * 0.2
-		var mid_left: Vector3 = mid2 - wv
-		var mid_right: Vector3 = mid2 + wv
-		_face(m, [root_left, mid_left, mid2, root_right], Vector3.UP, col)
-		_face(m, [root_left, mid_left, mid2, root_right], Vector3.DOWN, col.darkened(0.22))
-		_face(m, [mid_left, tip, mid_right, mid2], Vector3.UP, col.darkened(0.05))
-		_face(m, [mid_left, tip, mid_right, mid2], Vector3.DOWN, col.darkened(0.25))
-	_blob(m, top - Vector3(0.0, 0.25 * s, 0.0), Vector3(0.6, 0.5, 0.6) * s, Color(0.45, 0.4, 0.15))
-
 func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color) -> void:
 	var sides: int = 5
 	var grain: float = sin(a.x * 1.21 + a.z * 0.79 + b.y * 1.87)
@@ -1122,39 +915,6 @@ func _trunk(m: MeshBuf, a: Vector3, b: Vector3, r0: float, r1: float, col: Color
 		var shade: Color = col.lightened(0.055 * maxf(out.x, 0.0))
 		shade = shade.darkened(0.045 * maxf(-out.x, 0.0) + 0.025 * maxf(sin(float(k) * 2.7 + grain), 0.0))
 		_face(m, [a + d0 * r0, a + d1 * r0, b + d1 * r1, b + d0 * r1], out, shade)
-
-## Irregular eight-sided crown with a brighter upper ridge and shaded underside (16 faces).
-## Opaque triangles keep the leaves readable without mobile alpha overdraw.
-func _blob(m: MeshBuf, c: Vector3, size: Vector3, col: Color) -> void:
-	var ring: Array[Vector3] = []
-	var seed_f: float = c.x * 1.73 + c.z * 2.19 + c.y * 0.61
-	var twist: float = sin(seed_f * 0.17) * 0.28
-	for k: int in 8:
-		var a: float = TAU * float(k) / 8.0 + 0.3 + twist
-		var radius: float = 0.79 + 0.21 * sin(seed_f + float(k) * 2.47)
-		var rise: float = 0.17 * size.y * sin(seed_f * 0.47 + float(k) * 2.11)
-		ring.append(c + Vector3(cos(a) * size.x * 0.5 * radius, rise, sin(a) * size.z * 0.5 * radius))
-	var top: Vector3 = c + Vector3(0.12 * size.x * sin(seed_f), size.y * 0.55, 0.09 * size.z * cos(seed_f))
-	var bot: Vector3 = c + Vector3(-0.08 * size.x * cos(seed_f), -size.y * 0.44, 0.07 * size.z * sin(seed_f))
-	for k: int in 8:
-		var p0: Vector3 = ring[k]
-		var p1: Vector3 = ring[(k + 1) % 8]
-		var tint: float = 0.045 * sin(seed_f + float(k) * 1.9)
-		var sun: float = maxf(0.0, (p0.x + p1.x - 2.0 * c.x) / maxf(size.x, 0.01))
-		_tri_out(m, p0, p1, top, c, col.lightened(0.055 + sun * 0.10 + maxf(tint, 0.0)))
-		_tri_out(m, p0, p1, bot, c, col.darkened(0.18 + maxf(-tint, 0.0)))
-
-## Triangle wound to face away from `centre`.
-func _tri_out(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, centre: Vector3, col: Color) -> void:
-	var n: Vector3 = (b - a).cross(c - a)
-	if n.dot((a + b + c) / 3.0 - centre) < 0.0:
-		var t: Vector3 = b
-		b = c
-		c = t
-		n = -n
-	var nn: Vector3 = n.normalized()
-	for v: Vector3 in [a, c, b]:
-		m.add(v, nn, col, PLAIN_UV, PLAIN_CELL)
 
 ## Horizontal concrete slab sticking out of a wall (top, underside, front edge).
 ## The street camera sees ledges from below, so only the ground-floor one gets a top face.

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Street dressing for every world chunk: EB electric poles with sagging overhead wires, TNEB
-distribution transformers, and roadside trees (rain trees, neem, Ashoka mast trees, copper-pod;
-coconut palms mainly by the beach).
+distribution transformers, and trees: both kerbs of wider roads and the city's parks (neem,
+two Ashoka variants, pungai; coconut palms mainly by the beach). Trees are drawn from the owner's
+models by scripts/world/StreetTrees.gd; the code in each "trees" item picks the model.
 
 Transformers: Chennai's pole-mounted distribution transformers stand on a double-pole (DP)
 structure in the EB pole line. A few poles (one per XFMR_SPACING metres at most, where the kerb
@@ -12,8 +13,9 @@ lightning arresters, drop wires, LT box and earthing and merges the baked tank
 (assets/models/city/eb_transformer.glb) into the chunk mesh.
 
 Placed along the real road graph on the kerb, kept out of junction mouths and building
-footprints. Written per chunk to data/world/dress/c_<i>_<j>.json and merged by the chunk
-streamer into the chunk's single building mesh (no extra draw calls).
+footprints. Written per chunk to data/world/dress/c_<i>_<j>.json. Poles, wires and transformers are
+merged by the chunk streamer into the chunk's single building mesh (no extra draw calls); trees
+go to StreetTrees (a fixed set of MultiMeshes, near model + far impostors).
 
 Re-run after an OSM rebuild:  python3 tools/osm/build_street_dressing.py
 """
@@ -29,7 +31,16 @@ WORLD = ROOT / "data" / "world"
 OUT = WORLD / "dress"
 
 POLE_STEP = {"primary": 34.0, "secondary": 34.0, "tertiary": 36.0, "residential": 38.0, "living_street": 40.0}
-TREE_STEP = {"primary": 26.0, "secondary": 24.0, "tertiary": 22.0, "residential": 20.0, "living_street": 22.0}
+# Nov 2 2026: about three times the old density (26/24/22/20/22 m) - the owner wanted more trees.
+TREE_STEP = {"primary": 12.0, "secondary": 11.0, "tertiary": 10.5, "residential": 10.0, "living_street": 11.0}
+TREE_CHANCE = 0.9      # share of steps that get a tree (driveways, gates, shop fronts take the rest)
+BOTH_KERBS_HALF = 4.0  # carriageway half-width from which the pole kerb gets trees too
+POLE_KERB_STEP = 1.4   # ... spaced this many TREE_STEPs apart
+FOOTPATH_PULL = 0.8    # where a building blocks the spot, try this much nearer the road (footpath)
+POLE_CLEAR = 4.5       # m between a tree on the pole kerb and the nearest EB pole
+PARK_STEP = 11.0       # m grid (jittered) for trees inside OSM parks
+PARK_CHANCE = 0.75
+PARK_ROAD_CLEAR = 3.0  # m from any carriageway
 JUNCTION_CLEAR = 11.0
 POLE_KERB = 0.55
 TREE_KERB = 1.7
@@ -44,11 +55,11 @@ PALM_ZONES = {"mylapore": 0.05}
 PALM_DEFAULT = 0.02
 PALM_BEACH = 0.3
 BEACH_PALM_M = 200.0
-# Non-palm mix: 0 rain/neem, 2 mast, 3 copperpod, 4 pungai, 5 gulmohar,
-# 6 Indian almond (naattu badam), 7 poovarasu (coastal Indian tulip tree).
-# These are visual design weights, not surveyed species counts.
-SPECIES = [(0, 0.25), (2, 0.15), (3, 0.12), (4, 0.20), (5, 0.08), (6, 0.16), (7, 0.04)]
-COASTAL_SPECIES = [(0, 0.18), (2, 0.11), (3, 0.10), (4, 0.17), (5, 0.06), (6, 0.16), (7, 0.22)]
+# Tree codes = tools/assets/bake_trees.py SPECIES: 0 neem, 1 coconut palm, 2 Ashoka (spreading),
+# 3 Ashoka (slim), 4 pungai. Codes 5-7 (procedural gulmohar, almond, poovarasu) are retired.
+# These are visual design weights, not surveyed species counts; pungai likes the coast.
+SPECIES = [(0, 0.34), (2, 0.20), (3, 0.20), (4, 0.26)]
+COASTAL_SPECIES = [(0, 0.25), (2, 0.15), (3, 0.15), (4, 0.45)]
 
 
 def point_in(px, pz, poly) -> bool:
@@ -105,9 +116,9 @@ def main() -> int:
     def species(x: float, z: float) -> int:
         coastal = near_beach(x, z)
         chance = PALM_BEACH if coastal else PALM_ZONES.get(zone_of(x, z), PALM_DEFAULT)
-        if rng.random() < chance:
+        if trng.random() < chance:
             return 1
-        r = rng.random()
+        r = trng.random()
         for kind, w in COASTAL_SPECIES if coastal else SPECIES:
             if r < w:
                 return kind
@@ -137,7 +148,16 @@ def main() -> int:
         return best
 
     rng = random.Random(600017)
+    trng = random.Random(600039)  # trees have their own stream
     out: dict = {}
+    pole_grid: dict = {}
+
+    def tree_item(x: float, z: float) -> list:
+        return [round(x, 2), round(z, 2), species(x, z), round(trng.uniform(0.8, 1.25), 2), trng.randrange(1000)]
+
+    def near_pole(x: float, z: float) -> bool:
+        return any(math.hypot(x - q[0], z - q[1]) < POLE_CLEAR
+                   for i in (-1, 0, 1) for j in (-1, 0, 1) for q in pole_grid.get((int(x // 40) + i, int(z // 40) + j), []))
 
     def put(kind: str, x: float, z: float, item: list) -> None:
         key = (math.floor(x / size), math.floor(z / size))
@@ -179,6 +199,7 @@ def main() -> int:
                 yaw = math.atan2(dx, dz)
                 item = [round(px, 2), round(pz, 2), round(yaw, 3)]
                 put("poles", px, pz, item)
+                pole_grid.setdefault((int(px // 40), int(pz // 40)), []).append((px, pz))
                 if cls in XFMR_CLASSES:
                     xfmr_cands.append((px, pz, yaw, lx, lz, dx, dz, item))
                 if prev is not None and math.dist(prev, (px, pz)) < step * 1.6:
@@ -187,21 +208,45 @@ def main() -> int:
             else:
                 prev = None
             s += step * rng.uniform(0.9, 1.1)
-        # Trees on the other kerb (and some on both on wide roads).
+        # Trees on the other kerb; on wider roads also on the pole kerb, clear of the poles.
         tstep = TREE_STEP[cls]
-        s = JUNCTION_CLEAR + rng.uniform(0, tstep)
-        while s <= length - JUNCTION_CLEAR:
-            x, z, dx, dz = at(s)
-            tside = -side if (half < 6.0 or rng.random() < 0.7) else side
-            lx, lz = dz * tside, -dx * tside
-            off = half + TREE_KERB + rng.uniform(0.0, 0.8)
-            tx, tz = x + lx * off, z + lz * off
-            if rng.random() < 0.8 and not blocked(tx, tz, 1.4):
-                put("trees", tx, tz, [round(tx, 2), round(tz, 2), species(tx, tz), round(rng.uniform(0.8, 1.25), 2),
-                                      rng.randrange(1000)])
-            s += tstep * rng.uniform(0.7, 1.3)
+        kerbs = [(-side, tstep)]
+        if half >= BOTH_KERBS_HALF:
+            kerbs.append((side, tstep * POLE_KERB_STEP))
+        for tside, step in kerbs:
+            s = JUNCTION_CLEAR + trng.uniform(0, step)
+            while s <= length - JUNCTION_CLEAR:
+                x, z, dx, dz = at(s)
+                lx, lz = dz * tside, -dx * tside
+                off = half + TREE_KERB + trng.uniform(0.0, 0.8)
+                tx, tz = x + lx * off, z + lz * off
+                if blocked(tx, tz, 1.4):
+                    tx, tz = tx - lx * FOOTPATH_PULL, tz - lz * FOOTPATH_PULL
+                if (trng.random() < TREE_CHANCE and not blocked(tx, tz, 0.9)
+                        and (tside == -side or not near_pole(tx, tz))):
+                    put("trees", tx, tz, tree_item(tx, tz))
+                s += step * trng.uniform(0.75, 1.25)
 
-    # Transformers: own RNG so the poles/trees above stay exactly as before.
+    # Park trees: a jittered grid inside every OSM park, off roads and buildings.
+    park_trees = 0
+    for poly in areas.get("park", []):
+        xs = [p[0] for p in poly]
+        zs = [p[1] for p in poly]
+        gx = min(xs)
+        while gx <= max(xs):
+            gz = min(zs)
+            while gz <= max(zs):
+                tx = gx + trng.uniform(-0.35, 0.35) * PARK_STEP
+                tz = gz + trng.uniform(-0.35, 0.35) * PARK_STEP
+                if (trng.random() < PARK_CHANCE and point_in(tx, tz, poly) and not blocked(tx, tz, 2.0)
+                        and road_gap(tx, tz) > PARK_ROAD_CLEAR):
+                    put("trees", tx, tz, tree_item(tx, tz))
+                    park_trees += 1
+                gz += PARK_STEP
+            gx += PARK_STEP
+    print(f"park trees: {park_trees}")
+
+    # Transformers: own RNG so the poles above stay exactly as before.
     xr = random.Random(600028)
     xr.shuffle(xfmr_cands)
     picked: list = []

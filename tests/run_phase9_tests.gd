@@ -696,8 +696,8 @@ func _test_city_props(s: WorldChunkStreamer) -> void:
 
 func _test_dressing(s: WorldChunkStreamer) -> void:
 	_check("Street dressing data exists for the loaded chunks", DirAccess.get_files_at("res://data/world/dress").size() > 400)
-	var almond_count: int = 0
-	var poovarasu_count: int = 0
+	var by_code: Dictionary = {}
+	var total: int = 0
 	for file_name: String in DirAccess.get_files_at("res://data/world/dress"):
 		if not file_name.ends_with(".json"):
 			continue
@@ -706,12 +706,53 @@ func _test_dressing(s: WorldChunkStreamer) -> void:
 			continue
 		var dress: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
 		for tree_data: Array in dress.get("trees", []):
-			if int(tree_data[2]) == 6:
-				almond_count += 1
-			elif int(tree_data[2]) == 7:
-				poovarasu_count += 1
-	_check("Indian almond and poovarasu are shipped throughout the map", almond_count > 1000 and poovarasu_count > 200,
-		"almond=%d, poovarasu=%d" % [almond_count, poovarasu_count])
+			by_code[int(tree_data[2])] = int(by_code.get(int(tree_data[2]), 0)) + 1
+			total += 1
+	# Nov 2: owner's models replaced the procedural trees, at about twice the old 11.2k.
+	_check("Street trees: > 20k city-wide", total > 20000, "%d" % total)
+	_check("Neem, both Ashoka variants and pungai each planted > 1000 times",
+		int(by_code.get(0, 0)) > 1000 and int(by_code.get(2, 0)) > 1000 and int(by_code.get(3, 0)) > 1000 and int(by_code.get(4, 0)) > 1000,
+		str(by_code))
+	_check("No retired procedural species codes (5-7) remain", not by_code.has(5) and not by_code.has(6) and not by_code.has(7), str(by_code))
+	_test_street_trees(s)
+
+## Trees draw from the owner's models through StreetTrees: a fixed set of world MultiMeshes
+## (one near model per species + one impostor batch), never a mesh or node per chunk.
+func _test_street_trees(s: WorldChunkStreamer) -> void:
+	var t: StreetTrees = s.trees
+	_check("StreetTrees exists with 5 species", t != null and t.species.size() == 5 and t.near_mmis.size() == 5)
+	if t == null:
+		return
+	var cam: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
+	t._dirty = true
+	t.update(cam)
+	_check("Loaded chunks register their trees", t.tree_count() > 100, "%d" % t.tree_count())
+	_check("Near models and far impostors both drawn", t.near_count > 0 and t.far_count > 0,
+		"near %d far %d" % [t.near_count, t.far_count])
+	_check("Every registered tree within range is drawn once", t.near_count + t.far_count <= t.tree_count())
+	var near_ok: bool = t.near_positions.size() == t.near_count
+	for p: Vector3 in t.near_positions:
+		if Vector2(p.x - cam.x, p.z - cam.z).length() > StreetTrees.NEAR_M + 0.5 or absf(p.y) > 1.0:
+			near_ok = false
+	_check("Near models only within NEAR_M, standing on the ground", near_ok, "%d near" % t.near_count)
+	var tex_ok: bool = true
+	for code: int in t.near_mmis:
+		var mat: StandardMaterial3D = (t.near_mmis[code] as MultiMeshInstance3D).material_override as StandardMaterial3D
+		tex_ok = tex_ok and mat != null and mat.albedo_texture != null and mat.metallic == 0.0
+	_check("Near trees: textured, matte, non-metal", tex_ok)
+	_check("Impostors never cast shadows", t.far_mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	var per_chunk: int = 0
+	for k: Vector2i in s.loaded:
+		for pattern: String in ["*Tree*", "*Palm*"]:
+			per_chunk += (s.loaded[k] as Node3D).find_children(pattern, "", true, false).size()
+	_check("No tree meshes or MultiMeshes inside chunks", per_chunk == 0, "%d" % per_chunk)
+	var tc: int = t.tree_count()
+	var some: Vector2i = s.loaded.keys()[0]
+	var saved: PackedFloat32Array = t._chunks.get(some, PackedFloat32Array())
+	t.remove_chunk(some)
+	_check("Unloading a chunk drops its trees", t.tree_count() == tc - saved.size() / StreetTrees.REC)
+	if not saved.is_empty():
+		t.add_chunk(some, saved)
 
 func _test_ambience(a: AmbienceAudio) -> void:
 	_check("City traffic bed is playing", a.players.has("city"))

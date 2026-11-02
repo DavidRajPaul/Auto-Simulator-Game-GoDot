@@ -5,7 +5,11 @@ extends SceneTree
 
 const CANDIDATES: PackedStringArray = [
     "res://assets/models/city/barricade/roadside_barricade.glb",
-    "res://assets/models/city/coconut_palm.glb",
+    "res://assets/models/city/trees/neem.glb",
+    "res://assets/models/city/trees/coconut_palm.glb",
+    "res://assets/models/city/trees/ashoka_a.glb",
+    "res://assets/models/city/trees/ashoka_b.glb",
+    "res://assets/models/city/trees/pungai.glb",
     "res://assets/models/city/lighthouse/chennai_lighthouse.glb",
     "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
     "res://assets/models/traffic/cars/bolero_police.glb",
