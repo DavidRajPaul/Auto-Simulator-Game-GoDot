@@ -250,12 +250,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if closing > best:
 			best = closing
 			best_i = i
-		var tangential: float = (v_rel + n * v_rel.dot(n)).length()
+		var tangential: float = (v_rel - n * v_rel.dot(n)).length()
 		if tangential > scrape_speed:
 			scrape_speed = tangential
 			scrape_pt = state.get_contact_collider_position(i)
 	if best_i >= 0 and best >= IMPACT_MIN_MPS and _impact_cooldown <= 0.0:
-		_impact_cooldown = IMPACT_COOLDOWN_S
+		_impact_cooldown = GameState.DAMAGE.damage_cooldown_s
 		_post_impact_t = POST_IMPACT_S
 		last_impact_mps = best
 		var collider: Object = state.get_contact_collider_object(best_i)
@@ -267,6 +267,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			kind = "prop"
 		SignalBus.player_collision.emit(best)
 		SignalBus.player_impact.emit({"speed_mps": best, "kind": kind, "point": state.get_contact_collider_position(best_i),
+			"local_point": state.transform.affine_inverse() * state.get_contact_collider_position(best_i),
 			"normal": state.get_contact_local_normal(best_i), "severity": clampf(best / IMPACT_HARD_MPS, 0.0, 1.0)})
 	var now_scraping: bool = scrape_speed >= SCRAPE_MIN_MPS and state.get_contact_count() > 0 and best_i >= 0
 	if now_scraping or _scraping:
@@ -363,6 +364,9 @@ func _physics_process(delta: float) -> void:
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)
 	var target_steer: float = steer_in * deg_to_rad(stats.max_steer_angle_deg) * speed_steer_factor
+	if use_player_profile and current_speed_kmh > 2.0:
+		var wear: Dictionary = GameState.damage_state()
+		target_steer += deg_to_rad(GameState.DAMAGE.steering_pull_deg) * float(wear["steering"]) / 100.0 * (1.0 if float(wear["right"]) >= float(wear["left"]) else -1.0)
 	current_steer_rad = move_toward(current_steer_rad, target_steer, stats.steer_response_speed * delta)
 	front_wheel_ray.rotation.y = current_steer_rad
 
@@ -400,7 +404,9 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	var offset: Vector3 = hit_pt - global_position
 	var pt_vel: Vector3 = linear_velocity + angular_velocity.cross(offset)
 	var stiffness: float = stats.front_spring_stiffness if is_front else stats.rear_spring_stiffness
-	var spring_f: float = maxf(0.0, compression * stiffness - hit_n.dot(pt_vel) * stats.spring_damping_coeff)
+	var wear: Dictionary = GameState.damage_state() if use_player_profile else {}
+	var damping: float = lerpf(1.0, GameState.DAMAGE.minimum_damping, float(wear.get("suspension", 0.0)) / 100.0)
+	var spring_f: float = maxf(0.0, compression * stiffness - hit_n.dot(pt_vel) * stats.spring_damping_coeff * damping)
 	apply_force(hit_n * spring_f, offset)
 
 	# Lateral tyre grip, capped by the normal load on this wheel.
@@ -408,7 +414,6 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	var w_fwd: Vector3 = -ray.global_transform.basis.z
 	var grip: float = stats.front_lateral_grip if is_front else stats.rear_lateral_grip
 	var lat_f: float = clampf((-w_right.dot(pt_vel) * grip / maxf(delta, 0.008)) * mass * 0.04, -spring_f, spring_f)
-	apply_force(w_right * lat_f, offset)
 
 	# Longitudinal: rear-wheel drive, brakes on all wheels, rolling resistance.
 	var wheel_fwd_speed: float = w_fwd.dot(pt_vel)
@@ -425,6 +430,13 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	if handbrake_on and not is_front:
 		long_f -= signf(wheel_fwd_speed) * minf(stats.handbrake_force_n * 0.5, absf(wheel_fwd_speed) * mass * 2.0)
 	# Drive/brake act at CoM height so throttle doesn't wheelie the trike.
+	if throttle_in > 0.01 and brake_in < 0.01:
+		long_f *= lerpf(1.0, GameState.DAMAGE.minimum_power, float(wear.get("engine", 0.0)) / 100.0)
+	# Combined traction circle: cornering consumes the grip available for acceleration/braking.
+	var load_limit: float = spring_f * GameState.DAMAGE.tyre_friction * lerpf(1.0, GameState.DAMAGE.minimum_grip, float(wear.get("tyres", 0.0)) / 100.0)
+	var tyre_force: Vector2 = Vector2(lat_f, long_f).limit_length(load_limit)
+	apply_force(w_right * tyre_force.x, offset)
+	long_f = tyre_force.y
 	var up: Vector3 = global_transform.basis.y
 	var com_global: Vector3 = global_transform.basis * center_of_mass
 	var long_offset: Vector3 = offset - up * (up.dot(offset) - up.dot(com_global))

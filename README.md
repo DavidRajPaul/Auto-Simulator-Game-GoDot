@@ -629,3 +629,13 @@ Code licence: TBD. Third-party assets are listed with their licences in [`assets
 ### Chennai architectural landmarks
 
 The landmark test pass improves Kapaleeshwarar gopuram reliefs in Mylapore, LIC, Vivekananda House and Napier Bridge, and adds architectural roof silhouettes to the existing OSM footprints of Santhome Basilica, Senate House and both Chepauk Palace buildings. See [landmark playtest route and limitations](docs/CHENNAI_ARCHITECTURE_AUDIT.md). These are procedural approximations, with device visual review still required.
+
+### P0 semi-realism test
+
+Collision damage now persists on individual panels and components, affects handling, and can
+be repaired in the garage. Tyre forces share a traction limit; nearby traffic has constrained
+mass-sensitive recoil. Scheduled ambulances use the existing pool with sirens, beacons and
+yielding. Denser roadside businesses and compound colliders reduce empty roadside space and
+building-gap shortcuts. See [APK test route, tuning and map limitations](docs/P0_PHYSICS_PLAYTEST.md).
+Compound data distinguishes OSM boundaries from inferred short separators; it is not a surveyed
+reproduction of every Chennai property. Weather, wind, birds and sunsets remain P1.

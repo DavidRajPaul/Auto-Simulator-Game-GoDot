@@ -5,6 +5,7 @@ shader_type spatial;
 render_mode unshaded, cull_back;
 
 uniform float rate = 1.6; // cycles per second
+uniform bool ambulance_colours = false;
 varying float side;
 
 void vertex() {
@@ -21,5 +22,6 @@ void fragment() {
 	float t = TIME * rate;
 	float on = side < 0.0 ? flashes(t) : flashes(t + 0.5);
 	vec3 lamp = COLOR.rgb;
+	if (ambulance_colours) { lamp = side < 0.0 ? vec3(1.0, 0.05, 0.02) : vec3(0.03, 0.2, 1.0); }
 	ALBEDO = lamp * mix(0.35, 2.4, clamp(on, 0.0, 1.0));
 }

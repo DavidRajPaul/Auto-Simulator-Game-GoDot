@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DamageTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/vehicles/DamageTuning.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+minimum_speed_mps = 1.2
+damage_per_speed_squared = 0.28
+maximum_damage = 40.0
+component_multiplier = 1.6
+minimum_power = 0.45
+minimum_grip = 0.65
+minimum_damping = 0.65
+steering_pull_deg = 2.0
+tyre_friction = 1.15
+damage_cooldown_s = 0.65

@@ -155,3 +155,6 @@ func apply(minute: float, rain: float) -> void:
 	var lights_on: bool = day < 0.55 or rain > 0.5
 	for n: Node in get_tree().get_nodes_in_group("headlight"):
 		(n as Light3D).visible = lights_on
+		if not n.has_meta("undamaged_energy"):
+			n.set_meta("undamaged_energy", (n as Light3D).light_energy)
+		(n as Light3D).light_energy = float(n.get_meta("undamaged_energy")) * lerpf(1.0, 0.25, float(GameState.damage_state()["lights"]) / 100.0)

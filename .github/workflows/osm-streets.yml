@@ -47,6 +47,7 @@ jobs:
           python3 tools/osm/build_world.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
+          python3 tools/osm/build_compounds.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"

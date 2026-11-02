@@ -38,6 +38,7 @@ var real_body: Node3D
 var uses_real_model: bool = false
 ## The repaint material on the textured body surface (null until the real model loads).
 var paint_material: ShaderMaterial
+var _damage_materials: Array[ShaderMaterial] = []
 
 func _ready() -> void:
 	build()
@@ -46,6 +47,7 @@ func g(h: float) -> float:
 	return GROUND_Y + h
 
 func build() -> void:
+	_damage_materials.clear()
 	if body_mesh != null:
 		body_mesh.queue_free()
 	var mesh: ArrayMesh = ArrayMesh.new()
@@ -132,9 +134,9 @@ func _attach_real_model() -> void:
 
 ## Swaps the textured body surface to the repaint shader (same textures) and sets the colours.
 ## Stock yellow keeps the file's own material, so the default auto looks exactly as imported.
-func _apply_paint_material() -> void:
+func _apply_paint_material(force_damage: bool = false) -> void:
 	paint_material = null
-	if real_body == null or is_stock_yellow():
+	if real_body == null or (is_stock_yellow() and not force_damage):
 		return
 	if not ResourceLoader.exists(PAINT_SHADER) or not ResourceLoader.exists(PAINT_MASK):
 		return
@@ -156,8 +158,22 @@ func _apply_paint_material() -> void:
 				mat.set_shader_parameter("has_orm", true)
 			mat.set_shader_parameter("body_colour", paint)
 			mat.set_shader_parameter("canopy_colour", trim)
+			mat.set_shader_parameter("stock_paint", is_stock_yellow())
+			mat.set_shader_parameter("mesh_centre", mi.mesh.get_aabb().get_center())
+			mat.set_shader_parameter("mesh_size", mi.mesh.get_aabb().size)
 			mi.set_surface_override_material(s, mat)
 			paint_material = mat
+			_damage_materials.append(mat)
+
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint() or real_body == null:
+		return
+	var wear: Dictionary = GameState.damage_state()
+	var panels: Vector4 = Vector4(float(wear["front"]), float(wear["rear"]), float(wear["left"]), float(wear["right"])) / 100.0
+	if _damage_materials.is_empty() and panels.length_squared() > 0.0:
+		_apply_paint_material(true)
+	for mat: ShaderMaterial in _damage_materials:
+		mat.set_shader_parameter("panel_damage", panels)
 
 func triangle_count() -> int:
 	var n: int = 0

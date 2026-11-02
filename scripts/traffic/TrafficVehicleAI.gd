@@ -157,6 +157,12 @@ var courtesy_timer: float = 0.0
 ## After the player hits us: stop dead, honk, then pull away (instead of a kinematic body
 ## bulldozing the auto). Seconds left.
 var bumped_timer: float = 0.0
+const PHYSICS: TrafficPhysics = preload("res://data/vehicles/traffic_physics.tres")
+var recoil_mps: float = 0.0
+var emergency_active: bool = false
+var _siren: AudioStreamPlayer3D
+var _emergency_bar: MeshInstance3D
+static var _siren_stream: AudioStreamWAV
 var _horn_timer: float = -1.0
 var _horn_dir: int = 0
 var _gap_seek_timer: float = 0.0
@@ -185,6 +191,7 @@ var _turn_lat_after: float = 0.0
 
 func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Material) -> void:
 	manager = owner_manager
+	collision_mask = 7 # road/buildings, player and traffic for swept recoil tests
 	archetype = kind
 	_mesh = $Body as MeshInstance3D
 	_shape = $Collision as CollisionShape3D
@@ -265,6 +272,8 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 		_route_board.rotation.y = PI # traffic faces -Z
 		_route_board.visibility_range_end = 60.0
 		add_child(_route_board)
+	if kind == Archetype.SERVICE:
+		_setup_emergency()
 	deactivate()
 
 ## Police light bar: a model surface whose material is named "Beacon" (bolero_police.glb) gets
@@ -301,6 +310,15 @@ func pick_service_variant(rng: RandomNumberGenerator) -> void:
 			pick = i
 			break
 	service_variant = pick
+	emergency_active = manager.claim_emergency()
+	if emergency_active:
+		pick = 4 # existing ambulance model; one service slot, no new moving bodies
+		service_variant = pick
+	_emergency_bar.visible = emergency_active
+	if emergency_active:
+		_siren.play()
+	else:
+		_siren.stop()
 	for i: int in _service_models.size():
 		if _service_models[i] != null:
 			_service_models[i].visible = i == pick
@@ -462,6 +480,10 @@ static func two_wheeler_variant(n: int) -> Array:
 	return TWO_WHEELER_VARIANTS[order[slot]]
 
 func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
+	_shape.disabled = true
+	bumped_timer = 0.0
+	recoil_mps = 0.0
+	courtesy_timer = 0.0
 	edge = edge_idx
 	dir = direction
 	t = travelled
@@ -471,6 +493,8 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	pick_service_variant(manager.rng)
 	var r: Vector2 = SPEED_RANGES_KMH[archetype]
 	cruise_speed_mps = randf_range(r.x, r.y) / 3.6
+	if emergency_active:
+		cruise_speed_mps = PHYSICS.emergency_speed_mps
 	current_speed_mps = cruise_speed_mps
 	_horn_timer = -1.0
 	_gap_seek_timer = randf() * 2.0
@@ -485,6 +509,12 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	_enable_collision_next_tick = true
 
 func deactivate() -> void:
+	emergency_active = false
+	recoil_mps = 0.0
+	bumped_timer = 0.0
+	if _siren != null:
+		_siren.stop()
+		_emergency_bar.visible = false
 	active = false
 	turning = false
 	visible = false
@@ -508,8 +538,11 @@ func reacts_to_horn(horn_tier: int) -> bool:
 func give_way(seconds: float) -> void:
 	courtesy_timer = maxf(courtesy_timer, seconds)
 
-func bumped(impact_mps: float) -> void:
+func bumped(impact_mps: float, push: Vector3 = Vector3.ZERO, player_mass: float = 365.0) -> void:
 	bumped_timer = clampf(1.5 + impact_mps * 0.35, 1.5, 4.5)
+	# Motion remains constrained to the road: the light bike yields farther than a bus.
+	# Swept primitive collision below prevents the recoil crossing another vehicle/wall.
+	recoil_mps = PHYSICS.recoil(archetype, impact_mps, player_mass) * push.dot(-global_basis.z)
 	current_speed_mps = 0.0
 	_horn_timer = -1.0
 
@@ -528,10 +561,20 @@ func tick(delta: float) -> void:
 	if _enable_collision_next_tick:
 		_enable_collision_next_tick = false
 		_shape.disabled = false
+		if emergency_active:
+			manager.emergency_cooldown = PHYSICS.emergency_interval_s
 	if bumped_timer > 0.0:
 		bumped_timer -= delta
 		current_speed_mps = 0.0
-		return # stands still (kinematic body stays put, no shove)
+		if not turning and absf(recoil_mps) > 0.01:
+			var motion: Vector3 = -global_basis.z * recoil_mps * delta
+			if not test_move(global_transform, motion):
+				t = clampf(t + recoil_mps * delta, 0.0, maxf(manager.graph.edges[edge].length - TURN_BLEND_M, 0.0))
+				_apply_transform()
+			else:
+				recoil_mps = 0.0
+			recoil_mps = move_toward(recoil_mps, 0.0, PHYSICS.recoil_deceleration * delta)
+		return
 	if _horn_timer >= 0.0:
 		_horn_timer -= delta
 		if _horn_timer < 0.0:
@@ -605,6 +648,40 @@ func tick(delta: float) -> void:
 	var target_lat: float = _kerb_lateral() if at_stop and stop_gap < 40.0 else manager.graph.sub_lane_offset(edge, dir, sub_lane)
 	lateral = move_toward(lateral, target_lat, LATERAL_SPEED_MPS * 2.0 * delta)
 	_apply_transform()
+
+func _setup_emergency() -> void:
+	_siren = AudioStreamPlayer3D.new()
+	_siren.max_distance = PHYSICS.emergency_range_m * 2.0
+	_siren.unit_size = 15.0
+	_siren.volume_db = -12.0
+	if _siren_stream == null:
+		var bytes: PackedByteArray = PackedByteArray()
+		var count: int = 44100
+		bytes.resize(count * 2)
+		var phase: float = 0.0
+		for i: int in count:
+			var seconds: float = float(i) / 22050.0
+			phase += TAU * (750.0 + 250.0 * sin(TAU * seconds * 0.5)) / 22050.0
+			bytes.encode_s16(i * 2, int(sin(phase) * 16000.0))
+		_siren_stream = AudioStreamWAV.new()
+		_siren_stream.format = AudioStreamWAV.FORMAT_16_BITS
+		_siren_stream.mix_rate = 22050
+		_siren_stream.data = bytes
+		_siren_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		_siren_stream.loop_end = count
+	_siren.stream = _siren_stream
+	add_child(_siren)
+	_emergency_bar = MeshInstance3D.new()
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(0.9, 0.14, 0.25)
+	_emergency_bar.mesh = box
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = BEACON_SHADER
+	mat.set_shader_parameter("ambulance_colours", true)
+	_emergency_bar.material_override = mat
+	_emergency_bar.position = Vector3(0.0, 2.28, -1.2)
+	_emergency_bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_emergency_bar)
 
 func _blend_before(length: float) -> float:
 	return minf(TURN_BLEND_M, length * 0.45)
