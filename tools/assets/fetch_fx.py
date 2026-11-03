@@ -37,6 +37,13 @@ WANT = {
     "puff_a": ("smoke", ("whitepuff", "white puff", "puff"), 0, 256),
     "puff_b": ("smoke", ("whitepuff", "white puff", "puff"), 8, 256),
     "puff_black": ("smoke", ("blackSmoke", "black"), 4, 256),
+    # Engine fire, wind and dust (Nov 3): exact file names from the Particle Pack, "=" = basename match.
+    "flame_tongue": ("particle", ("=flame_05.png",), 0, 256),  # licking flame tongue
+    "flame_body": ("particle", ("=flame_01.png",), 0, 256),    # soft flame mass under the smoke
+    "fire_embers": ("particle", ("=fire_01.png",), 0, 256),    # bright sparks rising off the fire
+    "wind_streak": ("particle", ("=trace_06.png",), 0, 256),   # long soft gust streak
+    "dust_puff": ("particle", ("=smoke_07.png",), 0, 256),     # soft dust cloud on the road
+    "dust_grit": ("particle", ("=dirt_02.png",), 0, 256),      # grit blown off the road
 }
 
 
@@ -60,30 +67,56 @@ def to_white_rgba(img: Image.Image, size: int) -> Image.Image:
     return out
 
 
+def match(z: zipfile.ZipFile, words: tuple[str, ...], nth: int) -> str | None:
+    if words[0].startswith("="):  # exact file name, whatever folder it sits in (e.g. PNG (Transparent)/)
+        exact = [n for n in z.namelist() if n.lower().endswith(".png") and n.split("/")[-1] == words[0][1:]]
+        return exact[0] if exact else None
+    cands = sorted(n for n in z.namelist() if n.lower().endswith(".png")
+                   and any(w.lower() in n.lower().replace("_", "").replace(" ", "") or w.lower() in n.lower() for w in words))
+    return cands[min(nth, len(cands) - 1)] if cands else None
+
+
 def main() -> int:
+    # --particle-zip / --smoke-zip: use a zip already downloaded (no network). --offline: never fetch,
+    # so only the zips given are read. --only a,b: write just those outputs (leaves the rest alone).
+    args = sys.argv[1:]
+    local: dict[str, str] = {}
+    for key in ZIPS:
+        if f"--{key}-zip" in args:
+            local[key] = args[args.index(f"--{key}-zip") + 1]
+    offline = "--offline" in args
+    only = set(args[args.index("--only") + 1].split(",")) if "--only" in args else None
     OUT.mkdir(parents=True, exist_ok=True)
-    zips = {}
-    manifest = []
+    zips: dict[str, zipfile.ZipFile] = {}
+    loaded: set[str] = set()
     for key, url in ZIPS.items():
         try:
-            zips[key] = fetch(url)
+            if key in local:
+                zips[key] = zipfile.ZipFile(local[key])
+            elif not offline:
+                zips[key] = fetch(url)
+            else:
+                continue
+            loaded.add(key)
             names = [n for n in zips[key].namelist() if n.lower().endswith(".png")]
-            manifest += [f"{key}: {n}" for n in names]
             print(f"OK   {key}: {len(names)} pngs")
         except Exception as e:  # noqa: BLE001
             print(f"FAIL {key}: {e}")
-    (OUT / "MANIFEST.txt").write_text("\n".join(manifest) + "\n")
+    # MANIFEST lists what each zip held: keep the lines of zips this run did not open.
+    mf = OUT / "MANIFEST.txt"
+    kept = [ln for ln in (mf.read_text().splitlines() if mf.exists() else [])
+            if ln.split(":")[0] not in loaded]
+    manifest = kept + [f"{key}: {n}" for key in loaded for n in zips[key].namelist() if n.lower().endswith(".png")]
+    mf.write_text("\n".join(manifest) + "\n")
     got = 0
     for out, (key, words, nth, size) in WANT.items():
         z = zips.get(key)
-        if z is None:
+        if z is None or (only is not None and out not in only):
             continue
-        cands = sorted(n for n in z.namelist() if n.lower().endswith(".png")
-                       and any(w.lower() in n.lower().replace("_", "").replace(" ", "") or w.lower() in n.lower() for w in words))
-        if not cands:
+        src = match(z, words, nth)
+        if src is None:
             print(f"MISS {out}: no {words} in {key}")
             continue
-        src = cands[min(nth, len(cands) - 1)]
         img = to_white_rgba(Image.open(io.BytesIO(z.read(src))), size)
         img.save(OUT / f"{out}.png", optimize=True)
         got += 1

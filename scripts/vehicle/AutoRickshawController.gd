@@ -122,6 +122,9 @@ func _ready() -> void:
 		var fx: DamageFX = DamageFX.new()
 		fx.name = "DamageFX"
 		add_child(fx)
+		var wind: WindDustFX = WindDustFX.new()
+		wind.name = "WindDustFX"
+		add_child(wind)
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
 	SignalBus.police_intercept_requested.connect(_on_police_intercept)
 	SignalBus.passenger_boarded.connect(_on_passenger_boarded)

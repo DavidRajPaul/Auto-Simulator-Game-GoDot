@@ -126,7 +126,7 @@ Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/peop
 
 ### ✨ FX — `assets/fx/` (232 KB)
 
-`smoke_a/b/c`, `puff_a/b`, `puff_black`, `dirt_a/b`, `spark_streak`, `flare`, `scorch.png` — impact sparks, dust and smoke (`CollisionFX.gd`; the future damage smoke will reuse them). Kenney *Particle Pack* + *Smoke Particle Assets*, CC0 (`CREDITS_fx.md`, `MANIFEST.txt`).
+`smoke_a/b/c`, `puff_a/b`, `puff_black`, `dirt_a/b`, `spark_streak`, `flare`, `scorch.png` — impact sparks, dust and smoke (`CollisionFX.gd`). Nov 3 additions from the Particle Pack, same CC0 licence: `flame_tongue`, `flame_body`, `fire_embers` (engine fire, `DamageFX.gd`), `wind_streak`, `dust_puff`, `dust_grit` (wind gusts and road dust, `WindDustFX.gd`). Kenney *Particle Pack* + *Smoke Particle Assets*, CC0 (`CREDITS_fx.md`, `MANIFEST.txt`). Regenerate the Pack ones offline with `python3 tools/assets/fetch_fx.py --particle-zip <Particle Pack zip> --offline --only flame_tongue,flame_body,fire_embers,wind_streak,dust_puff,dust_grit`.
 
 ### 🧱 Textures — `assets/textures/` (148 KB)
 
