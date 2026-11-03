@@ -17,6 +17,97 @@ func hit(speed: float, point: Vector3) -> void:
 	SignalBus.player_collision.emit(speed)
 	SignalBus.player_impact.emit({"speed_mps": speed, "local_point": point})
 
+## Nov 3: visible damage (dents, mirrors, windshield, smoke -> fire, wreck + rewarded repair).
+func _visible_damage(main: Node, model: AutoRickshawModel, auto: RigidBody3D) -> void:
+	GameState.repair_free()
+	auto.linear_velocity = Vector3.ZERO
+	auto.angular_velocity = Vector3.ZERO
+	await get_tree().physics_frame
+	check("Player auto carries baked part ids (mirrors, windshield)", model._body_mi != null and model.glass_material != null)
+	var arrays: Array = model._body_mi.mesh.surface_get_arrays(0)
+	var ids: Dictionary = {}
+	for v: Vector2 in (arrays[Mesh.ARRAY_TEX_UV2] as PackedVector2Array):
+		ids[roundi(v.x)] = true
+	check("Body mesh tags both mirrors and the headlamp", ids.has(1) and ids.has(2) and ids.has(5))
+	check("Mirror debris is pre-built (no instantiate on break)", model._debris.size() == 2)
+	# A hard hit on the nose: a dent where it hit, a cracked windshield.
+	var nose: Vector3 = auto.global_transform * Vector3(0.15, 0.2, -1.3)
+	SignalBus.player_collision.emit(7.0)
+	SignalBus.player_impact.emit({"speed_mps": 7.0, "point": nose, "local_point": Vector3(0.15, 0.2, -1.3)})
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var dents: Array = GameState.marks()["dents"]
+	check("Front hit leaves a dent on the body", dents.size() == 1 and float((dents[0] as Array)[3]) > 0.0)
+	check("Dent reaches the body shader", int(model.paint_material.get_shader_parameter("dent_count")) == 1)
+	check("Front hit cracks the windshield", float(model.glass_material.get_shader_parameter("crack")) > 0.0)
+	# A hard side hit on the left snaps the left mirror; the right one stays.
+	SignalBus.player_impact.emit({"speed_mps": 8.0, "point": auto.global_transform * Vector3(-0.7, 0.4, 0.0), "local_point": Vector3(-0.7, 0.4, 0.0)})
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check("Hard left hit breaks the left mirror only", bool(model.paint_material.get_shader_parameter("mirror_l_broken")) and not bool(model.paint_material.get_shader_parameter("mirror_r_broken")))
+	check("Broken mirror falls off as debris", (model._debris[AutoRickshawModel.PART_MIRROR_L] as RigidBody3D).visible)
+	# Smoke builds with the damage, then fire.
+	var fx: DamageFX = auto.get_node("DamageFX") as DamageFX
+	check("Smoke stages grow then catch fire", DamageFX.stage_for(0.2, false) == 0 and DamageFX.stage_for(0.4, false) == 1
+		and DamageFX.stage_for(0.7, false) == 2 and DamageFX.stage_for(0.85, false) == 3 and DamageFX.stage_for(0.9, false) == 4 and DamageFX.stage_for(1.0, true) == 5)
+	GameState.condition = 55.0
+	SignalBus.condition_changed.emit(GameState.condition)
+	check("Light damage: light smoke, no fire", fx.smoke.emitting and not fx.fire.emitting and fx.stage == 1)
+	GameState.condition = 8.0
+	SignalBus.condition_changed.emit(GameState.condition)
+	check("Near wrecked: black smoke and fire", fx.smoke.emitting and fx.fire.emitting and fx.glow.visible)
+	# Fire is flame tongues over a flame body, with sparks; the Kenney sprites are shipped.
+	check("Fire has tongues, body and sparks", fx.fire.emitting and fx.flame_body.emitting and fx.embers.emitting
+		and fx.fire.amount > fx.flame_body.amount and fx.embers.amount > 0)
+	check("Fire sprites ship with the game", ["flame_tongue", "flame_body", "fire_embers", "wind_streak", "dust_puff", "dust_grit"].all(
+		func(n: String) -> bool: return ResourceLoader.exists("res://assets/fx/%s.png" % n)))
+	# Wind and road dust: a child of the auto, idle until a gust; no dust trail while parked.
+	var wind: WindDustFX = auto.get_node("WindDustFX") as WindDustFX
+	check("Wind gusts run on the player auto, not in the rain", wind != null and not wind._trail.emitting)
+	wind._gust_left_s = 0.0
+	wind._wait_s = 0.0
+	wind._process(0.016)
+	check("A gust starts ahead of the auto and lasts a few seconds", wind._streaks.emitting and wind._gust_left_s > 2.0
+		and wind._streaks.position.z < 0.0)
+	wind._stop_gust()
+	# Wrecked: engine dead, the wreck signal fires, the free repair is a rewarded placement.
+	var wrecked_seen: Array[bool] = []
+	var on_wreck: Callable = func(w: bool) -> void: wrecked_seen.append(w)
+	SignalBus.vehicle_wrecked.connect(on_wreck)
+	SignalBus.player_collision.emit(12.0)
+	check("Crash to 0 % wrecks the auto", GameState.is_wrecked() and wrecked_seen.has(true))
+	var start: Vector3 = auto.global_position
+	Input.action_press("accelerate")
+	for i: int in 90:
+		await get_tree().physics_frame
+	Input.action_release("accelerate")
+	check("Wrecked auto has no engine power", auto.global_position.distance_to(start) < 1.0)
+	check("Free wreck repair is an opt-in rewarded placement",
+		AdMonetizationManager.config.rewarded_enabled_placements.has("ad_wreck_repair") and RewardsEngine.DAILY_CAPS.has("ad_wreck_repair"))
+	SignalBus.rewarded_ad_completed.emit("ad_wreck_repair", {})
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check("Watched ad repairs everything", GameState.condition == 100.0 and not GameState.is_wrecked() and wrecked_seen.has(false)
+		and (GameState.marks()["dents"] as Array).is_empty() and float(GameState.damage_state()["mirror_l"]) == 0.0)
+	check("Repaired auto: mirrors back, glass clear, fire out", not bool(model.paint_material.get_shader_parameter("mirror_l_broken"))
+		and float(model.glass_material.get_shader_parameter("crack")) == 0.0 and not fx.fire.emitting)
+	# No money and no ad left: the patch-up gets the auto moving again.
+	SignalBus.player_collision.emit(14.0)
+	SignalBus.player_collision.emit(14.0)
+	SignalBus.player_collision.emit(14.0)
+	GameState.patch_up()
+	check("Patch-up un-wrecks at low condition", not GameState.is_wrecked() and GameState.condition == GameState.PATCH_UP_CONDITION)
+	# Dents survive a save and fade with a paid repair.
+	GameState.add_dent(Vector3(30, 80, 118), 0.8)
+	var saved: Dictionary = GameState.to_dict()
+	GameState.from_dict(saved)
+	check("Dents are saved", (GameState.marks()["dents"] as Array).size() == 1)
+	GameState.wallet_inr = 100000
+	GameState.repair()
+	check("Full paid repair removes dents", (GameState.marks()["dents"] as Array).is_empty())
+	SignalBus.vehicle_wrecked.disconnect(on_wreck)
+	GameState.repair_free()
+
 func _run() -> void:
 	GameState.reset_profile()
 	check("Parking contacts do not damage", GameState.DAMAGE.points(0.6) == 0.0)
@@ -96,6 +187,7 @@ func _run() -> void:
 	var moved: Vector3 = auto.global_position - start.origin
 	check("Worn steering still drives straight on throttle alone (%.2f m sideways in %.0f m)" % [moved.dot(start.basis.x), moved.dot(-start.basis.z)],
 		absf(moved.dot(start.basis.x)) < 0.5 and moved.dot(-start.basis.z) > 20.0)
+	await _visible_damage(main, model, auto)
 	var stream: WorldChunkStreamer = WorldChunkStreamer.new()
 	stream.chunk_size = 250.0
 	var walls: Array = [[2.0, 2.0, 12.0, 2.0, 1.65, 0.22, "osm", 1]]

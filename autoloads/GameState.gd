@@ -80,6 +80,13 @@ var condition: float = 100.0
 const DAMAGE: DamageTuning = preload("res://data/vehicles/damage.tres")
 ## Per-vehicle wear; zero is pristine. Old saves start with no component faults.
 var component_damage: Dictionary = {}
+## Visible crash marks per vehicle (AutoRickshawModel draws them): {"dents": [[x, y, z, strength], ...]
+## in the auto mesh's space (cm), "crack": [x, y] windshield crack origin}. Saved; repair fades them.
+var damage_marks: Dictionary = {}
+const MAX_DENTS: int = 8
+## A side hit this strong (damage points) snaps that mirror; side wear above this does too.
+const MIRROR_BREAK_POINTS: float = 10.0
+const MIRROR_BREAK_WEAR: float = 45.0
 
 var day: int = 1
 var shift_minute: float = SHIFT_START_MIN
@@ -272,6 +279,11 @@ func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
 			if str(g["refused"]) == "":
 				fuel_level = maxf(fuel_level, s.fuel_capacity * 0.5)
 				SignalBus.refueled.emit(fuel_level)
+		"ad_wreck_repair":
+			# Placeholder until real ads: the mock provider shows a fake ad, then this runs.
+			var g3: Dictionary = grant_reward(placement, 0, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			if str(g3["refused"]) == "":
+				repair_free()
 		"ad_tow":
 			# Credit the tow fee, then tow: the ad makes the tow free.
 			var g2: Dictionary = grant_reward(placement, ServicePoints.TOW_COST_INR, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
@@ -425,10 +437,22 @@ func repair() -> bool:
 		return false
 	spend(pay)
 	var fraction: float = minf(1.0, float(pay) / maxf(float(repair_cost()), 1.0))
+	var was_wrecked: bool = is_wrecked()
 	var wear: Dictionary = damage_state()
 	for key: String in wear:
 		wear[key] = float(wear[key]) * (1.0 - fraction)
+	# Dents fade with the paid share; a full repair leaves none (mirrors/glass follow their wear:
+	# below 50 % a mirror is back, and the windshield crack shrinks with "glass").
+	var kept: Array = []
+	for q: Array in marks()["dents"]:
+		var w: float = float(q[3]) * (1.0 - fraction)
+		if w > 0.05:
+			kept.append([q[0], q[1], q[2], w])
+	marks()["dents"] = kept
 	condition = minf(100.0, condition + float(pay) / REPAIR_COST_PER_POINT)
+	SignalBus.damage_changed.emit()
+	if was_wrecked and not is_wrecked():
+		SignalBus.vehicle_wrecked.emit(false)
 	day_stats["repairs"] = int(day_stats["repairs"]) + pay
 	SignalBus.condition_changed.emit(condition)
 	_loadout_changed()
@@ -459,17 +483,101 @@ func _on_collision(impulse: float) -> void:
 	var previous: float = condition
 	condition = maxf(floor_c, condition - DAMAGE.points(impulse))
 	SignalBus.condition_changed.emit(condition)
+	if is_wrecked() and previous > 0.0:
+		SignalBus.vehicle_wrecked.emit(true)
 	if condition < 40.0 and previous >= 40.0:
 		_loadout_changed() # crossed into "worn out"
+
+## Condition 0: the engine is dead and the auto burns until it is repaired or towed.
+func is_wrecked() -> bool:
+	return condition <= 0.0 and not tutorial_active
+
+## 0 (fine) .. 1 (wrecked): drives the smoke, then the fire (DamageFX).
+func damage_severity() -> float:
+	return clampf(1.0 - condition / 100.0, 0.0, 1.0)
+
+func marks() -> Dictionary:
+	if not damage_marks.has(active_vehicle):
+		damage_marks[active_vehicle] = {"dents": [], "crack": [0.0, 136.0]}
+	return damage_marks[active_vehicle] as Dictionary
+
+## A dent at `p` (auto mesh space). Close to an existing dent it deepens that one instead.
+func add_dent(p: Vector3, strength: float) -> void:
+	if tutorial_active or strength <= 0.0 or not p.is_finite():
+		return
+	var dents: Array = marks()["dents"]
+	var best: int = -1
+	var best_d: float = INF
+	for i: int in dents.size():
+		var q: Array = dents[i]
+		var d: float = p.distance_to(Vector3(float(q[0]), float(q[1]), float(q[2])))
+		if d < best_d:
+			best_d = d
+			best = i
+	if best >= 0 and (best_d < 18.0 or dents.size() >= MAX_DENTS):
+		var q2: Array = dents[best]
+		q2[3] = minf(1.0, float(q2[3]) + strength * 0.7)
+	else:
+		dents.append([p.x, p.y, p.z, clampf(strength, 0.0, 1.0)])
+	SignalBus.damage_changed.emit()
+
+func set_crack_origin(x: float, y: float) -> void:
+	if tutorial_active or not is_finite(x) or not is_finite(y):
+		return
+	if float(damage_state()["glass"]) < 1.0:
+		marks()["crack"] = [x, y]
+
+## Last resort when the wallet is empty and no ad is available: the mechanic gets a wrecked auto
+## running again at PATCH_UP_CONDITION (still smoking), so the player is never stuck.
+const PATCH_UP_CONDITION: float = 15.0
+
+func patch_up() -> void:
+	if not is_wrecked():
+		return
+	condition = PATCH_UP_CONDITION
+	SignalBus.condition_changed.emit(condition)
+	SignalBus.damage_changed.emit()
+	SignalBus.vehicle_wrecked.emit(false)
+
+## The rewarded "free repair" for a wrecked auto: everything back to new.
+func repair_free() -> void:
+	var was_wrecked: bool = is_wrecked()
+	component_damage[active_vehicle] = clean_damage({})
+	damage_marks.erase(active_vehicle)
+	condition = 100.0
+	SignalBus.condition_changed.emit(condition)
+	SignalBus.damage_changed.emit()
+	if was_wrecked:
+		SignalBus.vehicle_wrecked.emit(false)
+	_loadout_changed()
 
 func damage_state() -> Dictionary:
 	if not component_damage.has(active_vehicle):
 		component_damage[active_vehicle] = clean_damage({})
 	return component_damage[active_vehicle] as Dictionary
 
+## Validates saved marks: at most MAX_DENTS finite dents with strength 0..1, a finite crack origin.
+func clean_marks(raw: Variant) -> Dictionary:
+	var out: Dictionary = {"dents": [], "crack": [0.0, 136.0]}
+	if not raw is Dictionary:
+		return out
+	var dents: Variant = (raw as Dictionary).get("dents", [])
+	if dents is Array:
+		for q: Variant in dents:
+			if q is Array and (q as Array).size() == 4:
+				var a: Array = q
+				var v: Vector4 = Vector4(float(a[0]), float(a[1]), float(a[2]), float(a[3]))
+				if v.is_finite() and (out["dents"] as Array).size() < MAX_DENTS:
+					(out["dents"] as Array).append([v.x, v.y, v.z, clampf(v.w, 0.0, 1.0)])
+	var c: Variant = (raw as Dictionary).get("crack", [])
+	if c is Array and (c as Array).size() == 2 and is_finite(float((c as Array)[0])) and is_finite(float((c as Array)[1])):
+		out["crack"] = [float((c as Array)[0]), float((c as Array)[1])]
+	return out
+
 func clean_damage(raw: Dictionary) -> Dictionary:
 	var result: Dictionary = {}
-	for key: String in ["front", "rear", "left", "right", "engine", "steering", "suspension", "tyres", "lights"]:
+	for key: String in ["front", "rear", "left", "right", "engine", "steering", "suspension", "tyres", "lights",
+			"mirror_l", "mirror_r", "glass"]:
 		var value: float = float(raw.get(key, 0.0))
 		result[key] = clampf(value, 0.0, 100.0) if is_finite(value) else 0.0
 	return result
@@ -486,6 +594,14 @@ func _on_component_impact(info: Dictionary) -> void:
 	wear[mechanical] = minf(100.0, float(wear[mechanical]) + amount)
 	wear["tyres"] = minf(100.0, float(wear["tyres"]) + amount * 0.25)
 	wear["lights"] = minf(100.0, float(wear["lights"]) + amount * (0.7 if zone == "front" else 0.1))
+	if zone == "front":
+		wear["glass"] = minf(100.0, float(wear["glass"]) + amount * 1.2)
+	# Side hits snap the mirror on that side (game -X = the auto's left).
+	if zone == "left" and (amount >= MIRROR_BREAK_POINTS or float(wear["left"]) >= MIRROR_BREAK_WEAR):
+		wear["mirror_l"] = 100.0
+	if zone == "right" and (amount >= MIRROR_BREAK_POINTS or float(wear["right"]) >= MIRROR_BREAK_WEAR):
+		wear["mirror_r"] = 100.0
+	SignalBus.damage_changed.emit()
 
 # --- Shift clock ------------------------------------------------------------------------
 
@@ -601,7 +717,7 @@ func to_dict() -> Dictionary:
 		"version": SAVE_VERSION, "wallet": wallet_inr, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
-		"fuel": fuel_level, "condition": condition, "damage": component_damage.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
+		"fuel": fuel_level, "condition": condition, "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
 		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
 		"rewards": rewards.to_dict(), "no_ads": no_ads,
 	}
@@ -625,6 +741,11 @@ func from_dict(d: Dictionary) -> void:
 	component_damage = (d.get("damage", {}) as Dictionary).duplicate(true)
 	for vehicle: String in component_damage:
 		component_damage[vehicle] = clean_damage(component_damage[vehicle] as Dictionary)
+	damage_marks = {}
+	var raw_marks: Variant = d.get("marks", {})
+	if raw_marks is Dictionary:
+		for vehicle: String in raw_marks:
+			damage_marks[vehicle] = clean_marks(raw_marks[vehicle])
 	day = int(d.get("day", 1))
 	shift_minute = float(d.get("minute", SHIFT_START_MIN))
 	day_stats = d.get("day_stats", day_stats)

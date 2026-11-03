@@ -118,6 +118,13 @@ func _ready() -> void:
 	_apply_mass()
 	_setup_wheel_rays()
 	_setup_wheel_splashes()
+	if use_player_profile:
+		var fx: DamageFX = DamageFX.new()
+		fx.name = "DamageFX"
+		add_child(fx)
+		var wind: WindDustFX = WindDustFX.new()
+		wind.name = "WindDustFX"
+		add_child(wind)
 	SignalBus.water_depth_changed.connect(_on_water_depth_changed)
 	SignalBus.police_intercept_requested.connect(_on_police_intercept)
 	SignalBus.passenger_boarded.connect(_on_passenger_boarded)
@@ -360,6 +367,9 @@ func _physics_process(delta: float) -> void:
 		handbrake_on = true
 
 	if fuel_level <= 0.0:
+		throttle_in = 0.0
+	# Wrecked (condition 0): the engine is dead and burning until it is repaired or towed.
+	if use_player_profile and GameState.is_wrecked():
 		throttle_in = 0.0
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)

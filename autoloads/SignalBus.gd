@@ -117,6 +117,10 @@ signal vehicle_loadout_changed(stats: VehicleStats)
 signal fuel_changed(level: float, capacity: float)
 signal refueled(level: float)
 signal condition_changed(condition: float)
+## Visible damage changed (dents, mirrors, glass, wear) — AutoRickshawModel refreshes its shaders.
+signal damage_changed
+## Condition reached 0 (true) or the wreck was repaired (false). Engine dead, fire, wreck panel.
+signal vehicle_wrecked(wrecked: bool)
 ## kind: "lpg", "ev", "garage". info: {id, name, kind}. Fired when stopped at a service point.
 signal service_available(kind: String, info: Dictionary)
 signal service_unavailable()

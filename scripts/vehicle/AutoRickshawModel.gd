@@ -17,6 +17,11 @@ const GROUND_Y: float = -0.745
 const REAL_MODEL: String = "res://assets/models/vehicles/player_auto.glb"
 const PAINT_SHADER: String = "res://shaders/auto_paint.gdshader"
 const PAINT_MASK: String = "res://assets/models/vehicles/player_auto_paint_mask.png"
+const GLASS_SHADER: String = "res://shaders/auto_glass.gdshader"
+## Part ids baked into UV2.x by tools/assets/bake_auto_parts.py.
+const PART_MIRROR_L: int = 1
+const PART_MIRROR_R: int = 2
+const LAMP_BREAK_WEAR: float = 70.0
 const REAL_SIZE: Vector3 = Vector3(1.3, 1.75, 2.6)
 ## The driver is the owner's hero (namma_auto_hero.glb) baked once into a static seated pose by
 ## tools/assets/bake_seated_hero.py: one mesh, one material (the animated file is 33 parts =
@@ -38,10 +43,26 @@ var real_body: Node3D
 var uses_real_model: bool = false
 ## The repaint material on the textured body surface (null until the real model loads).
 var paint_material: ShaderMaterial
+## The glass shader (windshield crack, mirror glass); null until the real model loads.
+var glass_material: ShaderMaterial
 var _damage_materials: Array[ShaderMaterial] = []
+var _body_mi: MeshInstance3D
+var _damage_dirty: bool = false
+var _mirror_was_broken: Dictionary = {} # part -> bool
+var _debris: Dictionary = {} # part -> RigidBody3D
+## True for the auto the player drives (crashes dent it, mirrors fall off); false in menus/garage.
+var _live: bool = false
 
 func _ready() -> void:
 	build()
+	if Engine.is_editor_hint():
+		return
+	SignalBus.damage_changed.connect(func() -> void: _damage_dirty = true)
+	var ctrl: AutoRickshawController = get_parent() as AutoRickshawController
+	_live = ctrl != null and ctrl.use_player_profile
+	if _live:
+		SignalBus.player_impact.connect(_on_player_impact)
+		_build_mirror_debris()
 
 func g(h: float) -> float:
 	return GROUND_Y + h
@@ -132,19 +153,31 @@ func _attach_real_model() -> void:
 	else:
 		holder.queue_free()
 
-## Swaps the textured body surface to the repaint shader (same textures) and sets the colours.
-## Stock yellow keeps the file's own material, so the default auto looks exactly as imported.
-func _apply_paint_material(force_damage: bool = false) -> void:
+## Swaps the textured body surface to the repaint shader (same textures, stock yellow keeps the
+## texture's own colours) and the glass to the glass shader. Both draw the visible crash damage
+## (dents, broken mirrors, cracked windshield, smashed headlamp) from GameState, so they are always
+## on: with no damage they look exactly like the file's own materials. `_force` is kept for callers.
+func _apply_paint_material(_force: bool = false) -> void:
 	paint_material = null
-	if real_body == null or (is_stock_yellow() and not force_damage):
-		return
-	if not ResourceLoader.exists(PAINT_SHADER) or not ResourceLoader.exists(PAINT_MASK):
+	glass_material = null
+	_damage_materials.clear()
+	_body_mi = null
+	if real_body == null or not ResourceLoader.exists(PAINT_SHADER) or not ResourceLoader.exists(PAINT_MASK):
 		return
 	for node: Node in real_body.find_children("*", "MeshInstance3D", true, false):
 		var mi: MeshInstance3D = node as MeshInstance3D
 		for s: int in mi.mesh.get_surface_count():
 			var src: StandardMaterial3D = mi.get_active_material(s) as StandardMaterial3D
-			if src == null or src.albedo_texture == null:
+			if src == null:
+				continue
+			if src.albedo_texture == null:
+				if src.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED and ResourceLoader.exists(GLASS_SHADER):
+					var gm: ShaderMaterial = ShaderMaterial.new()
+					gm.shader = load(GLASS_SHADER) as Shader
+					gm.set_shader_parameter("glass_colour", src.albedo_color)
+					gm.set_shader_parameter("roughness", src.roughness)
+					mi.set_surface_override_material(s, gm)
+					glass_material = gm
 				continue
 			var mat: ShaderMaterial = ShaderMaterial.new()
 			mat.shader = load(PAINT_SHADER) as Shader
@@ -167,16 +200,156 @@ func _apply_paint_material(force_damage: bool = false) -> void:
 			mi.set_surface_override_material(s, mat)
 			paint_material = mat
 			_damage_materials.append(mat)
+			_body_mi = mi
+	_mirror_was_broken = {}
+	_refresh_damage()
 
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint() or real_body == null:
 		return
+	if _damage_dirty:
+		_damage_dirty = false
+		_refresh_damage()
+
+## Pushes GameState's damage into the shaders (on SignalBus.damage_changed, deferred one frame so
+## GameState and this model have both handled the same impact).
+func _refresh_damage() -> void:
+	if real_body == null:
+		return
 	var wear: Dictionary = GameState.damage_state()
+	var marks: Dictionary = GameState.marks()
 	var panels: Vector4 = Vector4(float(wear["front"]), float(wear["rear"]), float(wear["left"]), float(wear["right"])) / 100.0
-	if _damage_materials.is_empty() and panels.length_squared() > 0.0:
-		_apply_paint_material(true)
+	var dents: Array = marks.get("dents", [])
+	var packed: Array[Vector4] = []
+	for q: Array in dents:
+		packed.append(Vector4(float(q[0]), float(q[1]), float(q[2]), float(q[3])))
+	while packed.size() < GameState.MAX_DENTS:
+		packed.append(Vector4.ZERO)
+	var broken_l: bool = float(wear["mirror_l"]) >= 50.0
+	var broken_r: bool = float(wear["mirror_r"]) >= 50.0
 	for mat: ShaderMaterial in _damage_materials:
 		mat.set_shader_parameter("panel_damage", panels)
+		mat.set_shader_parameter("dents", packed)
+		mat.set_shader_parameter("dent_count", mini(dents.size(), GameState.MAX_DENTS))
+		mat.set_shader_parameter("mirror_l_broken", broken_l)
+		mat.set_shader_parameter("mirror_r_broken", broken_r)
+		mat.set_shader_parameter("lamp_broken", 1.0 if float(wear["lights"]) >= LAMP_BREAK_WEAR else 0.0)
+	if glass_material != null:
+		var c: Array = marks.get("crack", [0.0, 136.0])
+		glass_material.set_shader_parameter("crack", float(wear["glass"]) / 100.0)
+		glass_material.set_shader_parameter("crack_origin", Vector2(float(c[0]), float(c[1])))
+		glass_material.set_shader_parameter("mirror_l_broken", broken_l)
+		glass_material.set_shader_parameter("mirror_r_broken", broken_r)
+	# A mirror that just broke falls off (only on the live player auto, never in menus/garage).
+	for part: int in [PART_MIRROR_L, PART_MIRROR_R]:
+		var now: bool = broken_l if part == PART_MIRROR_L else broken_r
+		if now and _mirror_was_broken.has(part) and not bool(_mirror_was_broken[part]) and _live:
+			_drop_mirror(part)
+		_mirror_was_broken[part] = now
+
+## The player's crash, in this model's mesh space: a dent where it hit, the windshield crack
+## origin for front hits. GameState handles the wear itself.
+func _on_player_impact(info: Dictionary) -> void:
+	if _body_mi == null or not info.has("point"):
+		return
+	var pm: Vector3 = _body_mi.global_transform.affine_inverse() * (info["point"] as Vector3)
+	var strength: float = GameState.DAMAGE.points(float(info.get("speed_mps", 0.0))) / maxf(GameState.DAMAGE.maximum_damage, 0.001)
+	if strength <= 0.0:
+		return
+	# The contact point can sit a little off the hull: pull it onto the body's bounds.
+	var box: AABB = _body_mi.mesh.get_aabb()
+	pm = pm.clamp(box.position, box.end)
+	GameState.add_dent(pm, clampf(strength * 1.6, 0.1, 1.0))
+	if pm.z > box.get_center().z + box.size.z * 0.2:
+		GameState.set_crack_origin(clampf(pm.x, -40.0, 40.0), clampf(pm.y, 120.0, 152.0))
+
+## Hidden, frozen bodies built once (no instantiate during driving): one per mirror.
+func _build_mirror_debris() -> void:
+	if _body_mi == null:
+		return
+	for part: int in [PART_MIRROR_L, PART_MIRROR_R]:
+		var mesh: ArrayMesh = _part_mesh(part)
+		if mesh == null:
+			continue
+		var body: RigidBody3D = RigidBody3D.new()
+		body.name = "MirrorDebris%d" % part
+		body.top_level = true
+		body.freeze = true
+		body.visible = false
+		body.mass = 0.4
+		body.collision_layer = 0
+		body.collision_mask = 1
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = mesh
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(mi)
+		var cs: CollisionShape3D = CollisionShape3D.new()
+		cs.shape = BoxShape3D.new() # sized in metres when it drops
+		body.add_child(cs)
+		add_child(body)
+		_debris[part] = body
+
+## The triangles of one tagged part (both surfaces), with the body's own materials.
+func _part_mesh(part: int) -> ArrayMesh:
+	var out: ArrayMesh = ArrayMesh.new()
+	for node: Node in real_body.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		for s: int in mi.mesh.get_surface_count():
+			var arrays: Array = mi.mesh.surface_get_arrays(s)
+			var uv2: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2] if arrays[Mesh.ARRAY_TEX_UV2] != null else PackedVector2Array()
+			if uv2.is_empty():
+				continue
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var norms: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV] if arrays[Mesh.ARRAY_TEX_UV] != null else PackedVector2Array()
+			var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			var v: PackedVector3Array = PackedVector3Array()
+			var n: PackedVector3Array = PackedVector3Array()
+			var t: PackedVector2Array = PackedVector2Array()
+			for i: int in range(0, idx.size(), 3):
+				if absf(uv2[idx[i]].x - float(part)) > 0.5:
+					continue
+				for k: int in 3:
+					v.append(verts[idx[i + k]])
+					n.append(norms[idx[i + k]])
+					if not uvs.is_empty():
+						t.append(uvs[idx[i + k]])
+			if v.is_empty():
+				continue
+			var a: Array = []
+			a.resize(Mesh.ARRAY_MAX)
+			a[Mesh.ARRAY_VERTEX] = v
+			a[Mesh.ARRAY_NORMAL] = n
+			if not t.is_empty():
+				a[Mesh.ARRAY_TEX_UV] = t
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, a)
+			out.surface_set_material(out.get_surface_count() - 1, mi.mesh.surface_get_material(s))
+	return out if out.get_surface_count() > 0 else null
+
+## Drop the mirror: the debris copy starts where the mirror was and tumbles off, gone after 6 s.
+func _drop_mirror(part: int) -> void:
+	if not _debris.has(part) or _body_mi == null:
+		return
+	var body: RigidBody3D = _debris[part]
+	var mi: MeshInstance3D = body.get_child(0) as MeshInstance3D
+	var box: AABB = mi.mesh.get_aabb()
+	var xf: Transform3D = _body_mi.global_transform
+	# Physics bodies stay unscaled: the model's scale (0.01 x fit) goes on the mesh, and the copy is
+	# re-centred on its own bounds so it spins about itself.
+	var sc: Vector3 = xf.basis.get_scale()
+	mi.transform = Transform3D(Basis.from_scale(sc), -box.get_center() * sc)
+	((body.get_child(1) as CollisionShape3D).shape as BoxShape3D).size = (box.size * sc).max(Vector3.ONE * 0.04)
+	body.global_transform = Transform3D(xf.basis.orthonormalized(), xf * box.get_center())
+	body.visible = true
+	body.freeze = false
+	var outward: Vector3 = (xf * box.get_center() - global_position)
+	outward.y = 0.0
+	body.linear_velocity = outward.normalized() * 2.5 + Vector3.UP * 1.5
+	body.angular_velocity = Vector3(randf_range(-6.0, 6.0), randf_range(-6.0, 6.0), randf_range(-6.0, 6.0))
+	get_tree().create_timer(6.0).timeout.connect(func() -> void:
+		if is_instance_valid(body):
+			body.freeze = true
+			body.visible = false)
 
 func triangle_count() -> int:
 	var n: int = 0
