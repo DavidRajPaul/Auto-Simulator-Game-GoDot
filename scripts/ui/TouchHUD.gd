@@ -85,6 +85,7 @@ var _ride_fare: int = -1 # -1 = meter flag up (FOR HIRE)
 ## Banner repeated while the engine is stopped: flooded (water) or switched off (tutorial).
 var _stall_text: String = "Engine flooded! Tap KICK"
 ## 0 handlebar drag, 1 arrow buttons (default), 2 tilt (GameState.settings.control_scheme).
+var _warned_sev: float = 0.0
 var control_scheme: int = 1
 ## finger index -> button name it is holding.
 var _fingers: Dictionary = {}
@@ -178,6 +179,14 @@ func _ready() -> void:
 	SignalBus.gethu_stunt_bonus_earned.connect(func(stunt: String, inr: int) -> void: _stunt(stunt, inr))
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void: _flash("Camera: " + mode_name, 1.2))
 	SignalBus.settings_changed.connect(func(st: Dictionary) -> void: set_control_scheme(int(st.get("control_scheme", 1))))
+	# Smoke, then fire (DamageFX): warn once as the auto crosses each stage.
+	SignalBus.condition_changed.connect(func(c: float) -> void:
+		var sev: float = 1.0 - c / 100.0
+		if sev >= DamageFX.FIRE_FROM and _warned_sev < DamageFX.FIRE_FROM and c > 0.0:
+			_flash(tr("ENGINE_FIRE"), 4.0, Tone.WARN)
+		elif sev >= DamageFX.SMOKE_FROM and _warned_sev < DamageFX.SMOKE_FROM:
+			_flash(tr("ENGINE_SMOKING"), 3.5, Tone.WARN)
+		_warned_sev = sev)
 	set_control_scheme(int(GameState.settings.get("control_scheme", 1)))
 	SignalBus.ride_updated.connect(func(info: Dictionary) -> void: _ride_fare = int(info["fare"]))
 	SignalBus.ride_completed.connect(func(_b: Dictionary) -> void: _ride_fare = -1)

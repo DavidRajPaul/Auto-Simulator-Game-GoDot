@@ -192,7 +192,12 @@ func _test_live_vehicle_swap(auto: AutoRickshawController) -> void:
 	GameState.select_vehicle("singara_classic")
 	GameState.buy_paint(0)
 	await _physics(2)
-	_check("Stock yellow keeps the imported material (no repaint override)", model.paint_material == null and model.uses_real_model)
+	# Nov 3: the paint/glass shaders always run (they draw the crash damage); stock yellow shows the
+	# texture's own colours through them, non-metal like the file's material.
+	var stock: ShaderMaterial = model.paint_material
+	_check("Stock yellow shows the imported texture's own colours (stock_paint, non-metal)", model.uses_real_model and stock != null
+		and bool(stock.get_shader_parameter("stock_paint")) and float(stock.get_shader_parameter("metallic_scale")) == 0.0
+		and int(stock.get_shader_parameter("dent_count")) == 0)
 	_check("Repaint never changes the auto's geometry (same triangle count)", tris_painted > 0 and tris_painted == _real_body_triangles(model), "%d vs %d" % [tris_painted, _real_body_triangles(model)])
 
 func _real_body_triangles(model: AutoRickshawModel) -> int:

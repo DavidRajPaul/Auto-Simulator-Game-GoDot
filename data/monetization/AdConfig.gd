@@ -23,7 +23,7 @@ extends Resource
 @export_group("Rewarded (opt-in)")
 ## Watching an opt-in rewarded video resets the interstitial cooldown (reward ad-free driving).
 @export var rewarded_resets_cooldown: bool = true
-@export var rewarded_enabled_placements: PackedStringArray = ["ad_double_fare", "ad_fuel_rescue", "ad_tow", "ad_test_drive"]
+@export var rewarded_enabled_placements: PackedStringArray = ["ad_double_fare", "ad_fuel_rescue", "ad_tow", "ad_test_drive", "ad_wreck_repair"]
 
 @export_group("Banners")
 ## Banners only on menu/garage/pause screens, never over the driving view.

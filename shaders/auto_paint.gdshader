@@ -28,18 +28,64 @@ uniform bool stock_paint = false;
 uniform vec4 panel_damage = vec4(0.0);
 uniform vec3 mesh_centre = vec3(0.0);
 uniform vec3 mesh_size = vec3(1.0);
+// Visible crash damage (Nov 3). Part ids are baked into UV2.x by tools/assets/bake_auto_parts.py:
+// 0 body, 1 left mirror, 2 right mirror, 3 windshield, 4 rear glass, 5 headlamp.
+// dents: up to 8 impact points in MESH space (the file's units, cm), w = strength 0..1. Each pushes
+// the body in towards the auto's centre line over dent_radius, bends the normal so the dent reads
+// in the light, and scrapes the paint to bare grey metal at its centre.
+uniform vec4 dents[8];
+uniform int dent_count = 0;
+uniform float dent_radius = 34.0;
+uniform float dent_depth = 13.0;
+uniform bool mirror_l_broken = false;
+uniform bool mirror_r_broken = false;
+uniform float lamp_broken = 0.0;
 
 varying vec3 mesh_pos;
 varying float wear;
+varying float part;
+varying float dent_f;
 
 void vertex() {
 	mesh_pos = VERTEX;
+	part = UV2.x;
 	vec3 p = (VERTEX - mesh_centre) / max(mesh_size, vec3(0.001));
 	// Imported body faces +Z; the holder turns it to the driving direction.
 	wear = max(max(panel_damage.x * smoothstep(0.05, 0.4, p.z), panel_damage.y * smoothstep(0.05, 0.4, -p.z)),
 		max(panel_damage.z * smoothstep(0.05, 0.4, p.x), panel_damage.w * smoothstep(0.05, 0.4, -p.x)));
-	float panel = texture(mask_tex, UV).r;
-	VERTEX -= NORMAL * min(mesh_size.x, mesh_size.z) * 0.055 * wear * panel * (0.6 + 0.4 * sin(p.y * 31.0 + p.z * 17.0));
+	dent_f = 0.0;
+	if (part < 0.5) {
+		vec3 push = vec3(0.0);
+		vec3 bend = vec3(0.0);
+		for (int i = 0; i < dent_count; i++) {
+			vec4 dn = dents[i];
+			float r = dent_radius * (0.75 + 0.5 * dn.w);
+			float d = distance(VERTEX, dn.xyz);
+			float k = 1.0 - smoothstep(0.0, r, d);
+			float f = dn.w * k * k;
+			// Inwards = towards the centre line at the dent's height (never through the floor).
+			vec3 inward = normalize(vec3(mesh_centre.x - dn.x, 0.0, mesh_centre.z - dn.z) + vec3(0.0001));
+			push += inward * f;
+			// Slope of the dent: tilt the normal away from the dent centre on its rim.
+			bend += normalize(VERTEX - dn.xyz + vec3(0.0001)) * dn.w * k * (1.0 - k) * 2.0;
+			dent_f = max(dent_f, f);
+		}
+		VERTEX += push * dent_depth;
+		NORMAL = normalize(NORMAL - bend * 1.7);
+	}
+}
+
+float hash3(vec3 p) {
+	return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+}
+
+// Value noise (smooth, irregular) for scraped paint.
+float vnoise(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+		mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
 float luma(vec3 c) {
@@ -47,6 +93,10 @@ float luma(vec3 c) {
 }
 
 void fragment() {
+	// A broken mirror is gone (housing, arm and glass all carry its id).
+	if ((mirror_l_broken && abs(part - 1.0) < 0.5) || (mirror_r_broken && abs(part - 2.0) < 0.5)) {
+		discard;
+	}
 	vec3 base = texture(albedo_tex, UV).rgb;
 	float body_m = texture(mask_tex, UV).r;
 	float sat = max(base.r, max(base.g, base.b)) - min(base.r, min(base.g, base.b));
@@ -58,8 +108,21 @@ void fragment() {
 	vec3 col = mix(base, body_colour * kb, body_m);
 	col = mix(col, canopy_colour * kc, canopy_m);
 	if (stock_paint) { col = base; }
-	float scratches = step(0.77, sin(mesh_pos.y * 1.3 + sin(mesh_pos.z * 0.21))) * step(0.35, wear);
-	col = mix(col, vec3(0.16, 0.14, 0.12), body_m * wear * (0.25 + scratches * 0.6));
+	// Road grime on worn panels (the old full-panel scratch stripes read as banding: Nov 3).
+	col = mix(col, col * 0.7, body_m * wear * 0.35);
+	// Dents: a darker crease on the rim, paint scraped to bare grey metal in irregular patches at
+	// the centre (noise, not stripes), with fine scratches through it.
+	float rim = dent_f * (1.0 - dent_f) * 4.0;
+	col *= 1.0 - 0.35 * rim;
+	float n = vnoise(mesh_pos * 0.22) * 0.65 + vnoise(mesh_pos * 0.9) * 0.35;
+	float bare = smoothstep(0.3, 0.7, dent_f) * smoothstep(0.62 - 0.35 * dent_f, 0.7 - 0.35 * dent_f, n);
+	float fine = step(0.92, fract((mesh_pos.x + mesh_pos.y * 0.6) * 0.45 + n * 2.0)) * smoothstep(0.2, 0.5, dent_f);
+	col = mix(col, vec3(0.5, 0.5, 0.48), clamp(bare + fine * 0.6, 0.0, 1.0));
+	// Smashed headlamp: dark glass with a white crack.
+	if (abs(part - 5.0) < 0.5 && lamp_broken > 0.0) {
+		float crack = step(0.93, abs(sin(atan(mesh_pos.y - 56.0, mesh_pos.x) * 5.0 + mesh_pos.y * 0.4)));
+		col = mix(col, mix(vec3(0.05), vec3(0.8), crack), lamp_broken);
+	}
 	ALBEDO = col;
 	if (has_orm) {
 		vec3 orm = texture(orm_tex, UV).rgb;

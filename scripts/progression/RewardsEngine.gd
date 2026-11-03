@@ -18,13 +18,14 @@ const LEDGER_MAX: int = 200
 const DAILY_INR: Array[int] = [50, 75, 100, 125, 150, 200, 500]
 const DAILY_XP: Array[int] = [10, 10, 15, 15, 20, 25, 60]
 ## Max grants per source per calendar day (anti-abuse; ads also have their own caps).
-const DAILY_CAPS: Dictionary = {"ad_double_fare": 12, "ad_fuel_rescue": 4, "ad_tow": 4, "ad_test_drive": 3, "daily_login": 1}
+const DAILY_CAPS: Dictionary = {"ad_double_fare": 12, "ad_fuel_rescue": 4, "ad_tow": 4, "ad_test_drive": 3, "ad_wreck_repair": 3, "daily_login": 1}
 ## Rewarded-ad offers: kind -> {text, fixed inr (0 = computed by caller)}.
 const AD_OFFERS: Dictionary = {
 	"ad_double_fare": {"label": "AD_DOUBLE_FARE"},
 	"ad_fuel_rescue": {"label": "AD_FUEL_RESCUE"},
 	"ad_tow": {"label": "AD_FREE_TOW"},
 	"ad_test_drive": {"label": "AD_TEST_DRIVE"},
+	"ad_wreck_repair": {"label": "AD_WRECK_REPAIR"},
 }
 
 ## Achievements: id -> {title, desc, stat, target, inr, xp, gpgs (Play Games id placeholder)}.

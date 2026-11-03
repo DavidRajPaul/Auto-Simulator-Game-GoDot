@@ -12,6 +12,7 @@ var _shift_title: String = "-"
 var _root: Control
 var _clock: Label
 var _service_bar: HBoxContainer
+var _wreck_shown: bool = false
 var _service_msg: Label
 var _pause_btn: Button
 var _modal: PanelContainer
@@ -58,6 +59,12 @@ func _ready() -> void:
 		if open and not is_open():
 			open_pause())
 	SignalBus.recover_available.connect(_on_recover_available)
+	SignalBus.vehicle_wrecked.connect(_on_wrecked)
+	SignalBus.rewarded_ad_failed.connect(func(placement: String, _why: String) -> void:
+		if placement == "ad_wreck_repair" and _wreck_shown:
+			_show_wreck(tr("AD_NOT_READY")))
+	if GameState.is_wrecked():
+		_on_wrecked.call_deferred(true)
 	SignalBus.back_requested.connect(func() -> void:
 		if not is_open():
 			open_pause()
@@ -161,6 +168,35 @@ func _on_fuel(level: float, _capacity: float) -> void:
 			_service_bar.add_child(_button("▶ " + tr("AD_FREE_TOW"), Color(0.12, 0.5, 0.22), func() -> void:
 				AdMonetizationManager.show_rewarded("ad_tow", {"from": _last_player_pos()})))
 		_service_bar.visible = true
+
+## Wrecked (condition 0, engine on fire): free repair for a rewarded ad (the mock provider's
+## placeholder ad until real ads are wired; AdMonetizationManager decides if one is ready), a paid
+## roadside repair, or, with no money and no ad, a free patch-up so the player is never stuck.
+func _on_wrecked(wrecked: bool) -> void:
+	if wrecked:
+		_show_wreck("")
+	elif _wreck_shown:
+		_wreck_shown = false
+		_hide_service()
+
+func _show_wreck(note: String) -> void:
+	_wreck_shown = true
+	_service_kind = ""
+	for c: Node in _service_bar.get_children():
+		c.queue_free()
+	_service_msg.text = tr("WRECKED_MSG") + ("\n" + note if note != "" else "")
+	var ad_ok: bool = AdMonetizationManager.can_offer_rewarded("ad_wreck_repair")
+	if ad_ok:
+		_service_bar.add_child(_button("▶ " + tr("AD_WRECK_REPAIR"), Color(0.12, 0.5, 0.22), func() -> void:
+			AdMonetizationManager.show_rewarded("ad_wreck_repair")))
+	var cost: int = GameState.repair_cost()
+	if GameState.wallet_inr > 0:
+		_service_bar.add_child(_button("%s  ₹%d" % [tr("ROADSIDE_REPAIR"), mini(cost, GameState.wallet_inr)], Color(0.45, 0.3, 0.12), func() -> void:
+			GameState.repair()))
+	if not ad_ok and GameState.wallet_inr < cost:
+		_service_bar.add_child(_button(tr("PATCH_UP"), Color(0.25, 0.35, 0.6), func() -> void:
+			GameState.patch_up()))
+	_service_bar.visible = true
 
 func _on_recover_available(available: bool) -> void:
 	if not available:
