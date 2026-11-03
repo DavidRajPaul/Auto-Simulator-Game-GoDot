@@ -156,6 +156,9 @@ func _apply_paint_material(force_damage: bool = false) -> void:
 			if src.roughness_texture != null:
 				mat.set_shader_parameter("orm_tex", src.roughness_texture)
 				mat.set_shader_parameter("has_orm", true)
+			# glTF scales the ORM texture by the material factors; keep doing that (metallic 0 here).
+			mat.set_shader_parameter("metallic_scale", src.metallic)
+			mat.set_shader_parameter("roughness_scale", src.roughness)
 			mat.set_shader_parameter("body_colour", paint)
 			mat.set_shader_parameter("canopy_colour", trim)
 			mat.set_shader_parameter("stock_paint", is_stock_yellow())

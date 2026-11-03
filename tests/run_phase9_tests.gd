@@ -729,17 +729,35 @@ func _test_street_trees(s: WorldChunkStreamer) -> void:
 	_check("Loaded chunks register their trees", t.tree_count() > 100, "%d" % t.tree_count())
 	_check("Near models and far impostors both drawn", t.near_count > 0 and t.far_count > 0,
 		"near %d far %d" % [t.near_count, t.far_count])
-	_check("Every registered tree within range is drawn once", t.near_count + t.far_count <= t.tree_count())
+	var in_range: int = 0
+	var in_band: int = 0
+	for ck: Vector2i in t._chunks:
+		var arr: PackedFloat32Array = t._chunks[ck]
+		for i: int in range(0, arr.size(), StreetTrees.PRE):
+			var d: float = Vector2(arr[i] - cam.x, arr[i + 2] - cam.z).length()
+			in_range += 1 if d <= StreetTrees.FAR_M else 0
+			var lo: float = StreetTrees.NEAR_M - StreetTrees.FADE_M - StreetTrees.FAR_REBUILD_M
+			var hi: float = StreetTrees.NEAR_M + StreetTrees.FADE_M + StreetTrees.REBUILD_M
+			in_band += 1 if d > lo and d < hi else 0
+	# Nov 3: trees around the fade band are in BOTH sets (the shaders cross-fade them; the far set
+	# reaches FAR_REBUILD_M further in because it refills less often); everyone else once.
+	_check("Every tree in range drawn once, fade band in both levels",
+		t.near_count + t.far_count == in_range + in_band, "near %d far %d range %d band %d" % [t.near_count, t.far_count, in_range, in_band])
 	var near_ok: bool = t.near_positions.size() == t.near_count
 	for p: Vector3 in t.near_positions:
-		if Vector2(p.x - cam.x, p.z - cam.z).length() > StreetTrees.NEAR_M + 0.5 or absf(p.y) > 1.0:
+		if Vector2(p.x - cam.x, p.z - cam.z).length() > StreetTrees.NEAR_M + StreetTrees.FADE_M + StreetTrees.REBUILD_M + 0.5 or absf(p.y) > 1.0:
 			near_ok = false
-	_check("Near models only within NEAR_M, standing on the ground", near_ok, "%d near" % t.near_count)
+	_check("Near models only out to the fade band, standing on the ground", near_ok, "%d near" % t.near_count)
 	var tex_ok: bool = true
 	for code: int in t.near_mmis:
-		var mat: StandardMaterial3D = (t.near_mmis[code] as MultiMeshInstance3D).material_override as StandardMaterial3D
-		tex_ok = tex_ok and mat != null and mat.albedo_texture != null and mat.metallic == 0.0
-	_check("Near trees: textured, matte, non-metal", tex_ok)
+		var mat: ShaderMaterial = (t.near_mmis[code] as MultiMeshInstance3D).material_override as ShaderMaterial
+		tex_ok = tex_ok and mat != null and mat.get_shader_parameter("albedo_tex") != null
+	_check("Near trees: textured, cross-fade shader", tex_ok)
+	var far_mat: ShaderMaterial = t.far_mmi.material_override as ShaderMaterial
+	var eye: Vector3 = far_mat.get_shader_parameter("eye_pos")
+	_check("Both tree shaders follow the camera for the fade", eye.distance_to(cam) < 0.1 and is_equal_approx(float(far_mat.get_shader_parameter("fade_end")), StreetTrees.NEAR_M + StreetTrees.FADE_M))
+	var atlas: Texture2D = far_mat.get_shader_parameter("atlas")
+	_check("Impostor atlas is mipmapped (no shimmer at distance)", atlas != null and atlas.get_image() != null and atlas.get_image().has_mipmaps())
 	_check("Impostors never cast shadows", t.far_mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 	var per_chunk: int = 0
 	for k: Vector2i in s.loaded:
@@ -750,7 +768,7 @@ func _test_street_trees(s: WorldChunkStreamer) -> void:
 	var some: Vector2i = s.loaded.keys()[0]
 	var saved: PackedFloat32Array = t._chunks.get(some, PackedFloat32Array())
 	t.remove_chunk(some)
-	_check("Unloading a chunk drops its trees", t.tree_count() == tc - saved.size() / StreetTrees.REC)
+	_check("Unloading a chunk drops its trees", t.tree_count() == tc - saved.size() / StreetTrees.PRE)
 	if not saved.is_empty():
 		t.add_chunk(some, saved)
 

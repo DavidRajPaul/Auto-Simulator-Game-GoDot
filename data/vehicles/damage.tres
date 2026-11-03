@@ -11,6 +11,6 @@ component_multiplier = 1.6
 minimum_power = 0.45
 minimum_grip = 0.65
 minimum_damping = 0.65
-steering_pull_deg = 2.0
+steering_pull_deg = 0.0
 tyre_friction = 1.15
 damage_cooldown_s = 0.65
