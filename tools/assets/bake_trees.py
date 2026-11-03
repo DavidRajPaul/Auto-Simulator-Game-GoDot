@@ -17,7 +17,9 @@ All species share one far impostor atlas:
 
 Run after changing a source or a SPECIES entry:
   (cd tools/assets && npm i) && python3 tools/assets/bake_trees.py
-Needs: Node.js + tools/assets/node_modules, numpy, pillow, trimesh.
+Needs: Node.js + tools/assets/node_modules, numpy, pillow, scipy, trimesh.
+The atlas must import with mipmaps + VRAM compression (tree_impostors.png.import): without
+mipmaps the far cards shimmered and sparkled while driving (Nov 3 device test).
 """
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 from PIL import Image
+from scipy.ndimage import distance_transform_edt
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "assets_src" / "models" / "trees"
@@ -106,19 +109,15 @@ def render_view(mesh: trimesh.Trimesh, tex: np.ndarray, angle: float, radius: fl
     return np.concatenate([col, a_], axis=2)
 
 
-def bleed(cell: np.ndarray, steps: int = 6) -> np.ndarray:
-    """Copy colour into transparent pixels next to the crown so mipmaps don't fringe dark."""
-    col = cell[..., :3].copy()
+def bleed(cell: np.ndarray) -> np.ndarray:
+    """Give EVERY transparent pixel the colour of the nearest crown pixel. The far cards are
+    mipmapped: a small mip averages the whole cell, and black transparent pixels made distant
+    trees go dark and grainy (Nov 3 device test). Alpha is untouched."""
     filled = cell[..., 3] > 0.0
-    for _ in range(steps):
-        acc = np.zeros_like(col)
-        cnt = np.zeros(filled.shape, np.float32)
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            acc += np.roll(np.roll(col * filled[..., None], dy, 0), dx, 1)
-            cnt += np.roll(np.roll(filled.astype(np.float32), dy, 0), dx, 1)
-        grow = (~filled) & (cnt > 0)
-        col[grow] = acc[grow] / cnt[grow][:, None]
-        filled = filled | grow
+    if not filled.any():
+        return cell
+    _, (iy, ix) = distance_transform_edt(~filled, return_indices=True)
+    col = cell[..., :3][iy, ix]
     return np.concatenate([col, cell[..., 3:4]], axis=2)
 
 

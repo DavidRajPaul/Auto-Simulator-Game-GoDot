@@ -364,9 +364,15 @@ func _physics_process(delta: float) -> void:
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)
 	var target_steer: float = steer_in * deg_to_rad(stats.max_steer_angle_deg) * speed_steer_factor
-	if use_player_profile and current_speed_kmh > 2.0:
+	# Optional steering pull from crash wear, towards the more damaged SIDE only (none when neither
+	# side is hit). Off by default (damage.tres steering_pull_deg = 0): Nov 3 device test, front-only
+	# crash wear made the auto curve left on its own with no hint why (30 % wear = 8.8 m off line
+	# in 56 m). Steering wear still costs money to repair at the garage.
+	if use_player_profile and current_speed_kmh > 2.0 and GameState.DAMAGE.steering_pull_deg > 0.0:
 		var wear: Dictionary = GameState.damage_state()
-		target_steer += deg_to_rad(GameState.DAMAGE.steering_pull_deg) * float(wear["steering"]) / 100.0 * (1.0 if float(wear["right"]) >= float(wear["left"]) else -1.0)
+		var side: float = float(wear["left"]) - float(wear["right"]) # + = pull left (steer_in sign)
+		if absf(side) > 1.0:
+			target_steer += deg_to_rad(GameState.DAMAGE.steering_pull_deg) * float(wear["steering"]) / 100.0 * signf(side)
 	current_steer_rad = move_toward(current_steer_rad, target_steer, stats.steer_response_speed * delta)
 	front_wheel_ray.rotation.y = current_steer_rad
 

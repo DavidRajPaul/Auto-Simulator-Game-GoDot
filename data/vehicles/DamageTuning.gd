@@ -8,7 +8,9 @@ extends Resource
 @export var minimum_power: float = 0.45
 @export var minimum_grip: float = 0.65
 @export var minimum_damping: float = 0.65
-@export var steering_pull_deg: float = 2.0
+## Steering pull towards the damaged side at 100 % steering wear. 0 = off (Nov 3 playtest: the
+## auto drifting by itself read as a control bug, not as damage).
+@export var steering_pull_deg: float = 0.0
 @export var tyre_friction: float = 1.15
 @export var damage_cooldown_s: float = 0.65
 

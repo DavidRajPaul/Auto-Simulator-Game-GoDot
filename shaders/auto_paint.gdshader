@@ -18,6 +18,10 @@ uniform vec3 canopy_colour : source_color = vec3(0.07, 0.07, 0.07);
 uniform vec3 body_stock : source_color = vec3(0.987, 0.856, 0.0);
 uniform vec3 canopy_stock : source_color = vec3(0.13, 0.13, 0.13);
 uniform float roughness_scale = 1.0;
+// The file's metallicFactor (0 for the player auto). Its ORM texture has metallic = 1 everywhere,
+// which glTF multiplies by this factor; reading orm.b alone made the whole body chrome, and chrome
+// with no sky reflections renders black in shade (Nov 3 device test).
+uniform float metallic_scale = 0.0;
 uniform float canopy_min_y = 96.0;
 uniform float canopy_max_x = 68.0;
 uniform bool stock_paint = false;
@@ -60,7 +64,7 @@ void fragment() {
 	if (has_orm) {
 		vec3 orm = texture(orm_tex, UV).rgb;
 		ROUGHNESS = mix(clamp(orm.g * roughness_scale, 0.0, 1.0), 0.85, canopy_m);
-		METALLIC = orm.b * (1.0 - canopy_m);
+		METALLIC = orm.b * metallic_scale * (1.0 - canopy_m);
 	} else {
 		ROUGHNESS = 0.6;
 	}

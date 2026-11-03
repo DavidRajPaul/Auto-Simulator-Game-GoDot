@@ -79,6 +79,23 @@ func _run() -> void:
 	hit(8.0, Vector3(0, 0, -1.2))
 	model._process(0.0)
 	check("Stock auto gains visible damage material", model.paint_material != null and (model.paint_material.get_shader_parameter("panel_damage") as Vector4).x > 0.0)
+	# Nov 3 device test: the damage/repaint shader read the ORM metallic (1.0 everywhere) without the
+	# file's metallicFactor 0, so a damaged auto turned to chrome and went black in shade.
+	check("Damaged/painted auto stays non-metal like the stock material",
+		model.paint_material != null and float(model.paint_material.get_shader_parameter("metallic_scale")) == 0.0)
+	# Nov 3 device test: front-crash steering wear made the auto curve left with no steering input.
+	var auto: RigidBody3D = main.get_node("AutoRickshaw") as RigidBody3D
+	var wear: Dictionary = GameState.damage_state()
+	wear["steering"] = 100.0
+	wear["front"] = 100.0
+	var start: Transform3D = auto.global_transform
+	Input.action_press("accelerate")
+	for i: int in 240:
+		await get_tree().physics_frame
+	Input.action_release("accelerate")
+	var moved: Vector3 = auto.global_position - start.origin
+	check("Worn steering still drives straight on throttle alone (%.2f m sideways in %.0f m)" % [moved.dot(start.basis.x), moved.dot(-start.basis.z)],
+		absf(moved.dot(start.basis.x)) < 0.5 and moved.dot(-start.basis.z) > 20.0)
 	var stream: WorldChunkStreamer = WorldChunkStreamer.new()
 	stream.chunk_size = 250.0
 	var walls: Array = [[2.0, 2.0, 12.0, 2.0, 1.65, 0.22, "osm", 1]]

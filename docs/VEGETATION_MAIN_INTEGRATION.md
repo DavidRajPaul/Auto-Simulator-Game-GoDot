@@ -23,6 +23,19 @@ QA: phase 9 checks the species counts, near/far split, materials and that chunks
 drive Kapaleeshwarar tank → Luz Corner → R.K. Mutt Road and check FPS, the 60 m model/card switch, and that the
 cards' colour matches the near models in sun, dusk and rain.
 
+## November 3: tree glitch fix (device test)
+
+On the tablet the trees flickered while driving towards them. Causes and fixes:
+- The impostor atlas imported **without mipmaps** (a headless import never runs Godot's 3D detection), so distant
+  cards shimmered and sparkled. `tree_impostors.png.import` now has mipmaps + VRAM compression (ETC2/ASTC,
+  ~1.75 MB instead of ~7 MB).
+- Transparent atlas pixels were black, so small mips went dark and grainy. Every transparent pixel now carries the
+  nearest leaf colour; the card shader raises alpha with the mip level so distant crowns keep their coverage.
+- The swap from card to model at 60 m was instant. Between 50 and 62 m both are drawn and dither complementary
+  pixels (`tree_near.gdshader` / `tree_impostor.gdshader`), so a tree cross-fades over 12 m.
+- Rebuilds allocated an array per tree. They now write into preallocated buffers; the near models refill every 5 m
+  from nearby chunks only and the far cards every 20 m: 0.24 ms per camera step on desktop (was 1.54 ms).
+
 ## Earlier procedural passes (retired)
 
 Ports the two procedural mesh changes from stacked PR #18 into main:
