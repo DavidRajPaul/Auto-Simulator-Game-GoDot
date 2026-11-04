@@ -204,3 +204,14 @@ signal scripted_hail_requested(info: Dictionary)
 signal scripted_traffic_requested(kind: String, ahead_m: float)
 ## An MTC bus pulled in at a stop (TrafficVehicleAI): position and its route board text.
 signal bus_stopped(at: Vector3, route: String)
+
+# Career mission runtime. Providers avoid cross-scene node paths.
+var savari_busy_provider: Callable = Callable()
+signal mission_start_requested(id: String)
+signal mission_choice_requested(quest_id: String, stage_id: String, choice: String)
+signal mission_retry_requested
+signal mission_abandon_requested(reason: String)
+signal mission_ownership_changed(active: bool)
+signal mission_stage_changed(quest_id: String, stage_id: String, objective_key: String, choices: PackedStringArray)
+signal mission_finished(quest_id: String, status: String, reason: String)
+signal mission_profile_loaded

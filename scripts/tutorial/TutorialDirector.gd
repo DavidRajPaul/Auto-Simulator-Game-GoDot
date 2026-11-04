@@ -82,6 +82,8 @@ func _ready() -> void:
 const TUTORIAL_MIN_MINUTE: float = 420.0
 
 func start(from_step: int = -1) -> void:
+	if GameState.mission_active:
+		return
 	_pending_start = from_step
 	if is_inside_tree() and _world_ready():
 		_begin(from_step)
@@ -110,6 +112,8 @@ func _world_ready() -> bool:
 	return SignalBus.current_road_graph != null and _have_pose
 
 func _begin(from_step: int) -> void:
+	if GameState.mission_active:
+		return
 	_pending_start = -2
 	if data == null or data.steps.is_empty():
 		return

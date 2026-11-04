@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MissionPack" load_steps=8 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionPack.gd" id="pack"]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="drive"]
+script = ExtResource("stage")
+id = "drive"
+kind = "goto"
+objective_key = "TEST_DRIVE"
+target = Vector3(50, 0, 0)
+radius_m = 5.0
+deadline_s = 30.0
+max_speed_kmh = 40.0
+max_condition_loss = 10.0
+[sub_resource type="Resource" id="talk"]
+script = ExtResource("stage")
+id = "talk"
+kind = "dialogue"
+objective_key = "TEST_TALK"
+choices = PackedStringArray("return", "verify")
+[sub_resource type="Resource" id="wait"]
+script = ExtResource("stage")
+id = "handover"
+kind = "wait"
+objective_key = "TEST_HANDOVER"
+duration_s = 1.0
+[sub_resource type="Resource" id="mission"]
+script = ExtResource("def")
+id = "test_foundation"
+title_key = "TEST_QUEST"
+reward_inr = 75
+reward_xp = 10
+scenario_minute = 1080.0
+scenario_weather = "rain"
+stages = Array[ExtResource("stage")]([SubResource("drive"), SubResource("talk"), SubResource("wait")])
+[resource]
+script = ExtResource("pack")
+id = "foundation_test"
+missions = Array[ExtResource("def")]([SubResource("mission")])

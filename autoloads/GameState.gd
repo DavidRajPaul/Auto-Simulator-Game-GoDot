@@ -9,7 +9,9 @@ const METER_PER_KM_INR: float = 18.0
 const SURGE_MULTIPLIER: float = 1.5
 
 const SAVE_PATH: String = "user://savegame.dat"
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
+# Encryption identity must stay stable across schema migrations.
+const SAVE_KEY_VERSION: int = 1
 const AUTOSAVE_INTERVAL_S: float = 60.0
 
 ## Vehicle catalogue (id → resource). Prices/specs live in the .tres files.
@@ -101,6 +103,11 @@ var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics"
 
 ## First-ride tutorial running (TutorialDirector sets it). While true: no interstitials, no fuel
 ## burn, thin traffic, no random riders, and crashes cannot wear the auto below tutorial_min_condition.
+var mission_reward_transaction: bool = false
+var mission_active: bool = false
+var mission_run: Dictionary = {}
+var mission_completed: Dictionary = {}
+
 var tutorial_active: bool = false
 var tutorial_min_condition: float = 0.0
 
@@ -753,10 +760,11 @@ func _apply_settings() -> void:
 # --- Save / load ---------------------------------------------------------------------
 
 func _key() -> String:
-	return "namma-auto-%d|%s" % [SAVE_VERSION, OS.get_unique_id()]
+	return "namma-auto-%d|%s" % [SAVE_KEY_VERSION, OS.get_unique_id()]
 
 func to_dict() -> Dictionary:
 	return {
+		"missions": {"schema": 1, "run": mission_run.duplicate(true), "completed": mission_completed.duplicate(true)},
 		"version": SAVE_VERSION, "wallet": wallet_inr, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
@@ -766,6 +774,15 @@ func to_dict() -> Dictionary:
 	}
 
 func from_dict(d: Dictionary) -> void:
+	mission_active = false
+	mission_run = {}
+	mission_completed = {}
+	var missions: Variant = d.get("missions", {})
+	if missions is Dictionary:
+		if missions.get("run") is Dictionary:
+			mission_run = (missions["run"] as Dictionary).duplicate(true)
+		if missions.get("completed") is Dictionary:
+			mission_completed = (missions["completed"] as Dictionary).duplicate(true)
 	wallet_inr = int(d.get("wallet", wallet_inr))
 	stand_respect_xp = int(d.get("respect", stand_respect_xp))
 	star_rating = float(d.get("rating", star_rating))
@@ -820,18 +837,33 @@ func from_dict(d: Dictionary) -> void:
 		settings["control_scheme"] = 1
 		settings["controls_v2"] = true
 
+	# A saved scenario must not leak into the menu before the gameplay scene resumes.
+	var scenario: Variant = mission_run.get("scenario", {})
+	if scenario is Dictionary and scenario.has("minute"):
+		shift_minute = float(scenario["minute"])
+		shift_running = bool(scenario.get("running", true))
+		var saved_rain: Variant = scenario.get("rain", [])
+		if saved_rain is Array and saved_rain.size() == 2:
+			rain_window = Vector2(float(saved_rain[0]), float(saved_rain[1]))
+		is_raining = bool(scenario.get("raining", false))
+	SignalBus.mission_profile_loaded.emit()
+
 func save_game() -> bool:
-	if not persistence_enabled:
+	if not persistence_enabled or mission_reward_transaction:
 		return false
 	var payload: String = JSON.stringify(to_dict())
-	var f: FileAccess = FileAccess.open_encrypted_with_pass(save_path, FileAccess.WRITE, _key())
+	var f: FileAccess = FileAccess.open_encrypted_with_pass(save_path + ".tmp", FileAccess.WRITE, _key())
 	if f == null:
 		return false
 	# Encrypted container already detects corruption; the hash also catches edits made
 	# with the right key but outside the game (e.g. a patched build).
 	f.store_string(JSON.stringify({"p": payload, "h": (payload + _key()).sha256_text()}))
+	f.flush()
+	var write_error: Error = f.get_error()
 	f.close()
-	return true
+	if write_error != OK:
+		return false
+	return DirAccess.rename_absolute(save_path + ".tmp", save_path) == OK
 
 ## Returns false (and keeps defaults) for a missing, corrupt or tampered save.
 func load_game() -> bool:

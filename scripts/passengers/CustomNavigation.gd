@@ -16,8 +16,10 @@ var _reroute_cooldown: float = 0.0
 var _has_start: bool = false
 var _has_destination: bool = false
 var _active: bool = false
+var _mission_suspended: bool = false
 
 func _ready() -> void:
+	SignalBus.mission_ownership_changed.connect(_on_mission_ownership)
 	SignalBus.road_graph_ready.connect(_on_graph)
 	SignalBus.custom_navigation_requested.connect(_on_request)
 	SignalBus.custom_navigation_cleared.connect(_clear)
@@ -33,7 +35,7 @@ func _process(delta: float) -> void:
 
 func _on_player_pose(position: Vector3, _heading: Vector3) -> void:
 	_last_position = position
-	if not _active or _gps == null or _gps.path.is_empty():
+	if _mission_suspended or not _active or _gps == null or _gps.path.is_empty():
 		return
 	if position.distance_to(_destination) <= ARRIVAL_M:
 		_clear()
@@ -53,6 +55,8 @@ func _on_player_pose(position: Vector3, _heading: Vector3) -> void:
 		_build_route(position, _destination, true)
 
 func _on_request(start: Vector3, destination: Vector3) -> void:
+	if GameState.mission_active:
+		return
 	# Starting position is always the player/auto; discard stale map origins.
 	_build_route(_last_position, destination, false)
 
@@ -82,6 +86,9 @@ func _build_route(start: Vector3, destination: Vector3, rerouting: bool) -> void
 		SignalBus.hint_requested.emit("Route ready", 2.0)
 
 func _clear() -> void:
+	if _mission_suspended:
+		_active = false
+		return
 	if not _active:
 		return
 	_active = false
@@ -92,3 +99,8 @@ func _clear() -> void:
 	SignalBus.gps_route_changed.emit(null)
 	SignalBus.route_updated.emit(PackedVector3Array())
 	SignalBus.custom_navigation_state_changed.emit(false, Vector3.ZERO, Vector3.ZERO)
+
+func _on_mission_ownership(active: bool) -> void:
+	_mission_suspended = active
+	if not active and _active:
+		_build_route(_last_position, _destination, true)
