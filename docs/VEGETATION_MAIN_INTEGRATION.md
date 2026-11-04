@@ -66,3 +66,14 @@ The earlier pass retained all existing tree types and made modest facet and colo
 The [Greater Chennai Corporation avenue-tree guidance](https://chennaicorporation.gov.in/images/Tree%20planting.pdf) lists both among suitable trees for medium roads and describes poovarasu as salt and wind resistant. The distribution is a visual design choice, not a survey of individual Chennai trees. We preserved every existing tree coordinate, scale, seed, parking record, pole, wire and transformer while updating species IDs. Both shapes join the existing opaque per-chunk foliage mesh; no new material or draw-call surface is needed.
 
 Check the **new Android Build artifact from this commit** rather than an older APK or release. At street height, look for the tiered almond crown and the poovarasu near Marina. The phase 9 suite checks that the packaged dressing data actually includes both IDs. Performance CI checks draw calls; a budget Android device still needs a visual and sustained FPS review.
+
+## Nov 4 device test: far trees match the near model
+
+The tree glitch was still visible when driving towards trees. Side-by-side renders at the swap distance showed the cause: each far tree was 4 crossed cards with straight-up normals, so it took full sun and read as a pale, flat blob, then turned into the darker, self-shadowed model at 56 m. A card seen edge-on showed as a thin bright vertical slab, and 4 overlapping alpha-tested cards meant 4× overdraw.
+
+- **One card per tree.** `tree_impostor.gdshader` turns a single upright quad to face the camera, picks the two baked views either side of the real view direction, and blends them. A view seen from behind is its own mirror, so the 4 baked views cover the full circle. Silhouettes now line up with the model at the swap.
+- **Lit like the model.** The normal faces the camera and leans to the sky (`sky_lean`), and albedo is scaled by `card_tone` = 0.75. Both were calibrated by drawing a shifted copy of the far cards next to the real models in the same frame. They agree within about 5 % in linear green (before: about 3.5× too bright and pale). With `cull_disabled` Godot flips a back face's normal, which made the card dark brown. The fragment shader now sets the normal again.
+- **Shorter cross-fade.** The band is now 52–60 m (`FADE_M` 4, was 6), so the dither phase is brief.
+
+Performance: 140 draw calls on the perf probe (budget 150, was 141). Far trees now cost 2 triangles each instead of 8, with 1 layer of alpha overdraw instead of up to 4. Phase 9 checks that the far set is one 4-vertex card fed the atlas view count.
+

@@ -136,6 +136,30 @@ func _test_canal_crossing(city: Node) -> void:
 	_check("Low-poly water mesh is built (water.json)", world.get_node_or_null("Area_water") != null and world._water_mat != null)
 	var banks: Node = world.get_node_or_null("WaterBanks")
 	_check("Water banks are VISIBLE meshes (not collision only)", banks != null and banks.get_child_count() > 10)
+	# Nov 4: the Chitrakulam ghat left a strip of open water between the top step and the west
+	# wall (steps were pushed out radially from the tank centre) and walkers strolled along it.
+	# The mitred offset of the ghat ring by GHAT_INSET_M must land back on the bank line.
+	var ring: PackedVector2Array = PackedVector2Array([Vector2(1253.52, 1951.39), Vector2(1330.3, 1982.35),
+		Vector2(1350.75, 1930.79), Vector2(1341.13, 1925.9), Vector2(1272.04, 1902.66)])
+	var bank: PackedVector2Array = WorldChunkStreamer.offset_ring(ring, WorldChunkStreamer.GHAT_WIDTH_M)
+	var worst: float = 0.0
+	for p: Vector2 in bank:
+		var best: float = INF
+		for b: Vector2 in [Vector2(1247.1, 1954.19), Vector2(1333.09, 1988.87), Vector2(1357.08, 1928.39), Vector2(1343.06, 1921.28), Vector2(1269.08, 1896.39)]:
+			best = minf(best, p.distance_to(b))
+		worst = maxf(worst, best)
+	_check("Tank ghat top step reaches the wall (Chitrakulam)", worst < 0.3, "%.2f m off" % worst)
+	# Rasterise that chunk's walk mask directly (no buildings): water and the old gap strip blocked.
+	var k: Vector2i = Vector2i(5, 7)
+	var mask: PackedByteArray = world._building_mask(k, [], [])
+	var cells: int = int(ceil(world.chunk_size / WorldChunkStreamer.BLOCK_CELL_M))
+	var blocked: Callable = func(x: float, z: float) -> bool:
+		var ci: int = int((x - float(k.x) * world.chunk_size) / WorldChunkStreamer.BLOCK_CELL_M)
+		var cj: int = int((z - float(k.y) * world.chunk_size) / WorldChunkStreamer.BLOCK_CELL_M)
+		return mask[cj * cells + ci] == 1
+	_check("Walkers never enter a temple tank", blocked.call(1300.0, 1945.0) and blocked.call(1260.0, 1925.0)
+		and not blocked.call(1240.0, 1925.0), "tank interior / ghat strip walkable, or street blocked")
+	_check("Ghat steps sit under the tank parapet's coping", WorldChunkStreamer.GHAT_TOP_Y < WorldChunkStreamer.GROUND_VISUAL_Y + WorldChunkStreamer.TANK_WALL_H)
 	var g: RoadGraph = SignalBus.current_road_graph
 	var road: RoadGraph.Edge = null
 	for e: RoadGraph.Edge in g.edges:
@@ -759,6 +783,12 @@ func _test_street_trees(s: WorldChunkStreamer) -> void:
 	var atlas: Texture2D = far_mat.get_shader_parameter("atlas")
 	_check("Impostor atlas is mipmapped (no shimmer at distance)", atlas != null and atlas.get_image() != null and atlas.get_image().has_mipmaps())
 	_check("Impostors never cast shadows", t.far_mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	# Nov 4: one camera-facing card per tree (crossed cards showed edge-on slabs, 4x overdraw) and
+	# the atlas views it picks from; lit like the model (the old up-facing cards were pale blobs).
+	var card: Mesh = t.far_mmi.multimesh.mesh
+	_check("Far trees are one upright card each", card.get_surface_count() == 1
+		and (card.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == 4)
+	_check("Far cards pick the baked views", is_equal_approx(float(far_mat.get_shader_parameter("views")), float(t.views)))
 	var per_chunk: int = 0
 	for k: Vector2i in s.loaded:
 		for pattern: String in ["*Tree*", "*Palm*"]:

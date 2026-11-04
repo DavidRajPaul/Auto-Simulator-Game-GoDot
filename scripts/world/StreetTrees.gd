@@ -7,7 +7,8 @@ extends Node3D
 ## Two levels of detail, drawn through a fixed set of world-space MultiMeshes refilled around the
 ## camera (the BusStops pattern; no MultiMesh or node per chunk):
 ##   near: the full textured model, one MultiMesh per species, casts shadows (tree_near.gdshader)
-##   far : VIEWS crossed impostor cards, ALL species in one MultiMesh, no shadows (tree_impostor)
+##   far : one camera-facing card per tree from the VIEWS baked views, ALL species in one MultiMesh,
+##         no shadows (tree_impostor)
 ## So the whole forest is SPECIES + 1 draw calls (+ SPECIES in the shadow pass), whatever the count.
 ## Between NEAR_M - FADE_M and NEAR_M + FADE_M a tree is in BOTH sets and the two shaders dither
 ## complementary pixels, so it cross-fades instead of popping (Nov 3 device test).
@@ -17,7 +18,7 @@ extends Node3D
 
 const DIR: String = "res://assets/models/city/trees/"
 const NEAR_M: float = 56.0
-const FADE_M: float = 6.0
+const FADE_M: float = 4.0
 const FAR_M: float = 420.0
 const REBUILD_M: float = 5.0
 ## The far cards change slowly, so they refill less often; their set reaches this much further in
@@ -86,13 +87,14 @@ func _ready() -> void:
 	mat.shader = load("res://shaders/tree_impostor.gdshader") as Shader
 	mat.set_shader_parameter("atlas", load(DIR + "tree_impostors.png") as Texture2D)
 	mat.set_shader_parameter("rows", float(rows))
+	mat.set_shader_parameter("views", float(views))
 	_materials.append(mat)
 	for m: ShaderMaterial in _materials:
 		m.set_shader_parameter("fade_start", NEAR_M - FADE_M)
 		m.set_shader_parameter("fade_end", NEAR_M + FADE_M)
 	far_mmi = MultiMeshInstance3D.new()
 	far_mmi.name = "FarImpostors"
-	far_mmi.multimesh = _new_multimesh(_impostor_mesh(views, rows), true)
+	far_mmi.multimesh = _new_multimesh(_impostor_mesh(), true)
 	far_mmi.material_override = mat
 	far_mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(far_mmi)
@@ -330,34 +332,20 @@ func _near_material(mesh: Mesh, shader: Shader) -> ShaderMaterial:
 	_materials.append(mat)
 	return mat
 
-## `count` vertical cards through the trunk axis, 180/count degrees apart, x in [-1, 1] and
-## y in [0, 1] (the instance basis scales them to crown radius x height). Card k samples atlas
-## column k of row 0; the shader offsets the row per species.
-static func _impostor_mesh(count: int, rows: int) -> ArrayMesh:
-	var verts: PackedVector3Array = PackedVector3Array()
-	var norms: PackedVector3Array = PackedVector3Array()
-	var uvs: PackedVector2Array = PackedVector2Array()
-	var idx: PackedInt32Array = PackedInt32Array()
-	var cw: float = 1.0 / float(count)
-	var ch: float = 1.0 / float(rows)
-	for k: int in count:
-		var ang: float = PI * float(k) / float(count)
-		var a: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
-		var base: int = verts.size()
-		verts.append_array(PackedVector3Array([-a, a, a + Vector3.UP, -a + Vector3.UP]))
-		uvs.append_array(PackedVector2Array([Vector2(cw * float(k), ch), Vector2(cw * float(k + 1), ch),
-			Vector2(cw * float(k + 1), 0.0), Vector2(cw * float(k), 0.0)]))
-		for _i: int in 4:
-			norms.append(Vector3.UP)
-		idx.append_array(PackedInt32Array([base, base + 1, base + 2, base, base + 2, base + 3]))
+## One upright quad, x in [-1, 1] and y in [0, 1]: tree_impostor.gdshader turns it to face the
+## camera, scales it to crown radius x height from the instance basis and picks the atlas views
+## (Nov 4: replaces 4 crossed cards - edge-on slabs, 4x overdraw). UVs are worked out in the shader.
+static func _impostor_mesh() -> ArrayMesh:
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = norms
-	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_INDEX] = idx
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(-1, 0, 0), Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(-1, 1, 0)])
+	arrays[Mesh.ARRAY_NORMAL] = PackedVector3Array([Vector3.BACK, Vector3.BACK, Vector3.BACK, Vector3.BACK])
+	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3])
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	# The card swings round the trunk: give culling the whole crown footprint, not a flat quad.
+	mesh.custom_aabb = AABB(Vector3(-1, 0, -1), Vector3(2, 1, 2))
 	return mesh
 
 ## Chunk record from dress "trees" (worker thread safe: pure maths). y is filled on attach.

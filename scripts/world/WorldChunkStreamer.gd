@@ -145,6 +145,9 @@ var _xfmr_cols: PackedColorArray = PackedColorArray()
 ## Street-shop footprints per chunk (Vector2i -> Array[PackedVector2Array]): pedestrians treat
 ## them like buildings (walk mask). Filled by _build_city_props before any chunk streams in.
 var _prop_blocks: Dictionary = {}
+## Temple-tank footprints (water + ghat steps) per chunk: Vector2i -> PackedVector2Array, 3 points
+## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
+var _tank_blocks: Dictionary = {}
 var _compounds: Dictionary = {}
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
@@ -1100,6 +1103,9 @@ func _building_mask(k: Vector2i, blds: Array, walls: Array = []) -> PackedByteAr
 	for poly: PackedVector2Array in _prop_blocks.get(k, []):
 		_mask_triangle(mask, n, origin, poly[0], poly[1], poly[2])
 		_mask_triangle(mask, n, origin, poly[0], poly[2], poly[3])
+	var tank: PackedVector2Array = _tank_blocks.get(k, PackedVector2Array())
+	for t: int in range(0, tank.size(), 3):
+		_mask_triangle(mask, n, origin, tank[t], tank[t + 1], tank[t + 2])
 	return mask
 
 func _mask_triangle(mask: PackedByteArray, n: int, origin: Vector2, a: Vector2, b: Vector2, c: Vector2) -> void:
@@ -1238,6 +1244,9 @@ func _build_areas() -> void:
 ## Returns false when the file is missing (the legacy flat water + kerbs are used then).
 const WATER_Y: float = -0.02
 const BANK_H: float = 0.95
+## Temple-tank parapet: taller than a canal wall so the top ghat step sits below its coping
+## (Nov 4: the steps rose 16 cm above the old 0.95 m wall).
+const TANK_WALL_H: float = 1.3
 const BANK_T: float = 0.32
 const RAIL_H: float = 1.0
 const POST_EVERY_M: float = 6.0
@@ -1247,6 +1256,10 @@ const BANK_TILE_M: float = 250.0
 const BANK_VISIBLE_M: float = 350.0
 const STRIPE_M: float = 1.6
 const GHAT_STEPS: int = 5
+## = tools/osm/build_water.py GHAT_INSET_M: the "steps" ring is the tank outline inset this far.
+const GHAT_WIDTH_M: float = 5.0
+## Top tread, just under the tank parapet's coping (base GROUND_VISUAL_Y + TANK_WALL_H = 1.15).
+const GHAT_TOP_Y: float = 0.72
 const CANAL_WHITE: Color = Color(0.86, 0.85, 0.80)
 const CANAL_CAP: Color = Color(0.55, 0.55, 0.52)
 const TANK_RED: Color = Color(0.70, 0.17, 0.12) # temple kavi stripes
@@ -1352,7 +1365,7 @@ func _bank_wall(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vecto
 	if kind == 1:
 		# Temple tank: vertical kavi (red and white) stripes, a stone coping on top.
 		# One white wall box, then the red stripes as thin face quads on both sides of it.
-		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, BANK_H, BANK_T), TANK_WHITE, basis)
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + TANK_WALL_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, TANK_WALL_H, BANK_T), TANK_WHITE, basis)
 		var side: Vector3 = Vector3(-dir.z, 0.0, dir.x) * (BANK_T * 0.5 + 0.01)
 		var n: int = maxi(1, int(roundf(length / STRIPE_M)))
 		for k: int in range(0, n, 2):
@@ -1360,8 +1373,8 @@ func _bank_wall(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vecto
 			var p1: Vector3 = Vector3(a.x, 0.0, a.y) + dir * length * float(k + 1) / float(n)
 			for sgn: float in [-1.0, 1.0]:
 				var o: Vector3 = side * sgn
-				_quad_facing(st, p0 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base + BANK_H, 0), p0 + o + Vector3(0, base + BANK_H, 0), o, TANK_RED)
-		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H + 0.05, (a.y + b.y) * 0.5), Vector3(length + 0.1, 0.1, BANK_T + 0.12), GHAT_STONE, basis)
+				_quad_facing(st, p0 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base, 0), p1 + o + Vector3(0, base + TANK_WALL_H, 0), p0 + o + Vector3(0, base + TANK_WALL_H, 0), o, TANK_RED)
+		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + TANK_WALL_H + 0.05, (a.y + b.y) * 0.5), Vector3(length + 0.1, 0.1, BANK_T + 0.12), GHAT_STONE, basis)
 	else:
 		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H * 0.5, (a.y + b.y) * 0.5), Vector3(length, BANK_H, BANK_T), CANAL_WHITE, basis)
 		MeshKit.box(st, Vector3((a.x + b.x) * 0.5, base + BANK_H + 0.04, (a.y + b.y) * 0.5), Vector3(length + 0.06, 0.08, BANK_T + 0.08), CANAL_CAP, basis)
@@ -1369,7 +1382,7 @@ func _bank_wall(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vecto
 		for k: int in range(1, posts + 1):
 			var c: Vector3 = Vector3(a.x, 0.0, a.y) + dir * float(k) * POST_EVERY_M
 			MeshKit.box(st, c + Vector3(0, base + (BANK_H + 0.18) * 0.5, 0), Vector3(0.4, BANK_H + 0.18, BANK_T + 0.14), CANAL_WHITE.darkened(0.08), basis)
-	_wall_faces(faces, a, b, base, BANK_H + 0.1, BANK_T)
+	_wall_faces(faces, a, b, base, (TANK_WALL_H if kind == 1 else BANK_H) + 0.1, BANK_T)
 
 ## Bridge parapet along a road over water, yellow/black hazard blocks at both ends.
 func _bridge_rail(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vector2) -> void:
@@ -1387,38 +1400,92 @@ func _bridge_rail(st: SurfaceTool, faces: PackedVector3Array, a: Vector2, b: Vec
 			MeshKit.box(st, end + Vector3(0, y0 + 0.15 + 0.3 * float(k), 0), Vector3(0.7, 0.3, 0.34), HAZARD_YELLOW if k % 2 == 0 else HAZARD_BLACK, basis)
 	_wall_faces(faces, a, b, y0, RAIL_H + 0.1, 0.28)
 
-## Temple-tank ghat: GHAT_STEPS concentric steps from the wall down to the water line.
+## Temple-tank ghat: GHAT_STEPS steps climbing from the water line to the striped parapet, like
+## the Kapaleeshwarar tank's granite ghats. `ring` is the tank outline inset GHAT_WIDTH_M (mitred,
+## build_water.py), so step j spans the ring offset outward by j/GHAT_STEPS .. (j+1)/GHAT_STEPS of
+## that width, with mitred corners: the top step ends exactly under the bank wall on every side.
+## (Nov 4 device test: steps were pushed out radially from the tank centre, which reaches the
+## wall only where an edge faces the centre - Chitrakulam's west side kept a ~1 m strip of open
+## water between the steps and the wall, and walkers strolled along it.)
 func _ghat(st: SurfaceTool, ring: Array) -> void:
 	var pts: PackedVector2Array = PackedVector2Array()
 	for i: int in range(0, ring.size(), 2):
 		pts.append(Vector2(float(ring[i]), float(ring[i + 1])))
 	if pts.size() < 3:
 		return
-	var centre: Vector2 = Vector2.ZERO
-	for p: Vector2 in pts:
-		centre += p
-	centre /= float(pts.size())
-	# The ring is the ghat's INNER edge (3 m inside the bank). Step j is the band from j to j+1
-	# thirds... of the way out, its tread higher than the one below: stairs climbing from the
-	# water to the striped wall, like the Kapaleeshwarar tank's granite ghats.
-	var width: float = 5.0 # = tools/osm/build_water.py GHAT_INSET_M
+	var rise: float = (GHAT_TOP_Y - (WATER_Y + 0.1)) / float(GHAT_STEPS - 1)
+	var in_sgn: float = 1.0 if _ring_ccw(pts) else -1.0
+	var outlines: Array[PackedVector2Array] = []
+	for j: int in GHAT_STEPS + 1:
+		# The last outline tucks under the wall (half its thickness) so no seam shows.
+		var r: float = GHAT_WIDTH_M * float(j) / float(GHAT_STEPS) + (BANK_T * 0.5 if j == GHAT_STEPS else 0.0)
+		outlines.append(offset_ring(pts, r))
 	for j: int in GHAT_STEPS:
-		var r0: float = width * float(j) / float(GHAT_STEPS)
-		var r1: float = width * float(j + 1) / float(GHAT_STEPS)
-		var top: float = WATER_Y + 0.1 + 0.22 * float(j)
-		var below: float = WATER_Y - 0.1 if j == 0 else WATER_Y + 0.1 + 0.22 * float(j - 1)
+		var inner: PackedVector2Array = outlines[j]
+		var outer: PackedVector2Array = outlines[j + 1]
+		var top: float = WATER_Y + 0.1 + rise * float(j)
+		var below: float = WATER_Y - 0.1 if j == 0 else top - rise
 		var tread: Color = GHAT_STONE.darkened(0.07 * float(j % 2))
 		for i: int in pts.size():
-			var a: Vector2 = pts[i - 1]
-			var b: Vector2 = pts[i]
-			var a0: Vector2 = a + (a - centre).normalized() * r0
-			var b0: Vector2 = b + (b - centre).normalized() * r0
-			var a1: Vector2 = a + (a - centre).normalized() * r1
-			var b1: Vector2 = b + (b - centre).normalized() * r1
+			var a0: Vector2 = inner[i - 1]
+			var b0: Vector2 = inner[i]
+			var a1: Vector2 = outer[i - 1]
+			var b1: Vector2 = outer[i]
 			_quad_facing(st, Vector3(a0.x, top, a0.y), Vector3(b0.x, top, b0.y), Vector3(b1.x, top, b1.y), Vector3(a1.x, top, a1.y), Vector3.UP, tread)
-			# Riser facing the water.
-			var to_c: Vector2 = centre - (a0 + b0) * 0.5
-			_quad_facing(st, Vector3(a0.x, below, a0.y), Vector3(b0.x, below, b0.y), Vector3(b0.x, top, b0.y), Vector3(a0.x, top, a0.y), Vector3(to_c.x, 0.0, to_c.y), tread.darkened(0.25))
+			# Riser facing the water (inward = against the outward edge normal).
+			var e: Vector2 = b0 - a0
+			var inward: Vector2 = Vector2(-e.y, e.x) * in_sgn
+			_quad_facing(st, Vector3(a0.x, below, a0.y), Vector3(b0.x, below, b0.y), Vector3(b0.x, top, b0.y), Vector3(a0.x, top, a0.y), Vector3(inward.x, 0.0, inward.y), tread.darkened(0.25))
+	# The whole tank (water + steps, out to the wall) is off limits to walkers.
+	_add_tank_block(outlines[GHAT_STEPS])
+
+## True when the (x, z) ring winds counter-clockwise in the x-right, z-up plane (positive area).
+static func _ring_ccw(pts: PackedVector2Array) -> bool:
+	var area: float = 0.0
+	for i: int in pts.size():
+		area += pts[i - 1].cross(pts[i])
+	return area > 0.0
+
+## `pts` grown outward by `d` metres with mitred corners (the inverse of shapely's
+## buffer(-d, join_style=mitre) that made the ghat ring). Mitres are capped at 4 d on spikes.
+static func offset_ring(pts: PackedVector2Array, d: float) -> PackedVector2Array:
+	var out: PackedVector2Array = PackedVector2Array()
+	var n: int = pts.size()
+	out.resize(n)
+	var sgn: float = 1.0 if _ring_ccw(pts) else -1.0
+	for i: int in n:
+		var e0: Vector2 = (pts[i] - pts[i - 1]).normalized()
+		var e1: Vector2 = (pts[(i + 1) % n] - pts[i]).normalized()
+		var n0: Vector2 = Vector2(e0.y, -e0.x) * sgn
+		var n1: Vector2 = Vector2(e1.y, -e1.x) * sgn
+		var m: Vector2 = n0 + n1
+		if m.length_squared() < 1e-8:
+			out[i] = pts[i] + n0 * d
+			continue
+		m = m.normalized()
+		out[i] = pts[i] + m * minf(d / maxf(m.dot(n0), 1e-3), 4.0 * d)
+	return out
+
+## Tank footprint triangles bucketed by chunk for the walk mask (filled by _build_water before
+## streaming starts; worker threads only read it).
+func _add_tank_block(poly: PackedVector2Array) -> void:
+	var idx: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
+	if idx.is_empty():
+		return
+	var lo: Vector2 = poly[0]
+	var hi: Vector2 = poly[0]
+	for q: Vector2 in poly:
+		lo = lo.min(q)
+		hi = hi.max(q)
+	var tris: PackedVector2Array = PackedVector2Array()
+	for t: int in idx:
+		tris.append(poly[t])
+	for cx: int in range(floori(lo.x / chunk_size), floori(hi.x / chunk_size) + 1):
+		for cz: int in range(floori(lo.y / chunk_size), floori(hi.y / chunk_size) + 1):
+			var k: Vector2i = Vector2i(cx, cz)
+			var arr: PackedVector2Array = _tank_blocks.get(k, PackedVector2Array())
+			arr.append_array(tris)
+			_tank_blocks[k] = arr
 
 ## MeshKit.quad with its winding chosen so the face normal points along `facing` (tank rings
 ## come in either orientation from OSM).

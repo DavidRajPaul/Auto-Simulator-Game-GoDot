@@ -41,9 +41,6 @@ WANT = {
     "flame_tongue": ("particle", ("=flame_05.png",), 0, 256),  # licking flame tongue
     "flame_body": ("particle", ("=flame_01.png",), 0, 256),    # soft flame mass under the smoke
     "fire_embers": ("particle", ("=fire_01.png",), 0, 256),    # bright sparks rising off the fire
-    "wind_streak": ("particle", ("=trace_06.png",), 0, 256),   # long soft gust streak
-    "dust_puff": ("particle", ("=smoke_07.png",), 0, 256),     # soft dust cloud on the road
-    "dust_grit": ("particle", ("=dirt_02.png",), 0, 256),      # grit blown off the road
 }
 
 
