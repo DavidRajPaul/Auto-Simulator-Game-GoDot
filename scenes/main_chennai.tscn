@@ -32,6 +32,7 @@
 
 [ext_resource type="Script" path="res://scripts/missions/MissionDirector.gd" id="missions"]
 [ext_resource type="Script" path="res://scripts/missions/QuestDiscovery.gd" id="quest_discovery"]
+[ext_resource type="Script" path="res://scripts/ui/QuestHUD.gd" id="quest_hud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -156,3 +157,6 @@ script = ExtResource("missions")
 
 [node name="QuestDiscovery" type="Node" parent="."]
 script = ExtResource("quest_discovery")
+
+[node name="QuestHUD" type="CanvasLayer" parent="."]
+script = ExtResource("quest_hud")

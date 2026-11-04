@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=6 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="plan"]
+script = ExtResource("stage")
+id = "plan"
+kind = "dialogue"
+objective_key = "SQ21_PLAN"
+choices = PackedStringArray("SQ21_RECOVER", "SQ21_PRINT")
+[sub_resource type="Resource" id="folder"]
+script = ExtResource("stage")
+id = "folder"
+kind = "goto"
+objective_key = "SQ21_FOLDER"
+target = Vector3(385.57, 0, -1263.53)
+target_choice_stage = "plan"
+target_options = {"SQ21_RECOVER": Vector3(385.57, 0, -1263.53), "SQ21_PRINT": Vector3(219.6, 0, -940.13)}
+radius_m = 9.0
+deadline_s = 300.0
+[sub_resource type="Resource" id="interview"]
+script = ExtResource("stage")
+id = "interview"
+kind = "goto"
+objective_key = "SQ21_INTERVIEW"
+target = Vector3(377.0, 0, -1361.0)
+radius_m = 9.0
+deadline_s = 230.0
+[resource]
+script = ExtResource("def")
+id = "sq_021"
+title_key = "SQ21_TITLE"
+description_key = "SQ21_DESC"
+discoverable = true
+start_anchor = Vector3(153.88, 0, -1202.59)
+estimated_minutes = 6
+category = "help"
+reward_inr = 125
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("plan"), SubResource("folder"), SubResource("interview")])

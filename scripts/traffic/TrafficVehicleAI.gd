@@ -326,6 +326,22 @@ func pick_service_variant(rng: RandomNumberGenerator) -> void:
 	(_shape.shape as BoxShape3D).size = body
 	_shape.position.y = body.y * 0.5
 
+## Mission-only override of an existing service slot after place() picks its normal variant.
+func show_quest_ambulance() -> void:
+	if archetype != Archetype.SERVICE or _service_models.size() <= 4:
+		return
+	service_variant = 4
+	emergency_active = true
+	_emergency_bar.visible = true
+	_siren.play()
+	for i: int in _service_models.size():
+		if _service_models[i] != null:
+			_service_models[i].visible = i == 4
+	body = SERVICE_VARIANTS[4][1] as Vector3
+	(_shape.shape as BoxShape3D).size = body
+	_shape.position.y = body.y * 0.5
+	cruise_speed_mps = PHYSICS.emergency_speed_mps
+
 ## Two-wheelers: a Chennai street colour (or the model's own); NPC autos: mostly the stock
 ## yellow, ~30 % electric (blue / teal), ~8 % women-driven pink autos.
 func pick_paint(rng: RandomNumberGenerator) -> void:

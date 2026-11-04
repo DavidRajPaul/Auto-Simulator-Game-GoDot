@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="receipt"]
+script = ExtResource("stage")
+id = "receipt"
+kind = "goto"
+objective_key = "SQ01_RECEIPT"
+target = Vector3(1233.38, 0, 1644.99)
+radius_m = 9.0
+[sub_resource type="Resource" id="claimant"]
+script = ExtResource("stage")
+id = "claimant"
+kind = "dialogue"
+objective_key = "SQ01_CLAIMANT"
+choices = PackedStringArray("SQ01_OWNER", "SQ01_OTHER")
+next_by_choice = {"SQ01_OWNER": "handover", "SQ01_OTHER": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "goto"
+objective_key = "SQ01_VERIFY"
+target = Vector3(1126.54, 0, 1729.31)
+radius_m = 9.0
+[sub_resource type="Resource" id="ask"]
+script = ExtResource("stage")
+id = "ask"
+kind = "dialogue"
+objective_key = "SQ01_ASK"
+choices = PackedStringArray("SQ01_CHECK_RECEIPT")
+[sub_resource type="Resource" id="handover"]
+script = ExtResource("stage")
+id = "handover"
+kind = "goto"
+objective_key = "SQ01_HANDOVER"
+target = Vector3(972.05, 0, 1517.05)
+radius_m = 9.0
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "dialogue"
+objective_key = "SQ01_THANKS"
+choices = PackedStringArray("QUEST_DONE_CHOICE")
+[resource]
+script = ExtResource("def")
+id = "sq_001"
+title_key = "SQ01_TITLE"
+description_key = "SQ01_DESC"
+discoverable = true
+start_anchor = Vector3(1147.62, 0, 1621.37)
+estimated_minutes = 5
+category = "mystery"
+reward_inr = 110
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("receipt"), SubResource("claimant"), SubResource("verify"), SubResource("ask"), SubResource("handover"), SubResource("thanks")])

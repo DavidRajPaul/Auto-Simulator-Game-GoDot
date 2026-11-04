@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="brief"]
+script = ExtResource("stage")
+id = "brief"
+kind = "dialogue"
+objective_key = "SQ16_BRIEF"
+choices = PackedStringArray("SQ16_READY")
+[sub_resource type="Resource" id="yield_1"]
+script = ExtResource("stage")
+id = "yield_1"
+kind = "yield"
+objective_key = "SQ16_YIELD_1"
+target = Vector3(595.63, 0, -767.47)
+radius_m = 11.0
+deadline_s = 190.0
+[sub_resource type="Resource" id="yield_2"]
+script = ExtResource("stage")
+id = "yield_2"
+kind = "yield"
+objective_key = "SQ16_YIELD_2"
+target = Vector3(677.55, 0, -534.51)
+radius_m = 11.0
+deadline_s = 190.0
+[sub_resource type="Resource" id="yield_3"]
+script = ExtResource("stage")
+id = "yield_3"
+kind = "yield"
+objective_key = "SQ16_YIELD_3"
+target = Vector3(661.0, 0, -355.0)
+radius_m = 11.0
+deadline_s = 170.0
+[resource]
+script = ExtResource("def")
+id = "sq_016"
+title_key = "SQ16_TITLE"
+description_key = "SQ16_DESC"
+discoverable = true
+start_anchor = Vector3(537.75, 0, -492.41)
+estimated_minutes = 5
+category = "community"
+reward_inr = 120
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("yield_1"), SubResource("yield_2"), SubResource("yield_3")])

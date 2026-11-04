@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=6 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="brief"]
+script = ExtResource("stage")
+id = "brief"
+kind = "dialogue"
+objective_key = "SQ06_BRIEF"
+choices = PackedStringArray("SQ06_READY")
+[sub_resource type="Resource" id="photo_1"]
+script = ExtResource("stage")
+id = "photo_1"
+kind = "photo"
+objective_key = "SQ06_PHOTO_1"
+target = Vector3(2254.0, 0, 636.0)
+radius_m = 11.0
+deadline_s = 180.0
+facing = Vector3(-0.37, 0, 0.93)
+facing_tolerance_deg = 75.0
+[sub_resource type="Resource" id="photo_2"]
+script = ExtResource("stage")
+id = "photo_2"
+kind = "photo"
+objective_key = "SQ06_PHOTO_2"
+target = Vector3(2309.13, 0, 1107.79)
+radius_m = 11.0
+deadline_s = 220.0
+facing = Vector3(-0.11, 0, -0.99)
+facing_tolerance_deg = 85.0
+[resource]
+script = ExtResource("def")
+id = "sq_006"
+title_key = "SQ06_TITLE"
+description_key = "SQ06_DESC"
+discoverable = true
+start_anchor = Vector3(2219.81, 0, 745.04)
+estimated_minutes = 5
+category = "exploration"
+reward_inr = 120
+reward_xp = 15
+scenario_minute = 1050.0
+scenario_weather = "dry"
+stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("photo_1"), SubResource("photo_2")])

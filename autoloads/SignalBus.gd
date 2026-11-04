@@ -74,6 +74,7 @@ signal nav_instruction(info: Dictionary)
 signal guidance_distance_updated(text: String)
 ## Tap the mini-map: open (true) or close (false) the full-screen city map.
 signal full_map_requested(open: bool)
+signal full_map_state_changed(open: bool)
 ## Gap-la Gethu: passed a moving vehicle with < 0.6 m clearance above 35 km/h.
 signal near_miss(clearance_m: float)
 ## Traffic model (TrafficDensity) around the player: 0–1 density, current zone id, rush hour?
@@ -215,6 +216,11 @@ signal mission_ownership_changed(active: bool)
 signal mission_stage_changed(quest_id: String, stage_id: String, objective_key: String, choices: PackedStringArray)
 signal mission_finished(quest_id: String, status: String, reason: String)
 signal mission_profile_loaded
+signal mission_interact_requested(quest_id: String, stage_id: String)
+signal mission_stage_info(info: Dictionary)
+signal mission_timer_updated(seconds_remaining: float)
+## Returns true only if an out-of-view pooled service slot was reserved.
+var scripted_ambulance_provider: Callable = Callable()
 ## Discovery is read-only until an explicit stopped-kerb start request.
 var quest_discovery_provider: Callable = Callable()
 var quest_action_provider: Callable = Callable()
