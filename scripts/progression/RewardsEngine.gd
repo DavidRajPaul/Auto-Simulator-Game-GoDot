@@ -105,7 +105,7 @@ func grant(source: String, inr: int, xp: int, id: String, today: String) -> Dict
 	while ledger.size() > LEDGER_MAX:
 		var old: Dictionary = ledger.pop_front()
 		# Keep one-time ids (achievements, daily claims) forever; ride/ad ids can expire.
-		if not str(old["id"]).begins_with("ach:") and not str(old["id"]).begins_with("daily:"):
+		if not str(old["id"]).begins_with("ach:") and not str(old["id"]).begins_with("daily:") and not str(old["id"]).begins_with("mission:"):
 			granted_ids.erase(old["id"])
 	return {"inr": maxi(0, inr), "xp": maxi(0, xp), "refused": ""}
 

@@ -30,6 +30,8 @@
 [ext_resource type="Script" path="res://scripts/passengers/CustomNavigation.gd" id="25"]
 
 
+[ext_resource type="Script" path="res://scripts/missions/MissionDirector.gd" id="missions"]
+
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
 sky_horizon_color = Color(0.86, 0.82, 0.72, 1)
@@ -147,3 +149,6 @@ script = ExtResource("7")
 
 [node name="GarageUI" type="CanvasLayer" parent="."]
 script = ExtResource("12")
+
+[node name="MissionDirector" type="Node" parent="."]
+script = ExtResource("missions")

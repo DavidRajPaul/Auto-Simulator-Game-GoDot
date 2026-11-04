@@ -640,3 +640,12 @@ yielding. Denser roadside businesses and compound colliders reduce empty roadsid
 building-gap shortcuts. See [APK test route, tuning and map limitations](docs/P0_PHYSICS_PLAYTEST.md).
 Compound data distinguishes OSM boundaries from inferred short separators; it is not a surveyed
 reproduction of every Chennai property. Weather, wind, birds and sunsets remain P1.
+
+### Career side quests — runtime foundation
+
+Phase 1 of the 30-side-quest plan adds a resource catalogue, mission stage runtime,
+objective checkpoints, version-1 save migration and permanent completion reward
+keys. Acceptance criteria and scope are in [SIDE_QUESTS_PHASE1.md](docs/SIDE_QUESTS_PHASE1.md);
+`run_phase13_tests` covers the foundation. The production catalogue is empty: map
+badges, nearby hints, tutorial extension and authored quests are subsequent phases.
+The existing first-ride tutorial remains intact.

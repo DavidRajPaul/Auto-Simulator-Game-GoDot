@@ -88,6 +88,7 @@ var demand: float = 0.5
 var greed_streak: int = 0
 
 func _ready() -> void:
+	SignalBus.savari_busy_provider = func() -> bool: return state != State.CRUISING and state != State.COOLDOWN
 	rng.seed = rng_seed
 	if archetypes.is_empty():
 		for id: String in ["it_commuter", "tnagar_shopper", "tourist", "monsoon_rider", "college_student"]:
@@ -180,6 +181,9 @@ func _build_parked_stand_autos() -> void:
 			SignalBus.ground_snap_requested.emit(parked)
 
 func _physics_process(delta: float) -> void:
+	if GameState.mission_active:
+		_clear_unscripted_hails()
+		return
 	if graph == null:
 		graph = SignalBus.current_road_graph
 		if graph == null:
@@ -426,6 +430,8 @@ func _check_pickup() -> void:
 # --- Haggling -----------------------------------------------------------------
 
 func start_haggle(h: Dictionary) -> void:
+	if GameState.mission_active:
+		return
 	var a: PassengerArchetype = h["archetype"]
 	var scripted: bool = bool(h.get("scripted", false))
 	destination = h["destination"] if scripted else _choose_destination(a)
