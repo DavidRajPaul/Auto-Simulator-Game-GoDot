@@ -83,6 +83,7 @@ func set_open(open: bool) -> void:
 		return
 	visible = open
 	get_tree().paused = open
+	SignalBus.full_map_state_changed.emit(open)
 	if open:
 		_refresh_quests()
 		position = Vector2.ZERO

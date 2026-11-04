@@ -641,11 +641,15 @@ building-gap shortcuts. See [APK test route, tuning and map limitations](docs/P0
 Compound data distinguishes OSM boundaries from inferred short separators; it is not a surveyed
 reproduction of every Chennai property. Weather, wind, birds and sunsets remain P1.
 
-### Career side quests — runtime foundation
+### Career side quests — first six-story slice
 
-Phase 1 of the 30-side-quest plan adds a resource catalogue, mission stage runtime,
-objective checkpoints, version-1 save migration and permanent completion reward
-keys. Acceptance criteria and scope are in [SIDE_QUESTS_PHASE1.md](docs/SIDE_QUESTS_PHASE1.md);
-`run_phase13_tests` covers the foundation. The production catalogue is empty: map
-badges, nearby hints, tutorial extension and authored quests are subsequent phases.
-The existing first-ride tutorial remains intact.
+The mission foundation, save migration and one-time rewards are covered by
+[Phase 1](docs/SIDE_QUESTS_PHASE1.md). [Phase 2](docs/SIDE_QUESTS_PHASE2.md)
+adds discovery markers, a journal, roadside hints and first-ride guidance.
+[Phase 3](docs/SIDE_QUESTS_PHASE3.md) authors six optional Career stories in six
+different sectors: Wedding Gold, Last Light, Match-Day Mix-Up, Room for an Ambulance,
+Interview Folder and Garland Deadline. Branch choices, photo framing and signalled
+pull-ins share the mission engine; scripted ambulance traffic reuses the service slot.
+Placement validation and `run_six_quest_tests` protect the authored pack after map
+rebuilds. These six still need physical Android playtests and narrative balancing;
+the other 24 stories remain planned for later releases.

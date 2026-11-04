@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="order"]
+script = ExtResource("stage")
+id = "order"
+kind = "dialogue"
+objective_key = "SQ26_ORDER"
+choices = PackedStringArray("SQ26_JASMINE_FIRST", "SQ26_ROSES_FIRST")
+[sub_resource type="Resource" id="supplier_1"]
+script = ExtResource("stage")
+id = "supplier_1"
+kind = "goto"
+objective_key = "SQ26_SUPPLIER_1"
+target = Vector3(-2241.0, 0, 874.0)
+target_choice_stage = "order"
+target_options = {"SQ26_JASMINE_FIRST": Vector3(-2241.0, 0, 874.0), "SQ26_ROSES_FIRST": Vector3(-2548.0, 0, 616.0)}
+radius_m = 9.0
+deadline_s = 180.0
+max_speed_kmh = 38.0
+max_condition_loss = 10.0
+[sub_resource type="Resource" id="supplier_2"]
+script = ExtResource("stage")
+id = "supplier_2"
+kind = "goto"
+objective_key = "SQ26_SUPPLIER_2"
+target = Vector3(-2548.0, 0, 616.0)
+target_choice_stage = "order"
+target_options = {"SQ26_JASMINE_FIRST": Vector3(-2548.0, 0, 616.0), "SQ26_ROSES_FIRST": Vector3(-2241.0, 0, 874.0)}
+radius_m = 9.0
+deadline_s = 240.0
+max_speed_kmh = 38.0
+max_condition_loss = 10.0
+[sub_resource type="Resource" id="hall"]
+script = ExtResource("stage")
+id = "hall"
+kind = "goto"
+objective_key = "SQ26_HALL"
+target = Vector3(-2232.0, 0, 795.0)
+radius_m = 9.0
+deadline_s = 220.0
+max_speed_kmh = 38.0
+max_condition_loss = 10.0
+[resource]
+script = ExtResource("def")
+id = "sq_026"
+title_key = "SQ26_TITLE"
+description_key = "SQ26_DESC"
+discoverable = true
+start_anchor = Vector3(-2477.09, 0, 851.48)
+estimated_minutes = 6
+category = "skill"
+reward_inr = 135
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("order"), SubResource("supplier_1"), SubResource("supplier_2"), SubResource("hall")])

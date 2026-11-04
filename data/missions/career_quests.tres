@@ -1,5 +1,13 @@
-[gd_resource type="Resource" script_class="MissionPack" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="MissionPack" load_steps=9 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionPack.gd" id="1"]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_001.tres" id="sq01"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_006.tres" id="sq06"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_012.tres" id="sq12"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_016.tres" id="sq16"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_021.tres" id="sq21"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_026.tres" id="sq26"]
 [resource]
 script = ExtResource("1")
 id = "chennai_stories_01"
+missions = Array[ExtResource("def")]([ExtResource("sq01"), ExtResource("sq06"), ExtResource("sq12"), ExtResource("sq16"), ExtResource("sq21"), ExtResource("sq26")])

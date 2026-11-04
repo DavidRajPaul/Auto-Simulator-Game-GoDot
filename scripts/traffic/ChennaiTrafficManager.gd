@@ -41,6 +41,7 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _player: Node3D
 var _honk: AudioStreamPlayer3D
 var _respawn_queue: Array[TrafficVehicleAI] = []
+var _quest_ambulance: TrafficVehicleAI
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
 var emergency_cooldown: float = 0.0
@@ -113,6 +114,8 @@ func _ready() -> void:
 	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
 	SignalBus.scripted_traffic_requested.connect(place_scripted_vehicle)
+	SignalBus.scripted_ambulance_provider = Callable(self, "place_quest_ambulance")
+	SignalBus.mission_finished.connect(_on_quest_finished)
 	SignalBus.player_pose_updated.connect(_on_player_signal_pose)
 	for node_id: int in graph.nodes.size():
 		var big_arms: int = 0
@@ -126,6 +129,45 @@ func _ready() -> void:
 				_enforced_signal_nodes[node_id] = true
 	_build_signal_pool()
 	_initial_spawn.call_deferred()
+
+func _exit_tree() -> void:
+	if SignalBus.scripted_ambulance_provider.is_valid() and SignalBus.scripted_ambulance_provider.get_object() == self:
+		SignalBus.scripted_ambulance_provider = Callable()
+
+func _on_quest_finished(id: String, _status: String, _reason: String) -> void:
+	if id == "sq_016" and _quest_ambulance != null:
+		_quest_ambulance.deactivate()
+		_quest_ambulance = null
+
+## Use the existing SERVICE slot; never teleport a visible vehicle into the quest.
+func place_quest_ambulance() -> bool:
+	if _quest_ambulance != null:
+		return true
+	if _player == null or graph == null:
+		return false
+	var here: Dictionary = graph.closest_point(_player.global_position)
+	if int(here.get("edge", -1)) < 0:
+		return false
+	var edge: int = int(here["edge"])
+	var facing: Vector3 = -_player.global_transform.basis.z
+	var forward: Vector3 = graph.sample(edge, float(here["s"]), 1)[1]
+	var direction: int = 1 if facing.dot(forward) >= 0 else -1
+	if graph.lanes_in_dir(edge, direction) <= 0:
+		direction = -direction
+	var behind: float = float(here["s"]) - 48.0 * direction
+	if behind < 8.0 or behind > graph.edges[edge].length - 8.0:
+		return false
+	for vehicle: TrafficVehicleAI in pool:
+		if vehicle.archetype != TrafficVehicleAI.Archetype.SERVICE:
+			continue
+		if vehicle.active and ViewCheck.on_screen(get_viewport(), vehicle.global_position + Vector3.UP, vehicle.half_length() + 1.0):
+			return false
+		_respawn_queue.erase(vehicle)
+		place_vehicle(vehicle, edge, behind, direction, 0)
+		vehicle.show_quest_ambulance()
+		_quest_ambulance = vehicle
+		return true
+	return false
 
 func _load_market_zones() -> void:
 	if graph_path == "":
@@ -202,7 +244,7 @@ func _physics_process(delta: float) -> void:
 		if not v.active:
 			continue
 		v.tick(delta)
-		if v.active and not _respawn_queue.has(v) and should_recycle(v):
+		if v.active and v != _quest_ambulance and not _respawn_queue.has(v) and should_recycle(v):
 			_respawn_queue.append(v)
 	_detect_near_misses(delta)
 	if dynamic_density and graph_path != "":
