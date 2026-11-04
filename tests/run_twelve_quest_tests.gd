@@ -69,7 +69,23 @@ func play(id: String, alternate: String) -> void:
 	check(id + " completes", director.run == null and GameState.mission_completed.has(id))
 	var reward: int = GameState.wallet_inr
 	pose(quest.start_anchor)
-	check(id + " cannot reward twice", not director.start(id) and GameState.wallet_inr == reward)
+	check(id + " replay can start", director.start(id))
+	for _replay: int in 20:
+		if director.run == null or director.run.status != "active":
+			break
+		var stage: MissionStage = director.current_stage()
+		match stage.kind:
+			"dialogue":
+				director.choose(id, stage.id, stage.choices[0])
+			"goto":
+				pose(director._stage_target(stage))
+				director.tick(0.1)
+			"inspect", "calm", "park":
+				pose(stage.target, stage.facing if stage.facing != Vector3.ZERO else Vector3.FORWARD)
+				if stage.kind == "park":
+					SignalBus.gear_changed.emit(-1)
+				director.interact(id, stage.id)
+	check(id + " replay cannot reward twice", director.run == null and GameState.wallet_inr == reward)
 	check(id + " releases Career", not GameState.mission_active and GameState.mission_run.is_empty())
 
 func quality_and_parking() -> void:

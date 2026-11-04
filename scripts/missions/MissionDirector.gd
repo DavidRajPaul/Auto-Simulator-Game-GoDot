@@ -84,7 +84,7 @@ func start(id: String) -> bool:
 		return false
 	if SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call()):
 		return false
-	if GameState.mission_completed.has(id) or not registry.available(id, GameState.driver_level(), GameState.mission_completed):
+	if not registry.available(id, GameState.driver_level(), GameState.mission_completed):
 		return false
 	var definition: MissionDef = registry.get_mission(id)
 	# Validate every GoTo before taking ownership; never strand a run on an absent graph.
