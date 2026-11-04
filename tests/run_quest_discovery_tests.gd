@@ -64,6 +64,9 @@ func _run() -> void:
 	SignalBus.savari_busy_provider = func() -> bool: return true
 	check("active fare suppresses start", not discovery.can_start(mission.id))
 	SignalBus.savari_busy_provider = Callable()
+	GameState.mission_run = {"quest_id": "previous_failed", "status": "failed"}
+	check("failed quest must be resolved before a new start", not discovery.can_start(mission.id))
+	GameState.mission_run = {}
 	check("tracking does not start the mission", discovery.track(mission.id) and not GameState.mission_active and str(GameState.settings.get("quest_track_id")) == mission.id)
 	SignalBus.player_pose_updated.emit(Vector3(140, 0, 0), Vector3.FORWARD)
 	check("distant auto cannot begin", not discovery.can_start(mission.id))

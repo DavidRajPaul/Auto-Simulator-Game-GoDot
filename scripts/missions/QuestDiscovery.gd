@@ -86,7 +86,7 @@ func track(id: String) -> bool:
 
 func can_start(id: String) -> bool:
 	var q: MissionDef = registry.get_mission(id)
-	if q == null or not q.discoverable or not _has_pose or _speed_kmh > tuning.stopped_kmh or GameState.tutorial_active or GameState.mission_active or GameState.is_wrecked():
+	if q == null or not q.discoverable or not _has_pose or _speed_kmh > tuning.stopped_kmh or GameState.tutorial_active or GameState.mission_active or not GameState.mission_run.is_empty() or GameState.is_wrecked():
 		return false
 	if SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call()):
 		return false
@@ -101,7 +101,10 @@ func request_start(id: String) -> bool:
 		return false
 	var graph: RoadGraph = SignalBus.current_road_graph
 	for stage: MissionStage in registry.get_mission(id).stages:
-		if stage.kind == "goto" and not bool(graph.find_route(_position, stage.target).get("ok", false)):
+		if stage.kind in ["goto", "photo", "yield"] and not bool(graph.find_route(_position, stage.target).get("ok", false)):
+			return false
+		for option: String in stage.target_options:
+			if not bool(graph.find_route(_position, stage.target_options[option] as Vector3).get("ok", false)):
 			return false
 	SignalBus.mission_start_requested.emit(id)
 	return true
