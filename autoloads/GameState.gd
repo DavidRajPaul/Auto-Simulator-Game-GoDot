@@ -77,6 +77,9 @@ var paints_owned: PackedInt32Array = [0]
 var paint_equipped: int = 0
 var fuel_level: float = -1.0 # -1 = fill on first spawn
 var condition: float = 100.0
+## Condition and fuel of the autos not being driven: id -> {condition, fuel}. Damage and the tank
+## stay with their auto, so swapping keys neither repairs nor refuels anything.
+var parked_autos: Dictionary = {}
 const DAMAGE: DamageTuning = preload("res://data/vehicles/damage.tres")
 ## Per-vehicle wear; zero is pristine. Old saves start with no component faults.
 var component_damage: Dictionary = {}
@@ -118,6 +121,7 @@ func _ready() -> void:
 	SignalBus.player_collision.connect(_on_collision)
 	SignalBus.player_impact.connect(_on_component_impact)
 	SignalBus.signalled_turn.connect(func(_d: int) -> void:
+		rewards.add_stat("signals", 1)
 		add_respect(SIGNAL_RESPECT_XP)
 		add_driver_xp(DriverProgress.SIGNAL_XP)
 		_advance_goal("signal", 1))
@@ -184,6 +188,8 @@ func add_driver_xp(amount: int) -> void:
 		add_inr(reward)
 		SignalBus.driver_level_up.emit(lvl, DriverProgress.title(lvl), reward, str(DriverProgress.UNLOCKS.get(lvl, "")))
 	SignalBus.driver_xp_changed.emit(progress.xp, after, progress.level_progress())
+	if after > before:
+		_check_achievements()
 
 ## Whether a garage item ("horn:2", "vehicle:namma_green_ev", "paint:4") is unlocked yet.
 func is_unlocked(key: String) -> bool:
@@ -207,6 +213,7 @@ func _advance_goal(kind: String, amount: int) -> void:
 		SignalBus.goal_completed.emit(g)
 	if not had_all and progress.all_goals_done():
 		add_inr(DriverProgress.ALL_GOALS_BONUS_INR)
+		rewards.add_stat("all_goal_days", 1)
 		SignalBus.all_goals_completed.emit(DriverProgress.ALL_GOALS_BONUS_INR)
 	if not done.is_empty() or amount > 0:
 		SignalBus.goals_updated.emit(progress.goals)
@@ -246,8 +253,19 @@ func claim_daily_reward() -> Dictionary:
 func _on_ride_rewards(b: Dictionary) -> void:
 	rewards.add_stat("rides", 1)
 	rewards.add_stat("earned", int(b.get("total", 0)))
+	rewards.add_stat("ride_m", roundi(float(b.get("distance_km", 0.0)) * 1000.0))
+	rewards.bump_stat_max("best_fare", int(b.get("total", 0)))
 	if int(b.get("offer", -1)) == 0:
 		rewards.add_stat("meter_rides", 1)
+	elif int(b.get("offer", -1)) == FareCalculator.Offer.METER_MELA:
+		rewards.add_stat("mela_rides", 1)
+	if bool(b.get("on_time", false)):
+		rewards.add_stat("on_time_rides", 1)
+	if float(b.get("stars", 0.0)) >= 4.75:
+		rewards.add_stat("five_star_rides", 1)
+	if str(b.get("archetype", "")) != "":
+		rewards.stats["seen_" + str(b["archetype"])] = 1
+		rewards.set_stat("rider_types", rewards.stats.keys().filter(func(k: Variant) -> bool: return str(k).begins_with("seen_")).size())
 	if float(b.get("comfort", 0.0)) >= DriverProgress.SMOOTH_COMFORT:
 		rewards.add_stat("smooth_rides", 1)
 	if is_raining:
@@ -261,7 +279,19 @@ func _on_ride_rewards(b: Dictionary) -> void:
 		rewards.bump_stat_max("best_clean_streak", int(rewards.stats.get("clean_streak", 0)))
 	_check_achievements()
 
+## Career totals that can simply be read from the profile.
+func _sync_career_stats() -> void:
+	rewards.bump_stat_max("level", driver_level())
+	rewards.bump_stat_max("autos_owned", owned_vehicles.size())
+	rewards.bump_stat_max("paints_owned", paints_owned.size())
+	var bought: int = 0
+	for vehicle: String in upgrades:
+		for level: Variant in (upgrades[vehicle] as Dictionary).values():
+			bought += int(level)
+	rewards.bump_stat_max("upgrades_bought", bought)
+
 func _check_achievements() -> void:
+	_sync_career_stats()
 	var today: String = RewardsEngine.today_string()
 	for id: String in rewards.check_achievements(today):
 		var a: Dictionary = RewardsEngine.ACHIEVEMENTS[id]
@@ -366,6 +396,7 @@ func prestige() -> float:
 
 func _loadout_changed() -> void:
 	SignalBus.vehicle_loadout_changed.emit(active_stats())
+	_check_achievements()
 	save_game()
 
 # --- Garage purchases (return true on success) ------------------------------------------
@@ -382,9 +413,19 @@ func buy_vehicle(vehicle_id: String) -> bool:
 func select_vehicle(vehicle_id: String) -> bool:
 	if not owned_vehicles.has(vehicle_id):
 		return false
+	if vehicle_id == active_vehicle:
+		return true
+	parked_autos[active_vehicle] = {"condition": condition, "fuel": fuel_level}
 	active_vehicle = vehicle_id
-	fuel_level = base_stats(vehicle_id).fuel_capacity # new keys come with a full tank
+	# An auto that never left the stand: new keys come with a full tank and no scratches.
+	var parked: Dictionary = parked_autos.get(vehicle_id, {})
+	condition = clampf(float(parked.get("condition", 100.0)), 0.0, 100.0)
+	fuel_level = float(parked.get("fuel", base_stats(vehicle_id).fuel_capacity))
+	if fuel_level < 0.0:
+		fuel_level = base_stats(vehicle_id).fuel_capacity
 	_loadout_changed()
+	SignalBus.condition_changed.emit(condition)
+	SignalBus.damage_changed.emit()
 	SignalBus.refueled.emit(fuel_level)
 	return true
 
@@ -643,6 +684,8 @@ func end_shift() -> void:
 	summary["day"] = day
 	summary["wallet"] = wallet_inr
 	summary["rating"] = star_rating
+	rewards.add_stat("shifts", 1)
+	_check_achievements()
 	SignalBus.shift_ended.emit(summary)
 	save_game()
 
@@ -717,7 +760,7 @@ func to_dict() -> Dictionary:
 		"version": SAVE_VERSION, "wallet": wallet_inr, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
-		"fuel": fuel_level, "condition": condition, "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
+		"fuel": fuel_level, "condition": condition, "parked": parked_autos.duplicate(true), "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
 		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
 		"rewards": rewards.to_dict(), "no_ads": no_ads,
 	}
@@ -738,6 +781,12 @@ func from_dict(d: Dictionary) -> void:
 	paint_equipped = int(d.get("paint", 0)) if paints_owned.has(int(d.get("paint", 0))) else 0
 	fuel_level = float(d.get("fuel", -1.0))
 	condition = float(d.get("condition", 100.0))
+	parked_autos = {}
+	var raw_parked: Variant = d.get("parked", {})
+	if raw_parked is Dictionary:
+		for vehicle: String in raw_parked:
+			if raw_parked[vehicle] is Dictionary:
+				parked_autos[vehicle] = (raw_parked[vehicle] as Dictionary).duplicate()
 	component_damage = (d.get("damage", {}) as Dictionary).duplicate(true)
 	for vehicle: String in component_damage:
 		component_damage[vehicle] = clean_damage(component_damage[vehicle] as Dictionary)

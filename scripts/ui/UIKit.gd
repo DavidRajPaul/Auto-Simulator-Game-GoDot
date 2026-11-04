@@ -198,12 +198,7 @@ static func button(text: String, tone: Tone, on_press: Callable, font_size: int 
 	b.text = text
 	b.add_theme_font_override("font", title_font())
 	b.add_theme_font_size_override("font_size", font_size)
-	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-		b.add_theme_stylebox_override(state, button_box(tone, state))
-	var c: Array = TONES[int(tone)]
-	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(k, c[2] as Color)
-	b.add_theme_color_override("font_disabled_color", (c[2] as Color).darkened(0.4))
+	set_tone(b, tone)
 	if icon != "":
 		b.icon = reward_cell(icon)
 		b.expand_icon = true
@@ -214,6 +209,15 @@ static func button(text: String, tone: Tone, on_press: Callable, font_size: int 
 		b.pressed.connect(on_press)
 	b.add_child(_gloss())
 	return b
+
+## Recolours an existing arcade button.
+static func set_tone(b: Button, tone: Tone) -> void:
+	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		b.add_theme_stylebox_override(state, button_box(tone, state))
+	var c: Array = TONES[int(tone)]
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		b.add_theme_color_override(k, c[2] as Color)
+	b.add_theme_color_override("font_disabled_color", (c[2] as Color).darkened(0.4))
 
 ## The pill-shaped specular reflection on the upper half of a button face.
 static func _gloss() -> Panel:

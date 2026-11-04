@@ -138,11 +138,11 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 - Garage service points at Mylapore, Marina and T. Nagar (physical workshop GLB currently at Mylapore): repair, engine/suspension/tyre upgrades, horns, paints (Alangaram), 3 autos (Singara Classic, Madras King Deluxe ₹1,000, Namma Green EV ₹3,000).
 - Shift clock 6 AM → 10 PM in 18 real minutes, end-of-day summary, 3 shift goals per day.
 - Driver Level 1–20 with stand titles (Puthu Driver → Madras Legend), ₹50 × level bonuses, cosmetic unlocks.
-- Rewards engine: idempotent ledger, daily caps, 7-day login calendar, 11 achievements (Play Games ids ready), rewarded 2× fare / half tank / free tow.
+- Rewards engine: idempotent ledger, daily caps, 7-day login calendar, 38 achievements in 7 categories (Play Games ids ready), rewarded 2× fare / half tank / free tow.
 - **First-ride tutorial** with Murugan Anna of the Mylapore stand: kick-start → pull out → stop line → indicate → honk → pick up → haggle → GPS → drop off (+₹100) → free roam. Skip, replay and resume per step. "Coach mode" UI: a compact strip in the top HUD row (short task, progress dots, SKIP), a speech bubble over the left kerb that folds away after 6 s, and a ring + bouncing arrow + TAP/HOLD chip on the control. No screen dimming; taught from 7:00 AM daylight.
 
 **Shell**
-- Live splash → main menu (Continue / New career / Settings / Credits / Daily reward / Achievements) → threaded loading screen with tips.
+- Live splash → main menu (Continue, auto picker, driver profile, Daily bonus, Achievements, Settings with New career, Credits) → threaded loading screen with tips.
 - Settings: controls (steer buttons / handlebar drag / tilt), graphics Low/Medium/High (auto-picked from RAM), English / தமிழ், volumes, brake-to-reverse, replay tutorial.
 - Encrypted, device-bound save with checksum; autosave after rides, purchases, every 60 s and on app pause. Android back button pauses/resumes.
 - Ad policy service with a mock on-screen placeholder: no ads in the first minutes, never while driving or during the tutorial, capped and spaced interstitials, opt-in rewarded ads.
@@ -558,7 +558,7 @@ Each mission: `.tres` data, 6–12 voice lines, portrait, 1/2/3-star thresholds,
 
 ### Phase 10 · Monetization & platform services 🟡 started
 - ✅ `AdMonetizationManager` policy (first-session grace, spacing, per-10-minute cap, never while driving or in the tutorial), `ad_config.tres`, `MockAdProvider` placeholder, `AdMobProvider` bridge.
-- ✅ `RewardsEngine`: idempotent ledger, daily caps, 7-day login calendar, 11 achievements, rewarded 2× fare / half tank / free tow.
+- ✅ `RewardsEngine`: idempotent ledger, daily caps, 7-day login calendar, 38 achievements, rewarded 2× fare / half tank / free tow.
 - ⬜ Install the AdMob (or AppLovin MAX / CAS.AI) plugin and switch `provider`; UMP consent (GDPR / India DPDP).
 - ⬜ Play Billing: `no_ads_forever`, `starter_pack_chennai`, garage bundle, Madras Monsoon Pass.
 - 🟨 Crash reporting: **GlitchTip** (open-source, MIT, Sentry SDK compatible) wired in code and CI; waits for the `GLITCHTIP_DSN` secret. See [`docs/CRASH_REPORTING.md`](docs/CRASH_REPORTING.md).

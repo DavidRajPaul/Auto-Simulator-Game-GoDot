@@ -24,6 +24,6 @@ price_inr = 1000
 fuel_price_inr = 62.0
 comfort_damping = 0.5
 body_colour = Color(0.95, 0.72, 0.0, 1)
-canopy_colour = Color(0.05, 0.05, 0.05, 1)
+canopy_colour = Color(0.45, 0.05, 0.09, 1)
 blurb = "Mid-tier upgrade: 72 km/h, heavy-duty shocks (half the pothole discomfort), chrome bumper and a twin air-horn."
 horn_tier = 1

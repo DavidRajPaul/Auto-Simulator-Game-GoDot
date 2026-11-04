@@ -168,8 +168,8 @@ func _ready() -> void:
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
 		toast("%s: %s  +₹%d" % [tr("GOAL_DONE"), goal_text(g), DriverProgress.GOAL_INR], 3.0))
 	SignalBus.all_goals_completed.connect(func(bonus: int) -> void: toast("%s  +₹%d" % [tr("ALL_GOALS_DONE"), bonus], 4.0))
-	SignalBus.achievement_unlocked.connect(func(_id: String, a: Dictionary) -> void:
-		toast("%s — %s  +₹%d" % [str(a["title"]), str(a["desc"]), int(a["inr"])], 4.5))
+	SignalBus.achievement_unlocked.connect(func(id: String, a: Dictionary) -> void:
+		toast("%s — %s  +₹%d" % [tr(RewardsEngine.title_key(id)), tr(RewardsEngine.desc_key(id)), int(a["inr"])], 4.5))
 	SignalBus.reward_granted.connect(func(source: String, inr: int, _xp: int) -> void:
 		if source == "ad_double_fare" and inr > 0:
 			toast("2× fare!  +₹%d" % inr, 3.0)

@@ -33,6 +33,8 @@ const DRIVER_HIP: Vector3 = Vector3(0.0, GROUND_Y + 0.80, -0.20)
 const DRIVER_SEAT: Vector3 = Vector3(0.0, GROUND_Y + 0.66, -0.36)
 
 @export var paint: Color = Color(0.98, 0.76, 0.02) # Chennai auto yellow
+## Off for a showroom auto (menu preview of another auto): GameState's damage is the active auto's.
+@export var show_damage: bool = true
 @export var trim: Color = Color(0.07, 0.07, 0.07) # black canopy / skirts
 @export var seat: Color = Color(0.45, 0.08, 0.1) # maroon rexine bench
 @export var chrome: Color = Color(0.82, 0.83, 0.86)
@@ -214,7 +216,7 @@ func _process(_delta: float) -> void:
 ## Pushes GameState's damage into the shaders (on SignalBus.damage_changed, deferred one frame so
 ## GameState and this model have both handled the same impact).
 func _refresh_damage() -> void:
-	if real_body == null:
+	if real_body == null or not show_damage:
 		return
 	var wear: Dictionary = GameState.damage_state()
 	var marks: Dictionary = GameState.marks()

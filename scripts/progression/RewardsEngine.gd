@@ -28,20 +28,54 @@ const AD_OFFERS: Dictionary = {
 	"ad_wreck_repair": {"label": "AD_WRECK_REPAIR"},
 }
 
-## Achievements: id -> {title, desc, stat, target, inr, xp, gpgs (Play Games id placeholder)}.
+## Achievements: id -> {title, desc, cat, stat, target, inr, xp, unit?, gpgs (Play Games id placeholder)}.
+## title/desc are the English source; screens show tr(title_key(id)) / tr(desc_key(id)).
+## Listed in display order inside each category. unit: "inr" or "km" (stat in metres) for the progress text.
 ## Replace the gpgs ids with the real ones from Play Console → Play Games Services → Achievements.
 const ACHIEVEMENTS: Dictionary = {
-	"first_savari": {"title": "Muthal Savari", "desc": "Complete your first ride", "stat": "rides", "target": 1, "inr": 50, "xp": 20, "gpgs": "CgkI_PLACEHOLDER_01"},
-	"savari_25": {"title": "Stand Regular", "desc": "Complete 25 rides", "stat": "rides", "target": 25, "inr": 250, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_02"},
-	"savari_100": {"title": "100 Savaris", "desc": "Complete 100 rides", "stat": "rides", "target": 100, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_03"},
-	"honest_meter_20": {"title": "Meter Podu!", "desc": "Charge the correct meter 20 times", "stat": "meter_rides", "target": 20, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_04"},
-	"smooth_10": {"title": "Tea Didn't Spill", "desc": "10 rides with a full tea cup", "stat": "smooth_rides", "target": 10, "inr": 200, "xp": 80, "gpgs": "CgkI_PLACEHOLDER_05"},
-	"gethu_50": {"title": "Gap-la Guru", "desc": "50 Gap-la Gethu near misses", "stat": "near_misses", "target": 50, "inr": 250, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_06"},
-	"earn_10k": {"title": "Pocket Full of Rupees", "desc": "Earn ₹10,000 in fares", "stat": "earned", "target": 10000, "inr": 500, "xp": 150, "gpgs": "CgkI_PLACEHOLDER_07"},
-	"monsoon_10": {"title": "Monsoon Warrior", "desc": "10 rides in the rain", "stat": "rain_rides", "target": 10, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_08"},
-	"night_10": {"title": "Marina Night Rider", "desc": "10 rides after 7 PM", "stat": "night_rides", "target": 10, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_09"},
-	"streak_7": {"title": "Every Day at the Stand", "desc": "Log in 7 days in a row", "stat": "best_streak", "target": 7, "inr": 300, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_10"},
-	"no_crash_5": {"title": "Clean Hands", "desc": "5 rides in a row without a crash", "stat": "clean_streak", "target": 5, "inr": 200, "xp": 80, "gpgs": "CgkI_PLACEHOLDER_11"},
+	"first_savari": {"title": "Muthal Savari", "desc": "Complete your first ride", "cat": "rides", "stat": "rides", "target": 1, "inr": 50, "xp": 20, "gpgs": "CgkI_PLACEHOLDER_01"},
+	"savari_25": {"title": "Stand Regular", "desc": "Complete 25 rides", "cat": "rides", "stat": "rides", "target": 25, "inr": 250, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_02"},
+	"savari_100": {"title": "100 Savaris", "desc": "Complete 100 rides", "cat": "rides", "stat": "rides", "target": 100, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_03"},
+	"savari_250": {"title": "Route Expert", "desc": "Complete 250 rides", "cat": "rides", "stat": "rides", "target": 250, "inr": 1500, "xp": 400, "gpgs": "CgkI_PLACEHOLDER_12"},
+	"savari_500": {"title": "Auto Anna", "desc": "Complete 500 rides", "cat": "rides", "stat": "rides", "target": 500, "inr": 3000, "xp": 800, "gpgs": "CgkI_PLACEHOLDER_13"},
+	"km_50": {"title": "City Rounds", "desc": "Carry riders for 50 km", "cat": "rides", "stat": "ride_m", "target": 50000, "inr": 300, "xp": 120, "unit": "km", "gpgs": "CgkI_PLACEHOLDER_14"},
+	"km_250": {"title": "Every Street Known", "desc": "Carry riders for 250 km", "cat": "rides", "stat": "ride_m", "target": 250000, "inr": 1000, "xp": 300, "unit": "km", "gpgs": "CgkI_PLACEHOLDER_15"},
+	"honest_meter_20": {"title": "Meter Podu!", "desc": "Charge the correct meter 20 times", "cat": "honest", "stat": "meter_rides", "target": 20, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_04"},
+	"honest_meter_100": {"title": "Meter Mannan", "desc": "Charge the correct meter 100 times", "cat": "honest", "stat": "meter_rides", "target": 100, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_16"},
+	"mela_25": {"title": "Meter Mela Master", "desc": "Win 25 Meter Mela bargains", "cat": "honest", "stat": "mela_rides", "target": 25, "inr": 400, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_17"},
+	"on_time_25": {"title": "Right on Time", "desc": "Finish 25 rides on time", "cat": "honest", "stat": "on_time_rides", "target": 25, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_18"},
+	"rider_types_5": {"title": "Everyone's Auto", "desc": "Carry all 5 kinds of rider", "cat": "honest", "stat": "rider_types", "target": 5, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_19"},
+	"smooth_10": {"title": "Tea Didn't Spill", "desc": "10 rides with a full tea cup", "cat": "comfort", "stat": "smooth_rides", "target": 10, "inr": 200, "xp": 80, "gpgs": "CgkI_PLACEHOLDER_05"},
+	"smooth_50": {"title": "Tea Master", "desc": "50 rides with a full tea cup", "cat": "comfort", "stat": "smooth_rides", "target": 50, "inr": 800, "xp": 250, "gpgs": "CgkI_PLACEHOLDER_20"},
+	"stars_25": {"title": "Five-Star Savari", "desc": "Earn 5 stars on 25 rides", "cat": "comfort", "stat": "five_star_rides", "target": 25, "inr": 600, "xp": 200, "gpgs": "CgkI_PLACEHOLDER_21"},
+	"no_crash_5": {"title": "Clean Hands", "desc": "5 rides in a row without a crash", "cat": "comfort", "stat": "best_clean_streak", "target": 5, "inr": 200, "xp": 80, "gpgs": "CgkI_PLACEHOLDER_11"},
+	"no_crash_20": {"title": "Not a Scratch", "desc": "20 rides in a row without a crash", "cat": "comfort", "stat": "best_clean_streak", "target": 20, "inr": 800, "xp": 250, "gpgs": "CgkI_PLACEHOLDER_22"},
+	"gethu_50": {"title": "Gap-la Guru", "desc": "50 Gap-la Gethu near misses", "cat": "skill", "stat": "near_misses", "target": 50, "inr": 250, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_06"},
+	"gethu_250": {"title": "Gap Thalaivar", "desc": "250 Gap-la Gethu near misses", "cat": "skill", "stat": "near_misses", "target": 250, "inr": 800, "xp": 250, "gpgs": "CgkI_PLACEHOLDER_23"},
+	"signals_100": {"title": "Indicator Podu", "desc": "Signal 100 turns", "cat": "skill", "stat": "signals", "target": 100, "inr": 300, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_24"},
+	"monsoon_10": {"title": "Monsoon Warrior", "desc": "10 rides in the rain", "cat": "city", "stat": "rain_rides", "target": 10, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_08"},
+	"monsoon_50": {"title": "Mazhai Raja", "desc": "50 rides in the rain", "cat": "city", "stat": "rain_rides", "target": 50, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_25"},
+	"night_10": {"title": "Marina Night Rider", "desc": "10 rides after 7 PM", "cat": "city", "stat": "night_rides", "target": 10, "inr": 300, "xp": 120, "gpgs": "CgkI_PLACEHOLDER_09"},
+	"night_50": {"title": "Night Shift Legend", "desc": "50 rides after 7 PM", "cat": "city", "stat": "night_rides", "target": 50, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_26"},
+	"earn_10k": {"title": "Pocket Full of Rupees", "desc": "Earn ₹10,000 in fares", "cat": "money", "stat": "earned", "target": 10000, "inr": 500, "xp": 150, "unit": "inr", "gpgs": "CgkI_PLACEHOLDER_07"},
+	"earn_50k": {"title": "Stand Owner Material", "desc": "Earn ₹50,000 in fares", "cat": "money", "stat": "earned", "target": 50000, "inr": 1500, "xp": 400, "unit": "inr", "gpgs": "CgkI_PLACEHOLDER_27"},
+	"earn_100k": {"title": "Lakhpati Auto", "desc": "Earn ₹1,00,000 in fares", "cat": "money", "stat": "earned", "target": 100000, "inr": 3000, "xp": 800, "unit": "inr", "gpgs": "CgkI_PLACEHOLDER_28"},
+	"best_fare_200": {"title": "Long Trip Jackpot", "desc": "Earn ₹200 or more from one ride", "cat": "money", "stat": "best_fare", "target": 200, "inr": 200, "xp": 80, "unit": "inr", "gpgs": "CgkI_PLACEHOLDER_29"},
+	"streak_7": {"title": "Every Day at the Stand", "desc": "Log in 7 days in a row", "cat": "career", "stat": "best_streak", "target": 7, "inr": 300, "xp": 100, "gpgs": "CgkI_PLACEHOLDER_10"},
+	"streak_30": {"title": "Stand Pillar", "desc": "Log in 30 days in a row", "cat": "career", "stat": "best_streak", "target": 30, "inr": 1500, "xp": 400, "gpgs": "CgkI_PLACEHOLDER_30"},
+	"shifts_7": {"title": "Full Week", "desc": "Finish 7 shifts", "cat": "career", "stat": "shifts", "target": 7, "inr": 500, "xp": 150, "gpgs": "CgkI_PLACEHOLDER_31"},
+	"goals_10": {"title": "Goal Getter", "desc": "Finish all 3 shift goals on 10 days", "cat": "career", "stat": "all_goal_days", "target": 10, "inr": 600, "xp": 200, "gpgs": "CgkI_PLACEHOLDER_32"},
+	"level_5": {"title": "Mylapore Regular", "desc": "Reach Driver Level 5", "cat": "career", "stat": "level", "target": 5, "inr": 250, "xp": 0, "gpgs": "CgkI_PLACEHOLDER_33"},
+	"level_10": {"title": "Stand Leader", "desc": "Reach Driver Level 10", "cat": "career", "stat": "level", "target": 10, "inr": 750, "xp": 0, "gpgs": "CgkI_PLACEHOLDER_34"},
+	"level_20": {"title": "Madras Legend", "desc": "Reach Driver Level 20", "cat": "career", "stat": "level", "target": 20, "inr": 3000, "xp": 0, "gpgs": "CgkI_PLACEHOLDER_35"},
+	"paint_first": {"title": "Alangaram", "desc": "Buy your first paint job", "cat": "career", "stat": "paints_owned", "target": 2, "inr": 100, "xp": 40, "gpgs": "CgkI_PLACEHOLDER_36"},
+	"tuned_9": {"title": "Fully Tuned", "desc": "Buy 9 garage upgrades", "cat": "career", "stat": "upgrades_bought", "target": 9, "inr": 800, "xp": 250, "gpgs": "CgkI_PLACEHOLDER_37"},
+	"own_autos_3": {"title": "Full Stand", "desc": "Own all 3 autos", "cat": "career", "stat": "autos_owned", "target": 3, "inr": 1000, "xp": 300, "gpgs": "CgkI_PLACEHOLDER_38"},
+}
+## Display order of the achievement categories: cat id -> translation key.
+const ACHIEVEMENT_CATEGORIES: Dictionary = {
+	"rides": "ACH_CAT_RIDES", "honest": "ACH_CAT_HONEST", "comfort": "ACH_CAT_COMFORT", "skill": "ACH_CAT_SKILL",
+	"city": "ACH_CAT_CITY", "money": "ACH_CAT_MONEY", "career": "ACH_CAT_CAREER",
 }
 
 var ledger: Array[Dictionary] = [] # newest last: {id, source, inr, xp, date}
@@ -135,6 +169,34 @@ func check_achievements(today: String) -> Array[String]:
 func achievement_progress(id: String) -> float:
 	var a: Dictionary = ACHIEVEMENTS[id]
 	return clampf(float(stats.get(str(a["stat"]), 0)) / float(a["target"]), 0.0, 1.0)
+
+static func title_key(id: String) -> String:
+	return "ACH_%s" % id.to_upper()
+
+static func desc_key(id: String) -> String:
+	return "ACH_%s_DESC" % id.to_upper()
+
+## "7 / 20", "₹1,860 / ₹10,000" or "12 / 50 km".
+func achievement_progress_text(id: String) -> String:
+	var a: Dictionary = ACHIEVEMENTS[id]
+	var target: int = int(a["target"])
+	var have: int = mini(int(stats.get(str(a["stat"]), 0)), target)
+	match str(a.get("unit", "")):
+		"inr":
+			return "₹%s / ₹%s" % [UIKit.inr(have), UIKit.inr(target)]
+		"km":
+			return "%d / %d km" % [have / 1000, target / 1000]
+		_:
+			return "%d / %d" % [have, target]
+
+## Ids still locked with some progress, closest to done first.
+func nearest_achievements(count: int) -> Array[String]:
+	var open: Array[String] = []
+	for id: String in ACHIEVEMENTS:
+		if not achieved.has(id) and achievement_progress(id) > 0.0:
+			open.append(id)
+	open.sort_custom(func(a: String, b: String) -> bool: return achievement_progress(a) > achievement_progress(b))
+	return open.slice(0, count)
 
 # --- Dates & persistence ----------------------------------------------------------
 
