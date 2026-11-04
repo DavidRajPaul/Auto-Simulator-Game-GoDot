@@ -59,16 +59,20 @@ func _visible_damage(main: Node, model: AutoRickshawModel, auto: RigidBody3D) ->
 	# Fire is flame tongues over a flame body, with sparks; the Kenney sprites are shipped.
 	check("Fire has tongues, body and sparks", fx.fire.emitting and fx.flame_body.emitting and fx.embers.emitting
 		and fx.fire.amount > fx.flame_body.amount and fx.embers.amount > 0)
-	check("Fire sprites ship with the game", ["flame_tongue", "flame_body", "fire_embers", "wind_streak", "dust_puff", "dust_grit"].all(
+	check("Fire sprites ship with the game", ["flame_tongue", "flame_body", "fire_embers"].all(
 		func(n: String) -> bool: return ResourceLoader.exists("res://assets/fx/%s.png" % n)))
-	# Wind and road dust: a child of the auto, idle until a gust; no dust trail while parked.
+	# Wind dust: a child of the auto, idle until a gust; procedural (no sprite texture), small.
 	var wind: WindDustFX = auto.get_node("WindDustFX") as WindDustFX
-	check("Wind gusts run on the player auto, not in the rain", wind != null and not wind._trail.emitting)
+	check("Wind dust runs on the player auto, idle between gusts", wind != null and not wind.gusting())
 	wind._gust_left_s = 0.0
 	wind._wait_s = 0.0
 	wind._process(0.016)
-	check("A gust starts ahead of the auto and lasts a few seconds", wind._streaks.emitting and wind._gust_left_s > 2.0
-		and wind._streaks.position.z < 0.0)
+	check("A gust starts ahead of the auto and lasts a few seconds", wind.gusting() and wind._gust_left_s > 2.0
+		and wind._haze.position.z < 0.0)
+	var haze_mat: Material = (wind._haze.mesh as QuadMesh).material
+	check("Gust dust is procedural, not sprites (Nov 4)", haze_mat is ShaderMaterial
+		and (haze_mat as ShaderMaterial).shader.resource_path == "res://shaders/dust_haze.gdshader"
+		and wind._haze.amount <= 10 and wind.get_child_count() == 1)
 	wind._stop_gust()
 	# Wrecked: engine dead, the wreck signal fires, the free repair is a rewarded placement.
 	var wrecked_seen: Array[bool] = []
