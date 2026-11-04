@@ -339,6 +339,9 @@ func _test_facades(world: WorldChunkStreamer) -> void:
 	var temple: Dictionary = WorldChunkStreamer.facade_skin("temple", "mylapore", 6.0, 1)
 	var shop: Dictionary = WorldChunkStreamer.facade_skin("shop", "t_nagar", 9.0, 2)
 	_check("Temples get kaavi stripes, shops get a board per bay", temple["upper"][0] == Vector2(0, 3) and bool(shop["per_bay"]) and (shop["ground"] as Array).size() >= 10)
+	var atlas: Texture2D = load("res://assets/textures/facade_atlas.png") as Texture2D
+	_check("Facade atlas includes Chennai poster and mural cells", atlas.get_width() == 1024 and atlas.get_height() == 1024
+		and WorldChunkStreamer.CELLS_WALL_POSTERS.size() == 4 and WorldChunkStreamer.CELLS_WALL_PAINTINGS.size() == 4)
 
 # --- Sounds -----------------------------------------------------------------------------------
 

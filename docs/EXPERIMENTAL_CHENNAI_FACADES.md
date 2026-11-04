@@ -1,6 +1,6 @@
 # Experimental Chennai building facades
 
-Status: planning and source audit only; no visual/runtime changes yet.
+Status: first experimental implementation complete; Android visual acceptance pending.
 Branch: experimental/chennai-building-facades
 Audited main: 3f0978edb1268bc07ff022e398bdf15fe6817687
 Date: 2026-11-04
@@ -9,9 +9,20 @@ Date: 2026-11-04
 
 Make ordinary street buildings recognisably Chennai at auto driving height, retaining low-poly geometry and Android performance. First benchmark: Kapaleeshwarar temple tank → Luz Corner → R.K. Mutt Road. Compare identical camera, clock, weather and graphics settings before extending citywide. Keep this experiment separate from main until device acceptance.
 
+## Implemented in the first pass
+
+- Expanded the facade atlas from 1024×512 to 1024×1024 while retaining 128-pixel cells and the single shared material. This doubles source atlas area instead of committing the proposed four-times-larger 2048×1024 texture before device evidence.
+- Added original fictional Tamil cinema-style poster layers, festival notices, rental/tuition-style classifieds, torn-paper collages, kolam-inspired painting, Chennai lettering and an auto/lighthouse mural. No real actor, politician, party, brand, film title or phone number is depicted.
+- Added deterministic road-facing edge metadata in one compact generated lookup aligned with the existing chunks. 27,478 of 28,355 buildings receive at least one frontage; 2,086 corner buildings receive two.
+- Limited shop bays and awnings to selected frontages. Side and rear walls use restrained plaster, windows, gates, posters and murals.
+- Kept all decoration in each chunk's existing building mesh and shader material. There are no per-poster nodes, transparent decal layers or extra draw calls.
+- Added a frontage-direction regression test and generated the frontage lookup for all 28,355 buildings across 513 populated chunks without duplicating metadata through every chunk diff.
+
+Pending acceptance: Godot import/tests, Android CI, matching benchmark captures, draw-call/frame-time/memory measurements and owner review on Moto G40 and OnePlus Pad.
+
 ## Findings from the actual implementation
 
-- tools/art/make_facade_atlas.py creates one 1024×512 atlas: 32 cells, each 128×128 pixels. Many shop categories use the same shelves with different signs.
+- Before this pass, tools/art/make_facade_atlas.py created one 1024×512 atlas: 32 cells, each 128×128 pixels. Many shop categories used the same shelves with different signs.
 - scripts/world/WorldChunkStreamer.gd already selects zone/kind-dependent skins, splits shop floors from upper floors, and builds sunshades, awnings, AC units, parapets, rooftop headrooms and tanks.
 - facade_skin returns a building-wide skin; the wall loop applies shop ground floors to every edge. There is no frontage-specific selection here.
 - shaders/building_facade.gdshader already supports tint masks, repeated bay/floor UVs and night emission. Preserve this batching architecture.
