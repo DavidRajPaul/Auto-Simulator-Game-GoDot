@@ -178,6 +178,15 @@ func _save_tests() -> void:
 	orphan.store_string("interrupted write")
 	orphan.close()
 	check("Interrupted temporary file leaves prior save readable", GameState.load_game() and GameState.wallet_inr == 1234)
+	# Persist a full real mission, including the grant, then read the encrypted file.
+	GameState.rewards = RewardsEngine.new()
+	var before: int = GameState.wallet_inr
+	pose(0)
+	_complete_replay()
+	check("AC10 completion transaction reaches disk", GameState.load_game() and GameState.mission_run.is_empty() and GameState.mission_completed.has("test_foundation") and GameState.wallet_inr == before + 75)
+	pose(0)
+	_complete_replay()
+	check("AC10 disk reload and replay retain one payout", GameState.load_game() and GameState.wallet_inr == before + 75)
 	DirAccess.remove_absolute(GameState.save_path)
 	DirAccess.remove_absolute(GameState.save_path + ".tmp")
 	GameState.save_path = original_path
