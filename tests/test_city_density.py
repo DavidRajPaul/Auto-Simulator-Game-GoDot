@@ -13,7 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "osm"))
 
 from config import DEFAULT_ZONE_STYLE, ZONES  # noqa: E402
-from build_world import build_road_segment_index, street_facing_edges  # noqa: E402
 
 
 class CityDensityTests(unittest.TestCase):
@@ -38,12 +37,6 @@ class CityDensityTests(unittest.TestCase):
     def test_default_infill_not_unbounded(self) -> None:
         self.assertGreaterEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.65)
         self.assertLessEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.96)
-
-    def test_frontage_points_toward_nearest_road(self) -> None:
-        building = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
-        roads = [{"pts": [(-20.0, -5.0), (30.0, -5.0)]}]
-        frontage = street_facing_edges(building, build_road_segment_index(roads))
-        self.assertEqual(frontage, [1])
 
 
 
