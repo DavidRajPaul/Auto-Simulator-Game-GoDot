@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="order"]
+script = ExtResource("stage")
+id = "order"
+kind = "dialogue"
+objective_key = "SQ02_ORDER"
+choices = PackedStringArray("SQ02_LUZ_FIRST", "SQ02_GARDEN_FIRST")
+[sub_resource type="Resource" id="first"]
+script = ExtResource("stage")
+id = "first"
+kind = "goto"
+objective_key = "SQ02_FIRST"
+target = Vector3(621, 0, 1591)
+target_choice_stage = "order"
+target_options = {"SQ02_LUZ_FIRST": Vector3(621, 0, 1591), "SQ02_GARDEN_FIRST": Vector3(732, 0, 1446)}
+radius_m = 9.0
+deadline_s = 190.0
+quality_key = "coffee"
+quality_floor = 20.0
+quality_scale = 1.0
+[sub_resource type="Resource" id="second"]
+script = ExtResource("stage")
+id = "second"
+kind = "goto"
+objective_key = "SQ02_SECOND"
+target = Vector3(732, 0, 1446)
+target_choice_stage = "order"
+target_options = {"SQ02_LUZ_FIRST": Vector3(732, 0, 1446), "SQ02_GARDEN_FIRST": Vector3(621, 0, 1591)}
+radius_m = 9.0
+deadline_s = 210.0
+quality_key = "coffee"
+quality_floor = 20.0
+[sub_resource type="Resource" id="third"]
+script = ExtResource("stage")
+id = "third"
+kind = "goto"
+objective_key = "SQ02_THIRD"
+target = Vector3(731, 0, 1298)
+radius_m = 9.0
+deadline_s = 210.0
+quality_key = "coffee"
+quality_floor = 20.0
+[resource]
+script = ExtResource("def")
+id = "sq_002"
+title_key = "SQ02_TITLE"
+description_key = "SQ02_DESC"
+discoverable = true
+start_anchor = Vector3(636.3, 0, 1488)
+estimated_minutes = 5
+category = "skill"
+reward_inr = 105
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("order"), SubResource("first"), SubResource("second"), SubResource("third")])

@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=8 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="diagnose"]
+script = ExtResource("stage")
+id = "diagnose"
+kind = "dialogue"
+objective_key = "SQ24_DIAGNOSE"
+choices = PackedStringArray("SQ24_BELT", "SQ24_FUSE")
+next_by_choice = {"SQ24_BELT": "workshop", "SQ24_FUSE": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "inspect"
+objective_key = "SQ24_VERIFY"
+target = Vector3(-133, 0, -934)
+radius_m = 9.0
+[sub_resource type="Resource" id="workshop"]
+script = ExtResource("stage")
+id = "workshop"
+kind = "goto"
+objective_key = "SQ24_WORKSHOP"
+target = Vector3(-203, 0, -907)
+radius_m = 9.0
+deadline_s = 230.0
+[sub_resource type="Resource" id="stranded"]
+script = ExtResource("stage")
+id = "stranded"
+kind = "inspect"
+objective_key = "SQ24_STRANDED"
+target = Vector3(-226, 0, -861)
+radius_m = 10.0
+deadline_s = 180.0
+[sub_resource type="Resource" id="finish"]
+script = ExtResource("stage")
+id = "finish"
+kind = "dialogue"
+objective_key = "SQ24_FINISH"
+choices = PackedStringArray("QUEST_DONE_CHOICE")
+[resource]
+script = ExtResource("def")
+id = "sq_024"
+title_key = "SQ24_TITLE"
+description_key = "SQ24_DESC"
+discoverable = true
+start_anchor = Vector3(-199.3, 0, -1078.9)
+estimated_minutes = 5
+category = "help"
+scenario_minute = 1320.0
+reward_inr = 115
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("diagnose"), SubResource("verify"), SubResource("workshop"), SubResource("stranded"), SubResource("finish")])

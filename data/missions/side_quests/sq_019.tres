@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=8 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="labels"]
+script = ExtResource("stage")
+id = "labels"
+kind = "dialogue"
+objective_key = "SQ19_LABELS"
+choices = PackedStringArray("SQ19_BLUE", "SQ19_RED")
+next_by_choice = {"SQ19_BLUE": "shop_1", "SQ19_RED": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "inspect"
+objective_key = "SQ19_VERIFY"
+target = Vector3(140, 0, -703)
+radius_m = 10.0
+[sub_resource type="Resource" id="shop_1"]
+script = ExtResource("stage")
+id = "shop_1"
+kind = "goto"
+objective_key = "SQ19_SHOP_1"
+target = Vector3(89, 0, -575)
+radius_m = 9.0
+deadline_s = 240.0
+[sub_resource type="Resource" id="shop_2"]
+script = ExtResource("stage")
+id = "shop_2"
+kind = "goto"
+objective_key = "SQ19_SHOP_2"
+target = Vector3(389, 0, -479)
+radius_m = 9.0
+deadline_s = 260.0
+[sub_resource type="Resource" id="receipt"]
+script = ExtResource("stage")
+id = "receipt"
+kind = "dialogue"
+objective_key = "SQ19_RECEIPT"
+choices = PackedStringArray("QUEST_DONE_CHOICE")
+[resource]
+script = ExtResource("def")
+id = "sq_019"
+title_key = "SQ19_TITLE"
+description_key = "SQ19_DESC"
+discoverable = true
+start_anchor = Vector3(191.3, 0, -571.4)
+estimated_minutes = 5
+category = "mystery"
+reward_inr = 110
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("labels"), SubResource("verify"), SubResource("shop_1"), SubResource("shop_2"), SubResource("receipt")])

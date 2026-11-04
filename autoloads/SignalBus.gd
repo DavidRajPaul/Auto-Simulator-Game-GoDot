@@ -219,6 +219,7 @@ signal mission_profile_loaded
 signal mission_interact_requested(quest_id: String, stage_id: String)
 signal mission_stage_info(info: Dictionary)
 signal mission_timer_updated(seconds_remaining: float)
+signal mission_quality_changed(kind: String, value: float)
 ## Returns true only if an out-of-view pooled service slot was reserved.
 var scripted_ambulance_provider: Callable = Callable()
 ## Discovery is read-only until an explicit stopped-kerb start request.

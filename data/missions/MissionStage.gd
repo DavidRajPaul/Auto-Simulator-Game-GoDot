@@ -2,7 +2,7 @@ class_name MissionStage
 extends Resource
 ## Immutable authoring data. Mutable progress belongs to MissionRunState.
 @export var id: String = ""
-@export_enum("goto", "dialogue", "wait", "photo", "yield") var kind: String = "goto"
+@export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park") var kind: String = "goto"
 @export var objective_key: String = ""
 @export var target: Vector3 = Vector3.ZERO
 @export var radius_m: float = 6.0
@@ -20,4 +20,8 @@ extends Resource
 ## For the photo stage: facing relative to this horizontal vector when the shutter is pressed.
 @export var facing: Vector3 = Vector3.ZERO
 @export var facing_tolerance_deg: float = 65.0
+@export var hidden_route: bool = false
+@export var quality_key: String = ""
+@export var quality_floor: float = 0.0
+@export var quality_scale: float = 1.0
 @export var checkpoint: bool = true

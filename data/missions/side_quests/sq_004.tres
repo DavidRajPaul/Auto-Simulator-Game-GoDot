@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="clue_1"]
+script = ExtResource("stage")
+id = "clue_1"
+kind = "inspect"
+objective_key = "SQ04_CLUE_1"
+target = Vector3(677, 0, 1793)
+radius_m = 10.0
+hidden_route = true
+[sub_resource type="Resource" id="guess"]
+script = ExtResource("stage")
+id = "guess"
+kind = "dialogue"
+objective_key = "SQ04_GUESS"
+choices = PackedStringArray("SQ04_TANK", "SQ04_MARKET")
+next_by_choice = {"SQ04_TANK": "clue_2", "SQ04_MARKET": "hint"}
+[sub_resource type="Resource" id="hint"]
+script = ExtResource("stage")
+id = "hint"
+kind = "dialogue"
+objective_key = "SQ04_HINT"
+choices = PackedStringArray("SQ04_LISTEN")
+[sub_resource type="Resource" id="clue_2"]
+script = ExtResource("stage")
+id = "clue_2"
+kind = "inspect"
+objective_key = "SQ04_CLUE_2"
+target = Vector3(861, 0, 1936)
+radius_m = 10.0
+hidden_route = true
+[sub_resource type="Resource" id="reveal"]
+script = ExtResource("stage")
+id = "reveal"
+kind = "dialogue"
+objective_key = "SQ04_REVEAL"
+choices = PackedStringArray("SQ04_READY")
+[sub_resource type="Resource" id="home"]
+script = ExtResource("stage")
+id = "home"
+kind = "goto"
+objective_key = "SQ04_HOME"
+target = Vector3(954, 0, 1807)
+radius_m = 9.0
+[resource]
+script = ExtResource("def")
+id = "sq_004"
+title_key = "SQ04_TITLE"
+description_key = "SQ04_DESC"
+discoverable = true
+start_anchor = Vector3(783.9, 0, 1797.6)
+estimated_minutes = 6
+category = "exploration"
+reward_inr = 115
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("clue_1"), SubResource("guess"), SubResource("hint"), SubResource("clue_2"), SubResource("reveal"), SubResource("home")])
