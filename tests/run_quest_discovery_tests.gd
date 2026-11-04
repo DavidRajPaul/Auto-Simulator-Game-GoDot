@@ -1,6 +1,7 @@
 extends Node
 var passed: int = 0
 var failed: int = 0
+var hints: int = 0
 
 func check(label: String, ok: bool) -> void:
 	if ok:
@@ -40,6 +41,7 @@ func _run() -> void:
 	discovery.pack = pack
 	add_child(discovery)
 	discovery.set_physics_process(false)
+	SignalBus.hint_requested.connect(_count_hint)
 	check("catalogue loads a discoverable quest", discovery.catalogue().size() == 1)
 	check("cannot start before a pose", not discovery.can_start(mission.id))
 	SignalBus.player_pose_updated.emit(Vector3(100, 0, 0), Vector3.FORWARD)
@@ -47,6 +49,15 @@ func _run() -> void:
 	check("moving auto cannot begin", not discovery.can_start(mission.id))
 	SignalBus.speed_updated.emit(0.0)
 	check("stopped roadside auto can begin", discovery.can_start(mission.id))
+	discovery._physics_process(0.3)
+	check("nearby hint appears once", hints == 1)
+	discovery._physics_process(0.3)
+	check("staying inside does not repeat", hints == 1)
+	SignalBus.player_pose_updated.emit(Vector3(500, 0, 0), Vector3.FORWARD)
+	discovery._physics_process(0.3)
+	SignalBus.player_pose_updated.emit(Vector3(100, 0, 0), Vector3.FORWARD)
+	discovery._physics_process(0.3)
+	check("reentry obeys cooldown", hints == 1)
 	GameState.tutorial_active = true
 	check("tutorial suppresses start", not discovery.can_start(mission.id))
 	GameState.tutorial_active = false
@@ -66,3 +77,6 @@ func _run() -> void:
 	SignalBus.current_road_graph = null
 	print("Quest discovery: %d passed, %d failed" % [passed, failed])
 	get_tree().quit(0 if failed == 0 else 1)
+
+func _count_hint(_message: String, _seconds: float) -> void:
+	hints += 1

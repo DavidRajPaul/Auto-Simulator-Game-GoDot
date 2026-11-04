@@ -123,6 +123,9 @@ func _physics_process(delta: float) -> void:
 	_elapsed = 0.0
 	for id: String in _hinted:
 		_hinted[id] = maxf(0.0, float(_hinted[id]) - step)
+	for id: String in _inside.keys():
+		if _position.distance_to(registry.get_mission(id).start_anchor) > tuning.hint_exit_m:
+			_inside.erase(id)
 	if GameState.tutorial_active or GameState.mission_active or _modal or (SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call())):
 		return
 	var c: Vector2i = _cell(_position)

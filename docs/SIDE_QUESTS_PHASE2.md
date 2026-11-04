@@ -13,7 +13,7 @@ Status: implementation in progress. Phase 1 is merged in main (PR #80).
 | D05 | Drive past a quest or approach through a wall | No automatic acceptance, no interaction through buildings or compounds. Acceptance requires a stopped auto at its accessible kerb. |
 | D06 | Tutorial, occupied ride, active mission or modal | Nearby hints are suppressed; ordinary controls and navigation remain usable. |
 | D07 | Open journal | Catalogue, locked reasons, completion state and tracking state are consistent with the mission registry and save. Empty catalogue has a clear message. |
-| D08 | First onboarding or existing eligible save | Optional short map/track/approach lesson appears once, uses the existing coach overlay, and accepts Later as completion. |
+| D08 | First onboarding or existing eligible save | The first-ride free-roam line introduces the gold quest marker; an existing eligible save sees the short map/track/approach hint once, without blocking controls. |
 | D09 | Skip/replay/reload lesson | No duplicate rewards, no stuck input, no forced quest acceptance, and no loss of Career progress. |
 | D10 | Run on a budget phone | No permanent scene per quest; markers are pooled/batched, discovery uses spatial lookup and cached routes. Full scene remains within existing budgets. |
 | D11 | Tamil, small screen and reduced motion | Text is readable; marker states do not depend on colour alone; reduced motion disables pulses. |
