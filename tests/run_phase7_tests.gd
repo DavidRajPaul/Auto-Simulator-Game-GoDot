@@ -73,6 +73,7 @@ func _test_menu() -> void:
 	await _frames(4)
 	_check("Home screen: driver card, rank chips, vehicle card", menu._buttons.has("profile") and menu._top_chips.get_child_count() >= 4 and menu._stats_card != null)
 	_check("Home screen PLAY uses the yellow arcade style", (menu._buttons["new"] as Button).get_theme_stylebox("normal") == UIKit.button_box(UIKit.Tone.YELLOW))
+	await _test_menu_screens(menu)
 	menu.queue_free()
 	await _frames(2)
 
@@ -120,6 +121,48 @@ func _test_modals(ui: GarageUI, h: PassengerHUD, t: TouchHUD) -> void:
 func _frames(n: int) -> void:
 	for i: int in n:
 		await get_tree().process_frame
+
+## Nov 4 device feedback: card over the auto, no way to pick an auto, Lv padlocks, stale wallet.
+func _test_menu_screens(menu: MainMenu) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var ticker_y: float = (menu._root.get_node("Ticker") as Control).position.y
+	_check("Menu column ends above the ticker", menu._menu.get_global_rect().end.y <= ticker_y)
+	_check("Auto card sits at the foot of the stage, clear of the auto band", menu._stats_card.position.y > 300.0 and menu._stats_card.get_global_rect().end.y <= ticker_y)
+	_check("Auto card does not touch the menu column", not menu._stats_card.get_global_rect().intersects(menu._menu.get_global_rect()))
+	_check("Comfort bar: the smoother auto scores higher", MainMenu.comfort_score(GameState.base_stats("madras_king_deluxe").comfort_damping) > MainMenu.comfort_score(GameState.base_stats("singara_classic").comfort_damping))
+	GameState.reset_profile()
+	GameState.wallet_inr = 2000
+	menu._refresh_status()
+	menu.browse_vehicle(1)
+	_check("Browsing shows the next auto without changing what you drive", menu._shown_vehicle == "madras_king_deluxe" and GameState.active_vehicle == "singara_classic")
+	_check("A showroom auto wears none of your crash damage", menu._body.get("show_damage") == false)
+	menu.take_shown_vehicle()
+	_check("Buying from the menu makes it the active auto and updates the wallet chip", GameState.active_vehicle == "madras_king_deluxe" and UIKit.chip_value(menu._top_chips.get_child(0) as HBoxContainer).text == "₹1,000")
+	menu.browse_vehicle(1)
+	_check("Locked EV shows a level, not a price", (menu._buttons["vehicle_action"] as Button).disabled and (menu._buttons["vehicle_action"] as Button).text.contains("5"))
+	menu.browse_vehicle(1)
+	GameState.condition = 55.0
+	GameState.fuel_level = 2.0
+	GameState.select_vehicle("singara_classic")
+	GameState.condition = 80.0
+	GameState.select_vehicle("madras_king_deluxe")
+	_check("Damage and fuel stay with their auto: swapping neither repairs nor refuels", GameState.condition == 55.0 and GameState.fuel_level == 2.0)
+	GameState.reset_profile()
+	menu._shown_vehicle = GameState.active_vehicle
+	menu._refresh_status()
+	menu.open_profile()
+	menu.close_panel()
+	await _frames(1)
+	menu.open_achievements()
+	_check("Achievements panel lists every achievement", menu._panel_body.find_children("*", "GridContainer", true, false).size() == RewardsEngine.ACHIEVEMENT_CATEGORIES.size())
+	menu.close_panel()
+	var missing: Array[String] = []
+	for id: String in RewardsEngine.ACHIEVEMENTS:
+		var a: Dictionary = RewardsEngine.ACHIEVEMENTS[id]
+		if not RewardsEngine.ACHIEVEMENT_CATEGORIES.has(str(a["cat"])) or tr(RewardsEngine.title_key(id)) != str(a["title"]) or tr(RewardsEngine.desc_key(id)) != str(a["desc"]):
+			missing.append(id)
+	_check("Every achievement has a category and en/ta strings", missing.is_empty())
 
 func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	if ok:
