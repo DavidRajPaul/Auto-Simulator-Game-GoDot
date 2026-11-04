@@ -322,7 +322,7 @@ func _test_player_model(auto: AutoRickshawController) -> void:
 
 func _test_facades(world: WorldChunkStreamer) -> void:
 	var tex: Texture2D = load("res://assets/textures/facade_atlas.png") as Texture2D
-	_check("Facade atlas imported (1024×512)", tex != null and tex.get_width() == 1024 and tex.get_height() == 512)
+	_check("Facade atlas imported (1024×1024)", tex != null and tex.get_width() == 1024 and tex.get_height() == 1024)
 	var uv2_ok: int = 0
 	var shaded: int = 0
 	for k: Vector2i in world.loaded:
