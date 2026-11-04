@@ -38,6 +38,8 @@ M_PER_DEG_LON = 111320.0 * math.cos(math.radians(ORIGIN[0]))
 SIDEWALK_M = 2.5
 LANDMARK_CLEAR_M = 28.0
 SEA_CLEAR_M = 35.0
+FRONTAGE_INDEX_CELL_M = 80.0
+FRONTAGE_MAX_ROAD_M = 42.0
 
 
 # --- Geometry helpers -------------------------------------------------------------------------
@@ -57,6 +59,55 @@ def seg_point_dist(px: float, pz: float, ax: float, az: float, bx: float, bz: fl
     l2 = dx * dx + dz * dz
     t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((px - ax) * dx + (pz - az) * dz) / l2))
     return math.hypot(px - (ax + t * dx), pz - (az + t * dz))
+
+
+def build_road_segment_index(edges: list[dict]) -> dict[tuple[int, int], list[tuple[float, float, float, float]]]:
+    """Small spatial index used once while assigning each building's street-facing wall."""
+    out: dict[tuple[int, int], list[tuple[float, float, float, float]]] = defaultdict(list)
+    cell = FRONTAGE_INDEX_CELL_M
+    pad = FRONTAGE_MAX_ROAD_M
+    for edge in edges:
+        for a, b in zip(edge["pts"], edge["pts"][1:]):
+            seg = (a[0], a[1], b[0], b[1])
+            x0 = math.floor((min(a[0], b[0]) - pad) / cell)
+            x1 = math.floor((max(a[0], b[0]) + pad) / cell)
+            z0 = math.floor((min(a[1], b[1]) - pad) / cell)
+            z1 = math.floor((max(a[1], b[1]) + pad) / cell)
+            for ix in range(x0, x1 + 1):
+                for iz in range(z0, z1 + 1):
+                    out[(ix, iz)].append(seg)
+    return out
+
+
+def street_facing_edges(pts: list[tuple[float, float]], road_index: dict) -> list[int]:
+    """Return the outward wall closest to a road; indices match WorldChunkStreamer wall edges."""
+    if len(pts) < 3:
+        return []
+    area2 = sum(pts[i - 1][0] * pts[i][1] - pts[i][0] * pts[i - 1][1] for i in range(len(pts)))
+    sign = 1.0 if area2 > 0.0 else -1.0
+    cell = FRONTAGE_INDEX_CELL_M
+    scored = []
+    for i in range(len(pts)):
+        a, b = pts[i - 1], pts[i]
+        length = math.dist(a, b)
+        if length < 2.5:
+            continue
+        nx, nz = (b[1] - a[1]) / length * sign, -(b[0] - a[0]) / length * sign
+        mx, mz = (a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5
+        segs = road_index.get((math.floor(mx / cell), math.floor(mz / cell)), [])
+        if not segs:
+            continue
+        front = min(seg_point_dist(mx + nx * 1.5, mz + nz * 1.5, *seg) for seg in segs)
+        back = min(seg_point_dist(mx - nx * 1.5, mz - nz * 1.5, *seg) for seg in segs)
+        if front <= FRONTAGE_MAX_ROAD_M and front <= back + 0.5:
+            scored.append((front, i))
+    if not scored:
+        return []
+    scored.sort()
+    result = [scored[0][1]]
+    if len(scored) > 1 and scored[1][0] <= scored[0][0] + 2.5:
+        result.append(scored[1][1])
+    return sorted(result)
 
 
 def simplify(pts: list[tuple[float, float]], tol: float) -> list[tuple[float, float]]:
@@ -382,7 +433,8 @@ def _height_for(tags: dict, area: float, zone: str | None, rng: random.Random) -
     return max(3.2, min(hi * 1.3, max(lo * 0.6, floors * LEVEL_M + 0.6)))
 
 
-def build_real_buildings(elements: list[dict], raster: streets.Raster, clear_pts: list[tuple[float, float, float]]) -> list[dict]:
+def build_real_buildings(elements: list[dict], raster: streets.Raster, clear_pts: list[tuple[float, float, float]],
+                         road_index: dict) -> list[dict]:
     """Real OSM footprints, extruded. Dropped if they sit on a carriageway or in water."""
     rng = random.Random(600004)
     inv_lat = 1.0 / (M_PER_DEG_LAT * MAP_SCALE)
@@ -425,7 +477,8 @@ def build_real_buildings(elements: list[dict], raster: streets.Raster, clear_pts
         raster.fill_polygon(pts, R_BUILDING, grow=0.5)
         out.append({"p": [v for x, z in pts for v in (r2(x), r2(z))], "h": r2(h),
                     "k": BUILDING_KIND.get(tags.get("building", ""), "shop" if "shop" in tags else ""),
-                    "z": zid or "", "s": e["id"] % 9973, "cx": cx, "cz": cz})
+                    "z": zid or "", "s": e["id"] % 9973, "cx": cx, "cz": cz,
+                    "fe": street_facing_edges(pts, road_index)})
     print(f"  real buildings: {len(out)} kept, {dropped} dropped (on roads / landmarks)")
     return out
 
@@ -480,9 +533,13 @@ def build_fill_buildings(edges: list[dict], areas: dict, raster: streets.Raster,
                         signed = sum(corners[i][0] * corners[i - 1][1] - corners[i - 1][0] * corners[i][1] for i in range(4))
                         if signed < 0:
                             corners.reverse()
+                        front_mid = (px + dx * w / 2.0, pz + dz * w / 2.0)
+                        front_edge = min(range(len(corners)), key=lambda i: seg_point_dist(
+                            front_mid[0], front_mid[1], *corners[i - 1], *corners[i]))
                         raster.fill_polygon(corners, R_BUILDING, grow=1.0)
                         out.append({"p": [v for x, z in corners for v in (r2(x), r2(z))], "h": r2(h), "k": "",
-                                    "z": zid or "", "s": rng.randrange(9973), "cx": cx, "cz": cz, "f": 1})
+                                    "z": zid or "", "s": rng.randrange(9973), "cx": cx, "cz": cz, "f": 1,
+                                    "fe": [front_edge]})
                         # A second courtyard row fills sparse OSM interior plots while
                         # respecting all road, footpath, existing building and water masks.
                         # No second row on the open Marina beachfront.
@@ -510,11 +567,13 @@ def build_fill_buildings(edges: list[dict], areas: dict, raster: streets.Raster,
                                     for i in range(4))
                                 if signed_back < 0:
                                     back.reverse()
+                                back_front = min(range(len(back)), key=lambda i: seg_point_dist(
+                                    front_mid[0], front_mid[1], *back[i - 1], *back[i]))
                                 raster.fill_polygon(back, R_BUILDING, grow=1.0)
                                 out.append({"p": [v for x, z in back for v in (r2(x), r2(z))],
                                             "h": r2(h * rng.uniform(0.7, 1.15)), "k": "",
                                             "z": zid or "", "s": rng.randrange(9973),
-                                            "cx": bx, "cz": bz, "f": 1})
+                                            "cx": bx, "cz": bz, "f": 1, "fe": [back_front]})
                     t += w + rng.uniform(0.5, 3.0)
     print(f"  fill buildings: {len(out)}")
     return out
@@ -585,7 +644,8 @@ def main() -> int:
     clear_pts = [(l["x"], l["z"], clear_r[l["kind"]]) for l in landmarks if l["kind"] in clear_r]
     clear_pts += [(s_["x"], s_["z"], 9.0) for s_ in services]
     raster = make_raster(edges, areas, footprints)
-    buildings = build_real_buildings(elements, raster, clear_pts)
+    road_index = build_road_segment_index(edges)
+    buildings = build_real_buildings(elements, raster, clear_pts, road_index)
     buildings += build_fill_buildings(edges, areas, raster, clear_pts)
 
     # Chunk road surfaces and buildings.
@@ -604,8 +664,11 @@ def main() -> int:
             piece.append(b)
         if cur is not None:
             chunks[cur].setdefault("roads", []).append({"pts": [[r2(x), r2(z)] for x, z in piece], "w": r2(e["width"]), "c": e["cls"]})
+    frontages: dict[str, list[list[int]]] = defaultdict(list)
     for b in buildings:
-        chunks[key(b.pop("cx"), b.pop("cz"))].setdefault("blds", []).append(b)
+        chunk_key = key(b.pop("cx"), b.pop("cz"))
+        frontages[f"{chunk_key[0]},{chunk_key[1]}"].append(b.pop("fe", []))
+        chunks[chunk_key].setdefault("blds", []).append(b)
 
     # Road graph (node ids renumbered compactly).
     ids = {nid: i for i, nid in enumerate(sorted(nodes))}
@@ -647,6 +710,7 @@ def main() -> int:
         (OUT / "chunks" / f"c_{i}_{j}.json").write_text(json.dumps(c, separators=(",", ":")))
     (OUT / "road_graph.json").write_text(json.dumps(graph, separators=(",", ":")))
     (OUT / "areas.json").write_text(json.dumps(areas, separators=(",", ":")))
+    (OUT / "building_frontages.json").write_text(json.dumps(frontages, separators=(",", ":")))
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
     # Street names (English + Tamil) for signboards, the map and GPS turn prompts.
     import attach_road_names

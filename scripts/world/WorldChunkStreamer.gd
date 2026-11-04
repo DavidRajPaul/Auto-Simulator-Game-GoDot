@@ -47,6 +47,9 @@ const CELLS_OFFICE: Array[Vector2] = [Vector2(5, 0), Vector2(6, 0)]
 const CELLS_HOUSE_GROUND: Array[Vector2] = [Vector2(0, 1), Vector2(1, 1), Vector2(0, 1)]
 const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1), Vector2(5, 1), Vector2(6, 1), Vector2(7, 1),
 	Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(3, 2), Vector2(4, 2), Vector2(5, 2), Vector2(6, 2), Vector2(7, 2)]
+const CELLS_SIDE_GROUND: Array[Vector2] = [Vector2(7, 0), Vector2(7, 0), Vector2(3, 0), Vector2(1, 1)]
+const CELLS_WALL_POSTERS: Array[Vector2] = [Vector2(0, 4), Vector2(1, 4), Vector2(2, 4), Vector2(6, 4)]
+const CELLS_WALL_PAINTINGS: Array[Vector2] = [Vector2(3, 4), Vector2(4, 4), Vector2(5, 4), Vector2(7, 4)]
 const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
 const COLLIDER_MAX_H: float = 8.0
 const CITY_MODEL_DIR: String = "res://assets/models/city/"
@@ -149,6 +152,7 @@ var _prop_blocks: Dictionary = {}
 ## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
 var _tank_blocks: Dictionary = {}
 var _compounds: Dictionary = {}
+var _frontages: Dictionary = {}
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 ## Visual ground height per loaded chunk (SURFACE_CELL_M grid of the drawn walk / road / junction
@@ -180,6 +184,9 @@ func _ready() -> void:
 	var cf: FileAccess = FileAccess.open(world_dir.path_join("compounds.json"), FileAccess.READ)
 	if cf != null:
 		_compounds = (JSON.parse_string(cf.get_as_text()) as Dictionary).get("chunks", {})
+	var ff: FileAccess = FileAccess.open(world_dir.path_join("building_frontages.json"), FileAccess.READ)
+	if ff != null:
+		_frontages = JSON.parse_string(ff.get_as_text()) as Dictionary
 	chunk_size = float(manifest["chunk_size"])
 	for c: Array in manifest["chunks"]:
 		_available[Vector2i(int(c[0]), int(c[1]))] = true
@@ -386,6 +393,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	elif data.has("roads"):
 		mesh = _road_mesh(data["roads"] as Array)
 	var walls: Array = _compounds.get("%d,%d" % [k.x, k.y], [])
+	var frontages: Array = _frontages.get("%d,%d" % [k.x, k.y], [])
 	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls))
 	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
@@ -399,7 +407,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty():
-		root.add_child(_buildings(blds, dress, walls))
+		root.add_child(_buildings(blds, dress, walls, frontages))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
 		root.set_meta("trees", StreetTrees.records(dress["trees"] as Array))
 	return root
@@ -492,7 +500,7 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 ## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
 ## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
 ## One mesh + one trimesh wall collider per chunk.
-func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3D:
+func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], frontages: Array = []) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
@@ -509,7 +517,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 		_dbox(m, Vector3(mid.x, h * 0.5, mid.y), Vector3(a.distance_to(b), h, thickness), (b - a).normalized(), colour)
 		_dbox(m, Vector3(mid.x, h, mid.y), Vector3(a.distance_to(b), 0.12, thickness + 0.12), (b - a).normalized(), colour.darkened(0.15))
 		_wall_faces(faces, a, b, 0.0, h + 0.06, thickness)
-	for b: Dictionary in blds:
+	for building_index: int in blds.size():
+		var b: Dictionary = blds[building_index]
 		var flat: Array = b["p"]
 		var pts: PackedVector2Array = PackedVector2Array()
 		for i: int in range(0, flat.size(), 2):
@@ -525,6 +534,12 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 		if heritage != "":
 			colour = Color(0.87, 0.85, 0.80) if heritage == "cathedral" else Color(0.66, 0.34, 0.25)
 		var skin: Dictionary = facade_skin(kind, zone, h, seed_i)
+		var frontage: Array = []
+		if building_index < frontages.size():
+			frontage = frontages[building_index] as Array
+		elif b.has("fe"):
+			frontage = b["fe"] as Array
+		var has_frontage: bool = not frontage.is_empty()
 		# Signed area tells us the winding, so walls always face outwards.
 		var area2: float = 0.0
 		for i: int in pts.size():
@@ -543,9 +558,10 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 			var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
 			var tint: Color = colour.darkened(0.08 * (1.0 - absf(n2.x)))
 			var bays: float = maxf(1.0, roundf(length / BAY_M)) if length >= 2.0 else length / BAY_M
+			var street_front: bool = not has_frontage or i in frontage
 			var ground_top: float = minf(h, FLOOR_M)
-			var shops: Array = skin["ground"]
-			if bool(skin["per_bay"]) and bays >= 1.0:
+			var shops: Array = skin["ground"] if street_front else CELLS_SIDE_GROUND
+			if bool(skin["per_bay"]) and street_front and bays >= 1.0:
 				# Each ground-floor bay gets its own shop, so a street front reads as many shops.
 				var nb: int = int(bays)
 				for k: int in nb:
@@ -561,7 +577,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 				var ucell: Vector2 = ucells[absi(seed_i * 3 + (i % 2)) % ucells.size()]
 				_quad(m, a, c, FLOOR_M, h, n, tint, Vector2(0.0, 1.0), Vector2(bays, floors), ucell)
 			if detailed:
-				_wall_details(m, a, c, n2, h, colour, skin, seed_i * 17 + i)
+				_wall_details(m, a, c, n2, h, colour, skin, seed_i * 17 + i, street_front)
+				_wall_art(m, a, c, n2, h, zone, kind, seed_i * 37 + i, street_front)
 			var top: float = minf(h, COLLIDER_MAX_H)
 			faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
 				Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
@@ -640,7 +657,8 @@ static func facade_skin(kind: String, zone: String, h: float, seed_i: int) -> Di
 
 ## Per wall: a concrete sunshade ledge over every floor's windows (the Chennai chajja), shop
 ## awnings over ground-floor bays, the odd AC outdoor unit. n2 = outward normal on the ground plane.
-func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, paint: Color, skin: Dictionary, seed_i: int) -> void:
+func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, paint: Color, skin: Dictionary,
+		seed_i: int, street_front: bool = true) -> void:
 	var e: Vector2 = c - a
 	var length: float = e.length()
 	if length < 4.0:
@@ -651,7 +669,7 @@ func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, pa
 	var a2: Vector2 = a + along * 0.15
 	var c2: Vector2 = c - along * 0.15
 	var floors: int = maxi(1, floori(h / FLOOR_M + 0.01))
-	var shop: bool = bool(skin["per_bay"])
+	var shop: bool = bool(skin["per_bay"]) and street_front
 	for k: int in mini(floors, LEDGE_MAX_FLOORS):
 		if k == 0 and shop:
 			continue
@@ -674,6 +692,34 @@ func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, pa
 		var t: float = 0.2 + fposmod(float(seed_i) * 0.37, 0.6)
 		var p: Vector2 = a.lerp(c, t) + n2 * 0.17
 		_dbox(m, Vector3(p.x, float(k2) * FLOOR_M + 1.05, p.y), Vector3(0.85, 0.6, 0.32), along, AC_COLOUR)
+
+## Fictional poster layers and painted murals sit mainly on blank side/rear walls. They remain in
+## the chunk's shared mesh and material, so decoration does not create another draw call.
+func _wall_art(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, zone: String, kind: String,
+		seed_i: int, street_front: bool) -> void:
+	if h < 3.0 or kind in ["temple", "office", "civic", "shed"]:
+		return
+	var length: float = a.distance_to(c)
+	if length < 4.0:
+		return
+	var chance: int = 38 if zone == "mylapore" else (30 if zone == "t_nagar" else 20)
+	if street_front:
+		chance = int(chance / 3)
+	if absi(seed_i * 13) % 100 >= chance:
+		return
+	var along: Vector2 = (c - a) / length
+	var width: float = clampf(2.4 + fposmod(float(absi(seed_i)) * 0.73, 3.8), 2.4, length - 0.5)
+	var t: float = 0.5 + fposmod(float(seed_i) * 0.19, 0.5) - 0.25
+	var edge_pad: float = width * 0.5 / length
+	var mid: Vector2 = a.lerp(c, clampf(t, edge_pad, 1.0 - edge_pad)) + n2 * 0.02
+	var p0: Vector2 = mid - along * width * 0.5
+	var p1: Vector2 = mid + along * width * 0.5
+	var painted: bool = absi(seed_i) % 10 < 4
+	var cells: Array[Vector2] = CELLS_WALL_PAINTINGS if painted else CELLS_WALL_POSTERS
+	var art_cell: Vector2 = cells[absi(seed_i * 7) % cells.size()]
+	var art_h: float = minf(2.45, h - 0.3)
+	_quad(m, p0, p1, 0.18, art_h, Vector3(n2.x, 0.0, n2.y), Color.WHITE,
+		Vector2.ZERO, Vector2.ONE, art_cell)
 
 ## Terrace: parapet wall round the roof, the staircase head-room (mumty) with the black Sintex
 ## water tank on top of it — the most Chennai roofline there is.

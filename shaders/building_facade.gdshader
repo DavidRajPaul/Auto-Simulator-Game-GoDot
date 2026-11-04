@@ -1,5 +1,5 @@
 shader_type spatial;
-// Chennai facades from one 8×4 atlas (assets/textures/facade_atlas.png). One draw call per chunk.
+// Chennai facades from one 8×8 atlas (assets/textures/facade_atlas.png). One draw call per chunk.
 //   UV  = repeating bay/floor coordinates (u: window bays along the wall, v: floors from the ground)
 //   UV2 = atlas cell (column, row) for this quad
 //   COLOR = the building's paint; atlas alpha says where paint applies (plaster) vs. fixed colours.
@@ -8,7 +8,7 @@ shader_type spatial;
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D glow : source_color, filter_linear_mipmap, repeat_disable;
 uniform float night : hint_range(0.0, 1.0) = 0.0;
-uniform vec2 cells = vec2(8.0, 4.0);
+uniform vec2 cells = vec2(8.0, 8.0);
 
 varying vec2 cell;
 varying vec3 paint;

@@ -2,7 +2,7 @@
 """Generate the Chennai facade texture atlas used by every building (pure Pillow + raqm for Tamil).
 
 Output (committed, deterministic):
-  assets/textures/facade_atlas.png   1024×512, 8×4 cells of 128 px. RGB = colour, A = tint mask
+  assets/textures/facade_atlas.png   1024×1024, 8×8 cells of 128 px. RGB = colour, A = tint mask
                                      (255 = plaster, multiplied by the building's vertex colour;
                                      0 = keeps its own colour: glass, frames, signboards, shutters)
   assets/textures/facade_glow.png    512×256, same layout: what lights up at night
@@ -15,6 +15,9 @@ One cell = one window bay (~3.4 m) × one floor (3.2 m). Cell map (row, col):
   2: ground floor  0–7 open shops with English boards
   3: special       0 temple wall (kaavi stripes) · 1 temple ground + door · 2–3 roof terraces
                    4 heritage window (red oxide shutters) · 5 heritage veranda (thinnai) · 6–7 civic arches
+  4: wall culture  0 cinema-style poster layers · 1 festival notices · 2 local classifieds
+                   3–5 Chennai murals · 6 torn paper collage · 7 hand-painted Tamil lettering
+  5–7: reserved    weathered plaster (keeps coarse mip levels safely inside this atlas)
 Shop names are generic trades, never real brands.
 
 Usage: python3 tools/art/make_facade_atlas.py
@@ -30,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "textures"
 TAMIL_FONT = ROOT / "assets" / "fonts" / "baloo_thambi_2" / "BalooThambi2-Variable.ttf"
 C = 128  # cell size px
-COLS, ROWS = 8, 4
+COLS, ROWS = 8, 8
 
 TAMIL_SHOPS = ["டீ கடை", "மளிகை", "ஜவுளி", "மருந்தகம்", "உணவகம்"]
 ENGLISH_SHOPS = [("MEDICALS", "மருந்து"), ("MOBILES", "செல்போன்"), ("TEA STALL", "டீ"), ("TEXTILES", "ஜவுளி"),
@@ -128,6 +131,31 @@ def kaavi(col: int, row: int) -> None:
     x, y = cell(col, row)
     for i in range(8):
         rect(x + i * 16, y, x + i * 16 + 15, y + C - 1, (178, 46, 30) if i % 2 == 0 else (245, 240, 228))
+
+
+def wall_base(col: int, row: int, base: tuple = (205, 196, 176)) -> tuple[int, int]:
+    """A fixed-colour old compound wall; wall-art quads should not inherit building paint."""
+    x, y = cell(col, row)
+    rect(x, y, x + C - 1, y + C - 1, base)
+    for _ in range(18):
+        px, py = x + rng.randrange(C), y + rng.randrange(C)
+        shade = rng.randrange(-22, 13)
+        colour = tuple(max(0, min(255, v + shade)) for v in base)
+        d.ellipse([px, py, px + rng.randrange(2, 12), py + rng.randrange(2, 9)], fill=(*colour, 0))
+    return x, y
+
+
+def paper(x: int, y: int, w: int, h: int, colour: tuple, title: str, ink: tuple = (30, 25, 22)) -> None:
+    """A slightly uneven fictional poster, intentionally free of real faces, brands and parties."""
+    pts = [(x + 1, y + 2), (x + w - 2, y), (x + w, y + h - 3), (x + 3, y + h)]
+    d.polygon(pts, fill=(*colour, 0))
+    f = font(max(10, min(18, h // 4)), "Bold")
+    tw = d.textlength(title, font=f)
+    d.text((x + max(2, (w - tw) / 2), y + 4), title, font=f, fill=(*ink, 0))
+    # Graphic silhouettes suggest local cinema/festival printing without copying a person.
+    d.ellipse([x + w * 0.34, y + h * 0.40, x + w * 0.64, y + h * 0.68], fill=(45, 36, 36, 0))
+    d.rectangle([x + w * 0.29, y + h * 0.67, x + w * 0.69, y + h * 0.92], fill=(45, 36, 36, 0))
+    d.line([x + 5, y + h - 5, x + w - 5, y + h - 5], fill=(*ink, 0), width=2)
 
 
 # --- Row 0: upper floors ------------------------------------------------------------------------
@@ -261,6 +289,69 @@ for c_ in (6, 7):
     rect(x + 32, top + 24, x + 96, bottom, (60, 60, 64) if c_ == 6 else (70, 45, 30), glow_rgb=(240, 190, 120))
     d.pieslice([x + 32, top, x + 96, top + 50], 180, 360, fill=(60, 60, 64, 0) if c_ == 6 else (70, 45, 30, 0))
     d.arc([x + 28, top - 4, x + 100, top + 54], 180, 360, fill=(200, 120, 90, 0), width=5)  # sandstone arch
+
+# --- Row 4: Chennai wall culture ---------------------------------------------------------------
+# Original fictional graphics: no actor/politician likeness, party mark, phone number or brand.
+x, y = wall_base(0, 4)
+paper(x + 3, y + 7, 61, 76, (242, 204, 45), "வீரன்")
+paper(x + 56, y + 20, 68, 88, (214, 54, 48), "நாளை", (255, 244, 210))
+paper(x + 8, y + 78, 54, 46, (35, 115, 180), "வெற்றி", (250, 245, 225))
+
+x, y = wall_base(1, 4, (190, 178, 154))
+paper(x + 5, y + 6, 118, 112, (247, 235, 190), "திருவிழா", (170, 44, 30))
+d.text((x + 25, y + 36), "மயிலாப்பூர்", font=font(16, "Bold"), fill=(35, 45, 110, 0))
+for px in range(x + 18, x + 112, 15):
+    d.polygon([(px, y + 86), (px + 7, y + 98), (px + 14, y + 86)], fill=(225, 80, 40, 0))
+
+x, y = wall_base(2, 4)
+for i, (title, colour) in enumerate((("வீடு", (235, 225, 182)), ("வகுப்பு", (190, 225, 238)),
+                                     ("வேலை", (240, 196, 205)), ("வாடகை", (214, 235, 194)))):
+    px, py = x + 5 + (i % 2) * 61, y + 6 + (i // 2) * 60
+    d.rectangle([px, py, px + 56, py + 54], fill=(*colour, 0))
+    d.text((px + 7, py + 4), title, font=font(15, "Bold"), fill=(35, 35, 35, 0))
+    for ly in range(py + 27, py + 47, 7):
+        d.line([px + 7, ly, px + 48, ly], fill=(90, 85, 78, 0), width=2)
+
+x, y = wall_base(3, 4, (224, 211, 176))
+d.rectangle([x + 3, y + 3, x + C - 4, y + C - 4], outline=(25, 90, 145, 0), width=4)
+d.text((x + 12, y + 9), "சென்னை", font=font(25, "Bold"), fill=(190, 48, 35, 0))
+d.text((x + 23, y + 39), "நம்ம ஊர்", font=font(22, "Bold"), fill=(20, 85, 145, 0))
+d.arc([x + 12, y + 69, x + 116, y + 121], 190, 350, fill=(25, 110, 180, 0), width=7)
+d.ellipse([x + 91, y + 76, x + 108, y + 93], fill=(235, 145, 28, 0))
+
+x, y = wall_base(4, 4, (218, 197, 165))
+for px, py, r in ((30, 31, 20), (74, 35, 17), (103, 69, 16), (58, 88, 24), (20, 101, 14)):
+    d.ellipse([x + px - r, y + py - r, x + px + r, y + py + r], outline=(245, 242, 220, 0), width=4)
+    d.ellipse([x + px - r // 2, y + py - r // 2, x + px + r // 2, y + py + r // 2], outline=(175, 55, 42, 0), width=3)
+d.text((x + 41, y + 4), "கலை", font=font(19, "Bold"), fill=(40, 100, 55, 0))
+
+x, y = wall_base(5, 4, (212, 205, 187))
+d.polygon([(x + 8, y + 94), (x + 18, y + 65), (x + 52, y + 65), (x + 65, y + 94)], fill=(235, 178, 25, 0))
+d.rectangle([x + 18, y + 48, x + 53, y + 68], fill=(25, 30, 32, 0))
+d.ellipse([x + 15, y + 88, x + 30, y + 103], fill=(32, 32, 34, 0))
+d.ellipse([x + 48, y + 88, x + 63, y + 103], fill=(32, 32, 34, 0))
+d.polygon([(x + 90, y + 22), (x + 104, y + 22), (x + 110, y + 97), (x + 84, y + 97)], fill=(236, 234, 218, 0))
+d.rectangle([x + 87, y + 45, x + 107, y + 58], fill=(190, 48, 38, 0))
+d.arc([x + 4, y + 90, x + 122, y + 125], 180, 350, fill=(30, 110, 170, 0), width=5)
+
+x, y = wall_base(6, 4)
+for _ in range(11):
+    pw, ph = rng.randint(24, 56), rng.randint(32, 70)
+    px, py = x + rng.randint(1, C - pw - 1), y + rng.randint(1, C - ph - 1)
+    colour = BOARD_COLOURS[rng.randrange(len(BOARD_COLOURS))]
+    d.polygon([(px, py + 2), (px + pw - 2, py), (px + pw, py + ph - rng.randint(0, 8)),
+               (px + rng.randint(0, 6), py + ph)], fill=(*colour, 0))
+    d.line([px + 4, py + 8, px + pw - 5, py + 8], fill=(245, 235, 205, 0), width=3)
+
+x, y = wall_base(7, 4, (229, 211, 165))
+d.text((x + 7, y + 14), "நம்ம", font=font(31, "Bold"), fill=(185, 42, 32, 0))
+d.text((x + 7, y + 51), "சென்னை", font=font(29, "Bold"), fill=(22, 82, 142, 0))
+d.text((x + 24, y + 91), "சிங்கார சென்னை", font=font(14, "Bold"), fill=(35, 105, 52, 0))
+
+# Reserved cells carry neutral wall colour into coarse mip levels instead of transparent black.
+for row_ in range(5, ROWS):
+    for col_ in range(COLS):
+        wall_base(col_, row_)
 
 OUT.mkdir(parents=True, exist_ok=True)
 atlas.filter(ImageFilter.SMOOTH)
