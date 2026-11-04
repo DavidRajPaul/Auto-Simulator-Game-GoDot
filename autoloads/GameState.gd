@@ -897,6 +897,8 @@ func new_career() -> void:
 	reset_profile()
 	keep["first_ride_step"] = 0
 	keep["first_ride_done"] = false
+	keep.erase("quest_track_id")
+	keep.erase("quest_lesson_done")
 	settings = keep
 	day = 1
 	shift_minute = SHIFT_START_MIN

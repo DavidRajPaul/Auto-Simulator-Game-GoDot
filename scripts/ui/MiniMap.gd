@@ -14,6 +14,7 @@ var _heading: Vector3 = Vector3.FORWARD
 var _route: PackedVector3Array = PackedVector3Array()
 var _hails: Array = []
 var _services: Array[Dictionary] = []
+var _quests: Array[Dictionary] = []
 var _timer: float = 0.0
 
 ## Painted ring and pins (TouchHUD.HUD_ATLAS). The ring turns with north, so its "N" stays true.
@@ -32,6 +33,18 @@ func _ready() -> void:
 		_heading = f)
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
+	SignalBus.quest_catalogue_changed.connect(_refresh_quests)
+	SignalBus.quest_tracking_changed.connect(func(_id: String) -> void: _refresh_quests())
+	SignalBus.mission_finished.connect(func(_id: String, _status: String, _reason: String) -> void: _refresh_quests())
+	_refresh_quests()
+
+func _refresh_quests() -> void:
+	_quests.clear()
+	if SignalBus.quest_discovery_provider.is_valid():
+		var rows: Array = SignalBus.quest_discovery_provider.call()
+		for row: Dictionary in rows:
+			_quests.append(row)
+	queue_redraw()
 
 ## Tap the mini-map to choose a destination on the interactive full map.
 func _gui_input(event: InputEvent) -> void:
@@ -116,6 +129,20 @@ func _draw() -> void:
 			draw_multiline(route_lines, Color(0.16, 0.55, 1.0), 4.0)
 		var dest: Vector2 = _to_map(Vector2(_route[_route.size() - 1].x, _route[_route.size() - 1].z), centre, scale_px, rot)
 		draw_circle(_clamp_to(dest, centre, r - 7.0), 6.0, Color(0.25, 1.0, 0.45))
+	# Hails.
+	for quest: Dictionary in _quests:
+		if bool(quest["completed"]) or not bool(quest["unlocked"]):
+			continue
+		var anchor: Vector3 = quest["position"]
+		var pos: Vector2 = Vector2(anchor.x, anchor.z)
+		if pos.distance_to(Vector2(_player.x, _player.z)) > RANGE_M:
+			continue
+		var badge: Vector2 = _to_map(pos, centre, scale_px, rot)
+		if badge.distance_to(centre) > r - 12.0:
+			continue
+		draw_circle(badge, 10.0, Color("342212"))
+		draw_arc(badge, 9.0, 0.0, TAU, 16, Color("ffcf58"), 2.0)
+		draw_string(ThemeDB.fallback_font, badge + Vector2(-5, 5), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
 	# Hails.
 	# LPG/EV stops are shown from the same manifest the service interactions use.
 	for service: Dictionary in _services:
