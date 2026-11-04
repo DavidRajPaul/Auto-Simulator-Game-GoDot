@@ -105,7 +105,7 @@ func request_start(id: String) -> bool:
 			return false
 		for option: String in stage.target_options:
 			if not bool(graph.find_route(_position, stage.target_options[option] as Vector3).get("ok", false)):
-			return false
+				return false
 	SignalBus.mission_start_requested.emit(id)
 	return true
 
