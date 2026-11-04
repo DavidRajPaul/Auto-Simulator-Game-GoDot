@@ -3,6 +3,12 @@ extends Resource
 @export var id: String = ""
 @export var content_version: int = 1
 @export var title_key: String = ""
+## Discovery is opt-in until a roadside anchor has passed placement validation.
+@export var discoverable: bool = false
+@export var start_anchor: Vector3 = Vector3.ZERO
+@export var description_key: String = ""
+@export var estimated_minutes: int = 5
+@export_enum("help", "mystery", "skill", "community", "exploration") var category: String = "help"
 @export var unlock_level: int = 1
 @export var prerequisites: PackedStringArray = []
 @export var stages: Array[MissionStage] = []

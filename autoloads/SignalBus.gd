@@ -215,3 +215,8 @@ signal mission_ownership_changed(active: bool)
 signal mission_stage_changed(quest_id: String, stage_id: String, objective_key: String, choices: PackedStringArray)
 signal mission_finished(quest_id: String, status: String, reason: String)
 signal mission_profile_loaded
+## Discovery is read-only until an explicit stopped-kerb start request.
+var quest_discovery_provider: Callable = Callable()
+var quest_action_provider: Callable = Callable()
+signal quest_tracking_changed(id: String)
+signal quest_catalogue_changed

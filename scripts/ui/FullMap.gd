@@ -42,6 +42,16 @@ var _navigate_rect: Rect2
 var _clear_rect: Rect2
 var _press_at: Dictionary = {}
 var _me_rect: Rect2
+var _quest_rows: Array[Dictionary] = []
+var _quest_hits: Array[Dictionary] = []
+var _journal_open: bool = false
+var _journal_page: int = 0
+var _quest_selected: String = ""
+var _journal_rect: Rect2
+var _journal_back: Rect2
+var _journal_next: Rect2
+var _track_rect: Rect2
+var _start_rect: Rect2
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -59,6 +69,10 @@ func _ready() -> void:
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
 	SignalBus.full_map_requested.connect(set_open)
 	SignalBus.custom_navigation_state_changed.connect(_on_custom_state)
+	SignalBus.quest_catalogue_changed.connect(_refresh_quests)
+	SignalBus.quest_tracking_changed.connect(func(_id: String) -> void: _refresh_quests())
+	SignalBus.mission_finished.connect(func(_id: String, _status: String, _reason: String) -> void: _refresh_quests())
+	_refresh_quests()
 	_load_world_extras()
 	get_viewport().size_changed.connect(func() -> void:
 		size = get_viewport().get_visible_rect().size
@@ -70,6 +84,7 @@ func set_open(open: bool) -> void:
 	visible = open
 	get_tree().paused = open
 	if open:
+		_refresh_quests()
 		position = Vector2.ZERO
 		size = get_viewport().get_visible_rect().size
 		centre = Vector2(_player.x, _player.z)
@@ -145,7 +160,7 @@ func _gui_input(event: InputEvent) -> void:
 				_select_point(t.position)
 				_dragging_pin = false
 			elif _press_at.has(t.index) and (t.position as Vector2).distance_to(_press_at[t.index] as Vector2) < 14.0:
-				if not _select_garage_at(t.position) and _select_mode != 0:
+				if not _select_quest_at(t.position) and not _select_garage_at(t.position) and _select_mode != 0:
 					_select_point(t.position)
 			_press_at.erase(t.index)
 			_touches.erase(t.index)
@@ -175,7 +190,7 @@ func _gui_input(event: InputEvent) -> void:
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_at(1.0 / 1.15, mb.position)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and not DisplayServer.is_touchscreen_available():
-			if not _tap_button(mb.position) and not _select_garage_at(mb.position) and _select_mode != 0:
+			if not _tap_button(mb.position) and not _select_quest_at(mb.position) and not _select_garage_at(mb.position) and _select_mode != 0:
 				_select_point(mb.position)
 		accept_event()
 	elif event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT and not DisplayServer.is_touchscreen_available():
@@ -183,7 +198,30 @@ func _gui_input(event: InputEvent) -> void:
 		queue_redraw()
 
 func _tap_button(p: Vector2) -> bool:
-	if _destination_rect.has_point(p):
+	if _journal_rect.has_point(p):
+		_journal_open = not _journal_open
+		queue_redraw()
+	elif _journal_open and _journal_back.has_point(p):
+		_journal_page = maxi(0, _journal_page - 1)
+		queue_redraw()
+	elif _journal_open and _journal_next.has_point(p):
+		_journal_page += 1
+		queue_redraw()
+	elif _journal_open and _select_journal_row(p):
+		queue_redraw()
+	elif _track_rect.has_point(p) and _quest_selected != "":
+		if SignalBus.quest_action_provider.is_valid():
+			var selected: Dictionary = _selected_quest()
+			SignalBus.quest_action_provider.call("track", "" if bool(selected.get("tracked", false)) else _quest_selected)
+		_refresh_quests()
+	elif _start_rect.has_point(p) and _quest_selected != "":
+		if SignalBus.quest_action_provider.is_valid() and bool(SignalBus.quest_action_provider.call("start", _quest_selected)):
+			set_open(false)
+		else:
+			SignalBus.hint_requested.emit(tr("QUEST_STOP_AT_KERB"), 3.0)
+	elif _journal_open:
+		return true
+	elif _destination_rect.has_point(p):
 		_select_mode = 2
 		queue_redraw()
 	elif _navigate_rect.has_point(p):
@@ -209,6 +247,42 @@ func _tap_button(p: Vector2) -> bool:
 	else:
 		return false
 	return true
+
+func _refresh_quests() -> void:
+	_quest_rows.clear()
+	if SignalBus.quest_discovery_provider.is_valid():
+		var rows: Array = SignalBus.quest_discovery_provider.call()
+		for row: Dictionary in rows:
+			_quest_rows.append(row)
+	queue_redraw()
+
+func _selected_quest() -> Dictionary:
+	for quest: Dictionary in _quest_rows:
+		if str(quest["id"]) == _quest_selected:
+			return quest
+	return {}
+
+func _select_quest_at(p: Vector2) -> bool:
+	for hit: Dictionary in _quest_hits:
+		if (hit["rect"] as Rect2).has_point(p):
+			var members: PackedStringArray = hit["members"]
+			var index: int = members.find(_quest_selected)
+			_quest_selected = members[(index + 1) % members.size()]
+			_journal_open = false
+			queue_redraw()
+			return true
+	return false
+
+func _select_journal_row(p: Vector2) -> bool:
+	var panel_width: float = minf(390.0, size.x - 32.0)
+	var first: int = _journal_page * 5
+	for i: int in range(first, mini(first + 5, _quest_rows.size())):
+		if Rect2(Vector2(16, 134 + (i - first) * 58), Vector2(panel_width, 54)).has_point(p):
+			_quest_selected = str(_quest_rows[i]["id"])
+			_journal_open = false
+			centre = Vector2((_quest_rows[i]["position"] as Vector3).x, (_quest_rows[i]["position"] as Vector3).z)
+			return true
+	return false
 
 ## Select a service point directly instead of requiring the player to drop a pin
 ## on the garage's tiny map symbol. The usual Set Route button starts navigation.
@@ -280,12 +354,80 @@ func _draw() -> void:
 		_draw_roads(view)
 	_draw_route()
 	_draw_pois(view)
+	_draw_quests(view)
 	if graph != null:
 		_draw_labels(view)
 	_draw_hails()
 	_draw_player()
 	_draw_custom_pins()
 	_draw_chrome()
+	_draw_quest_ui()
+
+func _draw_quests(view: Rect2) -> void:
+	_quest_hits.clear()
+	var clusters: Dictionary = {}
+	for q: Dictionary in _quest_rows:
+		var pos: Vector3 = q["position"]
+		if not view.has_point(Vector2(pos.x, pos.z)):
+			continue
+		var screen: Vector2 = to_screen(Vector2(pos.x, pos.z))
+		var key: Vector2i = Vector2i(floori(screen.x / 52.0), floori(screen.y / 52.0))
+		if not clusters.has(key):
+			clusters[key] = {"point": screen, "members": PackedStringArray()}
+		var cluster: Dictionary = clusters[key]
+		var ids: PackedStringArray = cluster["members"]
+		ids.append(str(q["id"]))
+		cluster["members"] = ids
+		clusters[key] = cluster
+	for key: Vector2i in clusters:
+		var cluster: Dictionary = clusters[key]
+		var point: Vector2 = cluster["point"]
+		var members: PackedStringArray = cluster["members"]
+		var selected: bool = members.has(_quest_selected)
+		draw_circle(point, 20.0, Color("573400") if selected else Color("1e1a22"))
+		draw_arc(point, 19.0, 0.0, TAU, 24, Color("ffcf58"), 3.0)
+		draw_string(_font, point + Vector2(-16, 7), str(members.size()) if members.size() > 1 else "!", HORIZONTAL_ALIGNMENT_CENTER, 32, 23, Color.WHITE)
+		_quest_hits.append({"rect": Rect2(point - Vector2(24, 24), Vector2(48, 48)), "members": members})
+
+func _draw_quest_ui() -> void:
+	_track_rect = Rect2()
+	_start_rect = Rect2()
+	_journal_rect = Rect2(Vector2(20, 66), Vector2(158, 52))
+	_draw_quest_button(_journal_rect, tr("QUEST_JOURNAL"))
+	if _journal_open:
+		var width: float = minf(390.0, size.x - 32.0)
+		var height: float = minf(size.y - 170.0, 390.0)
+		draw_rect(Rect2(Vector2(12, 124), Vector2(width + 8, height)), Color(0.06, 0.07, 0.1, 0.97))
+		if _quest_rows.is_empty():
+			draw_string(_font, Vector2(26, 170), tr("QUEST_EMPTY"), HORIZONTAL_ALIGNMENT_LEFT, width - 28, 17, Color.WHITE)
+		for i: int in range(_journal_page * 5, mini(_journal_page * 5 + 5, _quest_rows.size())):
+			var q: Dictionary = _quest_rows[i]
+			var y: float = 158.0 + (i - _journal_page * 5) * 58.0
+			var status: String = tr("QUEST_DONE") if bool(q["completed"]) else (tr("QUEST_LOCKED") if not bool(q["unlocked"]) else (tr("QUEST_TRACKED") if bool(q["tracked"]) else tr("QUEST_AVAILABLE")))
+			draw_string(_font, Vector2(26, y), "%s  %s" % [str(q["title"]), status], HORIZONTAL_ALIGNMENT_LEFT, width - 28, 17, Color("ffcf58"))
+			draw_string(_font, Vector2(26, y + 20), str(q["description"]) if bool(q["unlocked"]) else str(q["locked_reason"]), HORIZONTAL_ALIGNMENT_LEFT, width - 28, 14, Color.WHITE)
+		_journal_back = Rect2(Vector2(20, 124 + height - 58), Vector2(90, 48))
+		_journal_next = Rect2(Vector2(width - 90, 124 + height - 58), Vector2(90, 48))
+		_draw_quest_button(_journal_back, "‹")
+		_draw_quest_button(_journal_next, "›")
+		return
+	var q: Dictionary = _selected_quest()
+	if q.is_empty():
+		return
+	var width: float = minf(size.x - 32.0, 380.0)
+	var y: float = size.y - 222.0
+	draw_rect(Rect2(Vector2(16, y), Vector2(width, 112)), Color(0.05, 0.06, 0.09, 0.96))
+	draw_string(_font, Vector2(28, y + 28), str(q["title"]), HORIZONTAL_ALIGNMENT_LEFT, width - 24, 21, Color("ffcf58"))
+	draw_string(_font, Vector2(28, y + 52), str(q["description"]), HORIZONTAL_ALIGNMENT_LEFT, width - 24, 15, Color.WHITE)
+	_track_rect = Rect2(Vector2(22, y + 58), Vector2((width - 24) * 0.5, 48))
+	_start_rect = Rect2(Vector2(26 + (width - 24) * 0.5, y + 58), Vector2((width - 24) * 0.5, 48))
+	_draw_quest_button(_track_rect, tr("QUEST_UNTRACK") if bool(q["tracked"]) else tr("QUEST_TRACK"))
+	_draw_quest_button(_start_rect, tr("QUEST_START"))
+
+func _draw_quest_button(rect: Rect2, label: String) -> void:
+	draw_rect(rect, Color(0.09, 0.09, 0.11, 0.95))
+	draw_rect(rect, Color("ffcf58"), false, 2.0)
+	draw_string(_font, rect.position + Vector2(0, 32), label, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 17, Color.WHITE)
 
 func _draw_areas(view: Rect2) -> void:
 	var cols: Dictionary = {"sea": Color(0.12, 0.3, 0.45), "water": Color(0.16, 0.36, 0.52), "park": Color(0.17, 0.33, 0.2), "beach": Color(0.55, 0.5, 0.36)}
