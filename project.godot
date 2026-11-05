@@ -150,3 +150,7 @@ options/max_breadcrumbs=100
 options/app_hang/tracking=true
 android/application_not_responding/enable_detection=true
 experimental/attach_screenshot=false
+
+[editor]
+
+export/convert_text_resources_to_binary=false
