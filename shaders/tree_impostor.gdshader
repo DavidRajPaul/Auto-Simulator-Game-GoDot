@@ -1,19 +1,4 @@
-// Far street trees (scripts/world/StreetTrees.gd): ONE upright card per tree that turns to face the
-// camera, all species in ONE MultiMesh. The atlas (tools/assets/bake_trees.py) has one row per
-// species and one column per baked view; view k looks along d(k) = (sin, 0, -cos)(PI k / views) in
-// the tree's own (unyawed) space with screen-right a(k) = (cos, 0, sin)(PI k / views). The card
-// picks the two baked views either side of the real view direction and blends them, and uses the
-// mirror image for the far half of the circle (seen from behind, a view is its own mirror).
-// INSTANCE_CUSTOM.x picks the species row; instance COLOR is the per-tree tint the near model gets.
-//
-// Nov 4 device test ("tree glitch still there"): the old 4 crossed cards were lit by straight-up
-// normals (full sun), so every tree was a pale flat blob until 56 m and then turned into the dark
-// self-shadowed model; seen edge-on a card was a thin bright slab; and 4 overlapping alpha-tested
-// cards cost 4x overdraw. Now: one card, the silhouette from the matching view, lit and toned to
-// match the near model (card_tone / normal tilt calibrated against tree_near renders).
-//
-// Inside the fade band the card draws exactly the pixels the near model (tree_near.gdshader)
-// dissolves, with the same dither and distance, so the swap is a short cross-fade, not a pop.
+// Distant trees share one billboard batch. Each seeded tree yaw selects a fixed atlas view.
 shader_type spatial;
 render_mode cull_disabled, specular_disabled, skip_vertex_transform;
 
@@ -30,9 +15,7 @@ uniform float sky_lean = 0.45;
 
 varying vec3 tint;
 varying float near_vis;
-varying vec2 uv_a;
-varying vec2 uv_b;
-varying float view_mix;
+varying vec2 atlas_uv;
 varying vec3 card_normal;
 
 // Atlas UV for baked view column `c` (0 .. 2 views - 1; the upper half are mirrored views).
@@ -54,7 +37,6 @@ void vertex() {
 	float radius = length(MODEL_MATRIX[0].xyz);
 	float height = length(MODEL_MATRIX[1].xyz);
 	vec3 ax = MODEL_MATRIX[0].xyz / max(radius, 1e-4);
-	vec3 az = normalize(MODEL_MATRIX[2].xyz);
 	vec3 cam = INV_VIEW_MATRIX[3].xyz;
 	vec2 to = origin.xz - cam.xz;
 	float len = length(to);
@@ -67,15 +49,10 @@ void vertex() {
 	vec3 n = normalize(-dir + vec3(0.0, sky_lean * 2.0, 0.0));
 	card_normal = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 	NORMAL = card_normal;
-	// View angle in the tree's own space -> the two nearest baked views and the blend between.
-	float theta = atan(dot(dir, ax), -dot(dir, az));
-	theta = theta < 0.0 ? theta + 6.2831853 : theta;
-	float f = theta / (3.14159265 / views);
-	float k = floor(f);
-	view_mix = f - k;
-	float u = qx * 0.5 + 0.5;
-	uv_a = view_uv(k, u, qy, INSTANCE_CUSTOM.x);
-	uv_b = view_uv(k + 1.0, u, qy, INSTANCE_CUSTOM.x);
+	// ax comes from the tree's seeded placement rotation, independent of the camera.
+	float angle = atan(ax.z, ax.x);
+	float column = floor(angle * views / 3.14159265 + 0.5);
+	atlas_uv = view_uv(column, qx * 0.5 + 0.5, qy, INSTANCE_CUSTOM.x);
 	tint = COLOR.rgb;
 	vec2 d = origin.xz - eye_pos.xz;
 	near_vis = 1.0 - smoothstep(fade_start, fade_end, length(d));
@@ -85,11 +62,11 @@ void fragment() {
 	if (near_vis > 0.001 && fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715)))) < near_vis) {
 		discard;
 	}
-	vec4 c = mix(texture(atlas, uv_a), texture(atlas, uv_b), view_mix);
+	vec4 c = texture(atlas, atlas_uv);
 	// Mipmaps average leaf alpha with the gaps, so with a fixed 0.5 cut-off distant crowns thin out
 	// and sparkle. Raise alpha with the mip level to keep their coverage (Golus, "anti-aliased
 	// alpha test"). The LOD comes from the UV derivatives (textureQueryLod is not in GLES3).
-	vec2 texel = uv_a * vec2(textureSize(atlas, 0));
+	vec2 texel = atlas_uv * vec2(textureSize(atlas, 0));
 	vec2 dx = dFdx(texel);
 	vec2 dy = dFdy(texel);
 	float lod = max(0.0, 0.5 * log2(max(dot(dx, dx), dot(dy, dy))));

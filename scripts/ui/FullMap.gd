@@ -355,12 +355,12 @@ func _draw() -> void:
 		_draw_roads(view)
 	_draw_route()
 	_draw_pois(view)
-	_draw_quests(view)
 	if graph != null:
 		_draw_labels(view)
 	_draw_hails()
 	_draw_player()
 	_draw_custom_pins()
+	_draw_quests(view)
 	_draw_chrome()
 	_draw_quest_ui()
 
@@ -385,9 +385,9 @@ func _draw_quests(view: Rect2) -> void:
 		var point: Vector2 = cluster["point"]
 		var members: PackedStringArray = cluster["members"]
 		var selected: bool = members.has(_quest_selected)
-		draw_circle(point, 20.0, Color("573400") if selected else Color("1e1a22"))
+		draw_circle(point, 20.0, Color("ffe59a") if selected else Color("ffcf58"))
 		draw_arc(point, 19.0, 0.0, TAU, 24, Color("ffcf58"), 3.0)
-		draw_string(_font, point + Vector2(-16, 7), str(members.size()) if members.size() > 1 else "!", HORIZONTAL_ALIGNMENT_CENTER, 32, 23, Color.WHITE)
+		draw_string(_font, point + Vector2(-16, 7), str(members.size()) if members.size() > 1 else "!", HORIZONTAL_ALIGNMENT_CENTER, 32, 23, Color.BLACK)
 		_quest_hits.append({"rect": Rect2(point - Vector2(24, 24), Vector2(48, 48)), "members": members})
 
 func _draw_quest_ui() -> void:
