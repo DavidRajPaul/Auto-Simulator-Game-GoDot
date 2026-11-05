@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="approach"]
+script = ExtResource("stage")
+id = "approach"
+kind = "dialogue"
+objective_key = "SQ27_APPROACH"
+choices = PackedStringArray("SQ27_NARROW", "SQ27_WIDE")
+[sub_resource type="Resource" id="lane"]
+script = ExtResource("stage")
+id = "lane"
+kind = "goto"
+objective_key = "SQ27_LANE"
+target = Vector3(-2526, 0, 1080)
+target_choice_stage = "approach"
+target_options = {"SQ27_NARROW": Vector3(-2526, 0, 1080), "SQ27_WIDE": Vector3(-2647, 0, 1094)}
+radius_m = 9.0
+max_speed_kmh = 25.0
+max_condition_loss = 5.0
+[sub_resource type="Resource" id="park"]
+script = ExtResource("stage")
+id = "park"
+kind = "park"
+objective_key = "SQ27_PARK"
+target = Vector3(-2513, 0, 1021)
+radius_m = 9.0
+arrival_speed_kmh = 1.0
+facing = Vector3(0, 0, -1)
+facing_tolerance_deg = 100.0
+max_speed_kmh = 18.0
+max_condition_loss = 5.0
+[sub_resource type="Resource" id="handover"]
+script = ExtResource("stage")
+id = "handover"
+kind = "dialogue"
+objective_key = "SQ27_HANDOVER"
+choices = PackedStringArray("QUEST_DONE_CHOICE")
+[resource]
+script = ExtResource("def")
+id = "sq_027"
+title_key = "SQ27_TITLE"
+description_key = "SQ27_DESC"
+discoverable = true
+start_anchor = Vector3(-2748.2, 0, 1074.1)
+estimated_minutes = 5
+category = "skill"
+reward_inr = 125
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("approach"), SubResource("lane"), SubResource("park"), SubResource("handover")])

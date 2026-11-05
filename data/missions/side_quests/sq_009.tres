@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="brief"]
+script = ExtResource("stage")
+id = "brief"
+kind = "dialogue"
+objective_key = "SQ09_BRIEF"
+choices = PackedStringArray("SQ09_DIRECT", "SQ09_CALM_FIRST")
+next_by_choice = {"SQ09_DIRECT": "care", "SQ09_CALM_FIRST": "calm"}
+[sub_resource type="Resource" id="calm"]
+script = ExtResource("stage")
+id = "calm"
+kind = "calm"
+objective_key = "SQ09_CALM"
+target = Vector3(1867, 0, 1815)
+radius_m = 10.0
+quality_key = "comfort"
+quality_floor = 15.0
+[sub_resource type="Resource" id="care"]
+script = ExtResource("stage")
+id = "care"
+kind = "goto"
+objective_key = "SQ09_CARE"
+target = Vector3(2012, 0, 1874)
+radius_m = 10.0
+deadline_s = 300.0
+quality_key = "comfort"
+quality_floor = 15.0
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "dialogue"
+objective_key = "SQ09_THANKS"
+choices = PackedStringArray("QUEST_DONE_CHOICE")
+[resource]
+script = ExtResource("def")
+id = "sq_009"
+title_key = "SQ09_TITLE"
+description_key = "SQ09_DESC"
+discoverable = true
+start_anchor = Vector3(1890, 0, 1699.8)
+estimated_minutes = 4
+category = "help"
+reward_inr = 105
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("calm"), SubResource("care"), SubResource("thanks")])

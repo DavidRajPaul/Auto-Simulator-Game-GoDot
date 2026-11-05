@@ -2,6 +2,7 @@ class_name MissionDirector
 extends Node
 ## Scene-owned runtime; the production pack is deliberately empty in Phase 1.
 @export var pack: MissionPack = preload("res://data/missions/career_quests.tres")
+@export var quality_tuning: QuestQualityTuning = preload("res://data/missions/quality_tuning.tres")
 var registry: MissionRegistry = MissionRegistry.new()
 var run: MissionRunState
 var _position: Vector3 = Vector3.ZERO
@@ -15,6 +16,7 @@ var _signalled: bool = false
 var _ambulance_placed: bool = false
 var _ambulance_retry_s: float = 0.0
 var _timer_broadcast: float = 0.0
+var _reverse_seen: bool = false
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
@@ -27,6 +29,14 @@ func _ready() -> void:
 	SignalBus.indicator_changed.connect(func(direction: int) -> void:
 		if direction != 0:
 			_signalled = true)
+	SignalBus.gear_changed.connect(func(gear: int) -> void:
+		if gear < 0:
+			_reverse_seen = true)
+	SignalBus.vehicle_dynamics.connect(_on_dynamics)
+	SignalBus.player_impact.connect(_on_impact)
+	SignalBus.horn_blasted.connect(func(_p: Vector3, _f: Vector3, _r: float, _t: int) -> void:
+		if run != null and run.status == "active" and current_stage() != null and current_stage().quality_key == "comfort":
+			_change_quality(-quality_tuning.horn_distress_loss))
 	SignalBus.mission_retry_requested.connect(retry)
 	SignalBus.mission_abandon_requested.connect(abandon)
 	SignalBus.tow_requested.connect(func(_pos: Vector3) -> void: abandon("tow"))
@@ -79,7 +89,7 @@ func start(id: String) -> bool:
 	var definition: MissionDef = registry.get_mission(id)
 	# Validate every GoTo before taking ownership; never strand a run on an absent graph.
 	for stage: MissionStage in definition.stages:
-		if stage.kind in ["goto", "photo", "yield"] and not _reachable(stage.target):
+		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park"] and not _reachable(stage.target):
 			return false
 		for option: String in stage.target_options:
 			if not _reachable(stage.target_options[option] as Vector3):
@@ -131,20 +141,28 @@ func _enter_stage(index: int) -> void:
 	run.elapsed = 0.0
 	run.condition_at_stage = GameState.condition
 	_signalled = false
+	_reverse_seen = false
+	if stage.quality_key != "" and not run.flags.has(stage.quality_key):
+		run.flags[stage.quality_key] = 100.0
 	if stage.checkpoint or run.checkpoint.is_empty():
 		run.checkpoint = {"stage_id": stage.id, "flags": run.flags.duplicate(true)}
 	_sync()
 	GameState.save_game()
+	_announce_stage()
+
+func _announce_stage() -> void:
+	var stage: MissionStage = current_stage()
 	_publish_route()
 	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, stage.objective_key, stage.choices)
 	SignalBus.mission_stage_info.emit({"id": run.quest_id, "stage": stage.id,
 		"kind": stage.kind, "objective": stage.objective_key, "choices": stage.choices,
 		"deadline": stage.deadline_s, "speed": stage.max_speed_kmh,
-		"damage": stage.max_condition_loss})
+		"damage": stage.max_condition_loss, "quality_key": stage.quality_key,
+		"quality": float(run.flags.get(stage.quality_key, 100.0))})
 
 func _publish_route() -> void:
 	var stage: MissionStage = current_stage()
-	if stage == null or stage.kind not in ["goto", "photo", "yield"]:
+	if stage == null or stage.hidden_route or stage.kind not in ["goto", "photo", "yield", "inspect", "calm", "park"]:
 		SignalBus.gps_route_changed.emit(null)
 		SignalBus.route_updated.emit(PackedVector3Array())
 		return
@@ -178,6 +196,9 @@ func tick(delta: float) -> void:
 	if run.condition_at_stage - GameState.condition > stage.max_condition_loss:
 		_fail("damage")
 		return
+	if stage.quality_key != "" and float(run.flags.get(stage.quality_key, 100.0)) < stage.quality_floor:
+		_fail("quality")
+		return
 	if stage.kind == "goto" and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
 		_advance()
 	elif stage.kind == "yield" and _signalled and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
@@ -200,15 +221,43 @@ func interact(quest_id: String, stage_id: String) -> bool:
 	if _busy or run == null or run.status != "active" or quest_id != run.quest_id or stage_id != run.stage_id:
 		return false
 	var stage: MissionStage = current_stage()
-	if stage.kind != "photo" or not _has_pose or _position.distance_to(_stage_target(stage)) > stage.radius_m or absf(_speed) > stage.arrival_speed_kmh:
+	if stage.kind not in ["photo", "inspect", "calm", "park"] or not _has_pose or _position.distance_to(_stage_target(stage)) > stage.radius_m or absf(_speed) > stage.arrival_speed_kmh:
+		return false
+	if stage.kind == "park" and not _reverse_seen:
+		SignalBus.hint_requested.emit(tr("QUEST_REVERSE_FIRST"), 2.5)
 		return false
 	var facing: Vector3 = Vector3(stage.facing.x, 0.0, stage.facing.z).normalized()
 	var heading: Vector3 = Vector3(_heading.x, 0.0, _heading.z).normalized()
 	if facing != Vector3.ZERO and (heading == Vector3.ZERO or rad_to_deg(heading.angle_to(facing)) > stage.facing_tolerance_deg):
 		SignalBus.hint_requested.emit(tr("QUEST_FACE_VIEW"), 2.5)
 		return false
+	if stage.kind == "calm" and stage.quality_key != "":
+		_change_quality(quality_tuning.calm_restore)
 	_advance()
 	return true
+
+func _on_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float) -> void:
+	if run == null or run.status != "active":
+		return
+	var stage: MissionStage = current_stage()
+	if stage == null or stage.quality_key == "":
+		return
+	var excess: float = maxf(0.0, absf(lateral_g) - quality_tuning.g_deadzone) + maxf(0.0, absf(longitudinal_g) - quality_tuning.g_deadzone) + maxf(0.0, absf(vertical_jolt) - quality_tuning.jolt_deadzone)
+	if excess > 0.0:
+		_change_quality(-excess * quality_tuning.loss_per_excess_g_second * stage.quality_scale * get_physics_process_delta_time())
+
+func _on_impact(info: Dictionary) -> void:
+	if run != null and run.status == "active" and current_stage() != null and current_stage().quality_key != "":
+		_change_quality(-clampf(float(info.get("severity", 0.0)), 0.0, 1.0) * quality_tuning.collision_loss * current_stage().quality_scale)
+
+func _change_quality(delta: float) -> void:
+	var stage: MissionStage = current_stage()
+	if stage == null or stage.quality_key == "":
+		return
+	var value: float = clampf(float(run.flags.get(stage.quality_key, 100.0)) + delta, 0.0, 100.0)
+	run.flags[stage.quality_key] = value
+	_sync()
+	SignalBus.mission_quality_changed.emit(stage.quality_key, value)
 
 func _stage_target(stage: MissionStage) -> Vector3:
 	if run != null and stage.target_options.has(str(run.flags.get(stage.target_choice_stage, ""))):
@@ -274,7 +323,8 @@ func resume_saved() -> bool:
 		return true
 	_ambulance_placed = false
 	_claim()
-	return _restore_checkpoint()
+	_announce_stage()
+	return true
 
 func _complete() -> void:
 	var definition: MissionDef = registry.get_mission(run.quest_id)

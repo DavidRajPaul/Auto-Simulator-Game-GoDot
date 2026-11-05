@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MissionPack" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionPack" load_steps=15 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionPack.gd" id="1"]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_001.tres" id="sq01"]
@@ -7,7 +7,13 @@
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_016.tres" id="sq16"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_021.tres" id="sq21"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_026.tres" id="sq26"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_002.tres" id="sq02"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_004.tres" id="sq04"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_009.tres" id="sq09"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_019.tres" id="sq19"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_024.tres" id="sq24"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_027.tres" id="sq27"]
 [resource]
 script = ExtResource("1")
 id = "chennai_stories_01"
-missions = Array[ExtResource("def")]([ExtResource("sq01"), ExtResource("sq06"), ExtResource("sq12"), ExtResource("sq16"), ExtResource("sq21"), ExtResource("sq26")])
+missions = Array[ExtResource("def")]([ExtResource("sq01"), ExtResource("sq02"), ExtResource("sq04"), ExtResource("sq06"), ExtResource("sq09"), ExtResource("sq12"), ExtResource("sq16"), ExtResource("sq19"), ExtResource("sq21"), ExtResource("sq24"), ExtResource("sq26"), ExtResource("sq27")])

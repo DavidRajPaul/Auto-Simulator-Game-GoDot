@@ -27,7 +27,7 @@ func load_pack(pack: MissionPack) -> bool:
 			if stage == null:
 				errors.append("Null stage: " + mission.id)
 				continue
-			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield"] or stage.objective_key.is_empty():
+			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park"] or stage.objective_key.is_empty():
 				errors.append("Invalid stage: " + mission.id + "/" + stage.id)
 			ids[stage.id] = true
 			if not stage.target.is_finite() or not is_finite(stage.radius_m) or stage.radius_m <= 0 or stage.arrival_speed_kmh < 0 or not is_finite(stage.arrival_speed_kmh) or not is_finite(stage.duration_s) or stage.duration_s < 0 or not is_finite(stage.deadline_s) or stage.deadline_s < 0 or not is_finite(stage.max_speed_kmh) or stage.max_speed_kmh < 0 or not is_finite(stage.max_condition_loss) or stage.max_condition_loss < 0:
@@ -36,6 +36,8 @@ func load_pack(pack: MissionPack) -> bool:
 				errors.append("Dialogue needs choices: " + stage.id)
 			if not stage.facing.is_finite() or stage.facing_tolerance_deg <= 0 or stage.facing_tolerance_deg > 180:
 				errors.append("Invalid composition angle: " + stage.id)
+			if not is_finite(stage.quality_floor) or stage.quality_floor < 0.0 or stage.quality_floor >= 100.0 or not is_finite(stage.quality_scale) or stage.quality_scale < 0.0:
+				errors.append("Invalid quality rule: " + stage.id)
 			for key: String in stage.target_options:
 				if not stage.target_options[key] is Vector3 or not (stage.target_options[key] as Vector3).is_finite():
 					errors.append("Invalid branch target: " + stage.id)

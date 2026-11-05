@@ -4,6 +4,7 @@ extends CanvasLayer
 var _card: PanelContainer
 var _objective: Label
 var _limits: Label
+var _quality: Label
 var _buttons: Array[Button] = []
 var _photo: Button
 var _retry: Button
@@ -32,6 +33,9 @@ func _ready() -> void:
 	col.add_child(_objective)
 	_limits = UIKit.label("", 14, UIKit.JASMINE)
 	col.add_child(_limits)
+	_quality = UIKit.label("", 15, UIKit.YELLOW)
+	_quality.visible = false
+	col.add_child(_quality)
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	col.add_child(row)
@@ -64,7 +68,12 @@ func _ready() -> void:
 	_card.visible = false
 	SignalBus.mission_stage_info.connect(_on_stage)
 	SignalBus.mission_timer_updated.connect(_on_timer)
+	SignalBus.mission_quality_changed.connect(func(kind: String, value: float) -> void:
+		_quality.text = tr("QUEST_QUALITY_" + kind.to_upper()) % int(value))
 	SignalBus.mission_finished.connect(_on_finished)
+	SignalBus.mission_profile_loaded.connect(func() -> void:
+		_quest_id = ""
+		_refresh())
 	SignalBus.full_map_state_changed.connect(func(open: bool) -> void:
 		_map_open = open
 		_refresh())
@@ -100,7 +109,11 @@ func _on_stage(info: Dictionary) -> void:
 		if i < choices.size():
 			_buttons[i].text = tr(choices[i])
 			_buttons[i].set_meta("choice", choices[i])
-	_photo.visible = _kind == "photo"
+	_photo.visible = _kind in ["photo", "inspect", "calm", "park"]
+	_photo.text = tr({"photo": "QUEST_TAKE_PHOTO", "inspect": "QUEST_INSPECT", "calm": "QUEST_CALM", "park": "QUEST_PARK"}.get(_kind, "QUEST_INSPECT"))
+	_quality.visible = str(info.get("quality_key", "")) != ""
+	if _quality.visible:
+		_quality.text = tr("QUEST_QUALITY_" + str(info["quality_key"]).to_upper()) % int(info["quality"])
 	_retry.visible = false
 	_leave.visible = true
 	_on_timer(_deadline)
@@ -122,6 +135,7 @@ func _on_finished(id: String, status: String, reason: String) -> void:
 	if status == "failed":
 		_objective.text = tr("QUEST_FAILED") % tr("QUEST_FAIL_" + reason.to_upper())
 		_limits.text = ""
+		_quality.visible = false
 		for button: Button in _buttons:
 			button.visible = false
 		_photo.visible = false
