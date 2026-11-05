@@ -57,6 +57,9 @@ var far_count: int = 0
 var near_positions: PackedVector3Array = PackedVector3Array()
 
 func _ready() -> void:
+	# Static trees change buffer slots when camera-relative batches are rebuilt.
+	# Interpolating those slots would move one tree from another tree’s old position.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	var meta: Dictionary = {}
 	var f: FileAccess = FileAccess.open(DIR + "trees.json", FileAccess.READ)
 	if f == null:

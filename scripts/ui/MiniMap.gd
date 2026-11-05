@@ -130,20 +130,6 @@ func _draw() -> void:
 		var dest: Vector2 = _to_map(Vector2(_route[_route.size() - 1].x, _route[_route.size() - 1].z), centre, scale_px, rot)
 		draw_circle(_clamp_to(dest, centre, r - 7.0), 6.0, Color(0.25, 1.0, 0.45))
 	# Hails.
-	for quest: Dictionary in _quests:
-		if bool(quest["completed"]) or not bool(quest["unlocked"]):
-			continue
-		var anchor: Vector3 = quest["position"]
-		var pos: Vector2 = Vector2(anchor.x, anchor.z)
-		if pos.distance_to(Vector2(_player.x, _player.z)) > RANGE_M:
-			continue
-		var badge: Vector2 = _to_map(pos, centre, scale_px, rot)
-		if badge.distance_to(centre) > r - 12.0:
-			continue
-		draw_circle(badge, 10.0, Color("342212"))
-		draw_arc(badge, 9.0, 0.0, TAU, 16, Color("ffcf58"), 2.0)
-		draw_string(ThemeDB.fallback_font, badge + Vector2(-5, 5), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
-	# Hails.
 	# LPG/EV stops are shown from the same manifest the service interactions use.
 	for service: Dictionary in _services:
 		var p: Vector2 = service["pos"]
@@ -170,6 +156,7 @@ func _draw() -> void:
 			draw_texture_rect_region(_hud_tex, Rect2(hp - Vector2(11, 26), Vector2(22, 26)), TouchHUD.HUD_REGIONS["pin_rider"] as Rect2)
 		else:
 			draw_circle(hp, 5.0, Color(1.0, 0.82, 0.1))
+	_draw_quest_pins(centre, scale_px, rot, r)
 	# Player arrow + north tick + rim.
 	if _hud_tex != null:
 		draw_texture_rect_region(_hud_tex, Rect2(centre - Vector2(13, 15), Vector2(26, 30)), TouchHUD.HUD_REGIONS["pin_player"] as Rect2)
@@ -209,3 +196,19 @@ func _clip(a: Vector2, b: Vector2, centre: Vector2, radius: float) -> PackedVect
 	if t2 - t1 < 0.0001:
 		return PackedVector2Array()
 	return PackedVector2Array([a + d * t1, a + d * t2])
+
+## Draw local quests above service and passenger pins. When the tracked quest is
+## outside the map, keep its badge inside the rim as a direction indicator.
+func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) -> void:
+	for quest: Dictionary in _quests:
+		if bool(quest["completed"]) or not bool(quest["unlocked"]):
+			continue
+		var anchor: Vector3 = quest["position"]
+		var badge: Vector2 = _to_map(Vector2(anchor.x, anchor.z), centre, scale_px, rot)
+		if badge.distance_to(centre) > r - 16.0:
+			if not bool(quest["tracked"]) and badge.distance_to(centre) > r:
+				continue
+			badge = _clamp_to(badge, centre, r - 16.0)
+		draw_circle(badge, 11.0, Color("201b12"))
+		draw_circle(badge, 9.0, Color("ffcf58"))
+		draw_string(ThemeDB.fallback_font, badge + Vector2(-6, 5), "!", HORIZONTAL_ALIGNMENT_CENTER, 12, 15, Color.BLACK)
