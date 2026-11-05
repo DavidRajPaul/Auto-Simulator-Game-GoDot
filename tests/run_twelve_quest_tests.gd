@@ -25,7 +25,7 @@ func _run() -> void:
 	director = MissionDirector.new()
 	add_child(director)
 	director.set_physics_process(false)
-	check("twelve distinct definitions", director.registry.definitions.size() == 12)
+	check("original twelve definitions remain", director.registry.definitions.size() == 24)
 	for id: String in ["sq_002", "sq_004", "sq_009", "sq_019", "sq_024", "sq_027"]:
 		play(id, "")
 	for variation: Array in [["sq_002", "SQ02_GARDEN_FIRST"], ["sq_004", "SQ04_MARKET"],

@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="lamps"]
+script = ExtResource("stage")
+id = "lamps"
+kind = "cargo"
+objective_key = "SQ05_LAMPS"
+target = Vector3(1154.5, 0, 2110.1)
+radius_m = 9.0
+cargo_delta = 2
+quality_floor = 20.0
+quality_key = "lamps"
+[sub_resource type="Resource" id="sign"]
+script = ExtResource("stage")
+id = "sign"
+kind = "dialogue"
+objective_key = "SQ05_SIGN"
+choices = PackedStringArray("SQ05_OUTER", "SQ05_TEMPLE")
+next_by_choice = {"SQ05_OUTER": "outer", "SQ05_TEMPLE": "wrong"}
+[sub_resource type="Resource" id="wrong"]
+script = ExtResource("stage")
+id = "wrong"
+kind = "inspect"
+objective_key = "SQ05_WRONG"
+target = Vector3(1098, 0, 2108.1)
+radius_m = 9.0
+[sub_resource type="Resource" id="outer"]
+script = ExtResource("stage")
+id = "outer"
+kind = "goto"
+objective_key = "SQ05_OUTER"
+target = Vector3(1192.8, 0, 2067.9)
+radius_m = 9.0
+max_speed_kmh = 25.0
+quality_floor = 20.0
+quality_key = "lamps"
+avoid_center = Vector3(1098, 0, 2108.1)
+avoid_radius_m = 8.0
+[sub_resource type="Resource" id="bay"]
+script = ExtResource("stage")
+id = "bay"
+kind = "park"
+objective_key = "SQ05_BAY"
+target = Vector3(1152.1, 0, 2173.1)
+radius_m = 9.0
+max_speed_kmh = 15.0
+quality_floor = 20.0
+quality_key = "lamps"
+facing = Vector3(0, 0, -1)
+facing_tolerance_deg = 100.0
+[sub_resource type="Resource" id="unload"]
+script = ExtResource("stage")
+id = "unload"
+kind = "cargo"
+objective_key = "SQ05_UNLOAD"
+target = Vector3(1152.1, 0, 2173.1)
+radius_m = 9.0
+cargo_delta = -2
+quality_floor = 20.0
+quality_key = "lamps"
+[resource]
+script = ExtResource("def")
+id = "sq_005"
+title_key = "SQ05_TITLE"
+description_key = "SQ05_DESC"
+discoverable = true
+start_anchor = Vector3(1154.5, 0, 2110.1)
+estimated_minutes = 6
+category = "skill"
+reward_inr = 130
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("lamps"), SubResource("sign"), SubResource("wrong"), SubResource("outer"), SubResource("bay"), SubResource("unload")])

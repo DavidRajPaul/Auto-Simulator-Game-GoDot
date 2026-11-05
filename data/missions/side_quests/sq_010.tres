@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=11 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="sort"]
+script = ExtResource("stage")
+id = "sort"
+kind = "dialogue"
+objective_key = "SQ10_SORT"
+choices = PackedStringArray("SQ10_START")
+[sub_resource type="Resource" id="blue"]
+script = ExtResource("stage")
+id = "blue"
+kind = "cargo"
+objective_key = "SQ10_BLUE"
+target = Vector3(2031, 0, 1510.2)
+radius_m = 9.0
+cargo_delta = 2
+[sub_resource type="Resource" id="red"]
+script = ExtResource("stage")
+id = "red"
+kind = "cargo"
+objective_key = "SQ10_RED"
+target = Vector3(2086.5, 0, 1414)
+radius_m = 9.0
+cargo_delta = 1
+[sub_resource type="Resource" id="first_dump"]
+script = ExtResource("stage")
+id = "first_dump"
+kind = "cargo"
+objective_key = "SQ10_FIRST_DUMP"
+target = Vector3(2099, 0, 1502.3)
+radius_m = 9.0
+cargo_delta = -3
+[sub_resource type="Resource" id="second_load"]
+script = ExtResource("stage")
+id = "second_load"
+kind = "cargo"
+objective_key = "SQ10_SECOND_LOAD"
+target = Vector3(1969, 0, 1489.1)
+radius_m = 9.0
+cargo_delta = 2
+[sub_resource type="Resource" id="category"]
+script = ExtResource("stage")
+id = "category"
+kind = "dialogue"
+objective_key = "SQ10_CATEGORY"
+choices = PackedStringArray("SQ10_RECYCLING", "SQ10_GENERAL")
+next_by_choice = {"SQ10_RECYCLING": "last_dump", "SQ10_GENERAL": "correction"}
+[sub_resource type="Resource" id="correction"]
+script = ExtResource("stage")
+id = "correction"
+kind = "inspect"
+objective_key = "SQ10_CORRECTION"
+target = Vector3(2086.5, 0, 1414)
+radius_m = 9.0
+[sub_resource type="Resource" id="last_dump"]
+script = ExtResource("stage")
+id = "last_dump"
+kind = "cargo"
+objective_key = "SQ10_LAST_DUMP"
+target = Vector3(2099, 0, 1502.3)
+radius_m = 9.0
+cargo_delta = -2
+[resource]
+script = ExtResource("def")
+id = "sq_010"
+title_key = "SQ10_TITLE"
+description_key = "SQ10_DESC"
+discoverable = true
+start_anchor = Vector3(2041.9, 0, 1454.8)
+estimated_minutes = 7
+category = "community"
+reward_inr = 135
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("sort"), SubResource("blue"), SubResource("red"), SubResource("first_dump"), SubResource("second_load"), SubResource("category"), SubResource("correction"), SubResource("last_dump")])

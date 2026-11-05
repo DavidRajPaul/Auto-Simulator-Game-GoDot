@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="mirror"]
+script = ExtResource("stage")
+id = "mirror"
+kind = "cargo"
+objective_key = "SQ23_MIRROR"
+target = Vector3(-540.5, 0, -1420.4)
+radius_m = 9.0
+cargo_delta = 1
+quality_floor = 25.0
+quality_key = "mirror"
+[sub_resource type="Resource" id="route"]
+script = ExtResource("stage")
+id = "route"
+kind = "dialogue"
+objective_key = "SQ23_ROUTE"
+choices = PackedStringArray("SQ23_WIDE", "SQ23_NARROW")
+next_by_choice = {"SQ23_WIDE": "wide", "SQ23_NARROW": "warning"}
+[sub_resource type="Resource" id="warning"]
+script = ExtResource("stage")
+id = "warning"
+kind = "inspect"
+objective_key = "SQ23_WARNING"
+target = Vector3(-486.5, 0, -1409.7)
+radius_m = 9.0
+[sub_resource type="Resource" id="wide"]
+script = ExtResource("stage")
+id = "wide"
+kind = "goto"
+objective_key = "SQ23_WIDE"
+target = Vector3(-592.9, 0, -1447.2)
+radius_m = 9.0
+max_speed_kmh = 25.0
+quality_floor = 25.0
+quality_scale = 1.8
+quality_key = "mirror"
+[sub_resource type="Resource" id="park"]
+script = ExtResource("stage")
+id = "park"
+kind = "park"
+objective_key = "SQ23_PARK"
+target = Vector3(-502.7, 0, -1476)
+radius_m = 9.0
+max_speed_kmh = 15.0
+quality_floor = 25.0
+quality_key = "mirror"
+facing = Vector3(0, 0, -1)
+facing_tolerance_deg = 100.0
+[sub_resource type="Resource" id="unload"]
+script = ExtResource("stage")
+id = "unload"
+kind = "cargo"
+objective_key = "SQ23_UNLOAD"
+target = Vector3(-502.7, 0, -1476)
+radius_m = 9.0
+cargo_delta = -1
+quality_floor = 25.0
+quality_key = "mirror"
+[resource]
+script = ExtResource("def")
+id = "sq_023"
+title_key = "SQ23_TITLE"
+description_key = "SQ23_DESC"
+discoverable = true
+start_anchor = Vector3(-540.5, 0, -1420.4)
+estimated_minutes = 6
+category = "skill"
+reward_inr = 145
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("mirror"), SubResource("route"), SubResource("warning"), SubResource("wide"), SubResource("park"), SubResource("unload")])

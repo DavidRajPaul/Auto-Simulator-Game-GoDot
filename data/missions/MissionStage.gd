@@ -2,7 +2,7 @@ class_name MissionStage
 extends Resource
 ## Immutable authoring data. Mutable progress belongs to MissionRunState.
 @export var id: String = ""
-@export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park") var kind: String = "goto"
+@export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo") var kind: String = "goto"
 @export var objective_key: String = ""
 @export var target: Vector3 = Vector3.ZERO
 @export var radius_m: float = 6.0
@@ -24,4 +24,12 @@ extends Resource
 @export var quality_key: String = ""
 @export var quality_floor: float = 0.0
 @export var quality_scale: float = 1.0
+## Cargo is transferred only by a stopped interaction; negative values unload.
+@export var cargo_delta: int = 0
+@export var cargo_capacity: int = 3
+@export var cargo_delta_options: Dictionary = {}
+@export var weather_loss_per_s: float = 0.0
+## Mission-only signed diversion zone. It is a rule, not a persistent road closure.
+@export var avoid_center: Vector3 = Vector3.ZERO
+@export var avoid_radius_m: float = 0.0
 @export var checkpoint: bool = true

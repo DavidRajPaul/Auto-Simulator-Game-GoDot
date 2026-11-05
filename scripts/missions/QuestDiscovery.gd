@@ -101,7 +101,7 @@ func request_start(id: String) -> bool:
 		return false
 	var graph: RoadGraph = SignalBus.current_road_graph
 	for stage: MissionStage in registry.get_mission(id).stages:
-		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park"] and not bool(graph.find_route(_position, stage.target).get("ok", false)):
+		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"] and not bool(graph.find_route(_position, stage.target).get("ok", false)):
 			return false
 		for option: String in stage.target_options:
 			if not bool(graph.find_route(_position, stage.target_options[option] as Vector3).get("ok", false)):

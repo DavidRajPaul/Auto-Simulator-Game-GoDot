@@ -33,7 +33,7 @@ func _run() -> void:
 	director.pack = pack
 	add_child(director)
 	director.set_physics_process(false)
-	check("original stories remain in twelve-quest pack", director.registry.definitions.size() == 12)
+	check("original stories remain in twenty-four-quest pack", director.registry.definitions.size() == 24)
 	for id: String in ["sq_001", "sq_006", "sq_012", "sq_016", "sq_021", "sq_026"]:
 		_play(id, "")
 	for branch: Array in [["sq_001", "SQ01_OTHER"], ["sq_012", "SQ12_RED"],

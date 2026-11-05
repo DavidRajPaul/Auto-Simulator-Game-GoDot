@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="notice"]
+script = ExtResource("stage")
+id = "notice"
+kind = "inspect"
+objective_key = "SQ14_NOTICE"
+target = Vector3(1211.9, 0, -521.3)
+radius_m = 9.0
+[sub_resource type="Resource" id="copy"]
+script = ExtResource("stage")
+id = "copy"
+kind = "dialogue"
+objective_key = "SQ14_COPY"
+choices = PackedStringArray("SQ14_PRINT", "SQ14_SKIP")
+next_by_choice = {"SQ14_PRINT": "printer", "SQ14_SKIP": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "inspect"
+objective_key = "SQ14_VERIFY"
+target = Vector3(1116.7, 0, -509.2)
+radius_m = 9.0
+[sub_resource type="Resource" id="printer"]
+script = ExtResource("stage")
+id = "printer"
+kind = "cargo"
+objective_key = "SQ14_PRINTER"
+target = Vector3(1116.7, 0, -509.2)
+radius_m = 9.0
+cargo_delta = 1
+[sub_resource type="Resource" id="gate"]
+script = ExtResource("stage")
+id = "gate"
+kind = "goto"
+objective_key = "SQ14_GATE"
+target = Vector3(1193.1, 0, -607.8)
+radius_m = 9.0
+deadline_s = 220.0
+[sub_resource type="Resource" id="handover"]
+script = ExtResource("stage")
+id = "handover"
+kind = "cargo"
+objective_key = "SQ14_HANDOVER"
+target = Vector3(1193.1, 0, -607.8)
+radius_m = 9.0
+cargo_delta = -1
+[resource]
+script = ExtResource("def")
+id = "sq_014"
+title_key = "SQ14_TITLE"
+description_key = "SQ14_DESC"
+discoverable = true
+start_anchor = Vector3(1162.1, 0, -547.1)
+estimated_minutes = 6
+category = "exploration"
+reward_inr = 120
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("notice"), SubResource("copy"), SubResource("verify"), SubResource("printer"), SubResource("gate"), SubResource("handover")])

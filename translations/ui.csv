@@ -421,3 +421,128 @@ EARNED_TOTAL,"Total earned","மொத்த வருமானம்"
 DISTANCE_TOTAL,"Distance","தூரம்"
 RIDES_DONE,"Rides","சவாரிகள்"
 PROFILE_ALL_RANKS,"All ranks","அனைத்து பட்டங்களும்"
+QUEST_TRANSFER,Load / unload,ஏற்று / இறக்கு
+QUEST_CARGO_CAPACITY,Cargo capacity reached; unload before collecting more.,சரக்கு நிறைந்துள்ளது; மேலும் ஏற்றும் முன் இறக்குங்கள்.
+QUEST_FAIL_DIVERSION,closed route entered,மூடிய பாதைக்குள் சென்றீர்கள்
+SQ03_TITLE,Margazhi Missing Beat,மார்கழியின் தவறிய தாளம்
+SQ03_DESC,Bring a forgotten percussion case to the sabha before the performance.,நிகழ்ச்சிக்கு முன் தாள வாத்தியத்தைச் சபாவுக்குக் கொண்டு செல்.
+SQ03_BRIEF,"The musician needs the instrument from the shop. The hall note says rear loading entrance, not the front.",இசைக்கலைஞரின் வாத்தியம் கடையில் உள்ளது. நிகழ்ச்சி மண்டபத்தின் பின்புற சரக்கு வாசலுக்குக் கொண்டு செல்.
+SQ03_READY,Find the case,பெட்டியைக் கண்டுபிடி
+SQ03_CASE,Stop at the instrument shop and load the case.,வாத்தியக் கடையில் நிறுத்திப் பெட்டியை ஏற்று.
+SQ03_APPROACH,Drive gently toward the sabha. Avoid shaking the instrument.,வாத்தியத்தை அசைக்காமல் மெதுவாகச் சபாவுக்குச் செல்.
+SQ03_GATE,The front has a queue. Which entrance is written on the case label?,முன் வாசலில் கூட்டம். பெட்டி குறிப்பில் எந்த வாசல்?
+SQ03_REAR,Rear loading bay,பின்புற சரக்கு வாசல்
+SQ03_FRONT,Front entrance,முன்புற வாசல்
+SQ03_VERIFY,Check the event notice near the front: instruments enter from the rear.,வாத்தியங்கள் பின்புறம் வர வேண்டும் என நிகழ்ச்சி அறிவிப்பைப் பார்.
+SQ03_HANDOVER,Park at the rear loading bay and unload the instrument.,பின்புற வாசலில் நிறுத்தி வாத்தியத்தை இறக்கு.
+SQ05_TITLE,Festival Detour,திருவிழா மாற்றுப் பாதை
+SQ05_DESC,Take fragile lamps around a temple procession to the unloading bay.,திருவிழா ஊர்வலத்தைச் சுற்றி விளக்குகளைப் பாதுகாப்பாக எடுத்துச் செல்.
+SQ05_LAMPS,Load two crates of fragile lamps at the outer kerb.,சாலையோரம் நிறுத்தி இரண்டு விளக்குப் பெட்டிகளை ஏற்று.
+SQ05_SIGN,The temple perimeter is closed for a procession. Choose the signed outer route.,ஊர்வலத்தால் கோயில் சுற்று மூடப்பட்டுள்ளது. வெளிப்பாதையைத் தேர்ந்தெடு.
+SQ05_OUTER,Signed outer street,மூடிய பகுதியைத் தவிர்த்து வெளிச் சாலையில் செல்.
+SQ05_TEMPLE,Temple shortcut,கோயில் குறுக்குப் பாதை
+SQ05_WRONG,The shortcut is closed. Read the diversion sign and turn toward the outer street.,குறுக்குப் பாதை மூடியுள்ளது. மாற்றுப் பாதை பலகையைப் பார்.
+SQ05_BAY,Reverse into the unloading bay without cracking the lamps.,விளக்குகளை உடைக்காமல் சரக்கு இடத்துக்குள் ரிவர்ஸ் நிறுத்து.
+SQ05_UNLOAD,Unload both lamp crates at the bay.,இரண்டு விளக்குப் பெட்டிகளையும் இறக்கு.
+SQ07_TITLE,The Little Red Kite,சின்னச் சிவப்புப் பட்டம்
+SQ07_DESC,Use a red-kite clue to reunite a family at the staffed help point.,சிவப்புப் பட்டம் குறித்த தகவலால் குடும்பத்தை உதவி மையத்தில் சேர்க்கவும்.
+SQ07_BRIEF,A parent describes a red kite and a striped shirt. Check the promenade from the roadside.,சிவப்புப் பட்டமும் கோடிட்ட சட்டையும் உள்ள குழுவைச் சாலையோரத்தில் இருந்து தேடு.
+SQ07_LOOK,Look from the kerb,சாலையோரம் பார்
+SQ07_SCAN,Stop at the first promenade access and scan the groups from the auto.,முதல் நடைபாதை அணுகலில் நிறுத்திக் குழுக்களைப் பார்.
+SQ07_GUESS,Which group fits both the red kite and striped shirt?,சிவப்புப் பட்டமும் கோடிட்ட சட்டையும் எந்தக் குழுவில்?
+SQ07_STRIPED,Striped shirt and red kite,கோடிட்ட சட்டையும் சிவப்புப் பட்டமும்
+SQ07_BLUE,Blue kite group,நீலப் பட்டக் குழு
+SQ07_VERIFY,The blue kite belongs to another family. Check the next accessible kerb.,நீலப் பட்டம் வேறு குடும்பத்துடையது. அடுத்த சாலையோரத்தைப் பார்.
+SQ07_CONFIRM,Confirm the red kite and striped shirt at the southern kerb.,தெற்குப் பகுதியில் சிவப்புப் பட்டம் மற்றும் கோடிட்ட சட்டையை உறுதிசெய்.
+SQ07_REUNITE,Guide the family to the staffed roadside help point.,குடும்பத்தைச் சாலையோர உதவி மையத்துக்குக் கொண்டு செல்.
+SQ08_TITLE,Rain Before Pack-Up,மழைக்கு முன் கடை மூடல்
+SQ08_DESC,Collect two vendors’ goods before rain damages the paper stock.,காகிதப் பொருட்களை மழையிலிருந்து காப்பாற்றி இரண்டு கடைகளின் சரக்கைச் சேர்.
+SQ08_ORDER,Paper stock gets wet first; the other vendor has sealed boxes. Which pickup comes first?,காகிதம் முதலில் நனையும்; மற்ற பெட்டிகள் மூடப்பட்டுள்ளன. எது முதலில்?
+SQ08_PAPER,Paper first,காகிதம் முதலில்
+SQ08_BOXES,Boxes first,பெட்டிகள் முதலில்
+SQ08_FIRST,Load the first vendor’s goods while stopped.,நிறுத்தி முதல் வியாபாரியின் பொருட்களை ஏற்று.
+SQ08_SECOND,Collect the second vendor’s goods; leave room for all three bundles.,மூன்று கட்டுகளுக்கு இடம் விட்டு இரண்டாம் வியாபாரியின் பொருட்களை ஏற்று.
+SQ08_SHELTER,Take the three bundles to the sheltered bay and unload them.,மூன்று கட்டுகளையும் கூரையுள்ள இடத்தில் இறக்கு.
+SQ10_TITLE,Beach Clean-Up Relay,கடற்கரைச் சுத்தம்
+SQ10_DESC,Collect sorted bags in two safe loops without overloading the auto.,ஆட்டோவை அதிகமாக ஏற்றாமல் இரண்டு சுற்றுகளில் வகைப்படுத்திய பைகளைச் சேர்.
+SQ10_SORT,Volunteers have recyclable blue bags and red general-waste bags. Keep them separate.,நீலப் பைகள் மறுசுழற்சி; சிவப்பு பைகள் பொதுக் கழிவு. தனியாக வைத்திரு.
+SQ10_START,Begin first loop,முதல் சுற்றைத் தொடங்கு
+SQ10_BLUE,Load two blue recyclable bags at the north access.,வடக்குப் பகுதியில் இரண்டு நீலப் பைகளை ஏற்று.
+SQ10_RED,Load one red general-waste bag at the south access.,தெற்குப் பகுதியில் ஒரு சிவப்புப் பையை ஏற்று.
+SQ10_FIRST_DUMP,Unload the first three bags at the staffed sorting point.,முதல் மூன்று பைகளையும் வகைப்பாட்டு மையத்தில் இறக்கு.
+SQ10_SECOND_LOAD,Collect two more sorted bags on the second loop.,இரண்டாம் சுற்றில் மேலும் இரண்டு பைகளை ஏற்று.
+SQ10_CATEGORY,The second load has blue recycling labels. Which bay is correct?,இரண்டாம் சுமையில் நீல மறுசுழற்சிக் குறி உள்ளது. எந்த இடம் சரி?
+SQ10_RECYCLING,Blue recycling bay,நீல மறுசுழற்சிப் பகுதி
+SQ10_GENERAL,Red general-waste bay,சிவப்புப் பொதுக் கழிவுப் பகுதி
+SQ10_CORRECTION,The volunteer points out the recycling label. Confirm it before unloading.,தொண்டர் மறுசுழற்சிக் குறியைக் காட்டுகிறார். இறக்கும் முன் உறுதிசெய்.
+SQ10_LAST_DUMP,Unload the final two bags in the recycling bay.,கடைசி இரண்டு பைகளையும் மறுசுழற்சி இடத்தில் இறக்கு.
+SQ14_TITLE,"Exam Hall, Wrong Gate",தேர்வு மையத்தின் தவறான வாசல்
+SQ14_DESC,"Read the notice, collect the needed copy and reach the correct exam entrance.",அறிவிப்பைப் பார்த்து தேவையான நகலைப் பெற்று சரியான தேர்வு வாசலை அடை.
+SQ14_NOTICE,Read the school notice at the side kerb: the west gate is closed and a copy of the ID is required.,மேற்கு வாசல் மூடப்பட்டுள்ளது; அடையாள நகல் தேவை எனப் பள்ளி அறிவிப்பைப் பார்.
+SQ14_COPY,Do you need the print shop before going to the east gate?,கிழக்கு வாசலுக்குச் செல்லும் முன் அச்சகத்துக்குப் போக வேண்டுமா?
+SQ14_PRINT,Get the ID copy,அடையாள நகலை வாங்கு
+SQ14_SKIP,Go without a copy,நகல் இல்லாமல் செல்
+SQ14_VERIFY,The guard confirms the copy is mandatory. Stop at the notice again.,நகல் கட்டாயம் எனக் காவலர் சொல்கிறார். அறிவிப்பைப் பார்.
+SQ14_PRINTER,Collect the ID copy at the print shop.,அச்சகத்தில் அடையாள நகலை வாங்கு.
+SQ14_GATE,Reach the open east exam gate before the queue closes.,வரிசை முடியும் முன் திறந்திருக்கும் கிழக்கு வாசலை அடை.
+SQ14_HANDOVER,Hand over the copy at the entrance.,நுழைவாயிலில் நகலை ஒப்படை.
+SQ15_TITLE,"Last Stop, Extra Help",கடைசி நிறுத்தத்தில் உதவி
+SQ15_DESC,Help two stranded bus passengers in a chosen order while respecting seats.,பேருந்தில் சிக்கிய இருவரையும் இருக்கை வரம்புக்குள் தேர்ந்த வரிசையில் இறக்கு.
+SQ15_BOARD,The bus terminates here. Board two passengers; do not exceed two seats.,பேருந்து இங்கே முடிகிறது. இரண்டு பயணிகளை மட்டும் ஏற்று.
+SQ15_ORDER,One rider needs the clinic kerb and one the library kerb. Who goes first?,"ஒருவர் மருத்துவ மையம், மற்றவர் நூலகம். முதலில் யார்?"
+SQ15_CLINIC,Clinic rider first,மருத்துவ மையம் முதலில்
+SQ15_LIBRARY,Library rider first,நூலகம் முதலில்
+SQ15_FIRST,Drop off the first rider at their accessible kerb.,முதல் பயணியை அவரின் சாலையோரத்தில் இறக்கு.
+SQ15_SECOND,Take the remaining rider to the other kerb.,மீதிப் பயணியை மற்ற நிறுத்தத்துக்குக் கொண்டு செல்.
+SQ17_TITLE,The Monsoon Supply Run,பருவமழை உதவிப் பயணம்
+SQ17_DESC,Carry a limited relief load around a flooded-road warning.,வெள்ள எச்சரிக்கைப் பாதையைத் தவிர்த்து உதவிப் பொருட்களை எடுத்துச் செல்.
+SQ17_LOAD,Load two water bundles and one sealed food bundle.,இரண்டு தண்ணீர் கட்டுகளும் ஒரு உணவுக் கட்டும் ஏற்று.
+SQ17_WARNING,Read the flooded-road warning from the safe kerb.,பாதுகாப்பான சாலையோரத்தில் வெள்ள எச்சரிக்கையைப் படி.
+SQ17_ORDER,A shelter needs two bundles; a relief desk needs one. Choose the first call.,"தங்குமிடத்திற்கு இரண்டு, உதவி மையத்திற்கு ஒன்று தேவை. முதலில் எது?"
+SQ17_SHELTER,Shelter first,தங்குமிடம் முதலில்
+SQ17_DESK,Relief desk first,உதவி மையம் முதலில்
+SQ17_FIRST,Follow the safe diversion and deliver the first request.,வெள்ளப் பாதையைத் தவிர்த்து முதல் கோரிக்கையை ஒப்படை.
+SQ17_SECOND,Deliver the remaining sealed relief supplies.,மீதியுள்ள உதவிப் பொருட்களை ஒப்படை.
+SQ18_TITLE,Five-Star Auto Anna,ஐந்து நட்சத்திர ஆட்டோ அண்ணா
+SQ18_DESC,"Balance quiet, luggage and charging requests over three short rides.","அமைதி, சுமை இடம், சார்ஜ் ஆகிய மூன்று பயணத் தேவைகளையும் கவனி."
+SQ18_PREP,Three neighbours need different things. Prepare the quiet seat or collect a charger first?,மூவருக்குத் தனித்தேவை. அமைதியான இருக்கையா சார்ஜரா முதலில்?
+SQ18_QUIET,Prepare quiet seat,முதல் பயணியை மென்மையாக அழைத்துச் செல்; ஹார்ன் அடிக்காதே.
+SQ18_CHARGER,Collect charger,சார்ஜர் வாங்கு
+SQ18_SUPPLY,Stop at the chosen preparation point and ready the seat.,தேர்ந்த இடத்தில் நிறுத்தி இருக்கையைத் தயார் செய்.
+SQ18_LUGGAGE,Load one suitcase securely at the next kerb.,அடுத்த நிறுத்தத்தில் ஒரு பயணப்பெட்டியை ஏற்று.
+SQ18_DROP,Deliver the luggage passenger and unload the suitcase.,பயணியை இறக்கிப் பெட்டியையும் ஒப்படை.
+SQ18_CHARGE,Finish at the last passenger’s charging stop.,கடைசிப் பயணியைச் சார்ஜிங் நிறுத்தத்துக்குக் கொண்டு செல்.
+SQ20_TITLE,Blackout on the Corner,மூலையில் மின்தடை
+SQ20_DESC,Bring a technician and sealed tools to the safe service bay after dark.,இரவில் தொழில்நுட்ப வல்லுநரையும் கருவிகளையும் பாதுகாப்பான மின் பழுது இடத்துக்குக் கொண்டு செல்.
+SQ20_PICKUP,Load the technician’s two tool cases at the night market.,இரவுச் சந்தையில் தொழில்நுட்ப வல்லுநரின் இரண்டு கருவிப் பெட்டிகளை ஏற்று.
+SQ20_MARKER,Read the reflective service marker before entering the dark street.,இருண்ட தெருவுக்குள் செல்லும் முன் ஒளிரும் சேவைப் பலகையைப் பார்.
+SQ20_BAY,Use the lit alternate street; the dark barricaded corner is closed.,ஒளியுள்ள மாற்றுப் பாதையில் செல்; தடுப்புள்ள மூலை மூடியுள்ளது.
+SQ20_REPAIR,Stop at the signed service bay and hand over the sealed tools.,குறித்த சேவை இடத்தில் கருவிகளை ஒப்படை.
+SQ20_FINISH,The technician reports that the streetlights are back on.,தெருவிளக்குகள் மீண்டும் எரிகின்றன என வல்லுநர் சொல்கிறார்.
+SQ20_THANKS,Thank the technician,நன்றி சொல்
+SQ23_TITLE,A Mirror Through Mount Road,மவுண்ட் ரோட்டில் கண்ணாடி
+SQ23_DESC,Take a tall mirror gently along a wider route and reverse into the bay.,பெரிய கண்ணாடியை மென்மையாக எடுத்துச் சென்று ரிவர்ஸ் நிறுத்து.
+SQ23_MIRROR,Secure the tall mirror in the auto before leaving the workshop.,புறப்படுவதற்கு முன் உயரமான கண்ணாடியைப் பாதுகாப்பாக ஏற்று.
+SQ23_ROUTE,The narrow lane has sharp bends; the wider office road gives room to turn. Choose.,குறுகிய தெருவில் கூர்மையான வளைவு. அகலமான சாலை எளிது. எது?
+SQ23_WIDE,Wider office road,கண்ணாடி உடையாமல் அகலச் சாலையில் மெதுவாகச் செல்.
+SQ23_NARROW,Narrow lane,குறுகிய தெரு
+SQ23_WARNING,The narrow bend is too tight for the mirror. Inspect the wider-road sign.,கண்ணாடிக்கு வளைவு குறுகியது. அகலச் சாலை பலகையைப் பார்.
+SQ23_PARK,Reverse into the office loading bay with the mirror secure.,கண்ணாடியைப் பாதுகாத்து அலுவலகச் சரக்கு இடத்துக்குள் ரிவர்ஸ் நிறுத்து.
+SQ23_UNLOAD,Hand over the mirror at the bay.,சரக்கு இடத்தில் கண்ணாடியை ஒப்படை.
+SQ25_TITLE,Three Clues to Madras,மதராஸுக்கு மூன்று குறிப்புகள்
+SQ25_DESC,Follow an old postcard to heritage clues and the final viewpoint.,பழைய அஞ்சல் அட்டையின் குறிப்புகளைத் தொடர்ந்து காட்சியிடத்தை அடை.
+SQ25_CLUE_1,The postcard mentions a stone façade north of the main road. Find its roadside plaque.,பிரதான சாலையின் வடக்கே கல் முகப்பு என அட்டையில் உள்ளது. சாலையோரப் பலகையைத் தேடு.
+SQ25_GUESS,The plaque shows an old clock. Which clue matches the postcard?,பலகையில் பழைய கடிகாரம் உள்ளது. அட்டைக்கு எந்த அடையாளம் பொருந்தும்?
+SQ25_CLOCK,Clock façade,மணிக்கூண்டு முகப்பு
+SQ25_ARCH,Market arch,சந்தை வளைவு
+SQ25_HINT,The arch is newer. Check the clock plaque again for the second direction.,வளைவு புதியது. அடுத்த திசைக்கு மணிக்கூண்டுப் பலகையைப் பார்.
+SQ25_CLUE_2,Find the second painted heritage marker along the western kerb.,மேற்குப் பகுதியில் இரண்டாம் பாரம்பரிய அடையாளத்தைத் தேடு.
+SQ25_REVEAL,The marker points to a viewpoint. Follow the final directions.,குறி ஒரு காட்சியிடத்தைக் காட்டுகிறது. கடைசிப் பாதையைப் பின்தொடர்.
+SQ25_READY,Show the final route,கடைசிப் பாதையைக் காட்டு
+SQ25_VIEW,Stop at the viewpoint and face the old façade for a postcard photo.,காட்சியிடத்தில் நிறுத்திப் பழைய முகப்பை நோக்கிப் படம் எடு.
+QUEST_QUALITY_INSTRUMENT,Instrument integrity: %d%%,வாத்திய நிலை: %d%%
+QUEST_QUALITY_LAMPS,Lamp integrity: %d%%,விளக்கு நிலை: %d%%
+QUEST_QUALITY_PAPER,Dry stock: %d%%,உலர் சரக்கு: %d%%
+QUEST_QUALITY_SUPPLIES,Supply condition: %d%%,உதவிச் சரக்கு நிலை: %d%%
+QUEST_QUALITY_TOOLS,Tool condition: %d%%,கருவி நிலை: %d%%
+QUEST_QUALITY_MIRROR,Mirror integrity: %d%%,கண்ணாடி நிலை: %d%%
