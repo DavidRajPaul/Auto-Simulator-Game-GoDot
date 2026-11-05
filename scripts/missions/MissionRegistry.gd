@@ -27,7 +27,7 @@ func load_pack(pack: MissionPack) -> bool:
 			if stage == null:
 				errors.append("Null stage: " + mission.id)
 				continue
-			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park"] or stage.objective_key.is_empty():
+			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo"] or stage.objective_key.is_empty():
 				errors.append("Invalid stage: " + mission.id + "/" + stage.id)
 			ids[stage.id] = true
 			if not stage.target.is_finite() or not is_finite(stage.radius_m) or stage.radius_m <= 0 or stage.arrival_speed_kmh < 0 or not is_finite(stage.arrival_speed_kmh) or not is_finite(stage.duration_s) or stage.duration_s < 0 or not is_finite(stage.deadline_s) or stage.deadline_s < 0 or not is_finite(stage.max_speed_kmh) or stage.max_speed_kmh < 0 or not is_finite(stage.max_condition_loss) or stage.max_condition_loss < 0:
@@ -38,6 +38,15 @@ func load_pack(pack: MissionPack) -> bool:
 				errors.append("Invalid composition angle: " + stage.id)
 			if not is_finite(stage.quality_floor) or stage.quality_floor < 0.0 or stage.quality_floor >= 100.0 or not is_finite(stage.quality_scale) or stage.quality_scale < 0.0:
 				errors.append("Invalid quality rule: " + stage.id)
+			if stage.cargo_capacity < 1 or stage.cargo_capacity > 8 or abs(stage.cargo_delta) > stage.cargo_capacity or (stage.kind == "cargo" and stage.cargo_delta == 0):
+				errors.append("Invalid cargo rule: " + stage.id)
+			if not is_finite(stage.weather_loss_per_s) or stage.weather_loss_per_s < 0.0:
+				errors.append("Invalid weather rule: " + stage.id)
+			for key: String in stage.cargo_delta_options:
+				if not stage.target_options.has(key) or not stage.cargo_delta_options[key] is int or abs(int(stage.cargo_delta_options[key])) > stage.cargo_capacity:
+					errors.append("Invalid choice cargo: " + stage.id)
+			if not stage.avoid_center.is_finite() or not is_finite(stage.avoid_radius_m) or stage.avoid_radius_m < 0.0:
+				errors.append("Invalid diversion rule: " + stage.id)
 			for key: String in stage.target_options:
 				if not stage.target_options[key] is Vector3 or not (stage.target_options[key] as Vector3).is_finite():
 					errors.append("Invalid branch target: " + stage.id)

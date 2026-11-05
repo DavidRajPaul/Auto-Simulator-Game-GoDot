@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=8 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="load"]
+script = ExtResource("stage")
+id = "load"
+kind = "cargo"
+objective_key = "SQ17_LOAD"
+target = Vector3(392.3, 0, -190.8)
+radius_m = 9.0
+cargo_delta = 3
+quality_floor = 15.0
+quality_key = "supplies"
+[sub_resource type="Resource" id="warning"]
+script = ExtResource("stage")
+id = "warning"
+kind = "inspect"
+objective_key = "SQ17_WARNING"
+target = Vector3(360.2, 0, -145)
+radius_m = 9.0
+[sub_resource type="Resource" id="order"]
+script = ExtResource("stage")
+id = "order"
+kind = "dialogue"
+objective_key = "SQ17_ORDER"
+choices = PackedStringArray("SQ17_SHELTER", "SQ17_DESK")
+[sub_resource type="Resource" id="first"]
+script = ExtResource("stage")
+id = "first"
+kind = "cargo"
+objective_key = "SQ17_FIRST"
+target = Vector3(329.4, 0, -202.3)
+radius_m = 9.0
+target_choice_stage = "order"
+target_options = {"SQ17_SHELTER": Vector3(329.4, 0, -202.3), "SQ17_DESK": Vector3(475.1, 0, -209)}
+cargo_delta = -2
+cargo_delta_options = {"SQ17_SHELTER": -2, "SQ17_DESK": -1}
+deadline_s = 250.0
+quality_floor = 15.0
+weather_loss_per_s = 0.25
+quality_key = "supplies"
+avoid_center = Vector3(412.8, 0, -253.6)
+avoid_radius_m = 8.0
+[sub_resource type="Resource" id="second"]
+script = ExtResource("stage")
+id = "second"
+kind = "cargo"
+objective_key = "SQ17_SECOND"
+target = Vector3(475.1, 0, -209)
+radius_m = 9.0
+target_choice_stage = "order"
+target_options = {"SQ17_SHELTER": Vector3(475.1, 0, -209), "SQ17_DESK": Vector3(329.4, 0, -202.3)}
+cargo_delta = -1
+cargo_delta_options = {"SQ17_SHELTER": -1, "SQ17_DESK": -2}
+deadline_s = 250.0
+quality_floor = 15.0
+weather_loss_per_s = 0.25
+quality_key = "supplies"
+[resource]
+script = ExtResource("def")
+id = "sq_017"
+title_key = "SQ17_TITLE"
+description_key = "SQ17_DESC"
+discoverable = true
+start_anchor = Vector3(392.3, 0, -190.8)
+estimated_minutes = 7
+category = "community"
+reward_inr = 145
+reward_xp = 20
+scenario_weather = "rain"
+stages = Array[ExtResource("stage")]([SubResource("load"), SubResource("warning"), SubResource("order"), SubResource("first"), SubResource("second")])

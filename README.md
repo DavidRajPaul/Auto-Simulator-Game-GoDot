@@ -641,7 +641,7 @@ building-gap shortcuts. See [APK test route, tuning and map limitations](docs/P0
 Compound data distinguishes OSM boundaries from inferred short separators; it is not a surveyed
 reproduction of every Chennai property. Weather, wind, birds and sunsets remain P1.
 
-### Career side quests — twelve playable stories
+### Career side quests — twenty-four playable stories
 
 The mission foundation, save migration and one-time rewards are covered by
 [Phase 1](docs/SIDE_QUESTS_PHASE1.md). [Phase 2](docs/SIDE_QUESTS_PHASE2.md)
@@ -655,5 +655,8 @@ rebuilds. [Phase 4](docs/SIDE_QUESTS_PHASE4.md) adds six more: spill-sensitive c
 Mylapore clues, a frightened puppy, mixed parcels, a midnight mechanic and reverse
 parking. The shared quality meter, inspection, calming stop and parking stages support
 later content. `run_twelve_quest_tests` covers both routes and their failure rules.
-These stories need physical Android playtests and narrative balancing; eighteen remain
-planned for later releases.
+[Phase 5](docs/SIDE_QUESTS_PHASE5.md) adds twelve more, with stopped cargo transfers,
+seat/load capacity, rain-sensitive supplies, signed diversions and heritage clues.
+The twenty-four-story CI suite checks both branch routes and failure recovery.
+Physical Android playtests and narrative balancing remain; six final stories are planned
+for the next content phase.

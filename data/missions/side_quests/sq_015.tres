@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="board"]
+script = ExtResource("stage")
+id = "board"
+kind = "cargo"
+objective_key = "SQ15_BOARD"
+target = Vector3(1456.8, 0, -1251.8)
+radius_m = 9.0
+cargo_delta = 2
+cargo_capacity = 2
+[sub_resource type="Resource" id="order"]
+script = ExtResource("stage")
+id = "order"
+kind = "dialogue"
+objective_key = "SQ15_ORDER"
+choices = PackedStringArray("SQ15_CLINIC", "SQ15_LIBRARY")
+[sub_resource type="Resource" id="first"]
+script = ExtResource("stage")
+id = "first"
+kind = "cargo"
+objective_key = "SQ15_FIRST"
+target = Vector3(1514.6, 0, -1255.2)
+radius_m = 9.0
+target_choice_stage = "order"
+target_options = {"SQ15_CLINIC": Vector3(1514.6, 0, -1255.2), "SQ15_LIBRARY": Vector3(1420.6, 0, -1206.5)}
+cargo_delta = -1
+cargo_capacity = 2
+deadline_s = 210.0
+[sub_resource type="Resource" id="second"]
+script = ExtResource("stage")
+id = "second"
+kind = "cargo"
+objective_key = "SQ15_SECOND"
+target = Vector3(1420.6, 0, -1206.5)
+radius_m = 9.0
+target_choice_stage = "order"
+target_options = {"SQ15_CLINIC": Vector3(1420.6, 0, -1206.5), "SQ15_LIBRARY": Vector3(1514.6, 0, -1255.2)}
+cargo_delta = -1
+cargo_capacity = 2
+deadline_s = 220.0
+[resource]
+script = ExtResource("def")
+id = "sq_015"
+title_key = "SQ15_TITLE"
+description_key = "SQ15_DESC"
+discoverable = true
+start_anchor = Vector3(1456.8, 0, -1251.8)
+estimated_minutes = 6
+category = "help"
+reward_inr = 125
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("board"), SubResource("order"), SubResource("first"), SubResource("second")])

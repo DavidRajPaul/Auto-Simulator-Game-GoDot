@@ -131,7 +131,7 @@ func _registry_tests() -> void:
 	invalid.missions[0].stages[0].radius_m = -1
 	check("Invalid threshold rejected", not registry.load_pack(invalid))
 	check("Level gate", not registry.available("test_foundation", 0, {}))
-	check("Production twelve-quest pack valid", registry.load_pack(load("res://data/missions/career_quests.tres") as MissionPack) and registry.definitions.size() == 12)
+	check("Production twenty-four-quest pack valid", registry.load_pack(load("res://data/missions/career_quests.tres") as MissionPack) and registry.definitions.size() == 24)
 
 func _interrupt_tests() -> void:
 	for reason: String in ["abandoned", "tow", "wreck", "shift_end"]:

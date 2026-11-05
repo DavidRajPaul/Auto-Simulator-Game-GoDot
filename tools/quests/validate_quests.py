@@ -37,7 +37,7 @@ def main():
     compounds = json.loads((ROOT / "data/world/compounds.json").read_text())["chunks"]
     chunks = {tuple(pair) for pair in manifest["chunks"]}
     assert manifest["origin_latlon"] == list(ORIGIN) and manifest["map_scale"] == MAP_SCALE
-    assert len(sources) == 12 and len({v["sector"] for v in sources.values()}) == 12
+    assert len(sources) == 24 and len({v["sector"] for v in sources.values()}) == 24
     segments = []
     for edge in graph["edges"]:
         for a, b in zip(edge["pts"], edge["pts"][1:]):

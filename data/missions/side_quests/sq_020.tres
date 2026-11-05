@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=8 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="pickup"]
+script = ExtResource("stage")
+id = "pickup"
+kind = "cargo"
+objective_key = "SQ20_PICKUP"
+target = Vector3(-539.4, 0, -402.7)
+radius_m = 9.0
+cargo_delta = 2
+quality_floor = 20.0
+quality_key = "tools"
+[sub_resource type="Resource" id="marker"]
+script = ExtResource("stage")
+id = "marker"
+kind = "inspect"
+objective_key = "SQ20_MARKER"
+target = Vector3(-588.4, 0, -467)
+radius_m = 9.0
+[sub_resource type="Resource" id="bay"]
+script = ExtResource("stage")
+id = "bay"
+kind = "goto"
+objective_key = "SQ20_BAY"
+target = Vector3(-490.4, 0, -338.4)
+radius_m = 9.0
+max_speed_kmh = 25.0
+quality_floor = 20.0
+quality_key = "tools"
+avoid_center = Vector3(-654.2, 0, -519.8)
+avoid_radius_m = 8.0
+[sub_resource type="Resource" id="repair"]
+script = ExtResource("stage")
+id = "repair"
+kind = "cargo"
+objective_key = "SQ20_REPAIR"
+target = Vector3(-412.2, 0, -320.6)
+radius_m = 9.0
+cargo_delta = -2
+quality_floor = 20.0
+quality_key = "tools"
+[sub_resource type="Resource" id="finish"]
+script = ExtResource("stage")
+id = "finish"
+kind = "dialogue"
+objective_key = "SQ20_FINISH"
+choices = PackedStringArray("SQ20_THANKS")
+[resource]
+script = ExtResource("def")
+id = "sq_020"
+title_key = "SQ20_TITLE"
+description_key = "SQ20_DESC"
+discoverable = true
+start_anchor = Vector3(-539.4, 0, -402.7)
+estimated_minutes = 6
+category = "help"
+reward_inr = 130
+reward_xp = 20
+scenario_minute = 1290.0
+stages = Array[ExtResource("stage")]([SubResource("pickup"), SubResource("marker"), SubResource("bay"), SubResource("repair"), SubResource("finish")])

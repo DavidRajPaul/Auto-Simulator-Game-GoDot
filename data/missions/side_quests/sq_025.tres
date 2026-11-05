@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="clue_1"]
+script = ExtResource("stage")
+id = "clue_1"
+kind = "inspect"
+objective_key = "SQ25_CLUE_1"
+target = Vector3(-258.7, 0, -1855.6)
+radius_m = 9.0
+hidden_route = true
+[sub_resource type="Resource" id="guess"]
+script = ExtResource("stage")
+id = "guess"
+kind = "dialogue"
+objective_key = "SQ25_GUESS"
+choices = PackedStringArray("SQ25_CLOCK", "SQ25_ARCH")
+next_by_choice = {"SQ25_CLOCK": "clue_2", "SQ25_ARCH": "hint"}
+[sub_resource type="Resource" id="hint"]
+script = ExtResource("stage")
+id = "hint"
+kind = "inspect"
+objective_key = "SQ25_HINT"
+target = Vector3(-366.4, 0, -1948.6)
+radius_m = 9.0
+[sub_resource type="Resource" id="clue_2"]
+script = ExtResource("stage")
+id = "clue_2"
+kind = "inspect"
+objective_key = "SQ25_CLUE_2"
+target = Vector3(-192.8, 0, -1811.3)
+radius_m = 9.0
+hidden_route = true
+[sub_resource type="Resource" id="reveal"]
+script = ExtResource("stage")
+id = "reveal"
+kind = "dialogue"
+objective_key = "SQ25_REVEAL"
+choices = PackedStringArray("SQ25_READY")
+[sub_resource type="Resource" id="view"]
+script = ExtResource("stage")
+id = "view"
+kind = "photo"
+objective_key = "SQ25_VIEW"
+target = Vector3(-436, 0, -1835.8)
+radius_m = 9.0
+facing = Vector3(0, 0, -1)
+facing_tolerance_deg = 100.0
+[resource]
+script = ExtResource("def")
+id = "sq_025"
+title_key = "SQ25_TITLE"
+description_key = "SQ25_DESC"
+discoverable = true
+start_anchor = Vector3(-303.4, 0, -1891.6)
+estimated_minutes = 7
+category = "exploration"
+reward_inr = 135
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("clue_1"), SubResource("guess"), SubResource("hint"), SubResource("clue_2"), SubResource("reveal"), SubResource("view")])

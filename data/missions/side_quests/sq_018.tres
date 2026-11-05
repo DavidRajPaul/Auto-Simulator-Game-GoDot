@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="prep"]
+script = ExtResource("stage")
+id = "prep"
+kind = "dialogue"
+objective_key = "SQ18_PREP"
+choices = PackedStringArray("SQ18_QUIET", "SQ18_CHARGER")
+[sub_resource type="Resource" id="supply"]
+script = ExtResource("stage")
+id = "supply"
+kind = "inspect"
+objective_key = "SQ18_SUPPLY"
+target = Vector3(-248.1, 0, -172)
+radius_m = 9.0
+target_choice_stage = "prep"
+target_options = {"SQ18_QUIET": Vector3(-248.1, 0, -172), "SQ18_CHARGER": Vector3(-157.6, 0, -185)}
+[sub_resource type="Resource" id="quiet"]
+script = ExtResource("stage")
+id = "quiet"
+kind = "goto"
+objective_key = "SQ18_QUIET"
+target = Vector3(-197.2, 0, -86)
+radius_m = 9.0
+deadline_s = 190.0
+quality_floor = 15.0
+quality_key = "comfort"
+[sub_resource type="Resource" id="luggage"]
+script = ExtResource("stage")
+id = "luggage"
+kind = "cargo"
+objective_key = "SQ18_LUGGAGE"
+target = Vector3(-157.6, 0, -185)
+radius_m = 9.0
+cargo_delta = 1
+quality_floor = 15.0
+quality_key = "comfort"
+[sub_resource type="Resource" id="drop"]
+script = ExtResource("stage")
+id = "drop"
+kind = "cargo"
+objective_key = "SQ18_DROP"
+target = Vector3(-265.3, 0, -98.6)
+radius_m = 9.0
+cargo_delta = -1
+deadline_s = 210.0
+quality_floor = 15.0
+quality_key = "comfort"
+[sub_resource type="Resource" id="charge"]
+script = ExtResource("stage")
+id = "charge"
+kind = "goto"
+objective_key = "SQ18_CHARGE"
+target = Vector3(-248.1, 0, -172)
+radius_m = 9.0
+deadline_s = 200.0
+quality_floor = 15.0
+quality_key = "comfort"
+[resource]
+script = ExtResource("def")
+id = "sq_018"
+title_key = "SQ18_TITLE"
+description_key = "SQ18_DESC"
+discoverable = true
+start_anchor = Vector3(-199.3, 0, -146.1)
+estimated_minutes = 7
+category = "help"
+reward_inr = 135
+reward_xp = 20
+stages = Array[ExtResource("stage")]([SubResource("prep"), SubResource("supply"), SubResource("quiet"), SubResource("luggage"), SubResource("drop"), SubResource("charge")])

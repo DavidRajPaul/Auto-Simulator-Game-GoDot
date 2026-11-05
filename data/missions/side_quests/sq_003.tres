@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="brief"]
+script = ExtResource("stage")
+id = "brief"
+kind = "dialogue"
+objective_key = "SQ03_BRIEF"
+choices = PackedStringArray("SQ03_READY")
+[sub_resource type="Resource" id="case"]
+script = ExtResource("stage")
+id = "case"
+kind = "cargo"
+objective_key = "SQ03_CASE"
+target = Vector3(979, 0, 1561.6)
+radius_m = 9.0
+cargo_delta = 1
+quality_floor = 15.0
+quality_key = "instrument"
+[sub_resource type="Resource" id="approach"]
+script = ExtResource("stage")
+id = "approach"
+kind = "goto"
+objective_key = "SQ03_APPROACH"
+target = Vector3(1060, 0, 1535)
+radius_m = 9.0
+deadline_s = 200.0
+max_speed_kmh = 32.0
+quality_floor = 15.0
+quality_key = "instrument"
+[sub_resource type="Resource" id="gate"]
+script = ExtResource("stage")
+id = "gate"
+kind = "dialogue"
+objective_key = "SQ03_GATE"
+choices = PackedStringArray("SQ03_REAR", "SQ03_FRONT")
+next_by_choice = {"SQ03_REAR": "handover", "SQ03_FRONT": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "inspect"
+objective_key = "SQ03_VERIFY"
+target = Vector3(967.9, 0, 1658.8)
+radius_m = 9.0
+[sub_resource type="Resource" id="handover"]
+script = ExtResource("stage")
+id = "handover"
+kind = "cargo"
+objective_key = "SQ03_HANDOVER"
+target = Vector3(1105.4, 0, 1614.1)
+radius_m = 9.0
+cargo_delta = -1
+quality_floor = 15.0
+quality_key = "instrument"
+[resource]
+script = ExtResource("def")
+id = "sq_003"
+title_key = "SQ03_TITLE"
+description_key = "SQ03_DESC"
+discoverable = true
+start_anchor = Vector3(1021, 0, 1599.5)
+estimated_minutes = 5
+category = "skill"
+reward_inr = 110
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("case"), SubResource("approach"), SubResource("gate"), SubResource("verify"), SubResource("handover")])

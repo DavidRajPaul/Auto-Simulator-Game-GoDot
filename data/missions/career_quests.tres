@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MissionPack" load_steps=15 format=3]
+[gd_resource type="Resource" script_class="MissionPack" load_steps=27 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionPack.gd" id="1"]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_001.tres" id="sq01"]
@@ -13,7 +13,19 @@
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_019.tres" id="sq19"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_024.tres" id="sq24"]
 [ext_resource type="Resource" path="res://data/missions/side_quests/sq_027.tres" id="sq27"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_003.tres" id="sq03"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_005.tres" id="sq05"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_007.tres" id="sq07"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_008.tres" id="sq08"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_010.tres" id="sq10"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_014.tres" id="sq14"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_015.tres" id="sq15"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_017.tres" id="sq17"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_018.tres" id="sq18"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_020.tres" id="sq20"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_023.tres" id="sq23"]
+[ext_resource type="Resource" path="res://data/missions/side_quests/sq_025.tres" id="sq25"]
 [resource]
 script = ExtResource("1")
 id = "chennai_stories_01"
-missions = Array[ExtResource("def")]([ExtResource("sq01"), ExtResource("sq02"), ExtResource("sq04"), ExtResource("sq06"), ExtResource("sq09"), ExtResource("sq12"), ExtResource("sq16"), ExtResource("sq19"), ExtResource("sq21"), ExtResource("sq24"), ExtResource("sq26"), ExtResource("sq27")])
+missions = Array[ExtResource("def")]([ExtResource("sq01"), ExtResource("sq02"), ExtResource("sq03"), ExtResource("sq04"), ExtResource("sq05"), ExtResource("sq06"), ExtResource("sq07"), ExtResource("sq08"), ExtResource("sq09"), ExtResource("sq10"), ExtResource("sq12"), ExtResource("sq14"), ExtResource("sq15"), ExtResource("sq16"), ExtResource("sq17"), ExtResource("sq18"), ExtResource("sq19"), ExtResource("sq20"), ExtResource("sq21"), ExtResource("sq23"), ExtResource("sq24"), ExtResource("sq25"), ExtResource("sq26"), ExtResource("sq27")])

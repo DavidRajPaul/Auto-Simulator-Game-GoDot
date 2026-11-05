@@ -89,7 +89,7 @@ func start(id: String) -> bool:
 	var definition: MissionDef = registry.get_mission(id)
 	# Validate every GoTo before taking ownership; never strand a run on an absent graph.
 	for stage: MissionStage in definition.stages:
-		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park"] and not _reachable(stage.target):
+		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"] and not _reachable(stage.target):
 			return false
 		for option: String in stage.target_options:
 			if not _reachable(stage.target_options[option] as Vector3):
@@ -162,7 +162,7 @@ func _announce_stage() -> void:
 
 func _publish_route() -> void:
 	var stage: MissionStage = current_stage()
-	if stage == null or stage.hidden_route or stage.kind not in ["goto", "photo", "yield", "inspect", "calm", "park"]:
+	if stage == null or stage.hidden_route or stage.kind not in ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"]:
 		SignalBus.gps_route_changed.emit(null)
 		SignalBus.route_updated.emit(PackedVector3Array())
 		return
@@ -199,6 +199,14 @@ func tick(delta: float) -> void:
 	if stage.quality_key != "" and float(run.flags.get(stage.quality_key, 100.0)) < stage.quality_floor:
 		_fail("quality")
 		return
+	if stage.quality_key != "" and GameState.is_raining and stage.weather_loss_per_s > 0.0:
+		_change_quality(-delta * stage.weather_loss_per_s)
+		if float(run.flags[stage.quality_key]) < stage.quality_floor:
+			_fail("quality")
+			return
+	if stage.avoid_radius_m > 0.0 and _has_pose and _position.distance_to(stage.avoid_center) < stage.avoid_radius_m:
+		_fail("diversion")
+		return
 	if stage.kind == "goto" and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
 		_advance()
 	elif stage.kind == "yield" and _signalled and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
@@ -221,8 +229,18 @@ func interact(quest_id: String, stage_id: String) -> bool:
 	if _busy or run == null or run.status != "active" or quest_id != run.quest_id or stage_id != run.stage_id:
 		return false
 	var stage: MissionStage = current_stage()
-	if stage.kind not in ["photo", "inspect", "calm", "park"] or not _has_pose or _position.distance_to(_stage_target(stage)) > stage.radius_m or absf(_speed) > stage.arrival_speed_kmh:
+	if stage.kind not in ["photo", "inspect", "calm", "park", "cargo"] or not _has_pose or _position.distance_to(_stage_target(stage)) > stage.radius_m or absf(_speed) > stage.arrival_speed_kmh:
 		return false
+	if stage.quality_key != "" and float(run.flags.get(stage.quality_key, 100.0)) < stage.quality_floor:
+		_fail("quality")
+		return false
+	if stage.kind == "cargo":
+		var delta: int = int(stage.cargo_delta_options.get(str(run.flags.get(stage.target_choice_stage, "")), stage.cargo_delta))
+		var next_load: int = int(run.flags.get("_cargo", 0)) + delta
+		if next_load < 0 or next_load > stage.cargo_capacity:
+			SignalBus.hint_requested.emit(tr("QUEST_CARGO_CAPACITY"), 2.5)
+			return false
+		run.flags["_cargo"] = next_load
 	if stage.kind == "park" and not _reverse_seen:
 		SignalBus.hint_requested.emit(tr("QUEST_REVERSE_FIRST"), 2.5)
 		return false

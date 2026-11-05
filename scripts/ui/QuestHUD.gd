@@ -109,8 +109,8 @@ func _on_stage(info: Dictionary) -> void:
 		if i < choices.size():
 			_buttons[i].text = tr(choices[i])
 			_buttons[i].set_meta("choice", choices[i])
-	_photo.visible = _kind in ["photo", "inspect", "calm", "park"]
-	_photo.text = tr({"photo": "QUEST_TAKE_PHOTO", "inspect": "QUEST_INSPECT", "calm": "QUEST_CALM", "park": "QUEST_PARK"}.get(_kind, "QUEST_INSPECT"))
+	_photo.visible = _kind in ["photo", "inspect", "calm", "park", "cargo"]
+	_photo.text = tr({"photo": "QUEST_TAKE_PHOTO", "inspect": "QUEST_INSPECT", "calm": "QUEST_CALM", "park": "QUEST_PARK", "cargo": "QUEST_TRANSFER"}.get(_kind, "QUEST_INSPECT"))
 	_quality.visible = str(info.get("quality_key", "")) != ""
 	if _quality.visible:
 		_quality.text = tr("QUEST_QUALITY_" + str(info["quality_key"]).to_upper()) % int(info["quality"])

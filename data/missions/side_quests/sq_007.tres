@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
+[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[sub_resource type="Resource" id="brief"]
+script = ExtResource("stage")
+id = "brief"
+kind = "dialogue"
+objective_key = "SQ07_BRIEF"
+choices = PackedStringArray("SQ07_LOOK")
+[sub_resource type="Resource" id="scan"]
+script = ExtResource("stage")
+id = "scan"
+kind = "inspect"
+objective_key = "SQ07_SCAN"
+target = Vector3(2167.3, 0, 622.8)
+radius_m = 9.0
+[sub_resource type="Resource" id="guess"]
+script = ExtResource("stage")
+id = "guess"
+kind = "dialogue"
+objective_key = "SQ07_GUESS"
+choices = PackedStringArray("SQ07_STRIPED", "SQ07_BLUE")
+next_by_choice = {"SQ07_STRIPED": "confirm", "SQ07_BLUE": "verify"}
+[sub_resource type="Resource" id="verify"]
+script = ExtResource("stage")
+id = "verify"
+kind = "inspect"
+objective_key = "SQ07_VERIFY"
+target = Vector3(2017.5, 0, 622.4)
+radius_m = 9.0
+[sub_resource type="Resource" id="confirm"]
+script = ExtResource("stage")
+id = "confirm"
+kind = "inspect"
+objective_key = "SQ07_CONFIRM"
+target = Vector3(1968.9, 0, 686.5)
+radius_m = 9.0
+[sub_resource type="Resource" id="reunite"]
+script = ExtResource("stage")
+id = "reunite"
+kind = "goto"
+objective_key = "SQ07_REUNITE"
+target = Vector3(2233.7, 0, 628.8)
+radius_m = 9.0
+deadline_s = 230.0
+[resource]
+script = ExtResource("def")
+id = "sq_007"
+title_key = "SQ07_TITLE"
+description_key = "SQ07_DESC"
+discoverable = true
+start_anchor = Vector3(2094.1, 0, 634.8)
+estimated_minutes = 6
+category = "help"
+reward_inr = 115
+reward_xp = 15
+stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("scan"), SubResource("guess"), SubResource("verify"), SubResource("confirm"), SubResource("reunite")])
