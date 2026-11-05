@@ -77,6 +77,9 @@ func _run() -> void:
 	GameState.mission_completed.clear()
 	check("bad ID refused", not discovery.track("missing"))
 	discovery.free()
+	# Godot 4.5.1 empties every Packed*Array when export converts text resources to binary:
+	# quests then fail validation in the APK only, while every source-tree test still passes.
+	check("export keeps text resources", not bool(ProjectSettings.get_setting("editor/export/convert_text_resources_to_binary", true)))
 	# Career creates the map controls before it registers the production catalogue.
 	var full: FullMap = FullMap.new()
 	var mini: MiniMap = MiniMap.new()

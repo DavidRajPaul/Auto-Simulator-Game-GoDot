@@ -15,7 +15,7 @@ var _modal: bool = false
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
-		push_error("Discovery catalogue invalid: " + str(registry.errors))
+		CrashReporter.capture_message("Discovery catalogue rejected: " + str(registry.errors))
 		return
 	_build_grid()
 	SignalBus.quest_discovery_provider = Callable(self, "catalogue")
