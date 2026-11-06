@@ -143,9 +143,13 @@ func _draw() -> void:
 		if kind == "garage":
 			draw_circle(marker, 8.0, Color(0, 0, 0, 0.85))
 			draw_circle(marker, 6.0, colour)
-			draw_string(ThemeDB.fallback_font, marker + Vector2(-4, 4), "G", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.BLACK)
+			# Shapes, not text: a font texture would break the 2D batch at every pin.
+			draw_arc(marker, 3.5, 0.3, TAU - 0.5, 10, Color.BLACK, 1.6)
+			draw_line(marker, marker + Vector2(3.5, 0.0), Color.BLACK, 1.6)
 		else:
 			draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -5), marker + Vector2(5, 0), marker + Vector2(0, 5), marker + Vector2(-5, 0)]), colour)
+	# Quest pins go before the hails so the textured pins, arrow and frame batch together.
+	_draw_quest_pins(centre, scale_px, rot, r)
 	# Hails.
 	for h: Dictionary in _hails:
 		var p: Vector3 = h["position"]
@@ -156,7 +160,6 @@ func _draw() -> void:
 			draw_texture_rect_region(_hud_tex, Rect2(hp - Vector2(11, 26), Vector2(22, 26)), TouchHUD.HUD_REGIONS["pin_rider"] as Rect2)
 		else:
 			draw_circle(hp, 5.0, Color(1.0, 0.82, 0.1))
-	_draw_quest_pins(centre, scale_px, rot, r)
 	# Player arrow + north tick + rim.
 	if _hud_tex != null:
 		draw_texture_rect_region(_hud_tex, Rect2(centre - Vector2(13, 15), Vector2(26, 30)), TouchHUD.HUD_REGIONS["pin_player"] as Rect2)
