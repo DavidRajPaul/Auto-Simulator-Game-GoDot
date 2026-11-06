@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install mapbox-earcut numpy scipy shapely
+      - run: pip install mapbox-earcut numpy pillow scipy shapely
       - name: Rebuild map and street trees from checked-in OSM sources
         run: |
           python3 tools/osm/build_world.py
@@ -35,6 +35,7 @@ jobs:
           python3 tools/osm/append_street_shops.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
+          python3 tools/osm/fill_empty_lots.py
           python3 tools/osm/audit_city_density.py
       - name: Check dressing kept trees, parking and street shops
         run: |

@@ -34,6 +34,21 @@ class CityDensityTests(unittest.TestCase):
         self.assertLess(ZONES["marina"]["bld_density"], DEFAULT_ZONE_STYLE["bld_density"])
         self.assertLess(ZONES["marina"]["bld_density"], ZONES["mylapore"]["bld_density"])
 
+    def test_empty_lots_filled_and_stalls_placed(self) -> None:
+        import glob
+        import json
+        buildings = stalls = 0
+        kinds = set()
+        for path in glob.glob(str(ROOT / "data/world/chunks/c_*.json")):
+            buildings += len(json.load(open(path)).get("blds", []))
+        for path in glob.glob(str(ROOT / "data/world/dress/c_*.json")):
+            rows = json.load(open(path)).get("stalls", [])
+            stalls += len(rows)
+            kinds.update(int(r[3]) for r in rows)
+        self.assertGreaterEqual(buildings, 45000)
+        self.assertGreaterEqual(stalls, 1200)
+        self.assertEqual(kinds, set(range(7)))
+
     def test_default_infill_not_unbounded(self) -> None:
         self.assertGreaterEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.65)
         self.assertLessEqual(DEFAULT_ZONE_STYLE["bld_density"], 0.96)
