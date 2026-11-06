@@ -117,7 +117,10 @@ func _refresh_sign(entries: Array[Dictionary]) -> void:
 		_sign.text = text
 	_sign.modulate = colour
 	_sign.position = Vector3(at.x, 5.2, at.z)
-	_show_person(not _job.is_empty() and _job["place_pos"] != Vector3.ZERO, at)
+	var by_road: Vector3 = at
+	if not _job.is_empty():
+		by_road = at.move_toward(_job["target"] as Vector3, 1.3) # In front of the shop, not inside.
+	_show_person(not _job.is_empty() and _job["place_pos"] != Vector3.ZERO, by_road)
 
 func _show_person(show_it: bool, at: Vector3) -> void:
 	if _person == null:

@@ -96,6 +96,7 @@ res://
 │   │   └── TrafficVehicleAI.gd
 │   ├── world/
 │   │   ├── WorldChunkStreamer.gd    # Streams data/world chunks (threaded), areas, landmarks, spawn
+│   │   ├── QuestPlaces.gd           # Quest places standing in the city (QuestPlaceKit.gd = the models)
 │   │   ├── QuestMarkers.gd          # Side quest gem + ring (one MultiMesh), named sign, person waiting at a job stop
 │   │   ├── StreetTrees.gd           # Owner's tree models: near MultiMesh per species + one far impostor batch
 │   │   ├── RoadGraph.gd             # Drivable graph, left-hand sub-lanes, spawn grid, A* GPS
@@ -240,6 +241,8 @@ res://
 * TNEB transformers are a double-pole structure in the EB pole line (`dress` `"xfmr"`: centre, yaw, outward unit vector); the structure replaces that pole and the tank sits `XFMR_OUT` behind the pole line, checked clear of every carriageway (a pole on one road's kerb can sit in a side road's mouth). `_transformer()` merges the owner's tank (`eb_transformer.glb`, read once in `_ready`; glTF colours are linear, the chunk mesh wants sRGB) into the chunk building mesh: no nodes, no draw calls.
 * `editor/export/convert_text_resources_to_binary=false` must stay in `project.godot`. With Godot 4.5.1's default (true), every `Packed*Array` in a `.tres` loads empty in exported builds only: all quest dialogue `choices` vanished, `MissionRegistry` rejected the pack, and the Nov 5 device build showed no side quests while every source-tree suite passed. Passenger `home_zones` were silently empty too. Headless suites run from source, so they cannot see export-only data loss: to check it, `--export-pack` and run with `--main-pack`.
 * Side quest content rules are in `docs/SIDE_QUESTS_PHASE6.md` (Nov 6 device test): every stop has a named place beside a building, words stay simple, the job is shown before Start, no hidden routes or unseen rules, cargo is safe until loaded, and a route never enters a closed zone. `tools/quests/validate_quests.py` and `tests/run_quest_experience_tests.gd` enforce them. The quest panel lives on the left kerb, under the GPS card: never put it across the road ahead or over the top-row buttons, and show an action button only when a tap will work.
+* The sky (Nov 6 owner feedback: "bit grey"): `fog_sky_affect` must stay 0, because any fog on the sky turned the whole dome grey. All sky, cloud, sun and ambient colours come from `Atmosphere.SKY_KEYS` by minute (research in `docs/CHENNAI_SKY.md`). `sun_height` is negative through twilight, so colour continues after 18:30 while the light itself stops just above the horizon; the shader gets the true sun as `sun_dir`. Sunset red goes on the high cirrus, not the cumulus. Keep the shader at 6 noise samples or fewer. `tests/shot_sky.tscn` renders the whole day.
+* Quest places (`QuestPlaces` + `QuestPlaceKit`) stand in the city all the time: one shared one-surface mesh per kind, drawn within 120 m, no collision, and only the nearest 2 get a painted name. +Z faces the road and the kerb is often under 2 m, so nothing standing goes past z = 0.7. A new place needs a `QuestPlaces.KINDS` entry. MeshKit `lathe_x` profiles are (radius, position); use `QuestPlaceKit._lathe`.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

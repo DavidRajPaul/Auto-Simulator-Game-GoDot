@@ -33,6 +33,7 @@
 [ext_resource type="Script" path="res://scripts/missions/MissionDirector.gd" id="missions"]
 [ext_resource type="Script" path="res://scripts/missions/QuestDiscovery.gd" id="quest_discovery"]
 [ext_resource type="Script" path="res://scripts/world/QuestMarkers.gd" id="quest_markers"]
+[ext_resource type="Script" path="res://scripts/world/QuestPlaces.gd" id="quest_places"]
 [ext_resource type="Script" path="res://scripts/ui/QuestHUD.gd" id="quest_hud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
@@ -161,6 +162,9 @@ script = ExtResource("quest_discovery")
 
 [node name="QuestMarkers" type="Node3D" parent="."]
 script = ExtResource("quest_markers")
+
+[node name="QuestPlaces" type="Node3D" parent="."]
+script = ExtResource("quest_places")
 
 [node name="QuestHUD" type="CanvasLayer" parent="."]
 script = ExtResource("quest_hud")
