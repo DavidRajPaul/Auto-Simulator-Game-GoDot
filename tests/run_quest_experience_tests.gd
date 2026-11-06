@@ -49,6 +49,7 @@ func _run() -> void:
 	for id: String in director.registry.definitions:
 		_play(id, false)
 		_play(id, true)
+	_check_places()
 	_check_load_rules()
 	_check_prompt()
 	_check_hud()
@@ -143,6 +144,22 @@ func _play(id: String, last_answers: bool) -> void:
 	check("%s (%s answers) plays to the end %s" % [id, "last" if last_answers else "first", str(problems)], GameState.mission_completed.has(id) and problems.is_empty())
 	if director.run != null:
 		director.abandon()
+
+func _check_places() -> void:
+	var places: QuestPlaces = QuestPlaces.new()
+	add_child(places)
+	var unmapped: PackedStringArray = PackedStringArray()
+	for place: Dictionary in places.places:
+		if not QuestPlaces.KINDS.has(str(place["key"])):
+			unmapped.append(str(place["key"]))
+	check("Every quest place has a model %s" % str(unmapped), unmapped.is_empty() and places.places.size() >= 70)
+	check("The music shop stands in the world", places.places.any(func(p: Dictionary) -> bool: return p["key"] == "SQ03_P_SHOP" and p["kind"] == "music"))
+	var sizes: bool = true
+	for kind: String in ["music", "hall", "stall", "house", "gate", "school", "clinic", "tent", "power", "auto", "notice", "closed"]:
+		var mesh: ArrayMesh = QuestPlaceKit.mesh(kind)
+		sizes = sizes and mesh.get_surface_count() == 1 and mesh.get_aabb().end.z <= 1.1
+	check("Each kind is one draw call and stays off the road", sizes)
+	places.queue_free()
 
 ## Nothing is at risk until it is in the auto; a knock before pick-up costs nothing.
 func _check_load_rules() -> void:
