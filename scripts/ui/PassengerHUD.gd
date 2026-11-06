@@ -195,6 +195,7 @@ func _process(delta: float) -> void:
 		if _level_timer <= 0.0:
 			_close_level_up()
 	var card_up: bool = _haggle.visible or _fare_card.visible or _level_up.visible
+	_chips.visible = not _haggle.visible
 	_hint.visible = not card_up
 	_toast.visible = not card_up
 	if _hint_timer > 0.0:

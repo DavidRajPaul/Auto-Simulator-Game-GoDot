@@ -610,7 +610,7 @@ func _tick_ride(delta: float) -> void:
 		SignalBus.ride_updated.emit({
 			"destination": destination["name"], "remaining_m": _remaining_route_m(),
 			"time_left_s": time_left_s, "comfort": comfort, "fare": agreed_fare,
-			"near_misses": near_misses, "archetype": rider.archetype_name,
+			"near_misses": near_misses, "archetype": tr("RIDER_%s_NAME" % rider.id.to_upper()),
 		})
 
 ## Sat-nav: the lane-offset, corner-rounded guide line + turn-by-turn for the GPS (RouteLine),
