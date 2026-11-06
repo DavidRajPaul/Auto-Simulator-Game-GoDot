@@ -176,7 +176,6 @@ func _ready() -> void:
 		if not good:
 			_flash("Too fast/slow — kick... kick... kick", 1.2, Tone.WARN))
 	SignalBus.engine_restarted.connect(func() -> void: _flash("Engine started — vaanga po!", 2.0, Tone.GOOD))
-	SignalBus.gethu_stunt_bonus_earned.connect(func(stunt: String, inr: int) -> void: _stunt(stunt, inr))
 	SignalBus.camera_mode_changed.connect(func(mode_name: String) -> void: _flash("Camera: " + mode_name, 1.2))
 	SignalBus.settings_changed.connect(func(st: Dictionary) -> void: set_control_scheme(int(st.get("control_scheme", 1))))
 	# Smoke, then fire (DamageFX): warn once as the auto crosses each stage.

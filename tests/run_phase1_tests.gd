@@ -95,9 +95,9 @@ func _test_vehicle_stats() -> void:
 
 func _test_meter_fare() -> void:
 	var gs: Node = get_node("/root/GameState")
-	_check("Meter: 1 km = ₹35", int(gs.call("calculate_meter_fare", 1.0)) == 35)
-	_check("Meter: 5 km = ₹95", int(gs.call("calculate_meter_fare", 5.0)) == 95)
-	_check("Meter: 5 km night = ₹140", int(gs.call("calculate_meter_fare", 5.0, true)) == 140)
+	_check("Meter: 1 km = ₹50", int(gs.call("calculate_meter_fare", 1.0)) == 50)
+	_check("Meter: 5 km = ₹130", int(gs.call("calculate_meter_fare", 5.0)) == 130)
+	_check("Meter: 5 km night = ₹195", int(gs.call("calculate_meter_fare", 5.0, true)) == 195)
 
 func _test_traffic_pool(traffic: ChennaiTrafficManager, auto: AutoRickshawController) -> void:
 	_check("Traffic pool is 18", traffic.pool.size() == ChennaiTrafficManager.MAX_POOL)

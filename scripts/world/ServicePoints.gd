@@ -7,7 +7,7 @@ extends Node3D
 const USE_RADIUS_M: float = 13.0
 const STOPPED_KMH: float = 6.0
 const VIS_RANGE_M: float = 220.0
-const TOW_COST_INR: int = 150
+const TOW_COST_INR: int = 210
 const MYLAPORE_WORKSHOP_ASSET: String = "res://assets/models/city/garage_workshop/garage_workshop.glb"
 const MYLAPORE_WORKSHOP_SCALE: float = 8.0
 

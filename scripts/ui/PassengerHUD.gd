@@ -6,10 +6,6 @@ extends CanvasLayer
 ## as SignalBus.haggle_choice_made. Everything is built once and reused (no nodes per ride).
 
 const OFFER_TONES: Array[UIKit.Tone] = [UIKit.Tone.GREEN, UIKit.Tone.YELLOW, UIKit.Tone.RED]
-const OFFER_CAPTION: PackedStringArray = ["RIDE FARE", "COUNTER", "DEMAND"]
-const OFFER_TAGS: PackedStringArray = ["safe", "bargain", "greedy"]
-const OFFER_SHORT: PackedStringArray = ["Correct Meter", "Meter Mela", "Fixed Rate"]
-const OFFER_TAMIL: PackedStringArray = ["ஏற்றுக்கொள்", "பேரம்", "ஒரே ரேட்"]
 const MINIMAP_SIZE: float = 170.0
 const FARE_SECONDS: float = 8.0
 const LEVEL_UP_SECONDS: float = 7.0
@@ -34,10 +30,14 @@ var _haggle_ring: CountdownRing
 var _haggle_buttons: Array[Button] = []
 var _offer_price: Array[Label] = []
 var _offer_title: Array[Label] = []
-var _offer_bar: Array[ProgressBar] = []
-var _offer_chance: Array[Label] = []
+var _offer_note: Array[Label] = []
+var _haggle_clues: Label
+var _haggle_meter: Label
+var _haggle_patience_label: Label
+var _haggle_patience: ProgressBar
+var _haggle_let_go: Button
 var _haggle_time: float = 0.0
-var _haggle_total: float = 5.0
+var _haggle_total: float = 9.0
 # Fare result (4F)
 var _fare_card: PanelContainer
 var _fare_text: Label
@@ -153,16 +153,13 @@ func _ready() -> void:
 	SignalBus.wallet_balance_changed.connect(func(_b: int, _d: int) -> void: _refresh_wallet())
 	SignalBus.stand_respect_changed.connect(func(_xp: int, _r: float) -> void: _refresh_wallet())
 	SignalBus.haggle_started.connect(_on_haggle_started)
+	SignalBus.haggle_updated.connect(_show_haggle)
 	SignalBus.haggle_resolved.connect(_on_haggle_resolved)
 	SignalBus.ride_updated.connect(_on_ride_updated)
 	SignalBus.ride_completed.connect(_on_ride_completed)
 	SignalBus.hint_requested.connect(func(text: String, seconds: float) -> void:
 		_hint.text = text
 		_hint_timer = seconds)
-	SignalBus.near_miss.connect(func(_c: float) -> void: toast("Gap-la Gethu!", 1.2))
-	SignalBus.pedestrian_startled.connect(func(_p: Vector3) -> void:
-		if _toast_timer <= 0.0:
-			toast(_watch_out_line(), 1.2))
 	SignalBus.driver_xp_changed.connect(func(_x: int, _l: int, _p: float) -> void: _refresh_level())
 	SignalBus.driver_level_up.connect(_on_level_up)
 	SignalBus.goal_completed.connect(func(g: Dictionary) -> void:
@@ -198,6 +195,7 @@ func _process(delta: float) -> void:
 		if _level_timer <= 0.0:
 			_close_level_up()
 	var card_up: bool = _haggle.visible or _fare_card.visible or _level_up.visible
+	_chips.visible = not _haggle.visible
 	_hint.visible = not card_up
 	_toast.visible = not card_up
 	if _hint_timer > 0.0:
@@ -208,10 +206,6 @@ func _process(delta: float) -> void:
 		_toast_timer -= delta
 		if _toast_timer <= 0.0:
 			_toast.text = ""
-
-func _watch_out_line() -> String:
-	var lines: PackedStringArray = [tr("WATCH_OUT"), tr("WATCH_OUT_2"), tr("WATCH_OUT_3"), tr("WATCH_OUT_4"), tr("WATCH_OUT_5"), tr("WATCH_OUT_6")]
-	return lines[_warning_rng.randi_range(0, lines.size() - 1)]
 
 # --- Building ------------------------------------------------------------------
 
@@ -285,7 +279,7 @@ func _build_haggle() -> void:
 	left.add_child(lv)
 	_haggle_name = UIKit.label("", 22, UIKit.JASMINE, true)
 	lv.add_child(_haggle_name)
-	_haggle_portrait = UIKit.portrait("it_commuter", 150)
+	_haggle_portrait = UIKit.portrait("it_commuter", 110)
 	lv.add_child(_haggle_portrait)
 	var bubble: PanelContainer = PanelContainer.new()
 	bubble.add_theme_stylebox_override("panel", UIKit.card_box(UIKit.JASMINE, 14))
@@ -294,14 +288,29 @@ func _build_haggle() -> void:
 	_haggle_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_haggle_line.custom_minimum_size = Vector2(220, 0)
 	bubble.add_child(_haggle_line)
+	_haggle_clues = UIKit.label("", 15, UIKit.YELLOW)
+	_haggle_clues.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_haggle_clues.custom_minimum_size = Vector2(240, 0)
+	lv.add_child(_haggle_clues)
 	# Right: three offer rows.
 	var right: VBoxContainer = VBoxContainer.new()
 	right.add_theme_constant_override("separation", 12)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(right)
+	var mood: HBoxContainer = HBoxContainer.new()
+	mood.add_theme_constant_override("separation", 10)
+	right.add_child(mood)
+	_haggle_meter = UIKit.label("", 18, UIKit.JASMINE, true)
+	_haggle_meter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mood.add_child(_haggle_meter)
+	_haggle_patience_label = UIKit.label("", 16, UIKit.MUTED)
+	mood.add_child(_haggle_patience_label)
+	_haggle_patience = UIKit.bar(1.0, UIKit.JASMINE, 110, 14)
+	_haggle_patience.max_value = 1.0
+	mood.add_child(_haggle_patience)
 	for i: int in 3:
 		var b: Button = UIKit.button("", OFFER_TONES[i], Callable(), 20)
-		b.custom_minimum_size = Vector2(0, 100)
+		b.custom_minimum_size = Vector2(0, 84)
 		b.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		var offer: int = i
 		b.pressed.connect(func() -> void: _choose(offer))
@@ -325,9 +334,6 @@ func _build_haggle() -> void:
 		tv.alignment = BoxContainer.ALIGNMENT_CENTER
 		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tag.add_child(tv)
-		var cap: Label = UIKit.label(OFFER_CAPTION[i], 12, (UIKit.TONES[i] as Array)[0] as Color, true)
-		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tv.add_child(cap)
 		var price: Label = UIKit.label("₹0", 32, UIKit.JASMINE, true)
 		price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tv.add_child(price)
@@ -341,16 +347,14 @@ func _build_haggle() -> void:
 		var title: Label = UIKit.label("", 22, text_col, true)
 		info.add_child(title)
 		_offer_title.append(title)
-		var chance_row: HBoxContainer = HBoxContainer.new()
-		chance_row.add_theme_constant_override("separation", 8)
-		chance_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		info.add_child(chance_row)
-		var chance: Label = UIKit.label("", 14, text_col, true)
-		chance_row.add_child(chance)
-		_offer_chance.append(chance)
-		var pb: ProgressBar = UIKit.bar(0.5, UIKit.JASMINE, 160, 12)
-		chance_row.add_child(pb)
-		_offer_bar.append(pb)
+		var note: Label = UIKit.label("", 15, text_col, true)
+		info.add_child(note)
+		_offer_note.append(note)
+	_haggle_let_go = Button.new()
+	_haggle_let_go.custom_minimum_size = Vector2(0, 44)
+	_haggle_let_go.add_theme_font_size_override("font_size", 17)
+	_haggle_let_go.pressed.connect(func() -> void: _choose(FareCalculator.Choice.LET_GO))
+	right.add_child(_haggle_let_go)
 
 func _build_fare_card() -> void:
 	_fare_card = UIKit.card()
@@ -556,35 +560,59 @@ func _inr(v: int) -> String:
 
 func _on_haggle_started(info: Dictionary, seconds: float) -> void:
 	_fare_card.visible = false
+	_show_haggle(info, seconds)
+	_haggle.visible = true
+	UIKit.pop_in(_haggle, 0.0, 0.25)
+
+func _show_haggle(info: Dictionary, seconds: float) -> void:
 	_haggle_name.text = str(info["name"])
 	_haggle_title.text = "→ %s  ·  %.1f km" % [info["destination"], float(info["distance_km"])]
 	_haggle_line.text = "“%s”" % info["line"]
 	UIKit.set_portrait(_haggle_portrait, str(info.get("archetype", "")))
-	var quotes: Array = info["quotes"]
-	var odds: Array = info.get("odds", [0.9, 0.6, 0.3])
-	for i: int in 3:
-		_offer_price[i].text = "₹%d" % int(quotes[i])
-		_offer_title[i].text = "%s · %s" % [OFFER_SHORT[i].to_upper(), OFFER_TAMIL[i]]
-		_offer_bar[i].value = float(odds[i])
-		_offer_chance[i].text = "%d%% %s" % [roundi(float(odds[i]) * 100.0), tr("CHANCE")]
-		_haggle_buttons[i].text = ""
-		_haggle_buttons[i].disabled = false
-		_haggle_buttons[i].tooltip_text = "%s\n₹%d\n%s" % [OFFER_SHORT[i], int(quotes[i]), OFFER_TAGS[i]]
+	var clue_lines: PackedStringArray = PackedStringArray()
+	for clue: String in info["clues"]:
+		clue_lines.append(tr("CLUE_" + clue.to_upper()))
+	_haggle_clues.text = "\n".join(clue_lines)
+	var meter: int = int(info["meter"])
+	var offer: int = int(info["offer"])
+	_haggle_meter.text = tr("HAGGLE_METER") % meter
+	_haggle_patience_label.text = tr("HAGGLE_PATIENCE")
+	_haggle_patience.value = float(info["patience"]) / maxf(1.0, float(info["patience_max"]))
+	var asks: Array = info["asks"]
+	_set_offer(0, offer, tr("HAGGLE_ACCEPT"), tr("HAGGLE_THEIR_OFFER"))
+	for i: int in 2:
+		var row: int = i + 1
+		_haggle_buttons[row].visible = i < asks.size()
+		if i < asks.size():
+			var ask: int = int(asks[i])
+			_set_offer(row, ask, tr("HAGGLE_ASK_METER") if ask == meter else (tr("HAGGLE_ASK_MORE") if i == 0 else tr("HAGGLE_ASK_HIGH")), tr("HAGGLE_PLUS") % (ask - offer))
+	_haggle_buttons[0].disabled = false
+	_haggle_let_go.text = tr("HAGGLE_LET_GO")
+	_haggle_let_go.visible = not bool(info.get("scripted", false))
+	_haggle_let_go.disabled = false
 	_haggle_time = seconds
 	_haggle_total = seconds
 	_haggle_ring.seconds = seconds
-	_haggle.visible = true
-	UIKit.pop_in(_haggle, 0.0, 0.25)
+
+func _set_offer(row: int, price: int, title: String, note: String) -> void:
+	_offer_price[row].text = "₹%d" % price
+	_offer_title[row].text = title
+	_offer_note[row].text = note
+	_haggle_buttons[row].text = ""
+	_haggle_buttons[row].disabled = false
 
 func _choose(offer: int) -> void:
 	for b: Button in _haggle_buttons:
 		b.disabled = true
+	_haggle_let_go.disabled = true
 	SignalBus.haggle_choice_made.emit(offer)
 
 func _on_haggle_resolved(result: Dictionary) -> void:
 	_haggle.visible = false
 	if bool(result["accepted"]):
-		toast("“%s”  Deal: ₹%d" % [result["line"], int(result["fare"])], 3.0)
+		toast(tr("HAGGLE_DEAL") % [str(result["line"]), int(result["fare"])], 3.0)
+		if int(result.get("streak", 0)) >= 2:
+			SignalBus.hint_requested.emit(tr("HAGGLE_STREAK") % int(result["streak"]), 2.5)
 		_ride_card.visible = true
 	else:
 		toast("“%s”" % result["line"], 3.0)
@@ -611,7 +639,7 @@ func _on_ride_completed(b: Dictionary) -> void:
 		c.queue_free()
 	_fare_rows.add_child(UIKit.label(tr("FARE_BILL"), 15, Color("8a5a00"), true))
 	var lines: Array = [[tr("METER_FARE"), int(b["fare"]), false], [tr("COMFORT_TIP"), int(b["comfort_tip"]), true],
-		[tr("GETHU_BONUS"), int(b["gethu_bonus"]), true]]
+		[tr("GOOD_DEAL_BONUS"), int(b.get("streak_bonus", 0)), true], [tr("GETHU_BONUS"), int(b["gethu_bonus"]), true]]
 	for ln: Array in lines:
 		var row: HBoxContainer = HBoxContainer.new()
 		var l: Label = UIKit.label(str(ln[0]), 17, UIKit.PLUM)

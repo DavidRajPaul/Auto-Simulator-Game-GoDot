@@ -57,6 +57,6 @@ start_anchor = Vector3(-198.5, 0, -1077.1)
 estimated_minutes = 5
 category = "help"
 scenario_minute = 1320.0
-reward_inr = 115
+reward_inr = 160
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("diagnose"), SubResource("verify"), SubResource("workshop"), SubResource("stranded"), SubResource("finish")])

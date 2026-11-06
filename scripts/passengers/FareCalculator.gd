@@ -1,67 +1,76 @@
 class_name FareCalculator
 extends RefCounted
-## Pure fare / haggling / tip maths for the "Meter Podu vs. Bargain" loop (GDD §1).
+## Pure fare, bargaining and tip maths (GDD §1).
 ## No scene access — unit-tested in tests/run_phase3_tests.
 
-enum Offer { METER, METER_MELA, FIXED }
+enum Choice { ACCEPT, ASK_LOW, ASK_HIGH, LET_GO }
 
-const OFFER_NAMES: PackedStringArray = ["Correct Meter", "Meter Mela +₹30", "Fixed ₹200 — Return Empty!"]
-const METER_MELA_EXTRA_INR: int = 30
-const FIXED_RATE_INR: int = 200
 ## Real km per game km. The world is built 1 : 1 from OSM since the MVP polish pass
 ## (Phases 2–4 used a 1 : 2.5 compressed map, where this was 2.5).
 const REAL_KM_PER_GAME_KM: float = 1.0
-## Respect XP per accepted offer, and for a rejection.
-const RESPECT_XP: Array[int] = [10, 2, -3]
+## Respect XP for a fair deal, and when a rider leaves.
+const RESPECT_XP_DEAL: int = 6
 const RESPECT_XP_REJECTED: int = -1
+const RESPECT_XP_INSULTED: int = -4
 const NEAR_MISS_BONUS_INR: int = 5
 
-## Meter fare (₹35 for 1.8 km + ₹18/km, nearest ₹5) for a game-world distance.
+## Meter fare (₹50 for 1.8 km + ₹25/km, nearest ₹5) for a game-world distance.
 static func meter_fare(game_km: float, surge: float = 1.0) -> int:
 	var real_km: float = game_km * REAL_KM_PER_GAME_KM
 	var raw: float = (GameState.METER_BASE_FARE_INR + maxf(0.0, real_km - GameState.METER_BASE_KM) * GameState.METER_PER_KM_INR) * surge
 	return int(roundf(raw / 5.0) * 5.0)
 
-static func quote(offer: Offer, game_km: float, rider: PassengerArchetype) -> int:
-	var meter: int = meter_fare(game_km, rider.surge_multiplier)
-	match offer:
-		Offer.METER_MELA:
-			return meter + METER_MELA_EXTRA_INR
-		Offer.FIXED:
-			return maxi(FIXED_RATE_INR, meter + METER_MELA_EXTRA_INR)
-		_:
-			return meter
-
-## Context for a haggle beyond the rider's archetype odds (all optional, neutral defaults).
-##   meter_inr    — the honest meter fare; markups are judged against it (₹30 extra on a ₹40
-##                  hop is outrageous, on a ₹150 trip it's normal Chennai bargaining)
-##   demand       — 0–1 from TrafficDensity.rider_demand: rush hour/rain → riders need you
-##   stars        — the driver's stand rating; a 3★ auto doesn't get to ask for extra
-##   greed_streak — recent greedy asks; word spreads at the stand
-const STRICT_MARKUP_FREE: float = 0.2 # markup up to 20 % of the meter costs nothing extra
-const STRICT_MARKUP_SLOPE: float = 0.9 # each +100 % markup beyond that removes 90 % of the odds
-const GREED_PENALTY: float = 0.06
+## --- Bargaining ---
+## The rider opens with an offer and hides their top price. Clues on the card show which way it
+## leans, so reading the rider is the skill: no percentages are shown. Each refused ask costs
+## patience and a greedy ask costs double. When patience runs out the rider walks.
+const CLUE_EFFECT: Dictionary = {"late": 0.16, "bags": 0.1, "rain": 0.13, "night": 0.12, "new": 0.12,
+	"family": 0.08, "app": -0.12, "broke": -0.14, "bus": -0.08}
+const GREED_PENALTY: float = 0.04
 const MAX_GREED_STREAK: int = 5
+const GREEDY_OVER: float = 0.22 # An ask this far past the top price is an insult.
+const MIN_ASK_STEP_INR: int = 10
+const HIGH_ASK_RATIO: float = 1.3
+const COUNTER_SHARE: float = 0.6 # A counter moves this far toward the top price.
+const STREAK_BONUS_INR: int = 5
+const MAX_STREAK: int = 5
+const OVERCHARGE_RATIO: float = 1.25 # Past this a rider pays, but tips half.
 
-## Probability the rider accepts. Strict by design (GDD Meter Mela 65–85 % was too easy):
-## base odds come from the archetype .tres, then scale down with the markup ratio, the
-## driver's rating and recent greed, and up a little with rain, rush-hour demand and
-## Alangaram prestige (0–1). The honest meter is always accepted.
-static func acceptance_chance(offer: Offer, rider: PassengerArchetype, raining: bool = false, prestige: float = 0.0,
-		meter_inr: int = 0, demand: float = 0.5, stars: float = 4.5, greed_streak: int = 0) -> float:
-	if offer == Offer.METER:
-		return clampf(rider.accept_meter_chance, 0.0, 1.0)
-	var p: float = rider.accept_meter_mela_chance + 0.08 * clampf(prestige, 0.0, 1.0) if offer == Offer.METER_MELA else rider.accept_fixed_rate_chance
-	if meter_inr > 0:
-		var asked: int = meter_inr + METER_MELA_EXTRA_INR if offer == Offer.METER_MELA else maxi(FIXED_RATE_INR, meter_inr + METER_MELA_EXTRA_INR)
-		var markup: float = float(asked - meter_inr) / float(meter_inr)
-		p *= clampf(1.0 - STRICT_MARKUP_SLOPE * maxf(0.0, markup - STRICT_MARKUP_FREE), 0.05, 1.0)
-	if raining:
-		p += 0.06
-	p += 0.12 * (clampf(demand, 0.0, 1.0) - 0.5) # off-peak riders shop around, peak riders don't
-	p *= clampf(0.55 + 0.1 * stars, 0.75, 1.0) # 4.5★ = 1.0, 3★ = 0.85, 2★ = 0.75
-	p -= GREED_PENALTY * float(clampi(greed_streak, 0, MAX_GREED_STREAK))
-	return clampf(p, 0.02, 0.95)
+static func round5(v: float) -> int:
+	return int(roundf(v / 5.0) * 5.0)
+
+## The most this rider pays today. Never under the meter: an honest ask is always fair.
+##   jitter — small per-rider randomness (±0.06), so a clue guides without giving the number.
+static func rider_limit(meter: int, rider: PassengerArchetype, clues: PackedStringArray, prestige: float = 0.0,
+		demand: float = 0.5, stars: float = 4.5, greed_streak: int = 0, jitter: float = 0.0) -> int:
+	var ratio: float = rider.haggle_ceiling + jitter
+	for clue: String in clues:
+		ratio += float(CLUE_EFFECT.get(clue, 0.0))
+	ratio += 0.05 * clampf(prestige, 0.0, 1.0)
+	ratio += 0.16 * (clampf(demand, 0.0, 1.0) - 0.5) # Rush hour: fewer free autos.
+	ratio += 0.06 * (clampf(stars, 1.0, 5.0) - 4.5)
+	ratio -= GREED_PENALTY * float(clampi(greed_streak, 0, MAX_GREED_STREAK)) # Word spreads at the stand.
+	return maxi(meter, round5(float(meter) * ratio))
+
+static func opening_offer(meter: int, rider: PassengerArchetype, clues: PackedStringArray) -> int:
+	var ratio: float = rider.haggle_open_ratio
+	if clues.has("app") or clues.has("broke"):
+		ratio -= 0.08
+	return mini(meter, round5(float(meter) * ratio))
+
+## The two prices a player can ask next. Low is at least the meter; high is a real gamble.
+static func next_asks(offer: int, meter: int) -> Array[int]:
+	var low: int = maxi(meter, offer + MIN_ASK_STEP_INR)
+	return [low, maxi(low + MIN_ASK_STEP_INR, round5(float(low) * HIGH_ASK_RATIO))]
+
+## One round: {accepted, walked, insulted, offer, patience}. Pure, so it is fully unit-tested.
+static func respond(ask: int, limit: int, offer: int, patience: int) -> Dictionary:
+	if ask <= limit:
+		return {"accepted": true, "walked": false, "insulted": false, "offer": ask, "patience": patience}
+	var insulted: bool = float(ask - limit) / float(limit) > GREEDY_OVER
+	var left: int = patience - (2 if insulted else 1)
+	var counter: int = mini(limit, maxi(offer + 5, round5(float(offer) + float(limit - offer) * COUNTER_SHARE)))
+	return {"accepted": false, "walked": left <= 0, "insulted": insulted, "offer": counter, "patience": maxi(left, 0)}
 
 ## Drive-time allowance for a route (m) at a realistic city pace plus the rider's slack.
 static func ride_time_limit_s(route_m: float, rider: PassengerArchetype) -> float:
@@ -70,9 +79,13 @@ static func ride_time_limit_s(route_m: float, rider: PassengerArchetype) -> floa
 ## Final settlement shown on the fare breakdown screen.
 ## comfort: 0–1 tea-cup level at drop-off; near_misses: Gap-la Gethu count during the ride.
 ## tip_bonus: extra tip fraction (e.g. +0.25 green-ride bonus from IT riders in the EV).
-static func settle(agreed_fare: int, rider: PassengerArchetype, comfort: float, on_time: bool, near_misses: int, tip_bonus: float = 0.0) -> Dictionary:
+## meter_inr: a rider charged far over it tips half; deal_streak: fair deals in a row pay extra.
+static func settle(agreed_fare: int, rider: PassengerArchetype, comfort: float, on_time: bool, near_misses: int, tip_bonus: float = 0.0, meter_inr: int = 0, deal_streak: int = 0) -> Dictionary:
 	var c: float = clampf(comfort, 0.0, 1.0)
 	var tip: int = roundi(float(rider.max_tip_inr) * c * (1.0 + tip_bonus)) if on_time else 0
+	if meter_inr > 0 and float(agreed_fare) > float(meter_inr) * OVERCHARGE_RATIO:
+		tip = tip / 2
+	var streak_bonus: int = clampi(deal_streak, 0, MAX_STREAK) * STREAK_BONUS_INR if on_time else 0
 	var gethu: int = 0
 	if rider.likes_fast_driving:
 		gethu = near_misses * (NEAR_MISS_BONUS_INR + rider.near_miss_tip_inr)
@@ -81,7 +94,8 @@ static func settle(agreed_fare: int, rider: PassengerArchetype, comfort: float, 
 		"fare": agreed_fare,
 		"comfort_tip": tip,
 		"gethu_bonus": gethu,
-		"total": agreed_fare + tip + gethu,
+		"streak_bonus": streak_bonus,
+		"total": agreed_fare + tip + gethu + streak_bonus,
 		"stars": stars,
 		"on_time": on_time,
 	}

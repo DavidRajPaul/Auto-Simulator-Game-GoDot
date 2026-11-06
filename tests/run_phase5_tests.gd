@@ -173,6 +173,8 @@ func _test_atmosphere(main: Node) -> void:
 	var light: Light3D = get_tree().get_nodes_in_group("headlight")[0] as Light3D
 	_check("Sun is high at noon, low at dusk, gone at night",
 		Atmosphere.sun_height(720.0) > 0.9 and Atmosphere.sun_height(1080.0) < 0.3 and Atmosphere.sun_height(1260.0) < 0.0)
+	var east: Vector3 = Atmosphere.moon_direction(0.0, 0)
+	_check("Moon moves with the clock and rises later each day", not Atmosphere.moon_direction(1200.0, 0).is_equal_approx(Atmosphere.moon_direction(1260.0, 0)) and not east.is_equal_approx(Atmosphere.moon_direction(0.0, 3)))
 	atmo.apply(720.0, 0.0)
 	var day_amb: float = env.ambient_light_color.get_luminance()
 	var noon_lights: bool = light.visible

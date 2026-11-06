@@ -31,8 +31,8 @@ const RIDE_XP_HONEST_METER: int = 3
 const RIDE_XP_PER_NEAR_MISS: int = 2
 const SIGNAL_XP: int = 2
 const GOAL_XP: int = 60
-const GOAL_INR: int = 40
-const ALL_GOALS_BONUS_INR: int = 100
+const GOAL_INR: int = 55
+const ALL_GOALS_BONUS_INR: int = 140
 
 ## Goal templates: kind → [text key, min target, max target].
 const GOAL_TEMPLATES: Dictionary = {
@@ -63,7 +63,7 @@ static func title(level: int) -> String:
 
 ## Cash bonus paid when reaching `level`.
 static func level_reward_inr(level: int) -> int:
-	return 50 * level
+	return 70 * level
 
 static func required_level(key: String) -> int:
 	return int(REQUIRED_LEVEL.get(key, 1))

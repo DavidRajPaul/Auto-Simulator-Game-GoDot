@@ -42,6 +42,6 @@ discoverable = true
 start_anchor = Vector3(152.3, 0, -1201.3)
 estimated_minutes = 6
 category = "help"
-reward_inr = 125
+reward_inr = 175
 reward_xp = 20
 stages = Array[ExtResource("stage")]([SubResource("plan"), SubResource("folder"), SubResource("interview")])

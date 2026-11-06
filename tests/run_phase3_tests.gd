@@ -51,43 +51,54 @@ func _test_archetypes() -> void:
 	var ok: bool = true
 	for id: String in ARCHETYPE_IDS:
 		var a: PassengerArchetype = _rider(id)
-		if a == null or a.accept_meter_chance < 0.99 or a.accept_meter_mela_chance < 0.4 or a.accept_meter_mela_chance > 0.65 \
-				or a.accept_fixed_rate_chance < 0.08 or a.accept_fixed_rate_chance > 0.25:
+		if a == null or a.haggle_ceiling < 1.0 or a.haggle_ceiling > 1.5 or a.haggle_patience < 1 or a.haggle_open_ratio > 1.0:
 			ok = false
-	_check("5 archetypes load with strict odds (meter 100%, mela 40–65%, fixed 8–25%)", ok)
+	_check("5 archetypes load with sane bargaining values", ok)
 	_check("T. Nagar shopper carries +45 kg luggage", is_equal_approx(_rider("tnagar_shopper").luggage_kg, 45.0))
 	_check("Monsoon rider pays 1.5× surge", _rider("monsoon_rider").surge_multiplier >= 1.5)
 
 func _test_fares() -> void:
 	var it: PassengerArchetype = _rider("it_commuter")
-	_check("Meter: 1 km (inside the 1.8 km base) = ₹35", FareCalculator.meter_fare(1.0) == 35)
-	_check("Meter: 5 km = ₹95", FareCalculator.meter_fare(5.0) == 95)
-	_check("Meter Mela = meter + ₹30", FareCalculator.quote(FareCalculator.Offer.METER_MELA, 5.0, it) == 125)
-	_check("Fixed rate ≥ ₹200", FareCalculator.quote(FareCalculator.Offer.FIXED, 0.5, it) == 200)
-	_check("Monsoon surge raises the meter", FareCalculator.quote(FareCalculator.Offer.METER, 5.0, _rider("monsoon_rider")) == 140)
+	_check("Meter: 1 km (inside the 1.8 km base) = ₹50", FareCalculator.meter_fare(1.0) == 50)
+	_check("Meter: 5 km = ₹130", FareCalculator.meter_fare(5.0) == 130)
 
 func _test_odds() -> void:
+	var it: PassengerArchetype = _rider("it_commuter")
 	var shopper: PassengerArchetype = _rider("tnagar_shopper")
-	_check("Correct Meter always accepted", is_equal_approx(FareCalculator.acceptance_chance(FareCalculator.Offer.METER, shopper), 1.0))
-	_check("Rain makes bargains likelier", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, true) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper))
-	_check("Alangaram prestige sweetens Meter Mela", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 1.0) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper))
-	var mela_short: float = FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 40)
-	var mela_long: float = FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 160)
-	_check("Strict: +₹30 on a ₹40 hop is much harder than on a ₹160 trip", mela_short < mela_long * 0.6, "%.2f vs %.2f" % [mela_short, mela_long])
-	_check("Strict: fixed ₹200 on a short trip almost never accepted", FareCalculator.acceptance_chance(FareCalculator.Offer.FIXED, shopper, false, 0.0, 40) < 0.05)
-	_check("Rush-hour demand helps a bargain", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 1.0) > FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 0.0))
-	_check("Greed streak and low stars cut the odds", FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120, 0.5, 3.0, 3) < FareCalculator.acceptance_chance(FareCalculator.Offer.METER_MELA, shopper, false, 0.0, 120))
-	# Monte Carlo against the same RNG the game uses.
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = 42
-	var accepted: int = 0
-	var n: int = 4000
-	var p: float = FareCalculator.acceptance_chance(FareCalculator.Offer.FIXED, shopper)
-	for i: int in n:
-		if rng.randf() < p:
-			accepted += 1
-	var rate: float = float(accepted) / float(n)
-	_check("Fixed-rate acceptance matches odds over 4000 rolls", absf(rate - p) < 0.03, "%.3f vs %.2f" % [rate, p])
+	GameState.shift_minute = 1330.0
+	var late: bool = GameState.night_fare_now()
+	GameState.shift_minute = 700.0
+	_check("Night fare applies from 10 PM, not by day", late and not GameState.night_fare_now())
+	_check("Honest meter is always within the limit", FareCalculator.rider_limit(100, shopper, PackedStringArray(["broke", "app", "bus"]), 0.0, 0.0, 1.0, 5, -0.06) == 100)
+	var plain: int = FareCalculator.rider_limit(200, it, PackedStringArray())
+	_check("A hurried rider pays more", FareCalculator.rider_limit(200, it, PackedStringArray(["late"])) > plain)
+	_check("Rain raises the limit", FareCalculator.rider_limit(200, it, PackedStringArray(["rain"])) > plain)
+	_check("A cab app lowers the limit", FareCalculator.rider_limit(200, it, PackedStringArray(["app"])) < plain)
+	_check("Greed at the stand lowers the limit", FareCalculator.rider_limit(200, it, PackedStringArray(), 0.0, 0.5, 4.5, 5) < plain)
+	_check("Low rating lowers the limit", FareCalculator.rider_limit(200, it, PackedStringArray(), 0.0, 0.5, 2.0) < plain)
+	_check("Rush hour raises the limit", FareCalculator.rider_limit(200, it, PackedStringArray(), 0.0, 1.0) > plain)
+	_check("Shoppers open below the meter", FareCalculator.opening_offer(200, shopper, PackedStringArray()) < 200)
+	var asks: Array[int] = FareCalculator.next_asks(160, 200)
+	_check("First ask is the meter, the second a gamble", asks[0] == 200 and asks[1] >= 250)
+	_check("Ask above the offer even past the meter", FareCalculator.next_asks(220, 200)[0] == 230)
+	var fair: Dictionary = FareCalculator.respond(200, 220, 160, 2)
+	_check("An ask within the limit closes the deal", bool(fair["accepted"]) and int(fair["patience"]) == 2)
+	var push: Dictionary = FareCalculator.respond(230, 220, 160, 2)
+	_check("A small overreach costs one patience and gets a counter", not bool(push["accepted"]) and not bool(push["walked"]) and int(push["patience"]) == 1 and int(push["offer"]) > 160 and int(push["offer"]) <= 220)
+	var insult: Dictionary = FareCalculator.respond(300, 220, 160, 2)
+	_check("A greedy ask costs double and ends the talk", bool(insult["insulted"]) and bool(insult["walked"]))
+	var limit: int = 220
+	var offer: int = 160
+	var patience: int = 3
+	for round_no: int in 2:
+		var r: Dictionary = FareCalculator.respond(limit + 10, limit, offer, patience)
+		_check("Counters climb but never pass the limit (%d)" % round_no, int(r["offer"]) > offer and int(r["offer"]) <= limit)
+		offer = int(r["offer"])
+		patience = int(r["patience"])
+	var greedy_tip: Dictionary = FareCalculator.settle(300, it, 1.0, true, 0, 0.0, 200)
+	var fair_tip: Dictionary = FareCalculator.settle(200, it, 1.0, true, 0, 0.0, 200)
+	_check("Overcharged riders tip half", int(greedy_tip["comfort_tip"]) == int(fair_tip["comfort_tip"]) / 2)
+	_check("Fair deals in a row pay a bonus", int(FareCalculator.settle(200, it, 1.0, true, 0, 0.0, 200, 3)["streak_bonus"]) == 15)
 
 func _test_settlement() -> void:
 	var it: PassengerArchetype = _rider("it_commuter")
@@ -157,14 +168,14 @@ func _test_haggle_timeout(savari: SavariManager, auto: AutoRickshawController) -
 	_clear_hails(savari)
 	savari.spawn_hail_at(_kerb_ahead(savari, auto, 3.0), _rider("tourist"))
 	await _physics(10)
-	_check("Stopping beside a hail opens the 5 s haggle card", _events.has("haggle_started") and savari.state == SavariManager.State.HAGGLING)
+	_check("Stopping beside a hail opens the bargain card", _events.has("haggle_started") and savari.state == SavariManager.State.HAGGLING)
 	if _events.has("haggle_started"):
 		var info: Dictionary = _events["haggle_started"]
-		var q: Array = info["quotes"]
-		_check("Quotes rise Meter ≤ Mela ≤ Fixed", int(q[0]) <= int(q[1]) and int(q[1]) <= int(q[2]), str(q))
+		var q: Array = info["asks"]
+		_check("Offer ≤ meter ≤ asks", int(info["offer"]) <= int(info["meter"]) and int(info["meter"]) <= int(q[0]) and int(q[0]) < int(q[1]), str(q))
 		_check("Haggle card names a destination", str(info["destination"]) != "", str(info["destination"]))
-	await _physics(330) # > 5 s with no tap
-	_check("No answer in 5 s → rider walks off", _events.has("haggle_resolved") and not bool((_events["haggle_resolved"] as Dictionary)["accepted"]))
+	await _physics(570) # > 9 s with no tap
+	_check("No answer → rider walks off", _events.has("haggle_resolved") and not bool((_events["haggle_resolved"] as Dictionary)["accepted"]))
 	_check("Walk-off costs Respect, not money", GameState.stand_respect_xp == respect_before + FareCalculator.RESPECT_XP_REJECTED and GameState.wallet_inr == wallet_before)
 	_check("10 s cooldown after a rejection", savari.state == SavariManager.State.COOLDOWN)
 	savari._state_timer = 0.0
@@ -177,7 +188,7 @@ func _test_full_ride(savari: SavariManager, auto: AutoRickshawController, main: 
 	var rides_before: int = GameState.completed_savaris
 	savari.spawn_hail_at(_kerb_ahead(savari, auto, 3.0), _rider("it_commuter"))
 	await _physics(10)
-	SignalBus.haggle_choice_made.emit(FareCalculator.Offer.METER)
+	SignalBus.haggle_choice_made.emit(FareCalculator.Choice.ACCEPT)
 	await _physics(3)
 	_check("Correct Meter accepted → ride starts", savari.state == SavariManager.State.RIDING)
 	_check("Passengers add mass to the auto", auto.mass > auto.stats.base_mass_kg)
@@ -204,7 +215,7 @@ func _test_comfort_and_near_miss(savari: SavariManager, auto: AutoRickshawContro
 	_clear_hails(savari)
 	savari.spawn_hail_at(_kerb_ahead(savari, auto, 3.0), _rider("tnagar_shopper"))
 	await _physics(10)
-	SignalBus.haggle_choice_made.emit(FareCalculator.Offer.METER)
+	SignalBus.haggle_choice_made.emit(FareCalculator.Choice.ACCEPT)
 	await _physics(3)
 	if savari.state != SavariManager.State.RIDING:
 		_check("Second ride starts", false)

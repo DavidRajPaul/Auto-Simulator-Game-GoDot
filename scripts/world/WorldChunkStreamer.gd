@@ -145,6 +145,8 @@ var _xfmr_cols: PackedColorArray = PackedColorArray()
 ## Street-shop footprints per chunk (Vector2i -> Array[PackedVector2Array]): pedestrians treat
 ## them like buildings (walk mask). Filled by _build_city_props before any chunk streams in.
 var _prop_blocks: Dictionary = {}
+const STALL_HALF: Vector2 = Vector2(1.7, 1.2)
+var _stall_kit: Array[Dictionary] = [] # Read once on the main thread, used by chunk workers.
 ## Temple-tank footprints (water + ghat steps) per chunk: Vector2i -> PackedVector2Array, 3 points
 ## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
 var _tank_blocks: Dictionary = {}
@@ -196,6 +198,7 @@ func _ready() -> void:
 	trees.name = "StreetTrees"
 	add_child(trees)
 	_load_transformer_tank()
+	_stall_kit = StreetStallKit.arrays()
 	_build_ground()
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
@@ -398,6 +401,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var df: FileAccess = FileAccess.open(world_dir.path_join("dress/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
+		_block_stalls(root, k, dress.get("stalls", []) as Array)
 	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty():
 		root.add_child(_buildings(blds, dress, walls))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
@@ -741,6 +745,8 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 	for x: Array in dress.get("xfmr", []):
 		_transformer(m, Vector3(float(x[0]), 0.0, float(x[1])), Vector2(sin(float(x[2])), cos(float(x[2]))),
 			Vector2(float(x[3]), float(x[4])), concrete)
+	for stall: Array in dress.get("stalls", []):
+		_stall(m, stall)
 	for w: Array in dress.get("wires", []):
 		var a: Vector3 = Vector3(float(w[0]), 0.0, float(w[1]))
 		var b: Vector3 = Vector3(float(w[2]), 0.0, float(w[3]))
@@ -782,6 +788,43 @@ func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
 		prev = p
 
 ## Reads the baked tank (one vertex-coloured surface) into flat triangle arrays.
+## Walkers go round stalls, as they do buildings.
+func _block_stalls(root: Node3D, k: Vector2i, stalls: Array) -> void:
+	if stalls.is_empty():
+		return
+	var mask: PackedByteArray = root.get_meta("building_mask")
+	var origin: Vector2 = Vector2(float(k.x), float(k.y)) * chunk_size
+	var n: int = int(ceil(chunk_size / BLOCK_CELL_M))
+	for s: Array in stalls:
+		var at: Vector2 = Vector2(float(s[0]), float(s[1]))
+		var along: Vector2 = Vector2(cos(float(s[2])), -sin(float(s[2]))) * STALL_HALF.x
+		var deep: Vector2 = Vector2(sin(float(s[2])), cos(float(s[2]))) * STALL_HALF.y
+		var c0: Vector2 = at - along - deep
+		var c2: Vector2 = at + along + deep
+		_mask_triangle(mask, n, origin, c0, at + along - deep, c2)
+		_mask_triangle(mask, n, origin, c0, c2, at - along + deep)
+	root.set_meta("building_mask", mask)
+
+## Kerb stalls merge into the chunk's one building mesh, like the transformers: no nodes, no
+## draw calls, so the city can carry hundreds of them.
+func _stall(m: MeshBuf, s: Array) -> void:
+	var kind: int = int(s[3])
+	if kind < 0 or kind >= _stall_kit.size():
+		return
+	var at: Vector3 = Vector3(float(s[0]), 0.0, float(s[1]))
+	var yaw: float = float(s[2])
+	var ground: float = 0.08
+	var c: float = cos(yaw)
+	var n: float = sin(yaw)
+	var kit: Dictionary = _stall_kit[kind]
+	var v: PackedVector3Array = kit["v"]
+	var nn: PackedVector3Array = kit["n"]
+	var col: PackedColorArray = kit["c"]
+	for i: int in v.size():
+		var p: Vector3 = v[i]
+		var q: Vector3 = nn[i]
+		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], PLAIN_UV, PLAIN_CELL)
+
 func _load_transformer_tank() -> void:
 	if not ResourceLoader.exists(XFMR_TANK):
 		return

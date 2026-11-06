@@ -109,7 +109,7 @@ func _test_purchases() -> void:
 	var left: int = 2500 - GameState.base_stats("madras_king_deluxe").price_inr
 	_check("Buy King Deluxe with ₹2,500", GameState.buy_vehicle("madras_king_deluxe") and GameState.active_vehicle == "madras_king_deluxe" and GameState.wallet_inr == left)
 	_check("Switch back to the Singara for free", GameState.select_vehicle("singara_classic") and GameState.wallet_inr == left)
-	_check("Engine upgrade costs ₹250", GameState.buy_upgrade("engine") and GameState.wallet_inr == left - 250 and GameState.upgrade_level("singara_classic", "engine") == 1)
+	_check("Engine upgrade costs ₹350", GameState.buy_upgrade("engine") and GameState.wallet_inr == left - 350 and GameState.upgrade_level("singara_classic", "engine") == 1)
 	_check("Upgrades are per-auto", GameState.upgrade_level("madras_king_deluxe", "engine") == 0)
 	GameState.add_inr(5000)
 	GameState.buy_upgrade("engine")
@@ -132,8 +132,7 @@ func _test_economy_exit_gate() -> void:
 	while wallet < float(GameState.base_stats("madras_king_deluxe").price_inr) and rides < 40:
 		var rider: PassengerArchetype = load("res://data/passengers/%s.tres" % ids[rng.randi() % ids.size()]) as PassengerArchetype
 		var km: float = rng.randf_range(0.6, 2.4) * 1.3 # route ≈ 1.3× straight-line (1 : 1 map)
-		var offer: FareCalculator.Offer = FareCalculator.Offer.METER if rng.randf() < 0.6 else FareCalculator.Offer.METER_MELA
-		var fare: int = FareCalculator.quote(offer, km, rider)
+		var fare: int = FareCalculator.meter_fare(km, rider.surge_multiplier) + (0 if rng.randf() < 0.6 else 30)
 		var b: Dictionary = FareCalculator.settle(fare, rider, rng.randf_range(0.55, 0.95), rng.randf() < 0.85, rng.randi_range(0, 2))
 		var pickup_km: float = rng.randf_range(0.1, 0.4)
 		wallet += float(int(b["total"])) - (km + pickup_km) * stats.fuel_burn_per_km * stats.fuel_price_inr
@@ -271,7 +270,7 @@ func _test_condition(_auto: AutoRickshawController) -> void:
 	var cost: int = GameState.repair_cost()
 	GameState.add_inr(100)
 	var wallet: int = GameState.wallet_inr
-	_check("Repair ₹3 per point restores condition", cost == ceili(GameState.DAMAGE.points(10.0) * 3.0) and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - cost)
+	_check("Repair ₹4 per point restores condition", cost == ceili(GameState.DAMAGE.points(10.0) * 4.0) and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - cost)
 	await _physics(1)
 
 func _test_shift_clock() -> void:

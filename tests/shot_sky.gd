@@ -20,7 +20,7 @@ func _run() -> void:
 	var atmo: Atmosphere = city.get_node("Atmosphere") as Atmosphere
 	atmo.set_process(false)
 	var spot: PackedStringArray = (OS.get_environment("SKY_POS") if OS.has_environment("SKY_POS") else "2020,1000").split(",")
-	var at: Vector3 = Vector3(float(spot[0]), 6.0, float(spot[1]))
+	var at: Vector3 = Vector3(float(spot[0]), float(OS.get_environment("SKY_Y")) if OS.has_environment("SKY_Y") else 6.0, float(spot[1]))
 	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, Vector3(at.x, 1.0, at.z)))
 	SignalBus.player_pose_updated.emit(Vector3(at.x, 0, at.z), Vector3.FORWARD)
 	for i: int in 60:
@@ -34,6 +34,21 @@ func _run() -> void:
 	for node: Node in city.get_children():
 		if node is CanvasLayer:
 			(node as CanvasLayer).visible = false
+	if OS.has_environment("SKY_SUN"):
+		# Follow the sun and moon: each shot looks straight at them.
+		cam.fov = 75.0
+		for minute: float in [375.0, 720.0, 1080.0, 1100.0, 1112.0, 1200.0, 1290.0]:
+			GameState.shift_minute = minute
+			atmo.apply(minute, 0.0)
+			var look: Vector3 = (atmo._sky.get_shader_parameter("moon_dir") if minute >= 1200.0 else atmo._sky.get_shader_parameter("sun_dir")) as Vector3
+			look.y = maxf(look.y, 0.1)
+			cam.global_position = at
+			cam.look_at(at + look)
+			await RenderingServer.frame_post_draw
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("%s/sun_%04d.png" % [out, int(minute)])
+		get_tree().quit()
+		return
 	for dir: Array in [["west", Vector3(-1, 0.32, 0.25)], ["east", Vector3(1, 0.32, 0.25)]]:
 		for minute: float in ([720.0] if OS.has_environment("SKY_ONE") else ALL_MINUTES):
 			GameState.shift_minute = minute

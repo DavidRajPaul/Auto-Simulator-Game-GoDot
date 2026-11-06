@@ -74,7 +74,7 @@ func _test_level_ups_and_gates() -> void:
 	GameState.add_driver_xp(1000)
 	_check("Reaching Lv 5 announces the level-up", _events.get("driver_level_up", 0) == 5 and GameState.driver_level() == 5)
 	var lv5_badge: int = int(RewardsEngine.ACHIEVEMENTS["level_5"]["inr"])
-	_check("Every level crossed pays its bonus (₹100+150+200+250, plus the Lv 5 achievement)", GameState.wallet_inr == w + 700 + lv5_badge, "₹%d" % (GameState.wallet_inr - w))
+	_check("Every level crossed pays its bonus (₹140+210+280+350, plus the Lv 5 achievement)", GameState.wallet_inr == w + 980 + lv5_badge, "₹%d" % (GameState.wallet_inr - w))
 	_check("Lv 5 unlocks the EV in the garage", GameState.buy_vehicle("namma_green_ev"))
 	_check("Musical air-horn needs Lv 4 (now unlocked)", GameState.is_unlocked("horn:2") and not GameState.is_unlocked("paint:4"))
 	GameState.reset_profile()
