@@ -197,7 +197,7 @@ func _clip(a: Vector2, b: Vector2, centre: Vector2, radius: float) -> PackedVect
 		return PackedVector2Array()
 	return PackedVector2Array([a + d * t1, a + d * t2])
 
-## Draw local quests above service and passenger pins. When the tracked quest is
+## Draw local quests above service pins. When the tracked quest is
 ## outside the map, keep its badge inside the rim as a direction indicator.
 func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) -> void:
 	for quest: Dictionary in _quests:
