@@ -39,7 +39,6 @@ const SURF_STYLE: Dictionary = {
 }
 const UP_LAYER_Y: float = 0.012
 const MEDIAN_KERB_H: float = 0.24
-const MEDIAN_STRIPE_M: float = 1.0
 const MEDIAN_COLLIDE_H: float = 1.25
 const MEDIAN_BLACK: Color = Color(0.07, 0.07, 0.075)
 const MEDIAN_WHITE: Color = Color(0.93, 0.93, 0.9)
@@ -1011,32 +1010,28 @@ func _medians(m: MeshBuf, faces: PackedVector3Array, medians: Array) -> void:
 				continue
 			var along: Vector2 = (b - a) / seg
 			var w: float = (float(rec[i + 2]) + float(rec[i + 5])) * 0.5
-			# Painted kerb: alternating black and white blocks about a metre long.
-			var stripes: int = maxi(1, roundi(seg / MEDIAN_STRIPE_M))
-			var stripe_len: float = seg / float(stripes)
-			for k: int in stripes:
-				var mid: Vector2 = a + along * (stripe_len * (float(k) + 0.5))
-				var paint: Color = MEDIAN_BLACK if (k + floori(float(i) / 3.0)) % 2 == 0 else MEDIAN_WHITE
-				_dbox(m, Vector3(mid.x, kerb_h * 0.5, mid.y), Vector3(stripe_len + 0.02, kerb_h, w), along, paint)
+			# Painted kerb: alternating black and white blocks, one per 2 m sample (cheap to build).
 			var c: Vector2 = (a + b) * 0.5
+			var paint: Color = MEDIAN_BLACK if floori(float(i) / 3.0) % 2 == 0 else MEDIAN_WHITE
+			_dbox(m, Vector3(c.x, kerb_h * 0.5, c.y), Vector3(seg + 0.02, kerb_h, w), along, paint)
+			# Bed on top (top face only).
 			var bed: Color = MEDIAN_EARTH if railing else MEDIAN_CONCRETE
-			_dbox(m, Vector3(c.x, kerb_h + 0.015, c.y), Vector3(seg + 0.02, 0.03, maxf(w - 0.3, 0.2)), along, bed)
+			var u3: Vector3 = Vector3(along.x, 0.0, along.y) * (seg * 0.5 + 0.01)
+			var w3: Vector3 = Vector3(-along.y, 0.0, along.x) * maxf(w * 0.5 - 0.15, 0.1)
+			var c3: Vector3 = Vector3(c.x, kerb_h + 0.01, c.y)
+			_face(m, [c3 - u3 - w3, c3 + u3 - w3, c3 + u3 + w3, c3 - u3 + w3], Vector3.UP, bed)
 			if railing:
-				# Green railing down the middle: posts, two rails, thin balusters.
+				# Green railing down the middle: a post per sample, two rails, two balusters.
 				_dbox(m, Vector3(a.x, kerb_h + 0.5, a.y), Vector3(0.07, 1.0, 0.07), along, MEDIAN_RAIL.darkened(0.2))
 				for rail_y: float in [0.38, 0.95]:
 					_dbox(m, Vector3(c.x, kerb_h + rail_y, c.y), Vector3(seg, 0.05, 0.05), along, MEDIAN_RAIL)
-				var bars: int = maxi(1, floori(seg / 0.4))
-				for k: int in bars:
-					var bp: Vector2 = a + along * (seg * (float(k) + 0.5) / float(bars))
-					_dbox(m, Vector3(bp.x, kerb_h + 0.66, bp.y), Vector3(0.025, 0.56, 0.025), along, MEDIAN_RAIL)
+				for f: float in [0.33, 0.67]:
+					var bp: Vector2 = a.lerp(b, f)
+					_dbox(m, Vector3(bp.x, kerb_h + 0.66, bp.y), Vector3(0.03, 0.56, 0.03), along, MEDIAN_RAIL)
 			else:
-				# Flexible delineator post: red with white reflective bands.
-				var top: float = kerb_h + 0.78
+				# Flexible delineator post: red with a white reflective band.
 				_dbox(m, Vector3(a.x, kerb_h + 0.39, a.y), Vector3(0.09, 0.78, 0.09), along, MEDIAN_RED)
-				for band_y: float in [0.5, 0.66]:
-					_dbox(m, Vector3(a.x, kerb_h + band_y, a.y), Vector3(0.1, 0.07, 0.1), along, MEDIAN_WHITE)
-				_dbox(m, Vector3(a.x, top + 0.02, a.y), Vector3(0.12, 0.04, 0.12), along, MEDIAN_RED.darkened(0.2))
+				_dbox(m, Vector3(a.x, kerb_h + 0.58, a.y), Vector3(0.1, 0.12, 0.1), along, MEDIAN_WHITE)
 			_wall_faces(faces, a - along * 0.05, b + along * 0.05, 0.0, MEDIAN_COLLIDE_H if railing else MEDIAN_COLLIDE_H - 0.3, w)
 
 ## Box centred at `c` (size x along `along`, z across), five faces (no bottom).
