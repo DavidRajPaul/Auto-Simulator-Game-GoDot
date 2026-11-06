@@ -96,7 +96,7 @@ void sky() {
 		n = clamp((n - 0.5) * 2.1 + 0.5, 0.0, 1.0);
 		float edge = 1.0 - coverage;
 		float c = smoothstep(edge - 0.02, edge + 0.2, n);
-		if (c > 0.0) {
+		if (c > 0.0 || overcast > 0.01) {
 			// Sample toward the sun: where the cloud thins that way, this side faces the light.
 			float toward_light = texture(cloud_noise, uv + wind + sun_flat * 0.02).r;
 			float facing = clamp((body - toward_light) * 9.0 + 0.55, 0.0, 1.0);
