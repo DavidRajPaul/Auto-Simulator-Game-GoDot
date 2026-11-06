@@ -21,6 +21,9 @@ const CLOUD_TEXTURE_SIZE: int = 512
 const CLOUD_NOISE_SEED: int = 13080
 ## Cloud cover 0..1: scattered fair-weather cumulus on dry days, closed overcast in the monsoon.
 const COVERAGE_RAIN: float = 0.97
+const MOON_CYCLE_DAYS: int = 7
+const MOON_EARLY_MIN: float = 420.0 # Moonrise after sunrise: half moon, up by the afternoon.
+const MOON_LATE_MIN: float = 840.0 # Moonrise about 8 PM: just past full.
 ## Each day picks a sky: [cumulus cover, cirrus amount]. Some days are clear blue, some carry the
 ## high cirrus that makes the best sunsets.
 const DAY_SKIES: Array[Vector2] = [Vector2(0.34, 0.55), Vector2(0.42, 0.3), Vector2(0.27, 0.8),
@@ -122,6 +125,15 @@ func _ease_sun(delta: float) -> void:
 			_sun_dir = _sun_target
 	_sun.global_transform = Transform3D(Basis.looking_at(-_sun_dir, Vector3.UP if absf(_sun_dir.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
 
+## Where the moon is. It rises later each day and its phase changes, staying between a half
+## moon and just past full, so a night shift nearly always has one to see.
+static func moon_direction(minute: float, game_day: int) -> Vector3:
+	var cycle: int = posmod(game_day, MOON_CYCLE_DAYS * 2)
+	var age: float = float(mini(cycle, MOON_CYCLE_DAYS * 2 - cycle)) / float(MOON_CYCLE_DAYS)
+	var rise: float = SUNRISE_MIN + lerpf(MOON_LATE_MIN, MOON_EARLY_MIN, age)
+	var t: float = fposmod(minute - rise, 1440.0) / (SUNSET_MIN - SUNRISE_MIN)
+	return Vector3(cos(PI * t), sin(PI * t) * sin(deg_to_rad(MAX_ELEVATION_DEG)) if t <= 1.9 else -0.3, -0.3).normalized()
+
 ## 0 at the horizon → 1 at noon; slightly negative through twilight, -0.3 at night.
 static func sun_height(minute: float) -> float:
 	var t: float = (minute - SUNRISE_MIN) / (SUNSET_MIN - SUNRISE_MIN)
@@ -150,11 +162,15 @@ func apply(minute: float, rain: float) -> void:
 	# True sun, below the horizon in twilight. The light itself stops just above it.
 	var true_sun: Vector3 = Vector3(cos(PI * t), h * sin(deg_to_rad(MAX_ELEVATION_DEG)), 0.35).normalized()
 
+	var moon: Vector3 = moon_direction(minute, GameState.day)
+
 	if _sun != null:
 		# East (+x) at sunrise → overhead (tilted south, +z, at 13°N) → west at sunset.
 		var to_sun: Vector3 = Vector3(cos(PI * clampf(t, 0.0, 1.0)), maxf(h, 0.08) * sin(deg_to_rad(MAX_ELEVATION_DEG)), 0.35).normalized()
 		if day < 0.01:
-			to_sun = Vector3(-0.3, 0.8, -0.4).normalized() # moonlight
+			to_sun = Vector3(-0.3, 0.8, -0.4).normalized() # Moonlight, from high when the moon is low.
+			if moon.y > 0.3:
+				to_sun = moon
 		if _sun_target == Vector3.ZERO or _sun_target.angle_to(to_sun) >= deg_to_rad(SUN_STEP_DEG) or day < 0.01:
 			var first: bool = _sun_target == Vector3.ZERO
 			_sun_target = to_sun
@@ -184,6 +200,7 @@ func apply(minute: float, rain: float) -> void:
 			_sky.set_shader_parameter("cirrus_colour", c[6])
 			_sky.set_shader_parameter("sun_glow_colour", c[7])
 			_sky.set_shader_parameter("sun_dir", true_sun)
+			_sky.set_shader_parameter("moon_dir", moon)
 			_sky.set_shader_parameter("coverage", lerpf(mood.x, COVERAGE_RAIN, rain))
 			# High cloud thickens toward evening: it is what catches the sunset.
 			_sky.set_shader_parameter("cirrus", clampf(mood.y + low * 0.35, 0.0, 1.0) * (1.0 - rain))
