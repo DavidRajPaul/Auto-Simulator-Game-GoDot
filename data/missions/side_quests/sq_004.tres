@@ -60,6 +60,6 @@ discoverable = true
 start_anchor = Vector3(784.0, 0, 1795.6)
 estimated_minutes = 6
 category = "exploration"
-reward_inr = 115
+reward_inr = 160
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("clue_1"), SubResource("guess"), SubResource("hint"), SubResource("clue_2"), SubResource("reveal"), SubResource("home")])

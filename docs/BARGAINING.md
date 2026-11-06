@@ -25,4 +25,6 @@ Rush hour, a good star rating and auto decoration raise the top price. Recent gr
 
 ## Meter rates
 
-The game still uses ₹35 for 1.8 km plus ₹18/km. Tamil Nadu changed this on 29 October 2026 to [₹50 for 1.8 km plus ₹25/km, with 1.5× night fare from 10 PM to 5 AM](https://www.deccanchronicle.com/amp/southern-states/tamil-nadu/auto-fares-fixed-at-rs-50-minimum-rs-25-for-each-additional-km-1999848). Changing it raises all earnings by about 40 %, so it is an economy decision.
+The game uses [Tamil Nadu's fares from 29 October 2026](https://www.deccanchronicle.com/amp/southern-states/tamil-nadu/auto-fares-fixed-at-rs-50-minimum-rs-25-for-each-additional-km-1999848): ₹50 for 1.8 km, ₹25/km after, and 1.5× from 10 PM to 5 AM. Waiting charge is not modelled.
+
+Everything earned or bought from the driver's pocket was scaled by about 1.4 to match: autos, upgrades, horns, paint, repairs, towing, quest rewards, goal bonuses and tips. Fuel prices and traffic fines stay as they were, because the fare order did not change them.

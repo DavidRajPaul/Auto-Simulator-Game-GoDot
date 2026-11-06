@@ -109,7 +109,7 @@ func _test_purchases() -> void:
 	var left: int = 2500 - GameState.base_stats("madras_king_deluxe").price_inr
 	_check("Buy King Deluxe with ₹2,500", GameState.buy_vehicle("madras_king_deluxe") and GameState.active_vehicle == "madras_king_deluxe" and GameState.wallet_inr == left)
 	_check("Switch back to the Singara for free", GameState.select_vehicle("singara_classic") and GameState.wallet_inr == left)
-	_check("Engine upgrade costs ₹250", GameState.buy_upgrade("engine") and GameState.wallet_inr == left - 250 and GameState.upgrade_level("singara_classic", "engine") == 1)
+	_check("Engine upgrade costs ₹350", GameState.buy_upgrade("engine") and GameState.wallet_inr == left - 350 and GameState.upgrade_level("singara_classic", "engine") == 1)
 	_check("Upgrades are per-auto", GameState.upgrade_level("madras_king_deluxe", "engine") == 0)
 	GameState.add_inr(5000)
 	GameState.buy_upgrade("engine")
@@ -270,7 +270,7 @@ func _test_condition(_auto: AutoRickshawController) -> void:
 	var cost: int = GameState.repair_cost()
 	GameState.add_inr(100)
 	var wallet: int = GameState.wallet_inr
-	_check("Repair ₹3 per point restores condition", cost == ceili(GameState.DAMAGE.points(10.0) * 3.0) and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - cost)
+	_check("Repair ₹4 per point restores condition", cost == ceili(GameState.DAMAGE.points(10.0) * 4.0) and GameState.repair() and is_equal_approx(GameState.condition, 100.0) and GameState.wallet_inr == wallet - cost)
 	await _physics(1)
 
 func _test_shift_clock() -> void:

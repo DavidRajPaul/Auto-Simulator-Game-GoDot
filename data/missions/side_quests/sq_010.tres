@@ -90,6 +90,6 @@ discoverable = true
 start_anchor = Vector3(2042.3, 0, 1452.8)
 estimated_minutes = 7
 category = "community"
-reward_inr = 135
+reward_inr = 190
 reward_xp = 20
 stages = Array[ExtResource("stage")]([SubResource("sort"), SubResource("blue"), SubResource("red"), SubResource("first_dump"), SubResource("second_load"), SubResource("category"), SubResource("correction"), SubResource("last_dump")])

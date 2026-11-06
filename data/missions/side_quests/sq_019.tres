@@ -55,6 +55,6 @@ discoverable = true
 start_anchor = Vector3(189.2, 0, -571.5)
 estimated_minutes = 5
 category = "mystery"
-reward_inr = 110
+reward_inr = 155
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("labels"), SubResource("verify"), SubResource("shop_1"), SubResource("shop_2"), SubResource("receipt")])

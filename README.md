@@ -128,7 +128,7 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 
 **Savari (the money loop)**
 - Riders wave you down at 3 auto stands and on kerbs; 5 archetypes (IT commuter, T. Nagar silk shopper, Marina tourist, monsoon rider, college student).
-- 5-second haggle card: Correct Meter / Meter Mela / Fixed price, judged against the Chennai meter (₹35 + ₹18/km), your star rating, greed streak and demand.
+- Bargain card: rider offers, hidden top price, clues and counters, against the Chennai meter (₹50 for 1.8 km + ₹25/km), your star rating, greed streak and demand.
 - Sat-nav ribbon in your lane with flowing chevrons, turn-by-turn banner with real street names, heading-up mini-map, full-screen OSM map (pan, pinch, POIs).
 - Mini-map service pins identify LPG bunks, EV kiosks and garages; fuel stations show parked vehicles and pump islands.
 - Tea-cup comfort meter, Gap-la Gethu near-miss bonus, ride timer, fare breakdown with tips, Respect XP and rolling star rating.

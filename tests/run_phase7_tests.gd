@@ -132,7 +132,7 @@ func _test_menu_screens(menu: MainMenu) -> void:
 	_check("Auto card does not touch the menu column", not menu._stats_card.get_global_rect().intersects(menu._menu.get_global_rect()))
 	_check("Comfort bar: the smoother auto scores higher", MainMenu.comfort_score(GameState.base_stats("madras_king_deluxe").comfort_damping) > MainMenu.comfort_score(GameState.base_stats("singara_classic").comfort_damping))
 	GameState.reset_profile()
-	GameState.wallet_inr = 2000
+	GameState.wallet_inr = 2400
 	menu._refresh_status()
 	menu.browse_vehicle(1)
 	_check("Browsing shows the next auto without changing what you drive", menu._shown_vehicle == "madras_king_deluxe" and GameState.active_vehicle == "singara_classic")

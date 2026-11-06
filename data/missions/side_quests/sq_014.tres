@@ -71,6 +71,6 @@ discoverable = true
 start_anchor = Vector3(1163.1, 0, -549.1)
 estimated_minutes = 6
 category = "exploration"
-reward_inr = 120
+reward_inr = 170
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("notice"), SubResource("copy"), SubResource("verify"), SubResource("printer"), SubResource("gate"), SubResource("handover")])

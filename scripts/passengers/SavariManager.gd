@@ -460,7 +460,7 @@ func start_haggle(h: Dictionary) -> void:
 	_haggle_hail = h
 	_haggle_timer = SCRIPTED_HAGGLE_SECONDS if scripted else HAGGLE_SECONDS
 	_haggle_trip_km = float(route["length"]) / 1000.0
-	_haggle_meter = FareCalculator.meter_fare(_haggle_trip_km, a.surge_multiplier)
+	_haggle_meter = FareCalculator.meter_fare(_haggle_trip_km, a.surge_multiplier * (GameState.SURGE_MULTIPLIER if GameState.night_fare_now() else 1.0))
 	_haggle_refused = false
 	if scripted:
 		_haggle_clues = PackedStringArray()

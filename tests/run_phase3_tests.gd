@@ -59,12 +59,16 @@ func _test_archetypes() -> void:
 
 func _test_fares() -> void:
 	var it: PassengerArchetype = _rider("it_commuter")
-	_check("Meter: 1 km (inside the 1.8 km base) = ₹35", FareCalculator.meter_fare(1.0) == 35)
-	_check("Meter: 5 km = ₹95", FareCalculator.meter_fare(5.0) == 95)
+	_check("Meter: 1 km (inside the 1.8 km base) = ₹50", FareCalculator.meter_fare(1.0) == 50)
+	_check("Meter: 5 km = ₹130", FareCalculator.meter_fare(5.0) == 130)
 
 func _test_odds() -> void:
 	var it: PassengerArchetype = _rider("it_commuter")
 	var shopper: PassengerArchetype = _rider("tnagar_shopper")
+	GameState.shift_minute = 1330.0
+	var late: bool = GameState.night_fare_now()
+	GameState.shift_minute = 700.0
+	_check("Night fare applies from 10 PM, not by day", late and not GameState.night_fare_now())
 	_check("Honest meter is always within the limit", FareCalculator.rider_limit(100, shopper, PackedStringArray(["broke", "app", "bus"]), 0.0, 0.0, 1.0, 5, -0.06) == 100)
 	var plain: int = FareCalculator.rider_limit(200, it, PackedStringArray())
 	_check("A hurried rider pays more", FareCalculator.rider_limit(200, it, PackedStringArray(["late"])) > plain)

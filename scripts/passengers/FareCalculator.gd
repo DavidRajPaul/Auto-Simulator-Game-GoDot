@@ -14,7 +14,7 @@ const RESPECT_XP_REJECTED: int = -1
 const RESPECT_XP_INSULTED: int = -4
 const NEAR_MISS_BONUS_INR: int = 5
 
-## Meter fare (₹35 for 1.8 km + ₹18/km, nearest ₹5) for a game-world distance.
+## Meter fare (₹50 for 1.8 km + ₹25/km, nearest ₹5) for a game-world distance.
 static func meter_fare(game_km: float, surge: float = 1.0) -> int:
 	var real_km: float = game_km * REAL_KM_PER_GAME_KM
 	var raw: float = (GameState.METER_BASE_FARE_INR + maxf(0.0, real_km - GameState.METER_BASE_KM) * GameState.METER_PER_KM_INR) * surge

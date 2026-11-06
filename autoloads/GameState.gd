@@ -3,9 +3,12 @@ extends Node
 ## encrypted save. Gameplay systems read it directly (it is the single source of truth)
 ## and listen to SignalBus for changes.
 
-const METER_BASE_FARE_INR: float = 35.0
+## Tamil Nadu fares from 29 Oct 2026: ₹50 for 1.8 km, ₹25/km after, 1.5× from 10 PM to 5 AM.
+const METER_BASE_FARE_INR: float = 50.0
 const METER_BASE_KM: float = 1.8
-const METER_PER_KM_INR: float = 18.0
+const METER_PER_KM_INR: float = 25.0
+const NIGHT_FARE_FROM_MIN: float = 1320.0 # 10 PM
+const NIGHT_FARE_TO_MIN: float = 300.0 # 5 AM
 const SURGE_MULTIPLIER: float = 1.5
 
 const SAVE_PATH: String = "user://savegame.dat"
@@ -24,25 +27,25 @@ const VEHICLE_ORDER: PackedStringArray = ["singara_classic", "madras_king_deluxe
 
 ## Garage upgrades: 3 levels each; costs per level.
 const UPGRADES: Dictionary = {
-	"engine": {"name": "Engine Bore", "costs": [250, 500, 900], "desc": "+7% pull, +3 km/h top speed per level"},
-	"suspension": {"name": "Suspension Springs", "costs": [200, 400, 700], "desc": "−15% passenger jolts per level"},
-	"tyres": {"name": "Tyres", "costs": [150, 300, 550], "desc": "+6% grip per level"},
+	"engine": {"name": "Engine Bore", "costs": [350, 700, 1260], "desc": "+7% pull, +3 km/h top speed per level"},
+	"suspension": {"name": "Suspension Springs", "costs": [280, 560, 980], "desc": "−15% passenger jolts per level"},
+	"tyres": {"name": "Tyres", "costs": [210, 420, 770], "desc": "+6% grip per level"},
 }
 ## Horns (GDD): 0 stock bulb "pom-pom", 1 twin electric, 2 Madras musical air-horn.
 const HORNS: Array[Dictionary] = [
 	{"name": "Stock Bulb Horn", "cost": 0, "desc": "Clears cyclists & pedestrians"},
-	{"name": "Twin Electric Horn", "cost": 300, "desc": "Two-wheelers & hatchbacks give way"},
-	{"name": "Madras Musical Air-Horn", "cost": 900, "desc": "Even share autos, buses & cows move"},
+	{"name": "Twin Electric Horn", "cost": 420, "desc": "Two-wheelers & hatchbacks give way"},
+	{"name": "Madras Musical Air-Horn", "cost": 1260, "desc": "Even share autos, buses & cows move"},
 ]
 ## Paints / Alangaram (cosmetic prestige → better Meter Mela odds).
 const PAINTS: Array[Dictionary] = [
 	{"name": "Chennai Yellow", "cost": 0, "body": Color(0.98, 0.76, 0.02), "canopy": Color(0.07, 0.07, 0.07), "prestige": 0.0},
-	{"name": "Kollywood Black-Gold", "cost": 220, "body": Color(0.08, 0.08, 0.08), "canopy": Color(0.85, 0.66, 0.15), "prestige": 0.3},
-	{"name": "Marina Blue", "cost": 220, "body": Color(0.12, 0.42, 0.78), "canopy": Color(0.95, 0.95, 0.95), "prestige": 0.3},
-	{"name": "Mylapore Saffron", "cost": 220, "body": Color(0.95, 0.45, 0.08), "canopy": Color(0.4, 0.05, 0.08), "prestige": 0.3},
-	{"name": "Neon Night", "cost": 380, "body": Color(0.75, 0.1, 0.85), "canopy": Color(0.05, 0.05, 0.1), "prestige": 0.5},
+	{"name": "Kollywood Black-Gold", "cost": 310, "body": Color(0.08, 0.08, 0.08), "canopy": Color(0.85, 0.66, 0.15), "prestige": 0.3},
+	{"name": "Marina Blue", "cost": 310, "body": Color(0.12, 0.42, 0.78), "canopy": Color(0.95, 0.95, 0.95), "prestige": 0.3},
+	{"name": "Mylapore Saffron", "cost": 310, "body": Color(0.95, 0.45, 0.08), "canopy": Color(0.4, 0.05, 0.08), "prestige": 0.3},
+	{"name": "Neon Night", "cost": 530, "body": Color(0.75, 0.1, 0.85), "canopy": Color(0.05, 0.05, 0.1), "prestige": 0.5},
 ]
-const REPAIR_COST_PER_POINT: int = 3
+const REPAIR_COST_PER_POINT: int = 4
 
 ## Shift: 06:00 → 22:00 in 12 real minutes (GDD "Madras day" session length).
 const SHIFT_START_MIN: float = 360.0
@@ -351,7 +354,11 @@ func add_respect(xp: int) -> void:
 	stand_respect_xp = maxi(0, stand_respect_xp + xp)
 	SignalBus.stand_respect_changed.emit(stand_respect_xp, star_rating)
 
-## Chennai meter: ₹35 for the first 1.8 km, ₹18/km after, rounded to nearest ₹5.
+## Chennai meter: ₹50 for the first 1.8 km, ₹25/km after, rounded to nearest ₹5.
+## True while the legal night fare applies.
+func night_fare_now() -> bool:
+	return shift_minute >= NIGHT_FARE_FROM_MIN or shift_minute < NIGHT_FARE_TO_MIN
+
 func calculate_meter_fare(distance_km: float, is_night_or_monsoon: bool = false) -> int:
 	var extra_km: float = maxf(0.0, distance_km - METER_BASE_KM)
 	var raw_fare: float = METER_BASE_FARE_INR + extra_km * METER_PER_KM_INR
