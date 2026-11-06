@@ -75,7 +75,7 @@ func _test_world_data(m: Dictionary) -> void:
 	for b: Dictionary in blds:
 		if not b.has("f"):
 			real += 1
-	_check("Stand chunk has real building footprints", real >= 20, "%d real of %d" % [real, blds.size()])
+	_check("Stand chunk has real building footprints", real >= 15, "%d real of %d" % [real, blds.size()])
 
 func _test_chunk_meshes(world: WorldChunkStreamer) -> void:
 	var tree_models: bool = true

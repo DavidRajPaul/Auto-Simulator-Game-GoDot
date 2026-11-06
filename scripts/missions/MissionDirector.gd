@@ -1,6 +1,7 @@
 class_name MissionDirector
 extends Node
-## Scene-owned runtime; the production pack is deliberately empty in Phase 1.
+## Scene-owned runtime for the side quests in data/missions/career_quests.tres.
+const LOCATED_KINDS: PackedStringArray = ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"]
 @export var pack: MissionPack = preload("res://data/missions/career_quests.tres")
 @export var quality_tuning: QuestQualityTuning = preload("res://data/missions/quality_tuning.tres")
 var registry: MissionRegistry = MissionRegistry.new()
@@ -17,6 +18,9 @@ var _ambulance_placed: bool = false
 var _ambulance_retry_s: float = 0.0
 var _timer_broadcast: float = 0.0
 var _reverse_seen: bool = false
+var _action_ready: bool = false
+var _action_in_range: bool = false
+var _over_speed_s: float = 0.0
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
@@ -142,6 +146,7 @@ func _enter_stage(index: int) -> void:
 	run.condition_at_stage = GameState.condition
 	_signalled = false
 	_reverse_seen = false
+	_over_speed_s = 0.0
 	if stage.quality_key != "" and not run.flags.has(stage.quality_key):
 		run.flags[stage.quality_key] = 100.0
 	if stage.checkpoint or run.checkpoint.is_empty():
@@ -156,9 +161,14 @@ func _announce_stage() -> void:
 	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, stage.objective_key, stage.choices)
 	SignalBus.mission_stage_info.emit({"id": run.quest_id, "stage": stage.id,
 		"kind": stage.kind, "objective": stage.objective_key, "choices": stage.choices,
+		"action": stage.action_key, "place": _stage_place(stage), "target": _stage_target(stage),
+		"place_pos": _stage_place_pos(stage), "located": stage.kind in LOCATED_KINDS,
+		"title": registry.get_mission(run.quest_id).title_key,
+		"reward": registry.get_mission(run.quest_id).reward_inr,
 		"deadline": stage.deadline_s, "speed": stage.max_speed_kmh,
 		"damage": stage.max_condition_loss, "quality_key": stage.quality_key,
 		"quality": float(run.flags.get(stage.quality_key, 100.0))})
+	_publish_action_state(true)
 
 func _publish_route() -> void:
 	var stage: MissionStage = current_stage()
@@ -191,8 +201,16 @@ func tick(delta: float) -> void:
 		_fail("deadline")
 		return
 	if stage.max_speed_kmh > 0 and absf(_speed) > stage.max_speed_kmh:
-		_fail("speed")
-		return
+		_over_speed_s += delta
+		SignalBus.mission_speed_warning.emit(maxf(0.0, quality_tuning.speed_grace_s - _over_speed_s))
+		if _over_speed_s >= quality_tuning.speed_grace_s:
+			_over_speed_s = 0.0
+			SignalBus.mission_speed_warning.emit(0.0)
+			_fail("speed")
+			return
+	elif _over_speed_s > 0.0:
+		_over_speed_s = 0.0
+		SignalBus.mission_speed_warning.emit(0.0)
 	if run.condition_at_stage - GameState.condition > stage.max_condition_loss:
 		_fail("damage")
 		return
@@ -213,6 +231,20 @@ func tick(delta: float) -> void:
 		_advance()
 	elif stage.kind == "wait" and run.elapsed >= stage.duration_s:
 		_advance()
+	else:
+		_publish_action_state(false)
+
+## Keeps the stop-and-do button honest: it appears only when a tap will actually work.
+func _publish_action_state(force: bool) -> void:
+	var stage: MissionStage = current_stage()
+	if stage == null or not _has_pose:
+		return
+	var in_range: bool = stage.kind in LOCATED_KINDS and _position.distance_to(_stage_target(stage)) <= stage.radius_m
+	var ready: bool = in_range and absf(_speed) <= stage.arrival_speed_kmh
+	if force or ready != _action_ready or in_range != _action_in_range:
+		_action_ready = ready
+		_action_in_range = in_range
+		SignalBus.mission_action_ready.emit(ready, in_range)
 
 func choose(quest_id: String, stage_id: String, choice: String) -> bool:
 	if _busy or run == null or run.status != "active" or run.quest_id != quest_id or run.stage_id != stage_id:
@@ -267,6 +299,7 @@ func _on_dynamics(lateral_g: float, longitudinal_g: float, vertical_jolt: float)
 func _on_impact(info: Dictionary) -> void:
 	if run != null and run.status == "active" and current_stage() != null and current_stage().quality_key != "":
 		_change_quality(-clampf(float(info.get("severity", 0.0)), 0.0, 1.0) * quality_tuning.collision_loss * current_stage().quality_scale)
+		SignalBus.hint_requested.emit(tr("QUEST_KNOCK"), 2.0)
 
 func _change_quality(delta: float) -> void:
 	var stage: MissionStage = current_stage()
@@ -276,6 +309,16 @@ func _change_quality(delta: float) -> void:
 	run.flags[stage.quality_key] = value
 	_sync()
 	SignalBus.mission_quality_changed.emit(stage.quality_key, value)
+
+func _stage_place(stage: MissionStage) -> String:
+	if run != null and stage.place_options.has(str(run.flags.get(stage.target_choice_stage, ""))):
+		return str(stage.place_options[str(run.flags[stage.target_choice_stage])])
+	return stage.place_key
+
+func _stage_place_pos(stage: MissionStage) -> Vector3:
+	if run != null and stage.place_pos_options.has(str(run.flags.get(stage.target_choice_stage, ""))):
+		return stage.place_pos_options[str(run.flags[stage.target_choice_stage])] as Vector3
+	return stage.place_pos
 
 func _stage_target(stage: MissionStage) -> Vector3:
 	if run != null and stage.target_options.has(str(run.flags.get(stage.target_choice_stage, ""))):

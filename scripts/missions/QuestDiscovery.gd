@@ -12,6 +12,8 @@ var _elapsed: float = 0.0
 var _hinted: Dictionary = {}
 var _inside: Dictionary = {}
 var _modal: bool = false
+var _prompt_id: String = ""
+var _dismissed_id: String = ""
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
@@ -29,6 +31,9 @@ func _ready() -> void:
 		_hinted.clear()
 		_inside.clear()
 		SignalBus.quest_catalogue_changed.emit())
+	SignalBus.quest_prompt_dismissed.connect(func() -> void:
+		_dismissed_id = _prompt_id
+		_set_prompt(""))
 	SignalBus.tutorial_finished.connect(func(_skipped: bool) -> void: _teach_once())
 	_teach_once.call_deferred()
 	SignalBus.quest_catalogue_changed.emit()
@@ -70,6 +75,7 @@ func catalogue() -> Array[Dictionary]:
 		var unlocked: bool = registry.available(id, GameState.driver_level(), GameState.mission_completed)
 		result.append({"id": id, "title": tr(q.title_key), "description": tr(q.description_key),
 			"position": q.start_anchor, "category": q.category, "minutes": q.estimated_minutes,
+			"job": tr(q.job_key), "reward": q.reward_inr, "xp": q.reward_xp,
 			"completed": completed, "unlocked": unlocked,
 			"locked_reason": tr("QUEST_LEVEL") % q.unlock_level if GameState.driver_level() < q.unlock_level else tr("QUEST_PREREQUISITE"),
 			"tracked": str(GameState.settings.get("quest_track_id", "")) == id})
@@ -124,6 +130,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var step: float = _elapsed
 	_elapsed = 0.0
+	_update_prompt()
 	for id: String in _hinted:
 		_hinted[id] = maxf(0.0, float(_hinted[id]) - step)
 	for id: String in _inside.keys():
@@ -153,6 +160,41 @@ func _physics_process(delta: float) -> void:
 				_hinted[id] = tuning.hint_cooldown_s
 				SignalBus.hint_requested.emit(tr("QUEST_NEARBY") % tr(q.title_key), 3.5)
 				return
+
+## The stopped-at-the-marker card. Tapping Start still goes through request_start.
+func _update_prompt() -> void:
+	var nearest: String = ""
+	var best: float = INF
+	var c: Vector2i = _cell(_position)
+	for dx: int in range(-1, 2):
+		for dz: int in range(-1, 2):
+			for id: String in _grid.get(c + Vector2i(dx, dz), PackedStringArray()):
+				var d: float = _position.distance_to(registry.get_mission(id).start_anchor)
+				if d < best:
+					best = d
+					nearest = id
+	if nearest != _dismissed_id:
+		_dismissed_id = ""
+	if nearest == "" or best > tuning.interact_m or nearest == _dismissed_id or _modal or not can_start(nearest):
+		# A brief bounce above stopped speed must not flash the card away.
+		if nearest != _prompt_id or best > tuning.interact_m or _speed_kmh > tuning.stopped_kmh * 3.0 or not _startable(nearest):
+			_set_prompt("")
+		return
+	_set_prompt(nearest)
+
+func _startable(id: String) -> bool:
+	return id != "" and not GameState.mission_active and not GameState.mission_completed.has(id) and GameState.mission_run.is_empty()
+
+func _set_prompt(id: String) -> void:
+	if id == _prompt_id:
+		return
+	_prompt_id = id
+	var info: Dictionary = {}
+	if id != "":
+		for row: Dictionary in catalogue():
+			if str(row["id"]) == id:
+				info = row
+	SignalBus.quest_prompt_changed.emit(info)
 
 func _teach_once() -> void:
 	if not GameState.persistence_enabled or GameState.tutorial_active or not bool(GameState.settings.get("first_ride_done", false)) or bool(GameState.settings.get("quest_lesson_done", false)):

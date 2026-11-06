@@ -56,6 +56,8 @@ func _run() -> void:
 	check("Free retry", director.retry() and director.run.elapsed == 0.0)
 	pose(0, 45)
 	director.tick(0.1)
+	check("Short speed breach only warns", director.run.status == "active")
+	director.tick(director.quality_tuning.speed_grace_s)
 	check("AC04 speed failure", director.run.status == "failed")
 	pose(0)
 	director.retry()

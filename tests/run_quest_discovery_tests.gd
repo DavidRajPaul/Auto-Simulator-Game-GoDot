@@ -31,6 +31,7 @@ func _run() -> void:
 	mission.id = "roadside_test"
 	mission.title_key = "TEST_QUEST"
 	mission.description_key = "TEST_DRIVE"
+	mission.job_key = "TEST_DRIVE"
 	mission.discoverable = true
 	mission.start_anchor = Vector3(100, 0, 0)
 	mission.stages = [stage]

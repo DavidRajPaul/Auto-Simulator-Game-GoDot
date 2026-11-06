@@ -20,6 +20,10 @@ var _timer: float = 0.0
 ## Painted ring and pins (TouchHUD.HUD_ATLAS). The ring turns with north, so its "N" stays true.
 var _hud_tex: Texture2D
 
+var _pin_points: PackedVector2Array = PackedVector2Array()
+var _pin_colours: PackedColorArray = PackedColorArray()
+var _pin_indices: PackedInt32Array = PackedInt32Array()
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	if ResourceLoader.exists(TouchHUD.HUD_ATLAS):
@@ -141,11 +145,14 @@ func _draw() -> void:
 		var kind: String = str(service["kind"])
 		var colour: Color = Color("ffb84a") if kind == "lpg" else (Color("64e6a1") if kind == "ev" else Color("c5a4ff"))
 		if kind == "garage":
-			draw_circle(marker, 8.0, Color(0, 0, 0, 0.85))
-			draw_circle(marker, 6.0, colour)
-			draw_string(ThemeDB.fallback_font, marker + Vector2(-4, 4), "G", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.BLACK)
+			_pin_disc(marker, 8.0, Color(0, 0, 0, 0.85))
+			_pin_disc(marker, 6.0, colour)
+			_pin_box(Rect2(marker + Vector2(-3.0, -1.0), Vector2(6.0, 2.0)), Color.BLACK)
 		else:
-			draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -5), marker + Vector2(5, 0), marker + Vector2(0, 5), marker + Vector2(-5, 0)]), colour)
+			_pin_disc(marker, 5.0, colour, 4)
+	# Quest pins go before the hails so the textured pins, arrow and frame batch together.
+	_draw_quest_pins(centre, scale_px, rot, r)
+	_flush_pins()
 	# Hails.
 	for h: Dictionary in _hails:
 		var p: Vector3 = h["position"]
@@ -156,7 +163,6 @@ func _draw() -> void:
 			draw_texture_rect_region(_hud_tex, Rect2(hp - Vector2(11, 26), Vector2(22, 26)), TouchHUD.HUD_REGIONS["pin_rider"] as Rect2)
 		else:
 			draw_circle(hp, 5.0, Color(1.0, 0.82, 0.1))
-	_draw_quest_pins(centre, scale_px, rot, r)
 	# Player arrow + north tick + rim.
 	if _hud_tex != null:
 		draw_texture_rect_region(_hud_tex, Rect2(centre - Vector2(13, 15), Vector2(26, 30)), TouchHUD.HUD_REGIONS["pin_player"] as Rect2)
@@ -197,7 +203,7 @@ func _clip(a: Vector2, b: Vector2, centre: Vector2, radius: float) -> PackedVect
 		return PackedVector2Array()
 	return PackedVector2Array([a + d * t1, a + d * t2])
 
-## Draw local quests above service and passenger pins. When the tracked quest is
+## Draw local quests above service pins. When the tracked quest is
 ## outside the map, keep its badge inside the rim as a direction indicator.
 func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) -> void:
 	for quest: Dictionary in _quests:
@@ -209,6 +215,32 @@ func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) ->
 			if not bool(quest["tracked"]) and badge.distance_to(centre) > r:
 				continue
 			badge = _clamp_to(badge, centre, r - 16.0)
-		draw_circle(badge, 11.0, Color("201b12"))
-		draw_circle(badge, 9.0, Color("ffcf58"))
-		draw_string(ThemeDB.fallback_font, badge + Vector2(-6, 5), "!", HORIZONTAL_ALIGNMENT_CENTER, 12, 15, Color.BLACK)
+		_pin_disc(badge, 11.0, Color("201b12"))
+		_pin_disc(badge, 9.0, Color("ffcf58"))
+		_pin_box(Rect2(badge + Vector2(-1.5, -6.0), Vector2(3.0, 8.0)), Color.BLACK)
+		_pin_box(Rect2(badge + Vector2(-1.5, 3.5), Vector2(3.0, 3.0)), Color.BLACK)
+
+## Service and quest pins share one triangle list: draw_circle costs a draw call per circle and
+## text breaks the batch, so a few pins used to cost as much as a whole building block.
+func _pin_disc(at: Vector2, radius: float, colour: Color, sides: int = 14) -> void:
+	var first: int = _pin_points.size()
+	_pin_points.append(at)
+	_pin_colours.append(colour)
+	for i: int in sides:
+		_pin_points.append(at + Vector2.UP.rotated(TAU * i / sides) * radius)
+		_pin_colours.append(colour)
+		_pin_indices.append_array(PackedInt32Array([first, first + 1 + i, first + 1 + (i + 1) % sides]))
+
+func _pin_box(rect: Rect2, colour: Color) -> void:
+	var first: int = _pin_points.size()
+	for corner: Vector2 in [rect.position, rect.position + Vector2(rect.size.x, 0.0), rect.end, rect.position + Vector2(0.0, rect.size.y)]:
+		_pin_points.append(corner)
+		_pin_colours.append(colour)
+	_pin_indices.append_array(PackedInt32Array([first, first + 1, first + 2, first, first + 2, first + 3]))
+
+func _flush_pins() -> void:
+	if not _pin_indices.is_empty():
+		RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _pin_indices, _pin_points, _pin_colours)
+	_pin_points = PackedVector2Array()
+	_pin_colours = PackedColorArray()
+	_pin_indices = PackedInt32Array()
