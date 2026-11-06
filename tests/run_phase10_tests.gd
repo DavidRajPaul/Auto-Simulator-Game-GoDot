@@ -21,6 +21,7 @@ func _run() -> void:
 	for i: int in 60:
 		await get_tree().physics_frame
 	_test_signs(city)
+	await _test_signals_falls_medians(city)
 	_test_fx(city)
 	_test_police_service_gas(city)
 	_test_building_boards(city)
@@ -60,20 +61,93 @@ func _test_signs(city: Node) -> void:
 	var en: Label3D = ss._pool[0].get_node("English") as Label3D
 	_check("White lettering", en.modulate.is_equal_approx(Color.WHITE))
 
+## Nov 6 device report: a signal pole in the middle of the road, boards that never fell, and
+## bare gaps where Chennai has median kerbs and railings.
+func _test_signals_falls_medians(city: Node) -> void:
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var spots: int = 0
+	var in_road: int = 0
+	var facing_ok: int = 0
+	var junctions_with_posts: int = 0
+	for node_id: int in tm._signal_nodes:
+		var posts: Array[Transform3D] = tm.signal_post_spots(node_id)
+		junctions_with_posts += 1 if not posts.is_empty() else 0
+		for xf: Transform3D in posts:
+			spots += 1
+			var c: Dictionary = g.closest_point(xf.origin)
+			if int(c["edge"]) >= 0 and float(c["dist"]) < g.edges[int(c["edge"])].width * 0.5:
+				in_road += 1
+			# Lamps (local +Z) look away from the junction, at the queue waiting to cross.
+			var out: Vector3 = (xf.origin - g.nodes[node_id]) * Vector3(1, 0, 1)
+			facing_ok += 1 if (xf.basis * Vector3.BACK).dot(out.normalized()) > 0.0 else 0
+	_check("Signal posts measured on the kerb for nearly every signal junction",
+		junctions_with_posts >= int(tm._signal_nodes.size() * 0.95), "%d / %d" % [junctions_with_posts, tm._signal_nodes.size()])
+	_check("No signal post stands in a carriageway", spots > 300 and in_road == 0, "%d of %d in a lane" % [in_road, spots])
+	_check("Signal lamps face the approaching traffic", facing_ok >= int(spots * 0.95), "%d / %d" % [facing_ok, spots])
+	_check("Signal post = 2 draw calls (body + swapped lamp mesh)", tm._signal_posts[0].get_child_count() == 2)
+	# Boards: the auto lives on physics layer 2; the impact sensor must see it, and one real hit flattens the board.
+	var ss: StreetSigns = city.get_node("StreetSigns") as StreetSigns
+	var area: Area3D = ss._pool[0].get_node("ImpactArea") as Area3D
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	_check("Board impact sensor sees the player auto's physics layer", (area.collision_mask & auto.collision_layer) != 0)
+	var board: Node3D = null
+	for n: Node3D in ss._pool:
+		if n.visible:
+			board = n
+			break
+	if board != null:
+		ss.knock_down(board, board.global_basis * Vector3(0.0, 0.0, -8.0))
+		for i: int in 60:
+			await get_tree().physics_frame
+		_check("A hit board falls flat and stops blocking", absf(board.rotation.x) > 1.3 and board.get_node("Solid").process_mode == Node.PROCESS_MODE_DISABLED,
+			"tilt %.2f rad" % board.rotation.x)
+	# Medians: real data on the divided roads, drawn and solid.
+	var med_chunks: int = 0
+	var styles: Dictionary = {}
+	var sample: Array = []
+	var dir: DirAccess = DirAccess.open("res://data/world/dress")
+	for f: String in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
+		var meds: Array = d.get("medians", [])
+		if not meds.is_empty():
+			med_chunks += 1
+			sample = meds
+			for m: Array in meds:
+				styles[str(m[0])] = true
+	_check("Divided roads get centre medians (railing and delineator looks)", med_chunks > 40 and styles.has("A") and styles.has("B"), "%d chunks %s" % [med_chunks, styles.keys()])
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var holder: Node3D = world._buildings([], {"medians": sample}, [])
+	var shape: CollisionShape3D = null
+	for ch: Node in holder.get_children():
+		if ch is CollisionShape3D:
+			shape = ch as CollisionShape3D
+	_check("Medians are solid (in the chunk collider)", shape != null and (shape.shape as ConcavePolygonShape3D).get_faces().size() > 100)
+	holder.free()
+
 func _test_trees() -> void:
 	var counts: Dictionary = {}
+	var median_palms: int = 0
 	var dir: DirAccess = DirAccess.open("res://data/world/dress")
 	for f: String in dir.get_files():
 		if not f.ends_with(".json"):
 			continue
 		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
 		for t: Array in d.get("trees", []):
+			# Median palms (tools/osm/build_medians.py, seed ≥ 900000) are planted on purpose, like
+			# Chennai's divided roads; the rarity rule is about the roadside mix.
+			if t.size() > 4 and int(t[4]) >= 900000:
+				median_palms += 1
+				continue
 			counts[int(t[2])] = int(counts.get(int(t[2]), 0)) + 1
 	var total: int = 0
 	for k: int in counts:
 		total += int(counts[k])
 	var palms: float = float(counts.get(1, 0)) / maxf(float(total), 1.0)
 	_check("Coconut palms are rare (< 6 % of street trees)", palms < 0.06, "%.1f %%" % (palms * 100.0))
+	_check("Divided roads carry median palms", median_palms > 200, str(median_palms))
 	_check("Chennai street tree mix: neem, both Ashoka variants, pungai all present", int(counts.get(0, 0)) > 0 and int(counts.get(2, 0)) > 0 and int(counts.get(3, 0)) > 0 and int(counts.get(4, 0)) > 0, str(counts))
 
 func _test_fx(city: Node) -> void:

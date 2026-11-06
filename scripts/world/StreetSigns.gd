@@ -23,6 +23,8 @@ const BLUE: Color = Color(0.03, 0.2, 0.58)
 const LABEL_MAX_WIDTH_M: float = 1.84
 const LABEL_MAX_HEIGHT_M: float = 0.23
 const BEND_ANGLE_RAD: float = 0.19
+const FALLEN_ANGLE_RAD: float = 1.5
+const KNOCK_SPEED_MS: float = 2.2 # ≈ 8 km/h: anything faster flattens the board
 const REPAIR_S: float = 35.0
 const IMPACT_COOLDOWN_S: float = 0.8
 var _damage: Dictionary = {} # spot key -> {hits, repair_at}
@@ -72,7 +74,9 @@ func _ready() -> void:
 		var trigger: Area3D = Area3D.new()
 		trigger.name = "ImpactArea"
 		trigger.collision_layer = 0
-		trigger.collision_mask = 1
+		# The player auto lives on physics layer 2 (scenes/vehicles/auto_rickshaw.tscn); a mask of
+		# 1 never saw it, which is why boards never fell.
+		trigger.collision_mask = 2
 		trigger.monitoring = true
 		var trigger_shape: CollisionShape3D = CollisionShape3D.new()
 		var trigger_box: BoxShape3D = BoxShape3D.new()
@@ -139,6 +143,10 @@ func refresh() -> void:
 			_assigned.erase(key)
 	for c: Dictionary in wanted:
 		if _assigned.has(c["key"]):
+			# A fallen board is put back up once repaired, while nobody is watching closely.
+			if _damage.has(c["key"]) and _clock >= float(_damage[c["key"]]["repair_at"]) and float(c["dist"]) > 25.0:
+				_damage.erase(c["key"])
+				_place(_assigned[c["key"]] as Node3D, c)
 			continue
 		if _damage.has(c["key"]):
 			if _clock < float(_damage[c["key"]].get("repair_at", 0.0)):
@@ -184,7 +192,7 @@ func _place(n: Node3D, c: Dictionary) -> void:
 	var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
 	solid.process_mode = Node.PROCESS_MODE_INHERIT
 	n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_INHERIT
-	n.rotation.z = 0.0
+	n.rotation = Vector3(0.0, float(c["yaw"]), 0.0)
 	var english: String = _short(str(c["name"])).to_upper()
 	ta.text = str(c["ta"])
 	en.text = english
@@ -212,27 +220,30 @@ func _on_impact(n: Node3D, body: Node3D) -> void:
 		return
 	n.set_meta("last_hit", _clock)
 	var key: int = int(n.get_meta("spot_key", -1))
-	if key < 0:
+	if key < 0 or _damage.has(key):
 		return
-	var state: Dictionary = _damage.get(key, {"hits": 0, "repair_at": 0.0})
-	state["hits"] = int(state["hits"]) + 1
-	if int(state["hits"]) == 1:
-		# First strike: lean the board and posts while keeping physical collision.
+	var velocity: Vector3 = (body as RigidBody3D).linear_velocity if body is RigidBody3D else Vector3.ZERO
+	if velocity.length() < KNOCK_SPEED_MS:
+		# A parking-speed nudge only leans the board on its posts.
 		n.rotation.z = BEND_ANGLE_RAD
-	else:
-		# Second strike: detach visually, fall, then rebuild after a cooldown.
-		state["repair_at"] = _clock + REPAIR_S
-		var solid: StaticBody3D = n.get_node("Solid") as StaticBody3D
-		solid.process_mode = Node.PROCESS_MODE_DISABLED
-		n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_DISABLED
-		var tween: Tween = create_tween()
-		tween.tween_property(n, "rotation:z", 1.45, 0.55)
-		tween.parallel().tween_property(n, "position:y", -1.2, 0.55)
-		tween.tween_callback(func() -> void:
-			if is_instance_valid(n):
-				n.visible = false
-				_assigned.erase(key))
-	_damage[key] = state
+		return
+	knock_down(n, velocity)
+
+## Snap the posts at the base and let the board topple the way the auto was going; it lies on
+## the footpath (no collision, the auto rolls over it) until the Corporation fixes it.
+func knock_down(n: Node3D, velocity: Vector3) -> void:
+	var key: int = int(n.get_meta("spot_key", -1))
+	_damage[key] = {"repair_at": _clock + REPAIR_S}
+	(n.get_node("Solid") as StaticBody3D).process_mode = Node.PROCESS_MODE_DISABLED
+	n.get_node("ImpactArea").process_mode = Node.PROCESS_MODE_DISABLED
+	# +X rotation tips the top towards the board's local +Z.
+	var local_v: Vector3 = n.global_transform.basis.inverse() * velocity
+	var fall_sign: float = 1.0 if local_v.z >= 0.0 else -1.0
+	var twist: float = clampf(local_v.x / maxf(velocity.length(), 0.1), -1.0, 1.0) * 0.35
+	var tween: Tween = create_tween()
+	tween.tween_property(n, "rotation:x", fall_sign * FALLEN_ANGLE_RAD, 0.7).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(n, "rotation:z", twist, 0.7)
+	tween.parallel().tween_property(n, "position", n.position + Vector3(velocity.x, 0.0, velocity.z).limit_length(1.0) * 0.6, 0.7)
 
 ## Chennai boards abbreviate: "Road" → "Rd", "Street" → "St", "Salai" stays.
 static func _short(s: String) -> String:

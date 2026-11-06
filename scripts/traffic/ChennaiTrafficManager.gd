@@ -64,7 +64,8 @@ var _signal_nodes: PackedInt32Array = PackedInt32Array()
 var _enforced_signal_nodes: Dictionary = {}
 var _ticket_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _signal_posts: Array[Node3D] = []
-var _signal_lamp_materials: Array[Array] = []
+var _signal_post_spots: Dictionary = {}
+var _signal_lamp_meshes: Array[ArrayMesh] = []
 var _player_pose_seen: bool = false
 var _previous_player_pos: Vector3 = Vector3.ZERO
 var _last_player_ticket_s: float = -1000.0
@@ -77,6 +78,7 @@ const SIGNAL_CYCLE_S: float = 24.0
 const SIGNAL_ENFORCEMENT_FINE_INR: int = 200
 const SIGNAL_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
 const SIGNAL_MIN_WIDTH_M: float = 6.0
+const SIGNAL_POSTS_FILE: String = "res://data/world/signal_posts.json"
 
 func _ready() -> void:
 	rng.seed = 600028
@@ -127,6 +129,7 @@ func _ready() -> void:
 			_signal_nodes.append(node_id)
 			if _ticket_rng.randf() < 0.25:
 				_enforced_signal_nodes[node_id] = true
+	_load_signal_posts()
 	_build_signal_pool()
 	_initial_spawn.call_deferred()
 
@@ -283,51 +286,57 @@ func _physics_process(delta: float) -> void:
 		_signal_refresh_timer = 0.0
 		_refresh_signal_lights()
 
+## Signal posts: per post one body mesh (pole, black housing, sun visors, white backboard rim) and
+## one lamp mesh, swapped between three pre-lit versions (red / amber / green on) as the phase
+## changes — two draw calls per post, shared meshes, no per-post materials.
 func _build_signal_pool() -> void:
-	var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
+	var body: ArrayMesh = _signal_body_mesh()
+	_signal_lamp_meshes.clear()
+	for lit: int in 3:
+		_signal_lamp_meshes.append(_signal_lamp_mesh(lit))
 	for i: int in SIGNAL_POOL_SIZE:
 		var post: Node3D = Node3D.new()
 		post.name = "TrafficSignal_%d" % i
 		post.visible = false
-		var pole: MeshInstance3D = MeshInstance3D.new()
-		var pole_mesh: CylinderMesh = CylinderMesh.new()
-		pole_mesh.top_radius = 0.08
-		pole_mesh.bottom_radius = 0.12
-		pole_mesh.height = 5.0
-		var pole_mat: StandardMaterial3D = StandardMaterial3D.new()
-		pole_mat.albedo_color = Color(0.18, 0.2, 0.21)
-		pole_mesh.material = pole_mat
-		pole.mesh = pole_mesh
-		pole.position = Vector3(3.5, 2.5, 0.0)
-		post.add_child(pole)
-		var housing: MeshInstance3D = MeshInstance3D.new()
-		var housing_mesh: BoxMesh = BoxMesh.new()
-		housing_mesh.size = Vector3(0.52, 1.65, 0.48)
-		var housing_mat: StandardMaterial3D = StandardMaterial3D.new()
-		housing_mat.albedo_color = Color(0.04, 0.05, 0.05)
-		housing_mesh.material = housing_mat
-		housing.mesh = housing_mesh
-		housing.position = Vector3(3.5, 4.8, 0.0)
-		post.add_child(housing)
-		var lamp_mats: Array[StandardMaterial3D] = []
-		for lamp_i: int in 3:
-			var lamp: MeshInstance3D = MeshInstance3D.new()
-			lamp.name = "Lamp_%d" % lamp_i
-			var sphere: SphereMesh = SphereMesh.new()
-			sphere.radius = 0.15
-			sphere.height = 0.3
-			lamp.mesh = sphere
-			lamp.position = Vector3(3.5, 5.35 - float(lamp_i) * 0.55, 0.0)
-			var mat: StandardMaterial3D = StandardMaterial3D.new()
-			mat.albedo_color = colours[lamp_i].darkened(0.78)
-			mat.emission_enabled = true
-			mat.emission = colours[lamp_i].darkened(0.8)
-			lamp.material_override = mat
-			post.add_child(lamp)
-			lamp_mats.append(mat)
-		_signal_lamp_materials.append(lamp_mats)
+		var shell: MeshInstance3D = MeshInstance3D.new()
+		shell.name = "Body"
+		shell.mesh = body
+		post.add_child(shell)
+		var lamps: MeshInstance3D = MeshInstance3D.new()
+		lamps.name = "Lamps"
+		lamps.mesh = _signal_lamp_meshes[0]
+		lamps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		post.add_child(lamps)
 		add_child(post)
 		_signal_posts.append(post)
+
+static func _signal_body_mesh() -> ArrayMesh:
+	var st: SurfaceTool = MeshKit.begin()
+	var grey: Color = Color(0.2, 0.22, 0.23)
+	var black: Color = Color(0.04, 0.05, 0.05)
+	var white: Color = Color(0.9, 0.9, 0.88)
+	MeshKit.tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 4.2, 0.0), 0.09, grey, 8)
+	MeshKit.box(st, Vector3(0.0, 0.25, 0.0), Vector3(0.34, 0.5, 0.34), Color(0.95, 0.85, 0.1)) # yellow base collar
+	MeshKit.box(st, Vector3(0.0, 4.8, 0.06), Vector3(0.62, 1.78, 0.06), white) # backboard rim
+	MeshKit.box(st, Vector3(0.0, 4.8, 0.12), Vector3(0.48, 1.62, 0.36), black) # housing
+	for k: int in 3:
+		MeshKit.box(st, Vector3(0.0, 5.33 - float(k) * 0.53 + 0.16, 0.42), Vector3(0.4, 0.03, 0.24), black) # visor
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 0.6
+	return MeshKit.finish(st, mat)
+
+## Three lamp discs on the housing's +Z face; `lit` 0 = red, 1 = amber, 2 = green.
+static func _signal_lamp_mesh(lit: int) -> ArrayMesh:
+	var st: SurfaceTool = MeshKit.begin()
+	var colours: Array[Color] = [Color(1.0, 0.08, 0.05), Color(1.0, 0.6, 0.05), Color(0.08, 1.0, 0.3)]
+	for k: int in 3:
+		var c: Color = colours[k] if k == lit else colours[k].darkened(0.82)
+		MeshKit.disc(st, Vector3(0.0, 5.33 - float(k) * 0.53, 0.305), Vector3.BACK, 0.16, c, 14)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # lamps glow, day and night
+	return MeshKit.finish(st, mat)
 
 func _signal_phase(node_id: int) -> float:
 	return fposmod(float(Time.get_ticks_msec()) / 1000.0 + float(node_id * 7), SIGNAL_CYCLE_S)
@@ -342,12 +351,37 @@ func signal_stop_gap(vehicle: TrafficVehicleAI) -> float:
 		return INF
 	return maxf(0.0, edge.length - vehicle.t - vehicle.half_length() - 1.4)
 
+## Kerb-side post spots per signal junction (tools/osm/build_signal_posts.py): node id →
+## [[x, z, yaw], …], one per big approach, always off the carriageway.
+func _load_signal_posts() -> void:
+	_signal_post_spots.clear()
+	var f: FileAccess = FileAccess.open(SIGNAL_POSTS_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if not (parsed is Dictionary):
+		return
+	for key: Variant in (parsed as Dictionary):
+		_signal_post_spots[int(str(key))] = (parsed as Dictionary)[key]
+
+## World transform of a signal post: on the left kerb of an approach, lamps facing the queue.
+## Junctions without a measured kerb spot get no post (better none than one in a lane).
+func signal_post_spots(node_id: int) -> Array[Transform3D]:
+	var out: Array[Transform3D] = []
+	for spot: Variant in _signal_post_spots.get(node_id, []):
+		var a: Array = spot as Array
+		var y: float = graph.nodes[node_id].y
+		out.append(Transform3D(Basis(Vector3.UP, float(a[2])), Vector3(float(a[0]), y, float(a[1]))))
+	return out
+
 func _refresh_signal_lights() -> void:
 	var near: Array[Array] = []
+	var origin: Vector3 = _player.global_position if _player != null else Vector3.INF
 	for node_id: int in _signal_nodes:
-		var d: float = _player.global_position.distance_to(graph.nodes[node_id]) if _player != null else INF
-		if d < 190.0:
-			near.append([d, node_id])
+		if _player == null or origin.distance_to(graph.nodes[node_id]) >= 190.0:
+			continue
+		for xf: Transform3D in signal_post_spots(node_id):
+			near.append([origin.distance_to(xf.origin), node_id, xf])
 	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	for i: int in _signal_posts.size():
 		var post: Node3D = _signal_posts[i]
@@ -355,16 +389,11 @@ func _refresh_signal_lights() -> void:
 			post.visible = false
 			continue
 		var node_id: int = int(near[i][1])
-		post.global_position = graph.nodes[node_id]
+		post.global_transform = near[i][2] as Transform3D
 		post.visible = true
 		var phase: float = _signal_phase(node_id)
 		var active_lamp: int = 2 if phase < 10.0 else (1 if phase < 12.0 else 0)
-		var mats: Array = _signal_lamp_materials[i]
-		var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
-		for lamp_i: int in 3:
-			var mat: StandardMaterial3D = mats[lamp_i]
-			mat.albedo_color = colours[lamp_i] if lamp_i == active_lamp else colours[lamp_i].darkened(0.78)
-			mat.emission = colours[lamp_i] * (2.0 if lamp_i == active_lamp else 0.08)
+		(post.get_node("Lamps") as MeshInstance3D).mesh = _signal_lamp_meshes[active_lamp]
 
 func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 	if not _player_pose_seen:
