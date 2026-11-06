@@ -211,4 +211,6 @@ func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) ->
 			badge = _clamp_to(badge, centre, r - 16.0)
 		draw_circle(badge, 11.0, Color("201b12"))
 		draw_circle(badge, 9.0, Color("ffcf58"))
-		draw_string(ThemeDB.fallback_font, badge + Vector2(-6, 5), "!", HORIZONTAL_ALIGNMENT_CENTER, 12, 15, Color.BLACK)
+		# The "!" is shapes, not text: a font texture would break the 2D batch at every pin.
+		draw_rect(Rect2(badge + Vector2(-1.5, -6.0), Vector2(3.0, 8.0)), Color.BLACK)
+		draw_rect(Rect2(badge + Vector2(-1.5, 3.5), Vector2(3.0, 3.0)), Color.BLACK)
