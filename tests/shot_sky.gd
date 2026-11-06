@@ -1,7 +1,7 @@
 extends Node
 ## Dev-only: renders the sky through the day into one contact sheet per direction.
-## SKY_OUT = folder, SKY_POS = "x,z" camera spot, SKY_RAIN=1 for monsoon, SKY_DAY = day number.
-const MINUTES: Array[float] = [720.0] if OS.has_environment("SKY_ONE") else [330.0, 360.0, 400.0, 480.0, 720.0, 960.0, 1050.0, 1095.0, 1110.0, 1125.0, 1140.0, 1165.0, 1260.0]
+## SKY_OUT = folder, SKY_ONE=1 for noon only, SKY_POS = "x,z" camera spot, SKY_RAIN=1 for monsoon, SKY_DAY = day number.
+const ALL_MINUTES: Array[float] = [330.0, 360.0, 400.0, 480.0, 720.0, 960.0, 1050.0, 1095.0, 1110.0, 1125.0, 1140.0, 1165.0, 1260.0]
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -35,7 +35,7 @@ func _run() -> void:
 		if node is CanvasLayer:
 			(node as CanvasLayer).visible = false
 	for dir: Array in [["west", Vector3(-1, 0.32, 0.25)], ["east", Vector3(1, 0.32, 0.25)]]:
-		for minute: float in MINUTES:
+		for minute: float in ([720.0] if OS.has_environment("SKY_ONE") else ALL_MINUTES):
 			GameState.shift_minute = minute
 			atmo.apply(minute, rain)
 			atmo._sun_dir = atmo._sun_target
