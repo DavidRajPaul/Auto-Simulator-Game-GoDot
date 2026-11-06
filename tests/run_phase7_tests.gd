@@ -79,9 +79,9 @@ func _test_menu() -> void:
 
 func _test_haggle(h: PassengerHUD) -> void:
 	SignalBus.haggle_started.emit({"archetype": "it_commuter", "name": "IT Commuter", "line": "Anna, podhuma?", "destination": "TIDEL Park",
-		"distance_km": 6.2, "quotes": [80, 100, 120], "odds": [0.95, 0.65, 0.3], "offers": FareCalculator.OFFER_NAMES}, 5.0)
+		"distance_km": 6.2, "meter": 100, "offer": 80, "asks": [100, 130], "clues": PackedStringArray(["late"]), "patience": 2, "patience_max": 2}, 5.0)
 	await _frames(2)
-	_check("Haggle card shows three priced offers with their odds", h._haggle.visible and h._offer_price[1].text == "₹100" and is_equal_approx(h._offer_bar[2].value, 0.3) and h._offer_chance[0].text.begins_with("95%"))
+	_check("Bargain card shows the offer, asks and a clue, never odds", h._haggle.visible and h._offer_price[0].text == "₹80" and h._offer_price[1].text == "₹100" and h._haggle_clues.text != "")
 	_check("Countdown ring runs down", h._haggle_ring.value < 1.0 and h._haggle_ring.value > 0.9)
 	_check("Hints and toasts stay hidden while a card is up", not h._hint.visible and not h._toast.visible)
 	var got: Array[int] = []
@@ -98,7 +98,7 @@ func _test_fare(h: PassengerHUD) -> void:
 	await _frames(90)
 	_check("Ride-complete screen: 4 gold stars and 1 empty", h._fare_card.visible and h._fare_stars[3].texture == UIKit.reward_cell("star") and h._fare_stars[4].texture == UIKit.reward_cell("star_empty"))
 	_check("Total rolls up to the fare", h._fare_total.text == "₹240", h._fare_total.text)
-	_check("Receipt lists meter fare, comfort tip and Gethu bonus", h._fare_rows.get_child_count() == 4)
+	_check("Receipt lists fare, tip, good deal and close-pass rows", h._fare_rows.get_child_count() == 5)
 
 func _test_level_up(h: PassengerHUD) -> void:
 	SignalBus.driver_level_up.emit(5, "Mylapore Regular", 250, "UNLOCK_EV")

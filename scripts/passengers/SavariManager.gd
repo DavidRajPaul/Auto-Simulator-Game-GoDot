@@ -19,8 +19,17 @@ const STAND_HAIL_RADIUS_M: float = 220.0
 const PICKUP_RADIUS_M: float = 7.5
 const DROPOFF_RADIUS_M: float = 14.0
 const STOPPED_KMH: float = 6.0
-const HAGGLE_SECONDS: float = 5.0
+const HAGGLE_SECONDS: float = 9.0 # Per round: time to read the rider, not a reaction test.
 const REJECT_COOLDOWN_S: float = 10.0
+const NIGHT_FROM_MIN: float = 1200.0 # 8 PM: fewer autos about.
+## What a driver may notice about each kind of rider: [clue, chance].
+const CLUE_ODDS: Dictionary = {
+	"it_commuter": [["late", 0.55], ["app", 0.4]],
+	"college_student": [["broke", 0.65], ["late", 0.4], ["bus", 0.3]],
+	"tnagar_shopper": [["bags", 0.8], ["bus", 0.25], ["family", 0.2]],
+	"tourist": [["new", 0.8], ["family", 0.35], ["app", 0.25]],
+	"monsoon_rider": [["late", 0.4], ["family", 0.3]],
+}
 const PAYOUT_SECONDS: float = 3.0
 ## Scripted (tutorial / mission) riders: plenty of time to read the card, and they always agree.
 const SCRIPTED_HAGGLE_SECONDS: float = 60.0
@@ -70,7 +79,13 @@ var time_left_s: float = 0.0
 var near_misses: int = 0
 var _haggle_timer: float = 0.0
 var _haggle_hail: Dictionary = {}
-var _haggle_quotes: Array[int] = []
+var _haggle_meter: int = 0
+var _haggle_limit: int = 0
+var _haggle_offer: int = 0
+var _haggle_patience: int = 0
+var _haggle_asks: Array[int] = []
+var _haggle_clues: PackedStringArray = PackedStringArray()
+var _haggle_refused: bool = false
 var _haggle_trip_km: float = 0.0
 var _state_timer: float = 0.0
 var _ride_update_timer: float = 0.0
@@ -86,6 +101,7 @@ var _comfort_damping: float = 1.0
 ## Haggling context: rider demand from the traffic model, and how greedy we've been lately.
 var demand: float = 0.5
 var greed_streak: int = 0
+var deal_streak: int = 0 # Fair deals in a row: pays a small bonus, and walking away ends it.
 
 func _ready() -> void:
 	SignalBus.savari_busy_provider = func() -> bool: return state != State.CRUISING and state != State.COOLDOWN
@@ -200,7 +216,7 @@ func _physics_process(delta: float) -> void:
 		State.HAGGLING:
 			_haggle_timer -= delta
 			if _haggle_timer <= 0.0:
-				_resolve_haggle(-1) # passenger got bored and walked off
+				_rider_leaves(FareCalculator.RESPECT_XP_REJECTED, tr("RIDER_%s_REJECT" % (_haggle_hail["archetype"] as PassengerArchetype).id.to_upper())) # Got bored and walked off.
 		State.RIDING:
 			_tick_ride(delta)
 		State.PAYOUT, State.COOLDOWN:
@@ -310,7 +326,7 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	to_player.y = 0.0
 	if to_player.length_squared() > 0.01:
 		node.global_basis = Basis.looking_at(to_player.normalized(), Vector3.UP)
-	(node.get_node("Label") as Label3D).text = archetype.archetype_name
+	(node.get_node("Label") as Label3D).text = tr("RIDER_%s_NAME" % archetype.id.to_upper())
 	node.visible = true
 	hails.append(h)
 	_publish_hails()
@@ -444,16 +460,41 @@ func start_haggle(h: Dictionary) -> void:
 	_haggle_hail = h
 	_haggle_timer = SCRIPTED_HAGGLE_SECONDS if scripted else HAGGLE_SECONDS
 	_haggle_trip_km = float(route["length"]) / 1000.0
-	_haggle_quotes.clear()
-	var odds: Array[float] = []
-	for o: int in 3:
-		_haggle_quotes.append(FareCalculator.quote(o as FareCalculator.Offer, _haggle_trip_km, a))
-		odds.append(1.0 if scripted else _odds(o, a))
-	SignalBus.haggle_started.emit({
-		"archetype": a.id, "name": a.archetype_name, "line": a.line_hail,
+	_haggle_meter = FareCalculator.meter_fare(_haggle_trip_km, a.surge_multiplier)
+	_haggle_refused = false
+	if scripted:
+		_haggle_clues = PackedStringArray()
+		_haggle_limit = _haggle_meter
+		_haggle_offer = _haggle_meter
+		_haggle_patience = 1
+		_haggle_asks = []
+	else:
+		_haggle_clues = _read_rider(a)
+		_haggle_limit = FareCalculator.rider_limit(_haggle_meter, a, _haggle_clues, GameState.prestige(), demand,
+			GameState.star_rating, greed_streak, rng.randf_range(-0.06, 0.06))
+		_haggle_offer = FareCalculator.opening_offer(_haggle_meter, a, _haggle_clues)
+		_haggle_patience = a.haggle_patience
+		_haggle_asks = FareCalculator.next_asks(_haggle_offer, _haggle_meter)
+	SignalBus.haggle_started.emit(_haggle_info(tr("RIDER_%s_HAIL" % a.id.to_upper())), _haggle_timer)
+
+## What the driver can see about this rider. Each clue moves the hidden top price.
+func _read_rider(a: PassengerArchetype) -> PackedStringArray:
+	var clues: PackedStringArray = PackedStringArray()
+	if GameState.is_raining:
+		clues.append("rain")
+	if GameState.shift_minute >= NIGHT_FROM_MIN:
+		clues.append("night")
+	for option: Array in CLUE_ODDS.get(a.id, []):
+		if clues.size() < 3 and rng.randf() < float(option[1]):
+			clues.append(str(option[0]))
+	return clues
+
+func _haggle_info(line: String) -> Dictionary:
+	var a: PassengerArchetype = _haggle_hail["archetype"]
+	return {"archetype": a.id, "name": tr("RIDER_%s_NAME" % a.id.to_upper()), "line": line,
 		"destination": destination["name"], "distance_km": _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM,
-		"quotes": _haggle_quotes.duplicate(), "odds": odds, "offers": FareCalculator.OFFER_NAMES,
-	}, _haggle_timer)
+		"meter": _haggle_meter, "offer": _haggle_offer, "asks": _haggle_asks.duplicate(), "clues": _haggle_clues,
+		"patience": _haggle_patience, "patience_max": a.haggle_patience, "scripted": bool(_haggle_hail.get("scripted", false))}
 
 func _choose_destination(a: PassengerArchetype) -> Dictionary:
 	var options: Array[Dictionary] = []
@@ -474,45 +515,73 @@ func _choose_destination(a: PassengerArchetype) -> Dictionary:
 		return {"name": "Nearby street", "pos": _player_pos + _player_fwd * 400.0, "kind": "street"}
 	return options[rng.randi() % options.size()]
 
-func _odds(offer: int, a: PassengerArchetype) -> float:
-	return FareCalculator.acceptance_chance(offer as FareCalculator.Offer, a, GameState.is_raining, GameState.prestige(),
-		_haggle_quotes[0] if not _haggle_quotes.is_empty() else 0, demand, GameState.star_rating, greed_streak)
+func _on_haggle_choice(choice: int) -> void:
+	if state != State.HAGGLING:
+		return
+	match choice:
+		FareCalculator.Choice.ACCEPT:
+			_close_deal(_haggle_offer)
+		FareCalculator.Choice.ASK_LOW, FareCalculator.Choice.ASK_HIGH:
+			var index: int = choice - FareCalculator.Choice.ASK_LOW
+			if index < _haggle_asks.size():
+				_ask(_haggle_asks[index])
+		FareCalculator.Choice.LET_GO:
+			_rider_leaves(0, tr("RIDER_%s_REJECT" % (_haggle_hail["archetype"] as PassengerArchetype).id.to_upper()))
 
-func _on_haggle_choice(offer: int) -> void:
-	if state == State.HAGGLING:
-		_resolve_haggle(offer)
-
-func _resolve_haggle(offer: int) -> void:
+func _ask(ask: int) -> void:
 	var a: PassengerArchetype = _haggle_hail["archetype"]
-	var accepted: bool = false
-	if bool(_haggle_hail.get("scripted", false)):
-		accepted = offer >= 0 # the tutorial rider agrees to any fare (walks off only on timeout)
-	elif offer >= 0:
-		accepted = rng.randf() < _odds(offer, a)
-	# Greed memory: asking above meter raises the streak (more if refused); honest meter rides
-	# calm the stand down again.
-	if offer == FareCalculator.Offer.METER:
-		greed_streak = maxi(0, greed_streak - 2)
-	elif offer > 0:
-		greed_streak = mini(greed_streak + (2 if not accepted else 1), FareCalculator.MAX_GREED_STREAK)
+	var r: Dictionary = FareCalculator.respond(ask, _haggle_limit, _haggle_offer, _haggle_patience)
+	if bool(r["accepted"]):
+		_close_deal(ask)
+		return
+	_haggle_refused = true
+	greed_streak = mini(greed_streak + 1, FareCalculator.MAX_GREED_STREAK)
+	if bool(r["walked"]):
+		_rider_leaves(FareCalculator.RESPECT_XP_INSULTED if bool(r["insulted"]) else FareCalculator.RESPECT_XP_REJECTED,
+			tr("RIDER_%s_REJECT" % a.id.to_upper()))
+		return
+	_haggle_offer = int(r["offer"])
+	_haggle_patience = int(r["patience"])
+	_haggle_asks = FareCalculator.next_asks(_haggle_offer, _haggle_meter)
+	_haggle_timer = HAGGLE_SECONDS
+	var line: String = tr("HAGGLE_COUNTER_ANGRY" if bool(r["insulted"]) else "HAGGLE_COUNTER") % _haggle_offer
+	SignalBus.haggle_updated.emit(_haggle_info(line), _haggle_timer)
+
+func _rider_leaves(respect: int, line: String) -> void:
+	var a_hail: Dictionary = _haggle_hail
+	if respect != 0:
+		GameState.add_respect(respect)
+		greed_streak = mini(greed_streak + 1, FareCalculator.MAX_GREED_STREAK)
+		deal_streak = 0
+	_remove_hail(a_hail)
+	_haggle_hail = {}
+	_publish_hails()
+	SignalBus.haggle_resolved.emit({"accepted": false, "offer": -1, "fare": 0, "line": line})
+	state = State.COOLDOWN
+	_state_timer = REJECT_COOLDOWN_S
+
+func _close_deal(fare: int) -> void:
+	var a: PassengerArchetype = _haggle_hail["archetype"]
+	var offer: int = 1 if fare > _haggle_meter else 0
+	# A deal at or above the meter with no refused ask means the driver read the rider well.
+	if not bool(_haggle_hail.get("scripted", false)):
+		if fare >= _haggle_meter and not _haggle_refused:
+			deal_streak = mini(deal_streak + 1, FareCalculator.MAX_STREAK)
+		elif _haggle_refused:
+			deal_streak = 0
+		greed_streak = maxi(0, greed_streak - 1)
+		GameState.add_respect(FareCalculator.RESPECT_XP_DEAL if fare <= _haggle_meter else FareCalculator.RESPECT_XP_DEAL / 2)
 	_remove_hail(_haggle_hail)
 	_haggle_hail = {}
 	_publish_hails()
-	if not accepted:
-		# Walking away from a greedy fixed-rate ask hurts the stand's opinion more.
-		GameState.add_respect(FareCalculator.RESPECT_XP_REJECTED * (4 if offer == FareCalculator.Offer.FIXED else (2 if offer == FareCalculator.Offer.METER_MELA else 1)))
-		SignalBus.haggle_resolved.emit({"accepted": false, "offer": offer, "fare": 0, "line": a.line_reject})
-		state = State.COOLDOWN
-		_state_timer = REJECT_COOLDOWN_S
-		return
 	rider = a
 	agreed_offer = offer
-	agreed_fare = _haggle_quotes[offer]
+	agreed_fare = fare
 	comfort = 1.0
 	near_misses = 0
 	time_left_s = FareCalculator.ride_time_limit_s(float(route["length"]), a)
 	state = State.RIDING
-	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "line": a.line_accept})
+	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "streak": deal_streak, "line": tr("RIDER_%s_ACCEPT" % a.id.to_upper())})
 	SignalBus.passenger_boarded.emit(a.party_size, a.luggage_kg)
 	_publish_route(route)
 	_dest_marker.global_position = destination["pos"]
@@ -559,19 +628,18 @@ func complete_ride() -> void:
 	var on_time: bool = time_left_s >= 0.0
 	var vs: VehicleStats = GameState.active_stats()
 	var green: float = vs.green_tip_bonus if rider.id == "it_commuter" else 0.0
-	var b: Dictionary = FareCalculator.settle(agreed_fare, rider, comfort, on_time, near_misses, green)
+	var b: Dictionary = FareCalculator.settle(agreed_fare, rider, comfort, on_time, near_misses, green, _haggle_meter, deal_streak)
 	b["destination"] = destination["name"]
-	b["archetype_name"] = rider.archetype_name
+	b["archetype_name"] = tr("RIDER_%s_NAME" % rider.id.to_upper())
 	b["archetype"] = rider.id
 	b["distance_km"] = _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM
-	b["line"] = rider.line_happy if comfort >= 0.5 and on_time else rider.line_upset
+	b["line"] = tr("RIDER_%s_%s" % [rider.id.to_upper(), "HAPPY" if comfort >= 0.5 and on_time else "UPSET"])
 	b["offer"] = agreed_offer
 	b["comfort"] = comfort
 	b["near_misses"] = near_misses
 	# Unique per ride: rewarded "2× fare" can be claimed once for this ride only.
 	b["ride_id"] = "d%d-r%d-%d" % [GameState.day, GameState.completed_savaris + 1, Time.get_ticks_msec()]
 	GameState.add_inr(int(b["total"]))
-	GameState.add_respect(FareCalculator.RESPECT_XP[agreed_offer])
 	GameState.record_ride_rating(float(b["stars"]))
 	SignalBus.passenger_alighted.emit()
 	_publish_route({})

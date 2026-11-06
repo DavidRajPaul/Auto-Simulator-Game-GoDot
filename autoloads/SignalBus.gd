@@ -100,7 +100,9 @@ signal custom_navigation_state_changed(active: bool, start: Vector3, destination
 signal hails_updated(hails: Array)
 ## Haggle card. info: {archetype, name, line, destination, distance_km, quotes: [int, int, int], odds: [f, f, f]}.
 signal haggle_started(info: Dictionary, seconds: float)
-signal haggle_choice_made(offer: int)
+## The rider countered: same info, fresh timer.
+signal haggle_updated(info: Dictionary, seconds: float)
+signal haggle_choice_made(choice: int)
 ## result: {accepted, offer, fare, line}
 signal haggle_resolved(result: Dictionary)
 signal passenger_boarded(passenger_count: int, luggage_weight_kg: float)

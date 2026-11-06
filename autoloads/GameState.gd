@@ -264,7 +264,7 @@ func _on_ride_rewards(b: Dictionary) -> void:
 	rewards.bump_stat_max("best_fare", int(b.get("total", 0)))
 	if int(b.get("offer", -1)) == 0:
 		rewards.add_stat("meter_rides", 1)
-	elif int(b.get("offer", -1)) == FareCalculator.Offer.METER_MELA:
+	elif int(b.get("offer", -1)) == 1:
 		rewards.add_stat("mela_rides", 1)
 	if bool(b.get("on_time", false)):
 		rewards.add_stat("on_time_rides", 1)

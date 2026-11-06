@@ -1,6 +1,6 @@
 class_name PassengerArchetype
 extends Resource
-## Passenger behaviour for haggling, comfort and tips. All balance numbers live in the
+## Passenger behaviour for bargaining, comfort and tips. Spoken lines are RIDER_<ID>_* in ui.csv. All balance numbers live in the
 ## per-archetype .tres files (data/passengers/*.tres), never in code.
 
 @export var id: String = "it_commuter"
@@ -9,10 +9,13 @@ extends Resource
 @export var luggage_kg: float = 0.0
 @export var party_size: int = 1
 
-@export_group("Haggling (GDD risk–reward matrix)")
-@export_range(0.0, 1.0) var accept_meter_chance: float = 1.0
-@export_range(0.0, 1.0) var accept_meter_mela_chance: float = 0.75
-@export_range(0.0, 1.0) var accept_fixed_rate_chance: float = 0.3
+@export_group("Bargaining")
+## Most this rider will pay as a share of the meter, before today's clues move it. Hidden.
+@export var haggle_ceiling: float = 1.25
+## First offer as a share of the meter: bargain hunters open low.
+@export var haggle_open_ratio: float = 1.0
+## How many refused asks the rider puts up with.
+@export var haggle_patience: int = 2
 ## Fare multiplier this rider pays (1.5–2.0 = "one-and-a-half / double meter").
 @export var surge_multiplier: float = 1.0
 
@@ -31,10 +34,3 @@ extends Resource
 @export var home_zones: PackedStringArray = []
 ## Relative spawn weight.
 @export var spawn_weight: float = 1.0
-
-@export_group("Tanglish lines")
-@export var line_hail: String = "Anna, auto varuma?"
-@export var line_accept: String = "Sari, polaam!"
-@export var line_reject: String = "Romba over-aa kekkuraanga!"
-@export var line_happy: String = "Super driving anna!"
-@export var line_upset: String = "Konjam medhuva po pa!"

@@ -132,8 +132,7 @@ func _test_economy_exit_gate() -> void:
 	while wallet < float(GameState.base_stats("madras_king_deluxe").price_inr) and rides < 40:
 		var rider: PassengerArchetype = load("res://data/passengers/%s.tres" % ids[rng.randi() % ids.size()]) as PassengerArchetype
 		var km: float = rng.randf_range(0.6, 2.4) * 1.3 # route ≈ 1.3× straight-line (1 : 1 map)
-		var offer: FareCalculator.Offer = FareCalculator.Offer.METER if rng.randf() < 0.6 else FareCalculator.Offer.METER_MELA
-		var fare: int = FareCalculator.quote(offer, km, rider)
+		var fare: int = FareCalculator.meter_fare(km, rider.surge_multiplier) + (0 if rng.randf() < 0.6 else 30)
 		var b: Dictionary = FareCalculator.settle(fare, rider, rng.randf_range(0.55, 0.95), rng.randf() < 0.85, rng.randi_range(0, 2))
 		var pickup_km: float = rng.randf_range(0.1, 0.4)
 		wallet += float(int(b["total"])) - (km + pickup_km) * stats.fuel_burn_per_km * stats.fuel_price_inr
