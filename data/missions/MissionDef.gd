@@ -7,6 +7,8 @@ extends Resource
 @export var discoverable: bool = false
 @export var start_anchor: Vector3 = Vector3.ZERO
 @export var description_key: String = ""
+## Plain "what you have to do" steps, shown before the player accepts the quest.
+@export var job_key: String = ""
 @export var estimated_minutes: int = 5
 @export_enum("help", "mystery", "skill", "community", "exploration") var category: String = "help"
 @export var unlock_level: int = 1

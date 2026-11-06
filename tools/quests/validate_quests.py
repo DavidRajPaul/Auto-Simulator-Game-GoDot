@@ -1,5 +1,6 @@
 """Fail CI if authored quests drift off the currently generated playable Chennai map."""
 
+import csv
 import json
 import math
 import re
@@ -12,7 +13,11 @@ from config import BBOX, CHUNK_SIZE_M, MAP_SCALE, ORIGIN  # noqa: E402
 
 PACK = ROOT / "data" / "missions" / "side_quests"
 VECTOR = re.compile(r"(?:start_anchor|target) = Vector3\((-?[\d.]+), 0, (-?[\d.]+)\)")
+OPTION_LINE = re.compile(r"^target_options = (.*)$", re.M)
 OPTION = re.compile(r"\"SQ\d+_[A-Z_]+\": Vector3\((-?[\d.]+), 0, (-?[\d.]+)\)")
+PLACE = re.compile(r"^place_pos = Vector3\((-?[\d.]+), 0, (-?[\d.]+)\)", re.M)
+PLAIN_WORDS = re.compile(r"\b(integrity|kerb|bay|designated|verify|accessible|façade|facade|perimeter|mandatory|claimant)\b", re.I)
+OPEN_AIR = {"sq_006", "sq_007", "sq_008", "sq_010"}  # Beach stops stand at the sand, not a building.
 
 
 def distance_to_segment(x, z, ax, az, bx, bz):
@@ -29,7 +34,26 @@ def inside(x, z, poly):
     return hit
 
 
+def nearby_buildings(x, z):
+    cx, cz = math.floor(x / CHUNK_SIZE_M), math.floor(z / CHUNK_SIZE_M)
+    for dx in (-1, 0, 1):
+        for dz in (-1, 0, 1):
+            chunk_file = ROOT / f"data/world/chunks/c_{cx+dx}_{cz+dz}.json"
+            if chunk_file.exists():
+                for building in json.loads(chunk_file.read_text()).get("blds", []):
+                    yield building["p"]
+
+
+def check_plain_text():
+    with open(ROOT / "translations/ui.csv", encoding="utf-8", newline="") as handle:
+        for row in csv.reader(handle):
+            if row and re.match(r"(SQ\d+_|QUEST_)", row[0]):
+                bad = PLAIN_WORDS.search(row[1])
+                assert not bad, f"{row[0]}: use a simpler word than '{bad.group()}'"
+
+
 def main():
+    check_plain_text()
     sources = json.loads((PACK / "anchors.json").read_text())
     manifest = json.loads((ROOT / "data/world/manifest.json").read_text())
     graph = json.loads((ROOT / "data/world/road_graph.json").read_text())
@@ -59,7 +83,17 @@ def main():
         assert math.hypot(x - sx, z - sz) < 0.15, f"{qid}: source coordinate drift"
         assert all(math.hypot(sx - a, sz - b) >= 120.0 for a, b in starts), f"{qid}: start overlap"
         starts.append((sx, sz))
-        points = {(float(a), float(b)) for a, b in VECTOR.findall(content) + OPTION.findall(content)}
+        options = [pair for line in OPTION_LINE.findall(content) for pair in OPTION.findall(line)]
+        points = {(float(a), float(b)) for a, b in VECTOR.findall(content) + options}
+        assert "hidden_route" not in content, f"{qid}: every stop needs a GPS route"
+        for stage in re.split(r"(?=^\[sub_resource)", content, flags=re.M)[1:]:
+            stage = stage.split("[resource]")[0]
+            located = re.search(r'^kind = "(goto|photo|yield|inspect|calm|park|cargo)"', stage, re.M)
+            assert not located or "place_key" in stage or "place_options" in stage, f"{qid}: unnamed stop\n{stage}"
+        for fx, fz in PLACE.findall(content):
+            fx, fz = float(fx), float(fz)
+            gap = min((min(math.hypot(fx - a, fz - b) for a, b in zip(p[::2], p[1::2])), fx, fz) for p in nearby_buildings(fx, fz))[0] if qid not in OPEN_AIR else 0.0
+            assert gap <= 40.0, f"{qid}: sign {(fx, fz)} stands {gap:.0f} m from any building"
         assert points, qid
         for px, pz in points:
             clat = ORIGIN[0] - pz / (111320.0 * MAP_SCALE)

@@ -1,26 +1,122 @@
 {
-  "sq_001": {"sector": "Mylapore", "lat": 13.03443505, "lon": 80.26958247},
-  "sq_002": {"sector": "Luz", "lat": 13.03563313, "lon": 80.26486747},
-  "sq_003": {"sector": "Sabha Lane", "lat": 13.03463151, "lon": 80.26841487},
-  "sq_004": {"sector": "Mylapore West", "lat": 13.03285196, "lon": 80.26622852},
-  "sq_005": {"sector": "Temple South", "lat": 13.03004474, "lon": 80.26964591},
-  "sq_006": {"sector": "Marina", "lat": 13.04230722, "lon": 80.27946938},
-  "sq_007": {"sector": "Marina North", "lat": 13.04329752, "lon": 80.27831017},
-  "sq_008": {"sector": "Vivekananda House", "lat": 13.0390557, "lon": 80.28028721},
-  "sq_009": {"sector": "Santhome", "lat": 13.03373051, "lon": 80.27642812},
-  "sq_010": {"sector": "Marina South", "lat": 13.03593137, "lon": 80.27782883},
-  "sq_012": {"sector": "Chepauk", "lat": 13.06245032, "lon": 80.27799296},
-  "sq_014": {"sector": "Triplicane School", "lat": 13.05391466, "lon": 80.26971599},
-  "sq_015": {"sector": "Chepauk Bus Stop", "lat": 13.06024506, "lon": 80.27243349},
-  "sq_016": {"sector": "Royapettah", "lat": 13.05342337, "lon": 80.26395872},
-  "sq_017": {"sector": "Royapettah Relief", "lat": 13.05071398, "lon": 80.26261749},
-  "sq_018": {"sector": "Gopalapuram Office", "lat": 13.05031243, "lon": 80.25716221},
-  "sq_019": {"sector": "Royapettah West", "lat": 13.05413295, "lon": 80.26076402},
-  "sq_020": {"sector": "Gopalapuram Market", "lat": 13.0526175, "lon": 80.25402607},
-  "sq_021": {"sector": "Anna Salai", "lat": 13.059803, "lon": 80.26041896},
-  "sq_023": {"sector": "Mount Road Workshop", "lat": 13.06175961, "lon": 80.25401593},
-  "sq_024": {"sector": "Thousand Lights", "lat": 13.05869188, "lon": 80.25716221},
-  "sq_025": {"sector": "LIC Heritage", "lat": 13.06599245, "lon": 80.25620228},
-  "sq_026": {"sector": "T. Nagar", "lat": 13.04135106, "lon": 80.23615819},
-  "sq_027": {"sector": "T. Nagar South", "lat": 13.03935124, "lon": 80.23365822}
+  "sq_001": {
+    "sector": "Mylapore",
+    "lat": 13.03443838,
+    "lon": 80.26956384
+  },
+  "sq_002": {
+    "sector": "Luz",
+    "lat": 13.03563403,
+    "lon": 80.26484903
+  },
+  "sq_003": {
+    "sector": "Sabha Lane",
+    "lat": 13.03463151,
+    "lon": 80.26841487
+  },
+  "sq_004": {
+    "sector": "Mylapore West",
+    "lat": 13.03286992,
+    "lon": 80.26622944
+  },
+  "sq_005": {
+    "sector": "Temple South",
+    "lat": 13.03004563,
+    "lon": 80.26963576
+  },
+  "sq_006": {
+    "sector": "Marina",
+    "lat": 13.04232555,
+    "lon": 80.27947205
+  },
+  "sq_007": {
+    "sector": "Marina North",
+    "lat": 13.04329752,
+    "lon": 80.27831017
+  },
+  "sq_008": {
+    "sector": "Vivekananda House",
+    "lat": 13.03906288,
+    "lon": 80.28028075
+  },
+  "sq_009": {
+    "sector": "Santhome",
+    "lat": 13.0337341,
+    "lon": 80.27640968
+  },
+  "sq_010": {
+    "sector": "Marina South",
+    "lat": 13.03594934,
+    "lon": 80.27783251
+  },
+  "sq_012": {
+    "sector": "Chepauk",
+    "lat": 13.06245221,
+    "lon": 80.27789614
+  },
+  "sq_014": {
+    "sector": "Triplicane School",
+    "lat": 13.05393263,
+    "lon": 80.26972521
+  },
+  "sq_015": {
+    "sector": "Chepauk Bus Stop",
+    "lat": 13.06024506,
+    "lon": 80.27241504
+  },
+  "sq_016": {
+    "sector": "Royapettah",
+    "lat": 13.05340352,
+    "lon": 80.26395733
+  },
+  "sq_017": {
+    "sector": "Royapettah Relief",
+    "lat": 13.05071398,
+    "lon": 80.26263685
+  },
+  "sq_018": {
+    "sector": "Gopalapuram Office",
+    "lat": 13.05031243,
+    "lon": 80.25716221
+  },
+  "sq_019": {
+    "sector": "Royapettah West",
+    "lat": 13.05413385,
+    "lon": 80.26074466
+  },
+  "sq_020": {
+    "sector": "Gopalapuram Market",
+    "lat": 13.05260313,
+    "lon": 80.25403713
+  },
+  "sq_021": {
+    "sector": "Anna Salai",
+    "lat": 13.05979141,
+    "lon": 80.26040439
+  },
+  "sq_023": {
+    "sector": "Mount Road Workshop",
+    "lat": 13.06175961,
+    "lon": 80.25401593
+  },
+  "sq_024": {
+    "sector": "Thousand Lights",
+    "lat": 13.05867571,
+    "lon": 80.25716959
+  },
+  "sq_025": {
+    "sector": "LIC Heritage",
+    "lat": 13.0660769,
+    "lon": 80.25609255
+  },
+  "sq_026": {
+    "sector": "T. Nagar",
+    "lat": 13.04133291,
+    "lon": 80.23615625
+  },
+  "sq_027": {
+    "sector": "T. Nagar South",
+    "lat": 13.03933148,
+    "lon": 80.23365545
+  }
 }

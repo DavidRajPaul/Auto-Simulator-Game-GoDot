@@ -227,3 +227,10 @@ var quest_discovery_provider: Callable = Callable()
 var quest_action_provider: Callable = Callable()
 signal quest_tracking_changed(id: String)
 signal quest_catalogue_changed
+## The stopped auto can begin this quest (empty dictionary = no longer).
+signal quest_prompt_changed(quest: Dictionary)
+signal quest_prompt_dismissed
+## The panel's stop-and-do button is usable: true only inside the stop while slow enough.
+signal mission_action_ready(ready: bool, in_range: bool)
+## Seconds left before an ongoing speed breach stops the job (0 = no breach).
+signal mission_speed_warning(seconds_left: float)

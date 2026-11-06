@@ -16,6 +16,7 @@ const MINOR: Color = Color(0.62, 0.63, 0.65)
 const MIN_SCALE: float = 0.05 # px per metre (whole city)
 const MAX_SCALE: float = 3.0
 const LABEL_CELL_PX: float = 170.0
+const QUEST_START_NEAR_M: float = 12.0
 
 var graph: RoadGraph
 var scale_px: float = 0.6
@@ -249,6 +250,9 @@ func _tap_button(p: Vector2) -> bool:
 		return false
 	return true
 
+func _ride_busy() -> bool:
+	return SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call())
+
 func _refresh_quests() -> void:
 	_quest_rows.clear()
 	if SignalBus.quest_discovery_provider.is_valid():
@@ -358,9 +362,10 @@ func _draw() -> void:
 	if graph != null:
 		_draw_labels(view)
 	_draw_hails()
-	_draw_player()
 	_draw_custom_pins()
 	_draw_quests(view)
+	# Last of the world layer: a quest badge must never hide the player's own auto.
+	_draw_player()
 	_draw_chrome()
 	_draw_quest_ui()
 
@@ -370,6 +375,11 @@ func _draw_quests(view: Rect2) -> void:
 	for q: Dictionary in _quest_rows:
 		var pos: Vector3 = q["position"]
 		if not view.has_point(Vector2(pos.x, pos.z)):
+			continue
+		if bool(q["completed"]):
+			var done: Vector2 = to_screen(Vector2(pos.x, pos.z))
+			draw_circle(done, 9.0, Color(0.2, 0.22, 0.26))
+			draw_polyline(PackedVector2Array([done + Vector2(-4, 0), done + Vector2(-1, 4), done + Vector2(5, -4)]), Color("3ddc84"), 2.5)
 			continue
 		var screen: Vector2 = to_screen(Vector2(pos.x, pos.z))
 		var key: Vector2i = Vector2i(floori(screen.x / 52.0), floori(screen.y / 52.0))
@@ -415,15 +425,27 @@ func _draw_quest_ui() -> void:
 	var q: Dictionary = _selected_quest()
 	if q.is_empty():
 		return
-	var width: float = minf(size.x - 32.0, 380.0)
-	var y: float = size.y - 222.0
-	draw_rect(Rect2(Vector2(16, y), Vector2(width, 112)), Color(0.05, 0.06, 0.09, 0.96))
+	var width: float = minf(size.x - 32.0, 400.0)
+	var body: String = "%s\n%s" % [str(q["description"]), str(q["job"])]
+	var body_h: float = _font.get_multiline_string_size(body, HORIZONTAL_ALIGNMENT_LEFT, width - 24, 15).y
+	var height: float = 92.0 + body_h + (0.0 if bool(q["completed"]) else 54.0)
+	var y: float = maxf(124.0, size.y - 108.0 - height)
+	draw_rect(Rect2(Vector2(16, y), Vector2(width, height)), Color(0.05, 0.06, 0.09, 0.97))
 	draw_string(_font, Vector2(28, y + 28), str(q["title"]), HORIZONTAL_ALIGNMENT_LEFT, width - 24, 21, Color("ffcf58"))
-	draw_string(_font, Vector2(28, y + 52), str(q["description"]), HORIZONTAL_ALIGNMENT_LEFT, width - 24, 15, Color.WHITE)
-	_track_rect = Rect2(Vector2(22, y + 58), Vector2((width - 24) * 0.5, 48))
-	_start_rect = Rect2(Vector2(26 + (width - 24) * 0.5, y + 58), Vector2((width - 24) * 0.5, 48))
-	_draw_quest_button(_track_rect, tr("QUEST_UNTRACK") if bool(q["tracked"]) else tr("QUEST_TRACK"))
-	_draw_quest_button(_start_rect, tr("QUEST_START"))
+	draw_multiline_string(_font, Vector2(28, y + 50), body, HORIZONTAL_ALIGNMENT_LEFT, width - 24, 15, -1, Color.WHITE)
+	var status: String = tr("QUEST_DONE") if bool(q["completed"]) else tr("QUEST_REWARD") % [UIKit.inr(int(q["reward"])), int(q["minutes"])]
+	draw_string(_font, Vector2(28, y + 62 + body_h), status, HORIZONTAL_ALIGNMENT_LEFT, width - 24, 16, Color("3ddc84"))
+	if bool(q["completed"]):
+		return
+	var at: Vector3 = q["position"]
+	var near: bool = Vector2(at.x, at.z).distance_to(Vector2(_player.x, _player.z)) <= QUEST_START_NEAR_M
+	var row_y: float = y + height - 54.0
+	if near:
+		_start_rect = Rect2(Vector2(22, row_y), Vector2(width - 12, 48))
+		_draw_quest_button(_start_rect, tr("QUEST_START"))
+	else:
+		_track_rect = Rect2(Vector2(22, row_y), Vector2(width - 12, 48))
+		_draw_quest_button(_track_rect, tr("QUEST_UNTRACK") if bool(q["tracked"]) else tr("QUEST_TRACK"))
 
 func _draw_quest_button(rect: Rect2, label: String) -> void:
 	draw_rect(rect, Color(0.09, 0.09, 0.11, 0.95))
@@ -598,6 +620,6 @@ func _draw_chrome() -> void:
 	if _select_mode != 0:
 		draw_string(_font, Vector2(20.0, size.y - 114.0), "Tap or drag to position the pin", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
 	# North arrow.
-	var n: Vector2 = Vector2(48, 96)
+	var n: Vector2 = Vector2(48, 150)
 	draw_colored_polygon(PackedVector2Array([n + Vector2(0, -18), n + Vector2(9, 8), n + Vector2(-9, 8)]), Color(1, 0.4, 0.35))
 	draw_string(_font, n + Vector2(-6, 28), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)

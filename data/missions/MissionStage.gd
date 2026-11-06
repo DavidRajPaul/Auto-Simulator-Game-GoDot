@@ -33,3 +33,12 @@ extends Resource
 @export var avoid_center: Vector3 = Vector3.ZERO
 @export var avoid_radius_m: float = 0.0
 @export var checkpoint: bool = true
+## The named real place this stop stands for: shown on the world sign and in the quest panel.
+@export var place_key: String = ""
+## Building front the sign and the waiting person stand at, beside the road target.
+@export var place_pos: Vector3 = Vector3.ZERO
+## Same as place_key / place_pos when an earlier choice picks the destination.
+@export var place_options: Dictionary = {}
+@export var place_pos_options: Dictionary = {}
+## Button text for stop-and-do stages ("Load the drum"). Falls back to a word per stage kind.
+@export var action_key: String = ""

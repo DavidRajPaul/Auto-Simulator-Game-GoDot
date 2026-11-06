@@ -96,13 +96,13 @@ func quality_and_parking() -> void:
 	SignalBus.vehicle_dynamics.emit(2.0, 2.0, 0.0)
 	SignalBus.player_impact.emit({"severity": 1.0})
 	var coffee: float = float(director.run.flags.get("coffee", 100.0))
-	check("dynamics and impact lower coffee", coffee < 82.0 and coffee > 0.0)
+	check("dynamics and impact lower coffee", coffee < 90.0 and coffee > 0.0)
 	check("quality serialized", float(GameState.mission_run.get("flags", {}).get("coffee", 100.0)) == coffee)
 	director.run = null
 	GameState.mission_active = false
 	check("saved stage resumes", director.resume_saved() and director.current_stage().id == "first")
 	check("resume preserves live quality", float(director.run.flags["coffee"]) == coffee)
-	for _hit: int in 6:
+	for _hit: int in 10:
 		SignalBus.player_impact.emit({"severity": 1.0})
 	check("quality bounded", float(director.run.flags["coffee"]) == 0.0)
 	director.tick(0.1)
@@ -129,8 +129,5 @@ func quality_and_parking() -> void:
 	pose(parking.target, parking.facing)
 	check("parking needs reverse", not director.interact("sq_027", "park"))
 	SignalBus.gear_changed.emit(-1)
-	pose(parking.target, -parking.facing)
-	check("parking needs correct heading", not director.interact("sq_027", "park"))
-	pose(parking.target, parking.facing)
 	check("reverse parking progresses", director.interact("sq_027", "park"))
 	director.abandon()

@@ -2140,7 +2140,7 @@
    "id": "kapaleeshwarar",
    "name": "Kapaleeshwarar Temple",
    "kind": "gopuram",
-   "x": 1149.52,
+   "x": 1179.5,
    "z": 1691.26,
    "yaw": 0.0
   },
@@ -2148,8 +2148,8 @@
    "id": "chitrakulam_tank",
    "name": "Mylapore Temple Tank",
    "kind": "tank",
-   "x": 1257.97,
-   "z": 1768.64,
+   "x": 1052.0,
+   "z": 1721.0,
    "yaw": 0.0
   },
   {
