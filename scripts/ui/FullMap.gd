@@ -84,6 +84,12 @@ func set_open(open: bool) -> void:
 		return
 	visible = open
 	get_tree().paused = open
+	# Fingers are tracked only from presses the map itself saw. A finger already down when the map
+	# opened (e.g. holding the gas pedal while someone taps the mini-map) must never count.
+	_touches.clear()
+	_press_at.clear()
+	_pinch_d = 0.0
+	_dragging_pin = false
 	SignalBus.full_map_state_changed.emit(open)
 	if open:
 		_refresh_quests()
@@ -157,6 +163,8 @@ func _gui_input(event: InputEvent) -> void:
 			if _touches.size() == 1 and _tap_button(t.position):
 				_touches.erase(t.index)
 				_press_at.erase(t.index) # Button press must not also drop a map pin on release
+		elif not _touches.has(t.index):
+			pass # release of a finger that went down before the map opened (or on a map button)
 		else:
 			if _dragging_pin:
 				_select_point(t.position)
@@ -170,6 +178,12 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 	elif event is InputEventScreenDrag:
 		var d: InputEventScreenDrag = event
+		# Godot hands drags with no touch focus (a HUD finger pressed before the map opened) to the
+		# control under them — this one. Adding them to _touches left a ghost finger that blocked
+		# every later tap (the ✕ "did nothing"), so only fingers pressed on the map count.
+		if not _touches.has(d.index):
+			accept_event()
+			return
 		if _touches.size() >= 2:
 			_touches[d.index] = d.position
 			var nd: float = _pinch_distance()

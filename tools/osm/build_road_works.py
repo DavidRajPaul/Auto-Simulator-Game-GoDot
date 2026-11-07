@@ -231,7 +231,7 @@ def main() -> int:
             continue
         d = json.loads(path.read_text())
         changed = False
-        for key in ("trees", "poles", "xfmr", "parking", "stalls", "wires", "barricades", "carts"):
+        for key in ("trees", "poles", "xfmr", "parking", "stalls", "wires", "barricades", "beach_fence", "carts"):
             items = d.get(key)
             if not items:
                 continue
