@@ -270,6 +270,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if collider is TrafficVehicleAI:
 			kind = "vehicle"
 			SignalBus.traffic_bumped.emit(collider as Node3D, best)
+		elif collider is RigidBody3D and (collider as Node).is_in_group(ParkedVehicleSet.PARKED_GROUP):
+			kind = "vehicle" # a parked scooter / car / share auto the auto just shoved
 		elif collider is StaticBody3D and (collider as StaticBody3D).collision_layer & 8:
 			kind = "prop"
 		SignalBus.player_collision.emit(best)

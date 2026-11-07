@@ -158,6 +158,7 @@ var _xfmr_cols: PackedColorArray = PackedColorArray()
 var _prop_blocks: Dictionary = {}
 const STALL_HALF: Vector2 = Vector2(1.7, 1.2)
 var _stall_kit: Array[Dictionary] = [] # Read once on the main thread, used by chunk workers.
+var _cart_kit: Array[Dictionary] = [] # BeachCartKit variants, same pattern.
 ## Temple-tank footprints (water + ghat steps) per chunk: Vector2i -> PackedVector2Array, 3 points
 ## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
 var _tank_blocks: Dictionary = {}
@@ -210,6 +211,7 @@ func _ready() -> void:
 	add_child(trees)
 	_load_transformer_tank()
 	_stall_kit = StreetStallKit.arrays()
+	_cart_kit = BeachCartKit.arrays()
 	_build_ground()
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
@@ -599,6 +601,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	_medians(m, faces, dress.get("medians", []))
 	_barricades(m, faces, dress.get("barricades", []))
+	for cart: Array in dress.get("carts", []):
+		_cart(m, faces, cart)
 	if dressing_enabled:
 		_street_dressing(m, dress)
 	# Trees are not part of the chunk mesh: StreetTrees draws the owner's models for every
@@ -837,6 +841,29 @@ func _stall(m: MeshBuf, s: Array) -> void:
 		var p: Vector3 = v[i]
 		var q: Vector3 = nn[i]
 		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], PLAIN_UV, PLAIN_CELL)
+
+## Push-cart shop (tools/osm/build_beach_carts.py): [x, z, yaw, variant, name, ground y].
+## Merged into the chunk mesh; a solid box so the auto bumps it. Names: CartSigns.
+func _cart(m: MeshBuf, faces: PackedVector3Array, s: Array) -> void:
+	var kind: int = int(s[3])
+	if kind < 0 or kind >= _cart_kit.size():
+		return
+	var at: Vector3 = Vector3(float(s[0]), 0.0, float(s[1]))
+	var yaw: float = float(s[2])
+	var ground: float = float(s[5]) if s.size() > 5 else 0.08
+	var c: float = cos(yaw)
+	var n: float = sin(yaw)
+	var kit: Dictionary = _cart_kit[kind]
+	var v: PackedVector3Array = kit["v"]
+	var nn: PackedVector3Array = kit["n"]
+	var col: PackedColorArray = kit["c"]
+	for i: int in v.size():
+		var p: Vector3 = v[i]
+		var q: Vector3 = nn[i]
+		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], PLAIN_UV, PLAIN_CELL)
+	var across: Vector2 = Vector2(c, -n) # the cart's local +X (its width)
+	var centre: Vector2 = Vector2(at.x, at.z)
+	_wall_faces(faces, centre - across * 0.95, centre + across * 0.95, 0.0, 2.2, 1.05)
 
 func _load_transformer_tank() -> void:
 	if not ResourceLoader.exists(XFMR_TANK):

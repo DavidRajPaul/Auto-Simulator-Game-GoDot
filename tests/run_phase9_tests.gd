@@ -35,6 +35,7 @@ func _run() -> void:
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
 	await _test_bus_stops(city)
+	await _test_parked_physics(city)
 	_test_colour_variety(city)
 	city.queue_free()
 	await _physics(2)
@@ -233,15 +234,12 @@ func _test_grounding(city: Node) -> void:
 		var body: StaticBody3D = park.get_node_or_null("ParkedVehicleCollision") as StaticBody3D
 		if body == null:
 			continue
-		var faces: PackedVector3Array = ((body.get_child(0) as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces()
-		# Each box is 36 vertices; its lowest corner must be on the drawn ground at its centre.
-		for b: int in range(0, faces.size(), 36):
-			var lo: float = INF
-			var c: Vector3 = Vector3.ZERO
-			for v: int in 36:
-				lo = minf(lo, faces[b + v].y)
-				c += faces[b + v]
-			c /= 36.0
+		# One box per vehicle; its bottom must be on the drawn ground at its centre.
+		for cs: Node in body.get_children():
+			var shape: CollisionShape3D = cs as CollisionShape3D
+			var box: BoxShape3D = shape.shape as BoxShape3D
+			var c: Vector3 = shape.position
+			var lo: float = c.y - box.size.y * 0.5
 			var g: float = world.surface_height(c.x, c.z, -99.0)
 			spots += 1
 			if g > -50.0 and absf(lo - g) > 0.02:
@@ -809,6 +807,80 @@ func _test_ambience(a: AmbienceAudio) -> void:
 	a._player_pos = Vector3(-2711.14, 0.0, 884.32) # T. Nagar
 	var inland: float = float(a.targets()["city"])
 	_check("City bed is quieter on the beach front than in T. Nagar", beach < inland, "%.2f vs %.2f" % [beach, inland])
+
+## Nov 7: hitting a parked vehicle did nothing. Now the vehicle wakes into a rigid body with its
+## real mass: a scooter is knocked away / over, a car barely shifts and stops the auto.
+func _test_parked_physics(city: Node) -> void:
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	traffic.set_physics_process(false)
+	for v: TrafficVehicleAI in traffic.pool:
+		v.deactivate()
+	GameState.tutorial_active = false
+	var results: Dictionary = {}
+	for kind: int in [0, 1]:
+		# A parked vehicle of this kind with a clear 16 m run-up behind it.
+		var set_: ParkedVehicleSet = null
+		var idx: int = -1
+		for k: Vector2i in world.loaded:
+			var park: ParkedVehicleSet = (world.loaded[k] as Node).get_node_or_null("RoadsideParking") as ParkedVehicleSet
+			if park == null:
+				continue
+			for i: int in park.records.size():
+				var r: Dictionary = park.records[i]
+				if int(r["kind"]) != kind or park.awake.has(i):
+					continue
+				var o: Vector3 = r["origin"]
+				var back: Vector3 = -Vector3(sin(float(r["yaw"])), 0.0, cos(float(r["yaw"])))
+				var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(o + Vector3.UP * 0.7 + back * ((r["dim"] as Vector3).z * 0.5 + 0.3), o + Vector3.UP * 0.7 + back * 16.0, 1)
+				if (city as Node3D).get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+					set_ = park
+					idx = i
+					break
+			if set_ != null:
+				break
+		if set_ == null:
+			_check("Found a parked %s with a clear run-up" % ["scooter", "car"][kind], false)
+			continue
+		var r: Dictionary = set_.records[idx]
+		var origin: Vector3 = r["origin"]
+		var fwd: Vector3 = Vector3(sin(float(r["yaw"])), 0.0, cos(float(r["yaw"])))
+		var start: Vector3 = origin - fwd * 15.0 + Vector3(0, 0.8, 0)
+		SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(fwd, Vector3.UP), start))
+		await _physics(20)
+		Input.action_press("accelerate")
+		var hit_speed: float = 0.0
+		for f: int in 300:
+			await get_tree().physics_frame
+			if set_.awake.has(idx) and hit_speed == 0.0:
+				hit_speed = auto.linear_velocity.length()
+			if (auto.global_position - origin).dot(fwd) > -1.0:
+				break
+		Input.action_release("accelerate")
+		await _physics(150)
+		var body: RigidBody3D = set_.awake.get(idx, null)
+		var moved: float = 0.0
+		var tilt: float = 0.0
+		if body != null:
+			moved = Vector2(body.global_position.x - origin.x, body.global_position.z - origin.z).length()
+			tilt = rad_to_deg(body.global_basis.y.angle_to(Vector3.UP))
+		results[kind] = [body != null, hit_speed, moved, tilt]
+		Input.action_press("brake")
+		await _physics(30)
+		Input.action_release("brake")
+	if results.has(0):
+		var s0: Array = results[0]
+		_check("Hitting a parked scooter wakes it into a real body", bool(s0[0]), "hit at %.1f m/s" % float(s0[1]))
+		_check("A hit scooter (110 kg) is knocked over and thrown", float(s0[2]) > 1.0 and float(s0[3]) > 45.0, "moved %.2f m, tilted %.0f°" % [float(s0[2]), float(s0[3])])
+	if results.has(1):
+		var s1: Array = results[1]
+		_check("Hitting a parked car wakes it too", bool(s1[0]), "hit at %.1f m/s" % float(s1[1]))
+		_check("A parked car (1.15 t) only shifts a little", float(s1[2]) < 1.5 and float(s1[3]) < 10.0, "moved %.2f m, tilted %.0f°" % [float(s1[2]), float(s1[3])])
+		if results.has(0):
+			_check("The scooter goes further than the car", float(results[0][2]) + float(results[0][3]) / 30.0 > float(s1[2]))
+	_check("Woken parked vehicles count as vehicles", ParkedVehicleSet.MASS_KG[0] < ParkedVehicleSet.MASS_KG[2] and ParkedVehicleSet.MASS_KG[2] < ParkedVehicleSet.MASS_KG[1])
+	traffic.set_physics_process(true)
 
 func _physics(frames: int) -> void:
 	for i: int in frames:
