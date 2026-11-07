@@ -1,0 +1,405 @@
+{
+ "names": [
+  [
+   "SRI BALAJI FAST FOOD",
+   "ஸ்ரீ பாலாஜி ஃபாஸ்ட் புட்",
+   "fried_rice"
+  ],
+  [
+   "HOT WOK FRIED RICE",
+   "ஹாட் வோக் ஃப்ரைடு ரைஸ்",
+   "fried_rice"
+  ],
+  [
+   "MURUGAN FAST FOOD",
+   "முருகன் ஃபாஸ்ட் புட்",
+   "fried_rice"
+  ],
+  [
+   "CHILLI CHICKEN CORNER",
+   "சில்லி சிக்கன் கார்னர்",
+   "fried_rice"
+  ],
+  [
+   "NOODLES & FRIED RICE",
+   "நூடுல்ஸ் ஃப்ரைடு ரைஸ்",
+   "fried_rice"
+  ],
+  [
+   "BURMA ATHO KADAI",
+   "பர்மா அத்தோ கடை",
+   "atho"
+  ],
+  [
+   "RANGOON ATHO & MOHINGA",
+   "ரங்கூன் அத்தோ மொஹிங்கா",
+   "atho"
+  ],
+  [
+   "SRI KUMARAN ATHO",
+   "ஸ்ரீ குமரன் அத்தோ",
+   "atho"
+  ],
+  [
+   "ROYAL BURMA ATHO",
+   "ராயல் பர்மா அத்தோ",
+   "atho"
+  ],
+  [
+   "RAJU PANI PURI",
+   "ராஜு பானி பூரி",
+   "pani_puri"
+  ],
+  [
+   "BOMBAY CHAAT",
+   "பாம்பே சாட்",
+   "pani_puri"
+  ],
+  [
+   "SHREE RAM PANI PURI",
+   "ஸ்ரீ ராம் பானி பூரி",
+   "pani_puri"
+  ],
+  [
+   "PRIYA PANI PURI",
+   "பிரியா பானி பூரி",
+   "pani_puri"
+  ],
+  [
+   "COOL POINT ICE CREAM",
+   "கூல் பாயிண்ட் ஐஸ்கிரீம்",
+   "ice_cream"
+  ],
+  [
+   "SNOW WHITE ICE CREAM",
+   "ஸ்னோ ஒயிட் ஐஸ்கிரீம்",
+   "ice_cream"
+  ],
+  [
+   "KANMANI KULFI",
+   "கண்மணி குல்ஃபி",
+   "ice_cream"
+  ],
+  [
+   "GANESH ICE CREAM",
+   "கணேஷ் ஐஸ்கிரீம்",
+   "ice_cream"
+  ],
+  [
+   "THANGAM FISH FRY",
+   "தங்கம் மீன் வறுவல்",
+   "fish_fry"
+  ],
+  [
+   "KASIMEDU FISH FRY",
+   "காசிமேடு மீன் வறுவல்",
+   "fish_fry"
+  ],
+  [
+   "MEENAVAN FISH FRY",
+   "மீனவன் மீன் வறுவல்",
+   "fish_fry"
+  ],
+  [
+   "LAKSHMI BAJJI STALL",
+   "லட்சுமி பஜ்ஜி",
+   "bajji"
+  ],
+  [
+   "MYLAI BAJJI CORNER",
+   "மயிலை பஜ்ஜி கார்னர்",
+   "bajji"
+  ],
+  [
+   "AMMA BAJJI BONDA",
+   "அம்மா பஜ்ஜி போண்டா",
+   "bajji"
+  ],
+  [
+   "PANDIAN TEA STALL",
+   "பாண்டியன் டீ கடை",
+   "tea"
+  ],
+  [
+   "KUMAR TEA KADAI",
+   "குமார் டீ கடை",
+   "tea"
+  ],
+  [
+   "SRI VINAYAGA TEA STALL",
+   "ஸ்ரீ விநாயகா டீ கடை",
+   "tea"
+  ],
+  [
+   "ANNA TEA & SNACKS",
+   "அண்ணா டீ ஸ்நாக்ஸ்",
+   "tea"
+  ],
+  [
+   "ANBU TIFFIN SHOP",
+   "அன்பு டிபன் கடை",
+   "tiffin"
+  ],
+  [
+   "AK TIFFIN SHOP",
+   "ஏகே டிபன் கடை",
+   "tiffin"
+  ],
+  [
+   "AMMA IDLI KADAI",
+   "அம்மா இட்லி கடை",
+   "tiffin"
+  ],
+  [
+   "MUTHU KOTHU PAROTTA",
+   "முத்து கொத்து பரோட்டா",
+   "kothu"
+  ],
+  [
+   "NIGHT PAROTTA CENTRE",
+   "நைட் பரோட்டா சென்டர்",
+   "kothu"
+  ],
+  [
+   "HOT MOMOS",
+   "ஹாட் மோமோஸ்",
+   "momos"
+  ],
+  [
+   "SHAWARMA POINT",
+   "ஷவர்மா பாயிண்ட்",
+   "momos"
+  ],
+  [
+   "JEEVA JUICE CORNER",
+   "ஜீவா ஜூஸ் கார்னர்",
+   "juice"
+  ],
+  [
+   "FRESH LIME SODA",
+   "ஃப்ரெஷ் லைம் சோடா",
+   "juice"
+  ],
+  [
+   "ROSE MILK CORNER",
+   "ரோஸ் மில்க் கார்னர்",
+   "juice"
+  ],
+  [
+   "KARUMBU JUICE",
+   "கரும்பு ஜூஸ்",
+   "sugarcane"
+  ],
+  [
+   "MEENA ELANEER",
+   "மீனா இளநீர்",
+   "coconut"
+  ],
+  [
+   "ELANEER KADAI",
+   "இளநீர் கடை",
+   "coconut"
+  ],
+  [
+   "SELVAM KAALAN",
+   "செல்வம் காளான்",
+   "kaalan"
+  ],
+  [
+   "MUSHROOM KAALAN FRY",
+   "காளான் வறுவல்",
+   "kaalan"
+  ],
+  [
+   "SRI MURUGAN SUNDAL",
+   "முருகன் சுண்டல்",
+   "sundal"
+  ],
+  [
+   "VIJI SUNDAL & CORN",
+   "விஜி சுண்டல் கார்ன்",
+   "sundal"
+  ],
+  [
+   "MARINA SWEET CORN",
+   "மெரினா ஸ்வீட் கார்ன்",
+   "corn"
+  ],
+  [
+   "KANMANI SPRING POTATO",
+   "கண்மணி ஸ்பிரிங் பொட்டேட்டோ",
+   "spring_potato"
+  ],
+  [
+   "SUGANYA SPRING POTATO",
+   "சுகன்யா ஸ்பிரிங் பொட்டேட்டோ",
+   "spring_potato"
+  ],
+  [
+   "RAJA LEMON SODA",
+   "ராஜா லெமன் சோடா",
+   "soda"
+  ],
+  [
+   "GOLI SODA KADAI",
+   "கோலி சோடா கடை",
+   "soda"
+  ],
+  [
+   "SELVI MANGO SLICE",
+   "செல்வி மாங்காய்",
+   "fruit"
+  ],
+  [
+   "FRUIT MIX CORNER",
+   "ஃப்ரூட் மிக்ஸ் கார்னர்",
+   "fruit"
+  ]
+ ],
+ "types": {
+  "fried_rice": [
+   18,
+   24,
+   [
+    5
+   ]
+  ],
+  "atho": [
+   17,
+   23,
+   [
+    1,
+    5
+   ]
+  ],
+  "pani_puri": [
+   16,
+   22,
+   [
+    7
+   ]
+  ],
+  "ice_cream": [
+   11,
+   23,
+   [
+    6
+   ]
+  ],
+  "fish_fry": [
+   16,
+   23,
+   [
+    0,
+    5
+   ]
+  ],
+  "bajji": [
+   15,
+   21,
+   [
+    2,
+    0,
+    1
+   ]
+  ],
+  "tea": [
+   5,
+   23,
+   [
+    3
+   ]
+  ],
+  "tiffin": [
+   6,
+   11,
+   [
+    1,
+    0
+   ]
+  ],
+  "kothu": [
+   19,
+   25,
+   [
+    5
+   ]
+  ],
+  "momos": [
+   17,
+   23,
+   [
+    5,
+    3
+   ]
+  ],
+  "juice": [
+   9,
+   22,
+   [
+    3,
+    0
+   ]
+  ],
+  "sugarcane": [
+   10,
+   20,
+   [
+    3
+   ]
+  ],
+  "coconut": [
+   8,
+   19,
+   [
+    2
+   ]
+  ],
+  "kaalan": [
+   17,
+   23,
+   [
+    2,
+    1
+   ]
+  ],
+  "sundal": [
+   15,
+   22,
+   [
+    2,
+    0
+   ]
+  ],
+  "corn": [
+   15,
+   22,
+   [
+    2,
+    0
+   ]
+  ],
+  "spring_potato": [
+   16,
+   22,
+   [
+    0
+   ]
+  ],
+  "soda": [
+   10,
+   22,
+   [
+    0,
+    3
+   ]
+  ],
+  "fruit": [
+   9,
+   20,
+   [
+    2
+   ]
+  ]
+ }
+}
