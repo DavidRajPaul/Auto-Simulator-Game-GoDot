@@ -47,6 +47,21 @@ const STARTLE_SPEED_MPS: float = 2.0
 ## Comfortable street paces (m/s) per character; playback follows.
 const PACE: Dictionary = {"old_man_veshti": Vector2(0.85, 1.0)}
 const DEFAULT_PACE: Vector2 = Vector2(1.1, 1.35)
+## Mixamo clips (tools/assets/add_mixamo_clips.py): a few walkers jog ("run"); anyone a moving
+## vehicle — the player or traffic — is about to brush past jumps back ("dodge") or stumbles and
+## falls ("stumble" → "fallen" on the road for a few seconds → back on their feet).
+const RUN_SHARE: float = 0.07
+const RUN_PACE: Vector2 = Vector2(0.9, 1.08) # × the clip's own pace
+## Look-ahead to a vehicle, and how close its path must pass to count as "very close".
+const REACT_M: float = 7.0
+const NEAR_MISS_M: float = 1.7
+const REACT_AHEAD_S: float = 1.1
+const STUMBLE_SHARE: float = 0.3
+const HIT_SPEED_MPS: float = 4.0
+const FALLEN_S: Vector2 = Vector2(2.5, 4.5)
+const GET_UP_BLEND_S: float = 0.7
+## Only traffic this close to the player can upset anyone (walkers further away aren't animated).
+const THREAT_M: float = 60.0
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
 const SHARE: Dictionary = {
     "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
@@ -67,6 +82,13 @@ var _player_vel: Vector3 = Vector3.ZERO
 var _last_player: Vector3 = Vector3.ZERO
 var _has_player: bool = false
 var _timer: float = 0.0
+var _run_pace: Dictionary = {}
+## id -> {clip: Vector3(local x, local z, seconds)}: where each root-motion clip leaves the body.
+var _moves: Dictionary = {}
+var _traffic: ChennaiTrafficManager
+var _prev_traffic: Dictionary = {}
+## [position, velocity] of every moving vehicle near the player, refreshed each frame.
+var _threats: Array[Array] = []
 
 ## One pooled person.
 class Walker:
@@ -87,6 +109,11 @@ class Walker:
 	var startle: float = 0.0
 	var dodge: Vector3 = Vector3.ZERO
 	var recovery: float = 0.0
+	var running: bool = false
+	## "" or the reaction clip playing: "dodge", "stumble", "fallen".
+	var react: String = ""
+	var react_t: float = 0.0
+	var move: Vector3 = Vector3.ZERO
 	var paintable: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
 
@@ -121,6 +148,7 @@ func _ready() -> void:
 	if SignalBus.current_road_graph != null:
 		graph = SignalBus.current_road_graph
 	SignalBus.player_pose_updated.connect(_on_player)
+	_traffic = get_parent().get_node_or_null("ChennaiTrafficManager") as ChennaiTrafficManager
 
 func _load_people() -> void:
 	var f: FileAccess = FileAccess.open(META_FILE, FileAccess.READ)
@@ -139,7 +167,15 @@ func _load_people() -> void:
 			continue
 		_scenes.append(scene)
 		_ids.append(str(id))
-		_native_pace[str(id)] = maxf(float((meta[id] as Dictionary).get("walk_speed", 1.2)), 0.1)
+		var info: Dictionary = meta[id]
+		_native_pace[str(id)] = maxf(float(info.get("walk_speed", 1.2)), 0.1)
+		if info.has("run_speed"):
+			_run_pace[str(id)] = maxf(float(info["run_speed"]), 0.1)
+		var mv: Dictionary = {}
+		for clip: String in (info.get("moves", {}) as Dictionary):
+			var m: Array = info["moves"][clip]
+			mv[clip] = Vector3(float(m[0]), float(m[1]), float(m[2]))
+		_moves[str(id)] = mv
 
 func _on_player(p: Vector3, f: Vector3) -> void:
 	_player = p
@@ -151,6 +187,7 @@ func _process(delta: float) -> void:
 		return
 	_player_vel = (_player - _last_player) / delta if _last_player != Vector3.ZERO else Vector3.ZERO
 	_last_player = _player
+	_gather_threats(delta)
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = UPDATE_S
@@ -202,6 +239,10 @@ func _spawn(w: Walker) -> bool:
 	w.startle = 0.0
 	w.dodge = Vector3.ZERO
 	w.recovery = 0.0
+	w.react = ""
+	w.running = not w.idle and _run_pace.has(w.id) and rng.randf() < RUN_SHARE
+	if w.running:
+		w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y)
 	if w.idle and (w.s < IDLE_JUNCTION_CLEAR_M or w.s > e.length - IDLE_JUNCTION_CLEAR_M):
 		return false
 	var target: Array[Vector3] = _target(w)
@@ -231,15 +272,26 @@ func _spawn(w: Walker) -> bool:
 		w.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
 		PaintSwap.set_paint(w.node, w.paint)
 	_apply(w)
-	if w.anim != null:
-		var clip: String = "idle" if w.idle else "walk"
-		if w.anim.has_animation(clip):
-			var a: Animation = w.anim.get_animation(clip)
-			a.loop_mode = Animation.LOOP_LINEAR
-			w.anim.play(clip)
-			w.anim.seek(rng.randf() * a.length, true)
-		w.anim.speed_scale = 1.0 if w.idle else w.pace / float(_native_pace.get(w.id, 1.2))
+	_resume(w, 0.0)
+	if w.anim != null and w.anim.current_animation != "":
+		w.anim.seek(rng.randf() * w.anim.current_animation_length, true)
 	return true
+
+## Back to the walker's own loop: idle, walk or (joggers) run, with playback matched to the pace.
+func _resume(w: Walker, blend: float) -> void:
+	if w.anim == null:
+		return
+	var clip: String = "idle" if w.idle else ("run" if w.running and w.anim.has_animation("run") else "walk")
+	if not w.anim.has_animation(clip):
+		return
+	w.anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	w.anim.play(clip, blend)
+	if w.idle:
+		w.anim.speed_scale = 1.0
+	elif clip == "run":
+		w.anim.speed_scale = w.pace / float(_run_pace.get(w.id, 2.2))
+	else:
+		w.anim.speed_scale = w.pace / float(_native_pace.get(w.id, 1.2))
 
 ## True when `p` is clear of every carriageway (closest road centre-line further than half its width).
 func _on_pavement(p: Vector3) -> bool:
@@ -251,6 +303,7 @@ func _on_pavement(p: Vector3) -> bool:
 
 func _deactivate(w: Walker) -> void:
 	w.active = false
+	w.react = ""
 	w.node.visible = false
 	if w.anim != null:
 		w.anim.active = false
@@ -278,7 +331,14 @@ func _clear(p: Vector3, out: Vector3) -> bool:
 	return SignalBus.walkable(p.x, p.z) and SignalBus.walkable(q.x, q.z)
 
 func _step(w: Walker, delta: float) -> void:
-	_check_startle(w, delta)
+	if w.react != "":
+		_step_react(w, delta)
+		return
+	if _has_reactions(w):
+		if w.recovery <= 0.0 and w.startle <= 0.0 and _check_threats(w):
+			return
+	else:
+		_check_startle(w, delta)
 	if w.recovery > 0.0:
 		w.recovery = maxf(0.0, w.recovery - delta)
 		var displaced: Vector3 = w.pos + w.dodge * delta
@@ -297,9 +357,8 @@ func _step(w: Walker, delta: float) -> void:
 		var step: Vector3 = w.pos + w.dodge * delta
 		if SignalBus.walkable(step.x, step.z):
 			w.pos = step
-		if w.startle <= 0.0 and w.anim != null and not w.idle:
-			w.anim.play("walk")
-			w.anim.speed_scale = w.pace / float(_native_pace.get(w.id, 1.2))
+		if w.startle <= 0.0 and not w.idle:
+			_resume(w, 0.2)
 		_apply(w)
 		return
 	var e: RoadGraph.Edge = graph.edges[w.edge]
@@ -370,6 +429,111 @@ func _check_startle(w: Walker, delta: float) -> void:
 		w.anim.play("idle", 0.15)
 		w.anim.speed_scale = 1.0
 	SignalBus.pedestrian_startled.emit(w.pos)
+
+## Every moving vehicle near the player: the player's auto plus pooled traffic (velocity from the
+## last frame's position — traffic speeds are along the lane, this also covers recoil and turns).
+func _gather_threats(delta: float) -> void:
+	_threats.clear()
+	if _player_vel.length() > 0.5:
+		_threats.append([_player, _player_vel])
+	if _traffic == null:
+		return
+	for v: TrafficVehicleAI in _traffic.active_vehicles():
+		var p: Vector3 = v.global_position
+		var id: int = v.get_instance_id()
+		var last: Variant = _prev_traffic.get(id)
+		_prev_traffic[id] = p
+		if p.distance_squared_to(_player) > THREAT_M * THREAT_M or last == null:
+			continue
+		var vel: Vector3 = (p - (last as Vector3)) / delta
+		if vel.length() > 1.0 and vel.length() < 40.0:
+			_threats.append([p, vel])
+
+func _has_reactions(w: Walker) -> bool:
+	return w.anim != null and w.anim.has_animation("dodge") and (_moves.get(w.id, {}) as Dictionary).has("dodge")
+
+## A vehicle whose path passes within NEAR_MISS_M in the next REACT_AHEAD_S: jump back, or
+## stumble and fall (always, if it's going to hit at speed).
+func _check_threats(w: Walker) -> bool:
+	if not w.anim.active:
+		return false
+	for t: Array in _threats:
+		var rel: Vector3 = w.pos - (t[0] as Vector3)
+		rel.y = 0.0
+		var d: float = rel.length()
+		if d > REACT_M:
+			continue
+		var v: Vector3 = t[1]
+		v.y = 0.0
+		var sp: float = v.length()
+		if sp < STARTLE_SPEED_MPS:
+			continue
+		var dir: Vector3 = v / sp
+		var ahead: float = rel.dot(dir)
+		if ahead < -0.3 or ahead / sp > REACT_AHEAD_S:
+			continue
+		var side: Vector3 = rel - dir * ahead
+		var lateral: float = side.length()
+		if lateral > NEAR_MISS_M:
+			continue
+		var away: Vector3 = side / lateral if lateral > 0.05 else Vector3(dir.z, 0.0, -dir.x)
+		var hit: bool = lateral < TrafficVehicleAI.PHYSICS.pedestrian_contact_m and sp > HIT_SPEED_MPS
+		var first: String = "stumble" if hit or rng.randf() < STUMBLE_SHARE else "dodge"
+		var second: String = "dodge" if first == "stumble" else "stumble"
+		if _start_react(w, first, away) or _start_react(w, second, away):
+			SignalBus.pedestrian_startled.emit(w.pos)
+			return true
+		return false
+	return false
+
+## Face the vehicle's path and play `clip`, which carries the body `away` from it. Refused when
+## the spot the clip ends on (or half-way there) is a wall, a shop or the water.
+func _start_react(w: Walker, clip: String, away: Vector3) -> bool:
+	var mv: Dictionary = _moves.get(w.id, {})
+	if not w.anim.has_animation(clip) or not mv.has(clip):
+		return false
+	var m: Vector3 = mv[clip]
+	var offset: Vector3 = Basis.looking_at(away, Vector3.UP) * Vector3(m.x, 0.0, m.y)
+	var land: Vector3 = w.pos + offset
+	var half: Vector3 = w.pos + offset * 0.5
+	if not SignalBus.walkable(land.x, land.z) or not SignalBus.walkable(half.x, half.z):
+		return false
+	w.heading = -away
+	w.react = clip
+	w.react_t = m.z
+	w.move = offset
+	w.startle = 0.0
+	w.anim.get_animation(clip).loop_mode = Animation.LOOP_NONE
+	w.anim.play(clip, 0.12)
+	w.anim.speed_scale = 1.0
+	_apply(w)
+	return true
+
+func _step_react(w: Walker, delta: float) -> void:
+	w.react_t -= delta
+	if w.react_t > 0.0:
+		_apply(w)
+		return
+	if w.react == "fallen":
+		# Up again (Mixamo has no matching get-up here: a slow blend back to the feet).
+		w.react = ""
+		_resume(w, GET_UP_BLEND_S)
+		_apply(w)
+		return
+	# The clip has carried the body `move` from the node: put the node there and continue from
+	# a pose that starts at the node again (no blend, or the body would slide back).
+	w.pos += w.move
+	w.move = Vector3.ZERO
+	if w.react == "stumble" and w.anim.has_animation("fallen"):
+		w.react = "fallen"
+		w.react_t = rng.randf_range(FALLEN_S.x, FALLEN_S.y)
+		w.anim.get_animation("fallen").loop_mode = Animation.LOOP_LINEAR
+		w.anim.play("fallen", 0.0)
+	else:
+		w.react = ""
+		_resume(w, 0.0)
+	w.anim.advance(0.0)
+	_apply(w)
 
 func _apply(w: Walker) -> void:
 	var fwd: Vector3 = Vector3(w.heading.x, 0.0, w.heading.z)

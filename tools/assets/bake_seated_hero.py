@@ -42,10 +42,16 @@ TRI_BUDGET = 7000
 # Each entry: bone -> (child bone that marks its tip, target direction). Applied parent-first.
 POSE = [
     ("Spine01", "Spine02", np.array([0.0, 1.0, 0.12])),        # slight forward lean
-    ("L_Thigh", "L_Calf", np.array([0.10, -0.12, 1.0])),       # thighs forward along the bench
-    ("R_Thigh", "R_Calf", np.array([-0.10, -0.12, 1.0])),
-    ("L_Calf", "L_Foot", np.array([0.02, -1.0, 0.18])),        # shins down to the floor board
-    ("R_Calf", "R_Foot", np.array([-0.02, -1.0, 0.18])),
+    # Legs (Nov 8 fix): the old pose (thighs sloping down, shins reaching forward) put the
+    # sandals 13 cm through the floor board and out of the front cowl by the front wheel. The
+    # driver's floor is high (hip-to-floor ~0.45 m), so knees rise a little and the shins tuck
+    # back, feet flat on the board — test: run_phase9_tests "driver's feet stay inside the auto".
+    ("L_Thigh", "L_Calf", np.array([0.10, 0.20, 1.0])),        # thighs forward, knees a bit up
+    ("R_Thigh", "R_Calf", np.array([-0.10, 0.20, 1.0])),
+    ("L_Calf", "L_Foot", np.array([0.03, -1.0, -0.5])),        # shins tucked back to the board
+    ("R_Calf", "R_Foot", np.array([-0.03, -1.0, -0.5])),
+    ("L_Foot", "L_ToeBase", np.array([0.05, -0.3, 1.0])),      # feet flat, toes forward
+    ("R_Foot", "R_ToeBase", np.array([-0.05, -0.3, 1.0])),
     ("L_Upperarm", "L_Forearm", np.array([0.25, -0.6, 0.75])),  # arms forward and down
     ("R_Upperarm", "R_Forearm", np.array([-0.25, -0.6, 0.75])),
     ("L_Forearm", "L_Hand", np.array([0.0, -0.05, 1.0])),      # forearms level to the grips
