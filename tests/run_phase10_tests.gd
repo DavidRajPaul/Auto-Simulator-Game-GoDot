@@ -28,6 +28,7 @@ func _run() -> void:
 	_test_touch_layout()
 	await _test_traffic_smooth(city)
 	await _test_signals_work(city)
+	await _test_road_works_barricades(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -258,6 +259,86 @@ func _test_signals_work(city: Node) -> void:
 	_check("Crossing on green is free", GameState.wallet_inr == wallet)
 	auto.linear_velocity = Vector3.ZERO
 	tm.signal_clock_override = -1.0
+
+## Nov 7: metro rail works at the Lighthouse with TAKE DIVERSION signs, and Chennai barricades.
+func _test_road_works_barricades(city: Node) -> void:
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var rw: RoadWorks = city.get_node("RoadWorks") as RoadWorks
+	var d: Dictionary = RoadWorks.load_data()
+	var closed: Array = d.get("closed_edges", [])
+	var all_closed: bool = not closed.is_empty()
+	for ei: Variant in closed:
+		all_closed = all_closed and g.edges[int(ei)].closed and g.lanes_in_dir(int(ei), 1) == 0 and g.lanes_in_dir(int(ei), -1) == 0
+	_check("Metro works close the Foreshore Estate slip off Kamarajar Salai", all_closed, str(closed))
+	_check("Works site, barrier rows and boards are built", rw.site_count == 1 and rw.row_count >= 2 and rw.board_count >= 4,
+		"%d site, %d rows, %d boards" % [rw.site_count, rw.row_count, rw.board_count])
+	var kinds: Dictionary = {}
+	for b: Dictionary in d.get("boards", []):
+		kinds[str(b["kind"])] = true
+	_check("ROAD CLOSED, TAKE DIVERSION and metro boards all present", kinds.has("closed") and kinds.has("diversion") and kinds.has("metro"))
+	# GPS: a trip across the closure goes round it.
+	var e_closed: RoadGraph.Edge = g.edges[int(closed[0])]
+	var near_closed: Vector3 = g.nodes[e_closed.a]
+	var from: Vector3 = near_closed + Vector3(0, 0, -150)
+	var to: Vector3 = Vector3(2290.0, 0.0, 1300.0) # Foreshore Estate, south of the slip
+	var route: Dictionary = g.find_route(from, to)
+	var uses_closed: bool = false
+	for step: Variant in route.get("steps", []):
+		uses_closed = uses_closed or g.edges[int((step as Array)[0])].closed
+	_check("GPS routes round the closed road", bool(route.get("ok", false)) and not uses_closed, "%.0f m" % float(route.get("length", 0.0)))
+	var mid: Vector3 = g.sample(int(closed[0]), e_closed.length * 0.5, 1)[0]
+	_check("Hails / drops never snap onto a closed road", not g.edges[int(g.closest_point(mid)["edge"])].closed)
+	# Barriers are solid: a ray along the closed road hits the row.
+	var row: Dictionary = (d["rows"] as Array)[0]
+	var rc: Vector3 = Vector3(float(row["c"][0]), 0.6, float(row["c"][1]))
+	var ry: float = float(row["yaw"])
+	var dir: Vector3 = Vector3(sin(ry), 0.0, cos(ry))
+	await get_tree().physics_frame
+	var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(rc - dir * 4.0, rc + dir * 4.0, 1)
+	var hit: Dictionary = (city as Node3D).get_world_3d().direct_space_state.intersect_ray(q)
+	_check("The closed road's barrier row blocks the auto", not hit.is_empty() and (hit["collider"] as Node).get_parent() == rw)
+	# No traffic on the closed road even right next to it.
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	auto.freeze = true
+	auto.global_position = near_closed + Vector3(0, 1.0, -30.0)
+	for i: int in 240:
+		await get_tree().physics_frame
+	var on_closed: int = 0
+	for v: TrafficVehicleAI in tm.pool:
+		if v.active and g.edges[v.edge].closed:
+			on_closed += 1
+	_check("No traffic drives into the closed road", on_closed == 0, "%d vehicles" % on_closed)
+	# Barricades: lots of them, on the kerb (never in a lane), solid.
+	var total: int = 0
+	var in_lane: int = 0
+	var types: Dictionary = {}
+	var sample: Array = []
+	var dir_access: DirAccess = DirAccess.open("res://data/world/dress")
+	for f: String in dir_access.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var dd: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
+		for b: Array in dd.get("barricades", []):
+			total += 1
+			types[int(b[3])] = true
+			if sample.size() < 12:
+				sample.append(b)
+			if total % 7 == 0:
+				var c: Dictionary = g.closest_point(Vector3(float(b[0]), 0.0, float(b[1])))
+				if int(c["edge"]) >= 0 and float(c["dist"]) < g.edges[int(c["edge"])].width * 0.5:
+					in_lane += 1
+	_check("Hundreds of Chennai barricades on junction corners and market streets", total > 1200 and types.size() == 3, "%d (%d kinds)" % [total, types.size()])
+	_check("No barricade stands in a lane", in_lane == 0, "%d in a lane" % in_lane)
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var holder: Node3D = world._buildings([], {"barricades": sample}, [])
+	var faces: int = 0
+	for ch: Node in holder.get_children():
+		if ch is CollisionShape3D:
+			faces = ((ch as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces().size()
+	_check("Barricades are solid", faces >= sample.size() * 24, "%d faces" % faces)
+	holder.free()
+	auto.freeze = false
 
 func _test_trees() -> void:
 	var counts: Dictionary = {}

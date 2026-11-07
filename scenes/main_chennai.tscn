@@ -35,6 +35,7 @@
 [ext_resource type="Script" path="res://scripts/world/QuestMarkers.gd" id="quest_markers"]
 [ext_resource type="Script" path="res://scripts/world/QuestPlaces.gd" id="quest_places"]
 [ext_resource type="Script" path="res://scripts/ui/QuestHUD.gd" id="quest_hud"]
+[ext_resource type="Script" path="res://scripts/world/RoadWorks.gd" id="road_works"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -125,6 +126,9 @@ script = ExtResource("19")
 
 [node name="TrafficPolice" type="Node3D" parent="."]
 script = ExtResource("20")
+
+[node name="RoadWorks" type="Node3D" parent="."]
+script = ExtResource("road_works")
 
 [node name="StreetSigns" type="Node3D" parent="."]
 script = ExtResource("18")

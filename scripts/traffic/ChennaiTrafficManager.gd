@@ -97,6 +97,8 @@ func _ready() -> void:
 	_ticket_rng.randomize()
 	_player = get_node_or_null(player_path) as Node3D
 	graph = RoadGraph.from_json_file(graph_path) if graph_path != "" else _build_greybox_graph()
+	if graph_path != "":
+		RoadWorks.apply_closures(graph) # before anything spawns, routes or picks a kerb
 	_load_market_zones()
 	if ResourceLoader.exists(HONK_FILE):
 		_honk = AudioStreamPlayer3D.new()

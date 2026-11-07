@@ -471,13 +471,20 @@ func _draw_areas(view: Rect2) -> void:
 			else:
 				draw_colored_polygon(pts, cols[kind])
 
+const CLOSED_ROAD: Color = Color(0.92, 0.22, 0.16)
+
 func _draw_roads(view: Rect2) -> void:
 	var minor: PackedVector2Array = PackedVector2Array()
 	var major: Dictionary = {}
+	var closed: PackedVector2Array = PackedVector2Array()
 	for e: RoadGraph.Edge in graph.edges:
 		var a0: Vector3 = e.points[0]
 		if not view.has_point(Vector2(a0.x, a0.z)) and not view.has_point(Vector2(e.points[e.points.size() - 1].x, e.points[e.points.size() - 1].z)):
 			continue
+		if e.closed:
+			for i: int in range(1, e.points.size()):
+				closed.append(to_screen(Vector2(e.points[i - 1].x, e.points[i - 1].z)))
+				closed.append(to_screen(Vector2(e.points[i].x, e.points[i].z)))
 		var target: PackedVector2Array = minor
 		if ROAD_STYLE.has(e.road_class):
 			if not major.has(e.road_class):
@@ -498,6 +505,9 @@ func _draw_roads(view: Rect2) -> void:
 		if major.has(cls):
 			var st: Array = ROAD_STYLE[cls]
 			draw_multiline(major[cls], st[0], maxf(float(st[2]), 12.0 * scale_px * float(st[1])))
+	# Roads closed for works (RoadWorks): red on top, so the GPS detour makes sense.
+	if not closed.is_empty():
+		draw_multiline(closed, CLOSED_ROAD, maxf(3.0, 9.0 * scale_px))
 
 func _draw_route() -> void:
 	if _route.size() < 2:

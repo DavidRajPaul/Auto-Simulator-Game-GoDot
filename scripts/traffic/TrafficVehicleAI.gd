@@ -662,7 +662,10 @@ func tick(delta: float) -> void:
 		_apply_turn_transform()
 		return
 	var target_lat: float = _kerb_lateral() if at_stop and stop_gap < 40.0 else manager.graph.sub_lane_offset(edge, dir, sub_lane)
-	lateral = move_toward(lateral, target_lat, LATERAL_SPEED_MPS * 2.0 * delta)
+	# Sideways drift scales with forward speed: a bike creeping up to a red light edges over,
+	# it doesn't slide 5 m/s sideways on the spot.
+	var lat_rate: float = LATERAL_SPEED_MPS * 2.0 * clampf(0.35 + current_speed_mps / 4.0, 0.35, 1.0)
+	lateral = move_toward(lateral, target_lat, lat_rate * delta)
 	_apply_transform()
 
 func _setup_emergency() -> void:
