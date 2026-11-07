@@ -22,6 +22,9 @@ class Edge:
 	var road_class: String
 	var road_name: String
 	var road_name_ta: String = ""
+	## Closed for works (scripts/world/RoadWorks.gd): no traffic, no GPS route, no hails/drops.
+	## Still drawn — the road is there, just barricaded.
+	var closed: bool = false
 
 var nodes: PackedVector3Array = PackedVector3Array()
 var edges: Array[Edge] = []
@@ -83,6 +86,8 @@ func add_edge(a: int, b: int, pts: PackedVector3Array, width: float, lanes_fwd: 
 
 func lanes_in_dir(edge_idx: int, dir: int) -> int:
 	var e: Edge = edges[edge_idx]
+	if e.closed:
+		return 0
 	return e.lanes_fwd if dir > 0 else e.lanes_back
 
 func sub_lane_count(edge_idx: int, dir: int) -> int:
@@ -167,6 +172,8 @@ func closest_point(pos: Vector3) -> Dictionary:
 					var ei: int = code >> 12
 					var i: int = code & 4095
 					var e: Edge = edges[ei]
+					if e.closed:
+						continue
 					var q: Vector3 = Geometry3D.get_closest_point_to_segment(pos, e.points[i - 1], e.points[i])
 					var d: float = Vector2(q.x - pos.x, q.z - pos.z).length()
 					if d < float(best["dist"]):
@@ -198,6 +205,8 @@ func _closest_point_scan(pos: Vector3) -> Dictionary:
 	var best: Dictionary = {"edge": -1, "s": 0.0, "dist": INF}
 	for ei: int in edges.size():
 		var e: Edge = edges[ei]
+		if e.closed:
+			continue
 		for i: int in range(1, e.points.size()):
 			var q: Vector3 = Geometry3D.get_closest_point_to_segment(pos, e.points[i - 1], e.points[i])
 			var d: float = Vector2(q.x - pos.x, q.z - pos.z).length()
@@ -259,6 +268,8 @@ func _out_moves(node: int) -> Array[Array]:
 	var out: Array[Array] = []
 	for ei: int in node_edges[node]:
 		var e: Edge = edges[ei]
+		if e.closed:
+			continue
 		if e.a == node and e.lanes_fwd > 0:
 			out.append([ei, 1, e.b])
 		if e.b == node and e.lanes_back > 0:

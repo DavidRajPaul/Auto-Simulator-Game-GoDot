@@ -46,6 +46,9 @@ const MEDIAN_EARTH: Color = Color(0.36, 0.42, 0.22)
 const MEDIAN_CONCRETE: Color = Color(0.62, 0.61, 0.58)
 const MEDIAN_RAIL: Color = Color(0.09, 0.47, 0.36)
 const MEDIAN_RED: Color = Color(0.85, 0.09, 0.07)
+const BARRICADE_GROUND_Y: float = 0.08 # on the footpath
+const BARRICADE_YELLOW: Color = Color(0.97, 0.78, 0.08)
+const BARRICADE_BLUE: Color = Color(0.1, 0.28, 0.62)
 const FLOOR_M: float = 3.2
 const BAY_M: float = 3.4
 const ROOF_TILE_M: float = 6.0
@@ -595,6 +598,7 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 			for p: Vector2 in [q0, q1, q2]:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	_medians(m, faces, dress.get("medians", []))
+	_barricades(m, faces, dress.get("barricades", []))
 	if dressing_enabled:
 		_street_dressing(m, dress)
 	# Trees are not part of the chunk mesh: StreetTrees draws the owner's models for every
@@ -1033,6 +1037,41 @@ func _medians(m: MeshBuf, faces: PackedVector3Array, medians: Array) -> void:
 				_dbox(m, Vector3(a.x, kerb_h + 0.39, a.y), Vector3(0.09, 0.78, 0.09), along, MEDIAN_RED)
 				_dbox(m, Vector3(a.x, kerb_h + 0.58, a.y), Vector3(0.1, 0.12, 0.1), along, MEDIAN_WHITE)
 			_wall_faces(faces, a - along * 0.05, b + along * 0.05, 0.0, MEDIAN_COLLIDE_H if railing else MEDIAN_COLLIDE_H - 0.3, w)
+
+## Roadside barricades on the kerb (tools/osm/build_barricades.py): [x, z, yaw, type] with
+## 0 = traffic-police steel (yellow/black), 1 = water-filled plastic (red/white), 2 = Corporation
+## steel (blue/white). Merged into the chunk mesh and collider like the medians.
+func _barricades(m: MeshBuf, faces: PackedVector3Array, items: Array) -> void:
+	var i: int = 0
+	for it: Array in items:
+		i += 1
+		var c: Vector2 = Vector2(float(it[0]), float(it[1]))
+		var yaw: float = float(it[2])
+		var along: Vector2 = Vector2(sin(yaw), cos(yaw))
+		var across: Vector2 = Vector2(along.y, -along.x)
+		var kind: int = int(it[3])
+		var g: float = BARRICADE_GROUND_Y
+		if kind == 1:
+			var col: Color = MEDIAN_RED if i % 2 == 0 else MEDIAN_WHITE
+			_dbox(m, Vector3(c.x, g + 0.3, c.y), Vector3(1.9, 0.6, 0.55), along, col)
+			_dbox(m, Vector3(c.x, g + 0.71, c.y), Vector3(1.7, 0.22, 0.3), along, col)
+			_wall_faces(faces, c - along * 0.95, c + along * 0.95, 0.0, 0.85, 0.5)
+			continue
+		var stripe_a: Color = BARRICADE_YELLOW if kind == 0 else MEDIAN_WHITE
+		var stripe_b: Color = MEDIAN_BLACK if kind == 0 else BARRICADE_BLUE
+		for sgn: float in [-1.0, 1.0]:
+			var end: Vector2 = c + along * (0.95 * sgn)
+			_dbox(m, Vector3(end.x, g + 0.03, end.y), Vector3(0.08, 0.06, 0.75), along, MEDIAN_BLACK) # foot
+			_dbox(m, Vector3(end.x, g + 0.55, end.y), Vector3(0.05, 1.05, 0.05), along, stripe_b) # upright
+		for rail_y: float in [0.24, 1.06]:
+			_dbox(m, Vector3(c.x, g + rail_y, c.y), Vector3(1.95, 0.06, 0.05), along, stripe_a)
+		for k: int in 5:
+			var p: Vector2 = c + along * (-0.76 + 0.38 * float(k))
+			_dbox(m, Vector3(p.x, g + 0.65, p.y), Vector3(0.36, 0.74, 0.025), along, stripe_a if k % 2 == 0 else stripe_b)
+		# Name plate in the middle (blue "Traffic Police" / white Corporation plate).
+		var plate: Vector2 = c + across * 0.02
+		_dbox(m, Vector3(plate.x, g + 0.82, plate.y), Vector3(0.8, 0.22, 0.04), along, BARRICADE_BLUE if kind == 0 else MEDIAN_WHITE.darkened(0.05))
+		_wall_faces(faces, c - along * 1.0, c + along * 1.0, 0.0, 1.1, 0.12)
 
 ## Box centred at `c` (size x along `along`, z across), five faces (no bottom).
 func _dbox(m: MeshBuf, c: Vector3, size: Vector3, along: Vector2, col: Color) -> void:
