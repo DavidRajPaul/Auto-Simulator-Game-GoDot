@@ -225,6 +225,7 @@ func _process(delta: float) -> void:
 	_attach_finished()
 	_update_wetness(delta)
 	_bld_mat.set_shader_parameter("night", 1.0 - smoothstep(-0.05, 0.2, Atmosphere.sun_height(GameState.shift_minute)))
+	_bld_mat.set_shader_parameter("clock_hour", clock_hour(GameState.shift_minute))
 	_update_skyline()
 	if trees != null:
 		var cam: Camera3D = get_viewport().get_camera_3d()
@@ -842,8 +843,11 @@ func _stall(m: MeshBuf, s: Array) -> void:
 		var q: Vector3 = nn[i]
 		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], PLAIN_UV, PLAIN_CELL)
 
-## Push-cart shop (tools/osm/build_beach_carts.py): [x, z, yaw, variant, name, ground y].
-## Merged into the chunk mesh; a solid box so the auto bumps it. Names: CartSigns.
+## Push-cart shop (tools/osm/build_beach_carts.py): [x, z, yaw, variant, name, ground y,
+## open hour, close hour]. Merged into the chunk mesh; a solid box so the auto bumps it. The
+## open-only / closed-only parts carry the gate and hours in their UV (PLAIN_UV + whole numbers,
+## so the facade lookup is unchanged) and building_facade.gdshader hides the part that doesn't
+## match `clock_hour`. Names: CartSigns.
 func _cart(m: MeshBuf, faces: PackedVector3Array, s: Array) -> void:
 	var kind: int = int(s[3])
 	if kind < 0 or kind >= _cart_kit.size():
@@ -851,19 +855,27 @@ func _cart(m: MeshBuf, faces: PackedVector3Array, s: Array) -> void:
 	var at: Vector3 = Vector3(float(s[0]), 0.0, float(s[1]))
 	var yaw: float = float(s[2])
 	var ground: float = float(s[5]) if s.size() > 5 else 0.08
+	var open_h: int = int(s[6]) if s.size() > 7 else 0
+	var close_h: int = int(s[7]) if s.size() > 7 else 24
 	var c: float = cos(yaw)
 	var n: float = sin(yaw)
 	var kit: Dictionary = _cart_kit[kind]
 	var v: PackedVector3Array = kit["v"]
 	var nn: PackedVector3Array = kit["n"]
 	var col: PackedColorArray = kit["c"]
+	var gates: PackedByteArray = kit["g"]
+	var uvs: Array[Vector2] = [PLAIN_UV, PLAIN_UV + Vector2(100.0 + float(open_h), float(close_h)), PLAIN_UV + Vector2(200.0 + float(open_h), float(close_h))]
 	for i: int in v.size():
 		var p: Vector3 = v[i]
 		var q: Vector3 = nn[i]
-		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], PLAIN_UV, PLAIN_CELL)
+		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], uvs[gates[i]], PLAIN_CELL)
 	var across: Vector2 = Vector2(c, -n) # the cart's local +X (its width)
 	var centre: Vector2 = Vector2(at.x, at.z)
 	_wall_faces(faces, centre - across * 0.95, centre + across * 0.95, 0.0, 2.2, 1.05)
+
+## Shift clock hour (0–24) for the facade shader's open / closed shop parts.
+static func clock_hour(minute: float) -> float:
+	return fposmod(minute, 1440.0) / 60.0
 
 func _load_transformer_tank() -> void:
 	if not ResourceLoader.exists(XFMR_TANK):

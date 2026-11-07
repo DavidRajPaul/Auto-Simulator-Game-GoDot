@@ -341,31 +341,84 @@ func _test_road_works_barricades(city: Node) -> void:
 	holder.free()
 	auto.freeze = false
 
-## Nov 7: Marina push-cart shops from the owner's beach photos, and carts by market stalls.
+## Nov 7: Marina push-cart shops, kerb rows of 5–6 (atho, fried rice, pani puri, ice cream, fish
+## fry …) that open and close with the clock, and mansions / PGs / hotels / restaurants.
 func _test_carts(city: Node) -> void:
 	var carts: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/carts.json")) as Array
+	var shops: Dictionary = BeachCartKit.shops()
+	var names: Array = shops["names"]
 	var beach: int = 0
 	var builds: Dictionary = {}
-	var names: Dictionary = {}
+	var types: Dictionary = {}
+	var shut: int = 0
 	for c: Array in carts:
-		beach += 1 if float(c[5]) < 0.0 else 0
+		beach += 1 if float(c[5]) < -0.05 and float(c[5]) > -0.1 else 0
 		builds[int(BeachCartKit.VARIANTS[int(c[3])][0])] = true
-		names[int(c[4])] = true
-	_check("Hundreds of push-cart shops on the beach and by market stalls", beach > 200 and carts.size() - beach > 150, "%d beach, %d market" % [beach, carts.size() - beach])
-	_check("All five cart builds and many shop names are used", builds.size() == 5 and names.size() >= 20, "%d builds, %d names" % [builds.size(), names.size()])
+		types[str((names[int(c[4])] as Array)[2])] = true
+		shut += 1 if int(c[6]) == int(c[7]) else 0
+	_check("Over a thousand push-cart shops (kerb rows, beach, by stalls)", carts.size() > 1200 and beach > 200, "%d carts, %d on the beach" % [carts.size(), beach])
+	_check("All eight cart builds are used", builds.size() == 8, "%d builds" % builds.size())
+	var asked: Array[String] = ["atho", "fried_rice", "pani_puri", "ice_cream", "fish_fry"]
+	var missing: Array[String] = []
+	for t: String in asked:
+		if not types.has(t):
+			missing.append(t)
+	_check("Atho, fried rice, pani puri, ice cream and fish fry carts are all there", missing.is_empty(), str(missing))
+	# Rows: 5+ carts sharing one kerb line within 14 m of each other.
+	var rows: int = 0
+	var seen: Dictionary = {}
+	for i: int in carts.size():
+		if seen.has(i):
+			continue
+		var c: Array = carts[i]
+		var group: Array[int] = []
+		for j: int in range(maxi(0, i - 8), mini(carts.size(), i + 8)):
+			var o: Array = carts[j]
+			if absf(float(o[2]) - float(c[2])) < 0.01 and Vector2(float(o[0]) - float(c[0]), float(o[1]) - float(c[1])).length() < 14.0:
+				group.append(j)
+		if group.size() >= 5:
+			rows += 1
+			for j: int in group:
+				seen[j] = true
+	_check("Shops stand in rows of 5–6 on the kerbs", rows >= 120, "%d rows" % rows)
+	_check("Some shops are shut all day", shut > 50 and shut < carts.size() / 4, "%d shut" % shut)
+	# Open / closed by the clock.
+	var fr: Array = (shops["types"] as Dictionary)["fried_rice"]
+	_check("A fried-rice cart is shut at 10 am and open at 8 pm",
+		not BeachCartKit.is_open(float(fr[0]), float(fr[1]), 10.0) and BeachCartKit.is_open(float(fr[0]), float(fr[1]), 20.0))
+	_check("Hours past midnight wrap (kothu parotta till 1 am)", BeachCartKit.is_open(19.0, 25.0, 0.5) and not BeachCartKit.is_open(19.0, 25.0, 2.0))
 	var kit: Array[Dictionary] = BeachCartKit.arrays()
+	var gated: bool = true
 	var worst: int = 0
-	for v: Dictionary in kit:
-		worst = maxi(worst, (v["v"] as PackedVector3Array).size() / 3)
-	_check("Every cart variant stays low-poly", kit.size() == BeachCartKit.VARIANTS.size() and worst < 900, "max %d triangles" % worst)
+	for vi: int in kit.size():
+		var g: PackedByteArray = kit[vi]["g"]
+		worst = maxi(worst, (kit[vi]["v"] as PackedVector3Array).size() / 3)
+		if int(BeachCartKit.VARIANTS[vi][0]) != BeachCartKit.Build.COVERED:
+			gated = gated and g.has(1) and g.has(2) and g.has(0)
+	_check("Every working cart has an open look and a closed look", gated)
+	_check("Every cart variant stays low-poly", kit.size() == BeachCartKit.VARIANTS.size() and worst < 1100, "max %d triangles" % worst)
 	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
-	var holder: Node3D = world._buildings([], {"carts": carts.slice(0, 6)}, [])
+	var sample: Array = []
+	for c: Array in carts:
+		if int(c[6]) != int(c[7]) and int(BeachCartKit.VARIANTS[int(c[3])][0]) == BeachCartKit.Build.FAST_FOOD:
+			sample = c
+			break
+	var holder: Node3D = world._buildings([], {"carts": [sample]}, [])
+	var uv_ok: bool = false
 	var faces: int = 0
 	for ch: Node in holder.get_children():
+		if ch is MeshInstance3D:
+			var uvs: PackedVector2Array = (ch as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+			for uv: Vector2 in uvs:
+				if uv.x > 150.0 and absf(fposmod(uv.x, 1.0) - WorldChunkStreamer.PLAIN_UV.x) < 0.01 and int(uv.x) - 200 == int(sample[6]) and int(uv.y) == int(sample[7]):
+					uv_ok = true
+					break
 		if ch is CollisionShape3D:
 			faces = ((ch as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces().size()
-	_check("Carts are solid", faces >= 6 * 36, "%d faces" % faces)
+	_check("Cart parts carry their hours to the facade shader", uv_ok)
+	_check("Carts are solid", faces >= 36, "%d faces" % faces)
 	holder.free()
+	_check("The facade shader gates shop parts by the clock", (load("res://shaders/building_facade.gdshader") as Shader).code.contains("clock_hour"))
 	var signs: CartSigns = city.get_node("CartSigns") as CartSigns
 	var first_board: Array = []
 	for c: Array in carts:
@@ -375,8 +428,21 @@ func _test_carts(city: Node) -> void:
 	signs.refresh(Vector3(float(first_board[0]), 0.0, float(first_board[1])) + Vector3(3, 0, 3))
 	var named: bool = false
 	for l: Label3D in signs._pool:
-		named = named or (l.visible and l.text == str(BeachCartKit.NAMES[int(first_board[4])][0]))
+		named = named or (l.visible and l.text == BeachCartKit.shop_name(int(first_board[4])))
 	_check("A nearby cart shows its shop name", signs.shown_count() > 0 and named)
+	# Mansions, PGs, hotels and restaurants with name boards.
+	var spots: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/building_names.json")) as Array
+	var lodge_kinds: Dictionary = {}
+	var lodges: int = 0
+	for sp: Array in spots:
+		if sp.size() > 9 and str(sp[9]) == "lodge":
+			lodges += 1
+			var en: String = str(sp[6])
+			for word: String in ["Mansion", "PG", "Hostel", "Hotel", "Mess", "Restaurant", "Biryani", "Kitchen", "Centre", "Club"]:
+				if en.contains(word):
+					lodge_kinds[word] = true
+	_check("Mansions, PGs, hotels and restaurants carry name boards", lodges >= 150 and lodge_kinds.has("Mansion") and lodge_kinds.has("PG") and lodge_kinds.has("Hotel") and lodge_kinds.has("Mess"),
+		"%d boards" % lodges)
 
 func _test_trees() -> void:
 	var counts: Dictionary = {}

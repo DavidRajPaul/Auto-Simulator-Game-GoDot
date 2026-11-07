@@ -9,6 +9,10 @@ uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D glow : source_color, filter_linear_mipmap, repeat_disable;
 uniform float night : hint_range(0.0, 1.0) = 0.0;
 uniform vec2 cells = vec2(8.0, 4.0);
+// Shift clock 0–24 (WorldChunkStreamer). Push-cart shops carry open-only / closed-only parts:
+// UV.x = 0.3 + 100 * gate + open hour, UV.y = 0.5 + close hour (gate 1 = open part, 2 = closed
+// part; close may pass 24; open == close = shut all day). The wrong part collapses to a point.
+uniform float clock_hour = 12.0;
 
 varying vec2 cell;
 varying vec3 paint;
@@ -18,6 +22,15 @@ vec3 srgb_to_linear(vec3 c) {
 }
 
 void vertex() {
+	if (UV.x > 50.0) {
+		float gate = floor(UV.x / 100.0);
+		float open_h = floor(UV.x) - gate * 100.0;
+		float close_h = floor(UV.y);
+		bool is_open = (clock_hour >= open_h && clock_hour < close_h) || (clock_hour + 24.0 >= open_h && clock_hour + 24.0 < close_h);
+		if (is_open != (gate < 1.5)) {
+			VERTEX = vec3(0.0);
+		}
+	}
 	cell = UV2;
 	// Soften the palette a touch: sun-bleached Chennai paint, not fresh poster colours.
 	paint = mix(srgb_to_linear(COLOR.rgb), vec3(0.75), 0.18);

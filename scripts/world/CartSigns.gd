@@ -87,8 +87,7 @@ func _place(l: Label3D, c: Array) -> void:
 	var label: Array = _labels[int(c[3])]["label"]
 	var local: Vector3 = label[0]
 	var max_w: float = float(label[1])
-	var name_row: Array = BeachCartKit.NAMES[int(c[4]) % BeachCartKit.NAMES.size()]
-	l.text = str(name_row[0])
+	l.text = BeachCartKit.shop_name(int(c[4]))
 	l.modulate = label[2]
 	var font: Font = ThemeDB.fallback_font
 	var px: float = font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_CENTER, -1, l.font_size).x
