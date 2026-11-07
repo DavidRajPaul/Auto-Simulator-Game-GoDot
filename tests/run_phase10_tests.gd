@@ -27,6 +27,7 @@ func _run() -> void:
 	_test_building_boards(city)
 	_test_touch_layout()
 	await _test_traffic_smooth(city)
+	await _test_signals_work(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -126,6 +127,131 @@ func _test_signals_falls_medians(city: Node) -> void:
 			shape = ch as CollisionShape3D
 	_check("Medians are solid (in the chunk collider)", shape != null and (shape.shape as ConcavePolygonShape3D).get_faces().size() > 100)
 	holder.free()
+
+## Nov 7: "did you check the traffic signals work?" — they didn't: every road at a junction got
+## green at the same time, and the red-light check could never fire.
+func _test_signals_work(city: Node) -> void:
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	# 1. Conflicting roads never share a green, every junction has two phases, all lights cycle.
+	var both_phases: int = 0
+	var clash: int = 0
+	var cycles: int = 0
+	for node_id: int in tm._signal_nodes:
+		var groups: Dictionary = tm._signal_group[node_id]
+		var has: Array[bool] = [false, false]
+		for ei: Variant in groups:
+			has[int(groups[ei])] = true
+		both_phases += 1 if has[0] and has[1] else 0
+		var seen: Dictionary = {}
+		for step: int in 64:
+			tm.signal_clock_override = float(step) * ChennaiTrafficManager.SIGNAL_CYCLE_S / 64.0
+			var green_groups: Dictionary = {}
+			for ei: Variant in groups:
+				var l: int = tm.approach_light(node_id, int(ei))
+				seen[l] = true
+				if l != ChennaiTrafficManager.Light.RED:
+					green_groups[int(groups[ei])] = true
+			clash += 1 if green_groups.size() > 1 else 0
+		cycles += 1 if seen.size() == 3 else 0
+	var n: int = tm._signal_nodes.size()
+	_check("Every signal junction has a main-road and a cross-road phase", both_phases == n, "%d / %d" % [both_phases, n])
+	_check("Cross roads never get green / amber together", clash == 0, "%d clashes" % clash)
+	_check("Every signal cycles green → amber → red", cycles == n, "%d / %d" % [cycles, n])
+	# Pick a junction with a long two-way approach for the live checks.
+	var node_id: int = -1
+	var approach: int = -1
+	for nid: int in tm._signal_nodes:
+		for ei: int in g.node_edges[nid]:
+			var e: RoadGraph.Edge = g.edges[ei]
+			var dir_in: int = 1 if e.b == nid else -1
+			if e.length > 90.0 and (e.lanes_fwd if dir_in > 0 else e.lanes_back) > 0:
+				node_id = nid
+				approach = ei
+				break
+		if node_id >= 0:
+			break
+	if node_id < 0:
+		_check("Found a signal approach to test", false)
+		return
+	var edge: RoadGraph.Edge = g.edges[approach]
+	var dir: int = 1 if edge.b == node_id else -1
+	var group: int = int((tm._signal_group[node_id] as Dictionary)[approach])
+	var half: float = ChennaiTrafficManager.SIGNAL_CYCLE_S * 0.5
+	# Clock values (before the node's own offset) that put this approach at red / green.
+	var offset: float = float(node_id * 7)
+	var red_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + ChennaiTrafficManager.SIGNAL_AMBER_S + 0.5 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	var green_clock: float = fposmod(float(group) * half + 1.0 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	tm.signal_clock_override = red_clock
+	_check("Clock helper: approach is red", tm.approach_light(node_id, approach) == ChennaiTrafficManager.Light.RED)
+	# 2. Traffic queues at the stop line on red and goes on green.
+	auto.freeze = true
+	auto.global_position = g.nodes[node_id] + Vector3(0, 1.0, 0) + (g.edges[approach].points[0] - g.nodes[node_id]).normalized() * 0.0 + Vector3(18, 0, 18)
+	for o: TrafficVehicleAI in tm.pool:
+		if o.active:
+			o.deactivate()
+	var v: TrafficVehicleAI = tm.pool[0]
+	tm.place_vehicle(v, approach, edge.length - 70.0 if dir > 0 else 70.0, dir, 0)
+	v.current_speed_mps = v.cruise_speed_mps
+	for i: int in 600:
+		await get_tree().physics_frame
+	var left_to_node: float = g.edges[v.edge].length - v.t if v.edge == approach else -1.0
+	_check("On red, traffic stops before the stop line (not in the junction)",
+		v.active and v.edge == approach and v.current_speed_mps < 0.5 and left_to_node - v.half_length() >= tm.signal_stop_back(node_id) - 0.05 and left_to_node - v.half_length() < tm.signal_stop_back(node_id) + 4.5 and not v.turning,
+		"bumper %.1f m from the junction centre, stop line %.1f m, %.1f m/s" % [left_to_node - v.half_length(), tm.signal_stop_back(node_id), v.current_speed_mps])
+	tm.signal_clock_override = green_clock
+	for i: int in 600:
+		await get_tree().physics_frame
+	_check("On green, the queue drives through", v.edge != approach or v.turning, "edge %d (approach %d)" % [v.edge, approach])
+	# Amber: too close to stop comfortably → keep going; far away → stop.
+	tm.place_vehicle(v, approach, edge.length - 20.0 if dir > 0 else 20.0, dir, 0)
+	v.current_speed_mps = 12.0
+	var amber_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + 0.2 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	tm.signal_clock_override = amber_clock
+	_check("Amber when too close to brake: drive on", tm.signal_stop_gap(v) == INF)
+	tm.place_vehicle(v, approach, edge.length - 80.0 if dir > 0 else 80.0, dir, 0)
+	_check("Amber with room to brake: stop", tm.signal_stop_gap(v) < INF)
+	v.deactivate()
+	# 3. Lamps: each post shows its own road's light.
+	tm.signal_clock_override = green_clock
+	auto.global_position = g.nodes[node_id] + Vector3(0, 1.0, 0)
+	tm._refresh_signal_lights()
+	var shown_ok: int = 0
+	var shown: int = 0
+	for i: int in tm._signal_posts.size():
+		var post: Node3D = tm._signal_posts[i]
+		if not post.visible or tm._signal_post_edge[i] < 0:
+			continue
+		shown += 1
+		var l: int = tm.approach_light(tm._signal_post_node[i], tm._signal_post_edge[i])
+		var want: ArrayMesh = tm._signal_lamp_meshes[2 if l == 0 else (1 if l == 1 else 0)]
+		shown_ok += 1 if (post.get_node("Lamps") as MeshInstance3D).mesh == want else 0
+	_check("Each signal post shows its own road's light", shown > 0 and shown_ok == shown, "%d / %d" % [shown_ok, shown])
+	# 4. Red-light fine: crossing the stop line on red at a watched junction costs ₹200; green is free.
+	tm._enforced_signal_nodes[node_id] = true
+	tm._last_player_ticket_s = -100.0
+	var outward: Vector3 = (edge.points[1] - edge.points[0]) if edge.a == node_id else (edge.points[edge.points.size() - 2] - edge.points[edge.points.size() - 1])
+	outward = (outward * Vector3(1, 0, 1)).normalized()
+	var r: float = tm.signal_stop_back(node_id)
+	var before: Vector3 = g.nodes[node_id] + outward * (r + 1.0)
+	var after: Vector3 = g.nodes[node_id] + outward * (r - 0.5)
+	GameState.add_inr(1000)
+	auto.freeze = false
+	auto.linear_velocity = -outward * 8.0
+	tm.signal_clock_override = red_clock
+	var wallet: int = GameState.wallet_inr
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Running a red at a watched junction = ₹200 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
+	tm._last_player_ticket_s = -100.0
+	tm.signal_clock_override = green_clock
+	wallet = GameState.wallet_inr
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Crossing on green is free", GameState.wallet_inr == wallet)
+	auto.linear_velocity = Vector3.ZERO
+	tm.signal_clock_override = -1.0
 
 func _test_trees() -> void:
 	var counts: Dictionary = {}

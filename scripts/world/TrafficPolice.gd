@@ -31,6 +31,8 @@ var _player: Vector3 = Vector3.ZERO
 var _posts: Array[Node3D] = []
 var _assigned: Dictionary = {} # junction node -> post
 var _headings: Dictionary = {} # post -> Array[float] approach yaws
+var _head_edges: Dictionary = {} # post -> Array[int] edge behind each yaw
+var _post_node: Dictionary = {} # post -> junction node
 var _phase: Dictionary = {} # post -> int
 var _timer: float = UPDATE_S
 var _turn_timer: float = 0.0
@@ -143,7 +145,16 @@ func _process(delta: float) -> void:
 		var heads: Array = _headings.get(post, [])
 		if heads.is_empty():
 			continue
-		if step:
+		var tm: ChennaiTrafficManager = get_parent().get_node_or_null("ChennaiTrafficManager") as ChennaiTrafficManager
+		var ni: int = int(_post_node.get(post, -1))
+		if tm != null and tm.is_signal_junction(ni):
+			# At a signal junction the constable waves on whichever road has the green.
+			var edges: Array = _head_edges.get(post, [])
+			for k: int in edges.size():
+				if tm.approach_light(ni, int(edges[k])) != ChennaiTrafficManager.Light.RED:
+					_phase[post] = k
+					break
+		elif step:
 			_phase[post] = (int(_phase.get(post, 0)) + 1) % heads.size()
 		var officer: Node3D = post.get_node_or_null("Officer") as Node3D
 		if officer != null:
@@ -198,13 +209,17 @@ func _place(post: Node3D, ni: int) -> void:
 	post.global_position = graph.nodes[ni]
 	# Face each approach in turn (looking back down the road at oncoming traffic).
 	var heads: Array = []
+	var head_edges: Array = []
 	for ei: int in graph.node_edges[ni]:
 		var e: RoadGraph.Edge = graph.edges[ei]
 		var other: Vector3 = e.points[1] if e.a == ni else e.points[e.points.size() - 2]
 		var d: Vector3 = other - graph.nodes[ni]
 		if d.length_squared() > 0.01:
 			heads.append(atan2(d.x, d.z))
+			head_edges.append(ei)
 	_headings[post] = heads
+	_head_edges[post] = head_edges
+	_post_node[post] = ni
 	_phase[post] = 0
 	var officer: Node3D = post.get_node_or_null("Officer") as Node3D
 	if officer != null and not heads.is_empty():

@@ -9,8 +9,9 @@ walks back up the approach (4–20 m from the junction) and out to the LEFT kerb
 coming in (India drives on the left), and keeps the first spot that is clear of every road,
 junction and flyover triangle and every building, preferring a footpath ("walk") triangle.
 
-Output: data/world/signal_posts.json = {"<node id>": [[x, z, yaw], …]} — yaw turns the lamp
-face (local +Z) towards the traffic waiting at that approach.
+Output: data/world/signal_posts.json = {"<node id>": [[x, z, yaw, edge id], …]} — yaw turns the
+lamp face (local +Z) towards the traffic waiting on that approach edge, and the lamps show that
+approach's own light (ChennaiTrafficManager.approach_light).
 Re-run after an OSM rebuild:  python3 tools/osm/build_signal_posts.py
 """
 from __future__ import annotations
@@ -110,7 +111,7 @@ def main() -> int:
                         continue
                     on_walk = walk.hit(px, pz, 0.0)
                     if best is None or (on_walk and not best[3]):
-                        best = (px, pz, math.atan2(dx, dz), on_walk)
+                        best = (px, pz, math.atan2(dx, dz), on_walk, ei)
                     if on_walk:
                         break
                 if best is not None and best[3]:
@@ -120,7 +121,7 @@ def main() -> int:
                 continue
             if any(math.dist(p[:2], best[:2]) < 6.0 for p in poses):
                 continue
-            poses.append([round(best[0], 2), round(best[1], 2), round(best[2], 3)])
+            poses.append([round(best[0], 2), round(best[1], 2), round(best[2], 3), best[4]])
         if poses:
             out[str(ni)] = poses
             posts_total += len(poses)
