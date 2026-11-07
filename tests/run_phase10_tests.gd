@@ -21,11 +21,13 @@ func _run() -> void:
 	for i: int in 60:
 		await get_tree().physics_frame
 	_test_signs(city)
+	await _test_signals_falls_medians(city)
 	_test_fx(city)
 	_test_police_service_gas(city)
 	_test_building_boards(city)
 	_test_touch_layout()
 	await _test_traffic_smooth(city)
+	await _test_signals_work(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -60,20 +62,224 @@ func _test_signs(city: Node) -> void:
 	var en: Label3D = ss._pool[0].get_node("English") as Label3D
 	_check("White lettering", en.modulate.is_equal_approx(Color.WHITE))
 
+## Nov 6 device report: a signal pole in the middle of the road, boards that never fell, and
+## bare gaps where Chennai has median kerbs and railings.
+func _test_signals_falls_medians(city: Node) -> void:
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var spots: int = 0
+	var in_road: int = 0
+	var facing_ok: int = 0
+	var junctions_with_posts: int = 0
+	for node_id: int in tm._signal_nodes:
+		var posts: Array[Transform3D] = tm.signal_post_spots(node_id)
+		junctions_with_posts += 1 if not posts.is_empty() else 0
+		for xf: Transform3D in posts:
+			spots += 1
+			var c: Dictionary = g.closest_point(xf.origin)
+			if int(c["edge"]) >= 0 and float(c["dist"]) < g.edges[int(c["edge"])].width * 0.5:
+				in_road += 1
+			# Lamps (local +Z) look away from the junction, at the queue waiting to cross.
+			var out: Vector3 = (xf.origin - g.nodes[node_id]) * Vector3(1, 0, 1)
+			facing_ok += 1 if (xf.basis * Vector3.BACK).dot(out.normalized()) > 0.0 else 0
+	_check("Signal posts measured on the kerb for nearly every signal junction",
+		junctions_with_posts >= int(tm._signal_nodes.size() * 0.95), "%d / %d" % [junctions_with_posts, tm._signal_nodes.size()])
+	_check("No signal post stands in a carriageway", spots > 300 and in_road == 0, "%d of %d in a lane" % [in_road, spots])
+	_check("Signal lamps face the approaching traffic", facing_ok >= int(spots * 0.95), "%d / %d" % [facing_ok, spots])
+	_check("Signal post = 2 draw calls (body + swapped lamp mesh)", tm._signal_posts[0].get_child_count() == 2)
+	# Boards: the auto lives on physics layer 2; the impact sensor must see it, and one real hit flattens the board.
+	var ss: StreetSigns = city.get_node("StreetSigns") as StreetSigns
+	var area: Area3D = ss._pool[0].get_node("ImpactArea") as Area3D
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	_check("Board impact sensor sees the player auto's physics layer", (area.collision_mask & auto.collision_layer) != 0)
+	var board: Node3D = null
+	for n: Node3D in ss._pool:
+		if n.visible:
+			board = n
+			break
+	if board != null:
+		ss.knock_down(board, board.global_basis * Vector3(0.0, 0.0, -8.0))
+		for i: int in 60:
+			await get_tree().physics_frame
+		_check("A hit board falls flat and stops blocking", absf(board.rotation.x) > 1.3 and board.get_node("Solid").process_mode == Node.PROCESS_MODE_DISABLED,
+			"tilt %.2f rad" % board.rotation.x)
+	# Medians: real data on the divided roads, drawn and solid.
+	var med_chunks: int = 0
+	var styles: Dictionary = {}
+	var sample: Array = []
+	var dir: DirAccess = DirAccess.open("res://data/world/dress")
+	for f: String in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
+		var meds: Array = d.get("medians", [])
+		if not meds.is_empty():
+			med_chunks += 1
+			sample = meds
+			for m: Array in meds:
+				styles[str(m[0])] = true
+	_check("Divided roads get centre medians (railing and delineator looks)", med_chunks > 40 and styles.has("A") and styles.has("B"), "%d chunks %s" % [med_chunks, styles.keys()])
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var holder: Node3D = world._buildings([], {"medians": sample}, [])
+	var shape: CollisionShape3D = null
+	for ch: Node in holder.get_children():
+		if ch is CollisionShape3D:
+			shape = ch as CollisionShape3D
+	_check("Medians are solid (in the chunk collider)", shape != null and (shape.shape as ConcavePolygonShape3D).get_faces().size() > 100)
+	holder.free()
+
+## Nov 7: "did you check the traffic signals work?" — they didn't: every road at a junction got
+## green at the same time, and the red-light check could never fire.
+func _test_signals_work(city: Node) -> void:
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	# 1. Conflicting roads never share a green, every junction has two phases, all lights cycle.
+	var both_phases: int = 0
+	var clash: int = 0
+	var cycles: int = 0
+	for node_id: int in tm._signal_nodes:
+		var groups: Dictionary = tm._signal_group[node_id]
+		var has: Array[bool] = [false, false]
+		for ei: Variant in groups:
+			has[int(groups[ei])] = true
+		both_phases += 1 if has[0] and has[1] else 0
+		var seen: Dictionary = {}
+		for step: int in 64:
+			tm.signal_clock_override = float(step) * ChennaiTrafficManager.SIGNAL_CYCLE_S / 64.0
+			var green_groups: Dictionary = {}
+			for ei: Variant in groups:
+				var l: int = tm.approach_light(node_id, int(ei))
+				seen[l] = true
+				if l != ChennaiTrafficManager.Light.RED:
+					green_groups[int(groups[ei])] = true
+			clash += 1 if green_groups.size() > 1 else 0
+		cycles += 1 if seen.size() == 3 else 0
+	var n: int = tm._signal_nodes.size()
+	_check("Every signal junction has a main-road and a cross-road phase", both_phases == n, "%d / %d" % [both_phases, n])
+	_check("Cross roads never get green / amber together", clash == 0, "%d clashes" % clash)
+	_check("Every signal cycles green → amber → red", cycles == n, "%d / %d" % [cycles, n])
+	# Pick a junction with a long two-way approach for the live checks.
+	var node_id: int = -1
+	var approach: int = -1
+	for nid: int in tm._signal_nodes:
+		for ei: int in g.node_edges[nid]:
+			var e: RoadGraph.Edge = g.edges[ei]
+			var dir_in: int = 1 if e.b == nid else -1
+			if e.length > 90.0 and (e.lanes_fwd if dir_in > 0 else e.lanes_back) > 0:
+				node_id = nid
+				approach = ei
+				break
+		if node_id >= 0:
+			break
+	if node_id < 0:
+		_check("Found a signal approach to test", false)
+		return
+	var edge: RoadGraph.Edge = g.edges[approach]
+	var dir: int = 1 if edge.b == node_id else -1
+	var group: int = int((tm._signal_group[node_id] as Dictionary)[approach])
+	var half: float = ChennaiTrafficManager.SIGNAL_CYCLE_S * 0.5
+	# Clock values (before the node's own offset) that put this approach at red / green.
+	var offset: float = float(node_id * 7)
+	var red_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + ChennaiTrafficManager.SIGNAL_AMBER_S + 0.5 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	var green_clock: float = fposmod(float(group) * half + 1.0 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	tm.signal_clock_override = red_clock
+	_check("Clock helper: approach is red", tm.approach_light(node_id, approach) == ChennaiTrafficManager.Light.RED)
+	# 2. Traffic queues at the stop line on red and goes on green.
+	auto.freeze = true
+	auto.global_position = g.nodes[node_id] + Vector3(0, 1.0, 0) + (g.edges[approach].points[0] - g.nodes[node_id]).normalized() * 0.0 + Vector3(18, 0, 18)
+	for o: TrafficVehicleAI in tm.pool:
+		if o.active:
+			o.deactivate()
+	var v: TrafficVehicleAI = tm.pool[0]
+	tm.place_vehicle(v, approach, edge.length - 70.0 if dir > 0 else 70.0, dir, 0)
+	v.current_speed_mps = v.cruise_speed_mps
+	# Up to 20 s of red: the car must come to rest and never roll past the stop line.
+	var closest: float = INF
+	for i: int in 1200:
+		await get_tree().physics_frame
+		if v.edge == approach and not v.turning:
+			closest = minf(closest, g.edges[approach].length - v.t - v.half_length())
+		if i > 300 and v.current_speed_mps < 0.2:
+			break
+	var left_to_node: float = g.edges[v.edge].length - v.t if v.edge == approach else -1.0
+	_check("On red, traffic stops before the stop line (not in the junction)",
+		v.active and v.edge == approach and v.current_speed_mps < 0.5 and closest >= tm.signal_stop_back(node_id) - 0.05 and left_to_node - v.half_length() < tm.signal_stop_back(node_id) + 4.5 and not v.turning,
+		"bumper %.1f m from the junction centre, stop line %.1f m, %.1f m/s" % [left_to_node - v.half_length(), tm.signal_stop_back(node_id), v.current_speed_mps])
+	tm.signal_clock_override = green_clock
+	for i: int in 600:
+		await get_tree().physics_frame
+	_check("On green, the queue drives through", v.edge != approach or v.turning, "edge %d (approach %d)" % [v.edge, approach])
+	# Amber: too close to stop comfortably → keep going; far away → stop.
+	tm.place_vehicle(v, approach, edge.length - 20.0 if dir > 0 else 20.0, dir, 0)
+	v.current_speed_mps = 12.0
+	var amber_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + 0.2 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	tm.signal_clock_override = amber_clock
+	_check("Amber when too close to brake: drive on", tm.signal_stop_gap(v) == INF)
+	tm.place_vehicle(v, approach, edge.length - 80.0 if dir > 0 else 80.0, dir, 0)
+	_check("Amber with room to brake: stop", tm.signal_stop_gap(v) < INF)
+	v.deactivate()
+	# 3. Lamps: each post shows its own road's light.
+	tm.signal_clock_override = green_clock
+	auto.global_position = g.nodes[node_id] + Vector3(0, 1.0, 0)
+	tm._refresh_signal_lights()
+	var shown_ok: int = 0
+	var shown: int = 0
+	for i: int in tm._signal_posts.size():
+		var post: Node3D = tm._signal_posts[i]
+		if not post.visible or tm._signal_post_edge[i] < 0:
+			continue
+		shown += 1
+		var l: int = tm.approach_light(tm._signal_post_node[i], tm._signal_post_edge[i])
+		var want: ArrayMesh = tm._signal_lamp_meshes[2 if l == 0 else (1 if l == 1 else 0)]
+		shown_ok += 1 if (post.get_node("Lamps") as MeshInstance3D).mesh == want else 0
+	_check("Each signal post shows its own road's light", shown > 0 and shown_ok == shown, "%d / %d" % [shown_ok, shown])
+	# 4. Red-light fine: crossing the stop line on red at a watched junction costs ₹200; green is free.
+	tm._enforced_signal_nodes[node_id] = true
+	tm._last_player_ticket_s = -100.0
+	var outward: Vector3 = (edge.points[1] - edge.points[0]) if edge.a == node_id else (edge.points[edge.points.size() - 2] - edge.points[edge.points.size() - 1])
+	outward = (outward * Vector3(1, 0, 1)).normalized()
+	var r: float = tm.signal_stop_back(node_id)
+	var before: Vector3 = g.nodes[node_id] + outward * (r + 1.0)
+	var after: Vector3 = g.nodes[node_id] + outward * (r - 0.5)
+	GameState.add_inr(1000)
+	auto.freeze = false
+	auto.linear_velocity = -outward * 8.0
+	tm.signal_clock_override = red_clock
+	var wallet: int = GameState.wallet_inr
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Running a red at a watched junction = ₹200 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
+	tm._last_player_ticket_s = -100.0
+	tm.signal_clock_override = green_clock
+	wallet = GameState.wallet_inr
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Crossing on green is free", GameState.wallet_inr == wallet)
+	auto.linear_velocity = Vector3.ZERO
+	tm.signal_clock_override = -1.0
+
 func _test_trees() -> void:
 	var counts: Dictionary = {}
+	var median_palms: int = 0
 	var dir: DirAccess = DirAccess.open("res://data/world/dress")
 	for f: String in dir.get_files():
 		if not f.ends_with(".json"):
 			continue
 		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
 		for t: Array in d.get("trees", []):
+			# Median palms (tools/osm/build_medians.py, seed ≥ 900000) are planted on purpose, like
+			# Chennai's divided roads; the rarity rule is about the roadside mix.
+			if t.size() > 4 and int(t[4]) >= 900000:
+				median_palms += 1
+				continue
 			counts[int(t[2])] = int(counts.get(int(t[2]), 0)) + 1
 	var total: int = 0
 	for k: int in counts:
 		total += int(counts[k])
 	var palms: float = float(counts.get(1, 0)) / maxf(float(total), 1.0)
 	_check("Coconut palms are rare (< 6 % of street trees)", palms < 0.06, "%.1f %%" % (palms * 100.0))
+	_check("Divided roads carry median palms", median_palms > 200, str(median_palms))
 	_check("Chennai street tree mix: neem, both Ashoka variants, pungai all present", int(counts.get(0, 0)) > 0 and int(counts.get(2, 0)) > 0 and int(counts.get(3, 0)) > 0 and int(counts.get(4, 0)) > 0, str(counts))
 
 func _test_fx(city: Node) -> void:

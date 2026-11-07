@@ -38,6 +38,14 @@ const SURF_STYLE: Dictionary = {
 	"centre": [Color(0.92, 0.82, 0.42), 0.07],
 }
 const UP_LAYER_Y: float = 0.012
+const MEDIAN_KERB_H: float = 0.24
+const MEDIAN_COLLIDE_H: float = 1.25
+const MEDIAN_BLACK: Color = Color(0.07, 0.07, 0.075)
+const MEDIAN_WHITE: Color = Color(0.93, 0.93, 0.9)
+const MEDIAN_EARTH: Color = Color(0.36, 0.42, 0.22)
+const MEDIAN_CONCRETE: Color = Color(0.62, 0.61, 0.58)
+const MEDIAN_RAIL: Color = Color(0.09, 0.47, 0.36)
+const MEDIAN_RED: Color = Color(0.85, 0.09, 0.07)
 const FLOOR_M: float = 3.2
 const BAY_M: float = 3.4
 const ROOF_TILE_M: float = 6.0
@@ -586,6 +594,7 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 				q2 = tmp
 			for p: Vector2 in [q0, q1, q2]:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
+	_medians(m, faces, dress.get("medians", []))
 	if dressing_enabled:
 		_street_dressing(m, dress)
 	# Trees are not part of the chunk mesh: StreetTrees draws the owner's models for every
@@ -983,6 +992,47 @@ func _awning(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, y_wall: float, y_o
 	_face(m, top, up, col)
 	_face(m, top, -up, col.darkened(0.35))
 	_face(m, [Vector3(ao.x, y_out - 0.28, ao.y), Vector3(co.x, y_out - 0.28, co.y), Vector3(co.x, y_out, co.y), Vector3(ao.x, y_out, ao.y)], n, col.darkened(0.1))
+
+## Centre medians between divided carriageways (tools/osm/build_medians.py), from the owner's
+## Chennai photos: "A" = black/white painted kerb, earth bed and a green steel railing (palms come
+## through StreetTrees); "B" = black/white striped concrete kerb with red/white delineator posts.
+## Each record is [style, x0, z0, w0, x1, z1, w1, …]. Merged into the chunk mesh (no draw calls)
+## and into the chunk collider, so the auto can't cut across the median.
+func _medians(m: MeshBuf, faces: PackedVector3Array, medians: Array) -> void:
+	for rec: Array in medians:
+		var railing: bool = str(rec[0]) == "A"
+		var kerb_h: float = MEDIAN_KERB_H if railing else MEDIAN_KERB_H + 0.08
+		for i: int in range(1, rec.size() - 3, 3):
+			var a: Vector2 = Vector2(float(rec[i]), float(rec[i + 1]))
+			var b: Vector2 = Vector2(float(rec[i + 3]), float(rec[i + 4]))
+			var seg: float = a.distance_to(b)
+			if seg < 0.05:
+				continue
+			var along: Vector2 = (b - a) / seg
+			var w: float = (float(rec[i + 2]) + float(rec[i + 5])) * 0.5
+			# Painted kerb: alternating black and white blocks, one per 2 m sample (cheap to build).
+			var c: Vector2 = (a + b) * 0.5
+			var paint: Color = MEDIAN_BLACK if floori(float(i) / 3.0) % 2 == 0 else MEDIAN_WHITE
+			_dbox(m, Vector3(c.x, kerb_h * 0.5, c.y), Vector3(seg + 0.02, kerb_h, w), along, paint)
+			# Bed on top (top face only).
+			var bed: Color = MEDIAN_EARTH if railing else MEDIAN_CONCRETE
+			var u3: Vector3 = Vector3(along.x, 0.0, along.y) * (seg * 0.5 + 0.01)
+			var w3: Vector3 = Vector3(-along.y, 0.0, along.x) * maxf(w * 0.5 - 0.15, 0.1)
+			var c3: Vector3 = Vector3(c.x, kerb_h + 0.01, c.y)
+			_face(m, [c3 - u3 - w3, c3 + u3 - w3, c3 + u3 + w3, c3 - u3 + w3], Vector3.UP, bed)
+			if railing:
+				# Green railing down the middle: a post per sample, two rails, two balusters.
+				_dbox(m, Vector3(a.x, kerb_h + 0.5, a.y), Vector3(0.07, 1.0, 0.07), along, MEDIAN_RAIL.darkened(0.2))
+				for rail_y: float in [0.38, 0.95]:
+					_dbox(m, Vector3(c.x, kerb_h + rail_y, c.y), Vector3(seg, 0.05, 0.05), along, MEDIAN_RAIL)
+				for f: float in [0.33, 0.67]:
+					var bp: Vector2 = a.lerp(b, f)
+					_dbox(m, Vector3(bp.x, kerb_h + 0.66, bp.y), Vector3(0.03, 0.56, 0.03), along, MEDIAN_RAIL)
+			else:
+				# Flexible delineator post: red with a white reflective band.
+				_dbox(m, Vector3(a.x, kerb_h + 0.39, a.y), Vector3(0.09, 0.78, 0.09), along, MEDIAN_RED)
+				_dbox(m, Vector3(a.x, kerb_h + 0.58, a.y), Vector3(0.1, 0.12, 0.1), along, MEDIAN_WHITE)
+			_wall_faces(faces, a - along * 0.05, b + along * 0.05, 0.0, MEDIAN_COLLIDE_H if railing else MEDIAN_COLLIDE_H - 0.3, w)
 
 ## Box centred at `c` (size x along `along`, z across), five faces (no bottom).
 func _dbox(m: MeshBuf, c: Vector3, size: Vector3, along: Vector2, col: Color) -> void:

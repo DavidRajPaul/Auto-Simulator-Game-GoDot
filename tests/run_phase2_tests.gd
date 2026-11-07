@@ -212,7 +212,9 @@ func _test_streaming(world: WorldChunkStreamer, auto: AutoRickshawController) ->
 	auto.linear_velocity = Vector3.ZERO
 	var target: Vector2i = world.chunk_of(auto.global_position)
 	var frames: int = 0
-	while frames < 600 and (not world.loaded.has(target) or not world._pending.is_empty()):
+	# Headless frames are unthrottled, so bound the wait by wall time too (slow 2-core CI runners).
+	var deadline: int = Time.get_ticks_msec() + 10000
+	while (frames < 600 or Time.get_ticks_msec() < deadline) and (not world.loaded.has(target) or not world._pending.is_empty()):
 		world.update_streaming(false)
 		await get_tree().process_frame
 		frames += 1

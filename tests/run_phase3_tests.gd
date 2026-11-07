@@ -236,6 +236,10 @@ func _test_comfort_and_near_miss(savari: SavariManager, auto: AutoRickshawContro
 func _test_near_miss_detector(traffic: ChennaiTrafficManager, auto: AutoRickshawController) -> void:
 	_events.erase("near_miss")
 	var v: TrafficVehicleAI = traffic.pool[0]
+	# Only the test vehicle: random traffic passing nearby made the 1.8 m case flaky on CI.
+	for other: TrafficVehicleAI in traffic.pool:
+		if other != v and other.active:
+			other.deactivate()
 	if not v.active:
 		traffic.place_vehicle(v, 0, traffic.graph.edges[0].length * 0.5, 1, 0)
 	v.current_speed_mps = 10.0

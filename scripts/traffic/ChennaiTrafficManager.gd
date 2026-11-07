@@ -64,7 +64,13 @@ var _signal_nodes: PackedInt32Array = PackedInt32Array()
 var _enforced_signal_nodes: Dictionary = {}
 var _ticket_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _signal_posts: Array[Node3D] = []
-var _signal_lamp_materials: Array[Array] = []
+var _signal_post_spots: Dictionary = {}
+var _signal_set: Dictionary = {} # node id -> true
+var _signal_group: Dictionary = {} # node id -> {edge id: 0 main road / 1 cross road}
+var _signal_stop_back: Dictionary = {} # node id -> stop line distance back from the node (m)
+var _signal_post_node: PackedInt32Array = PackedInt32Array()
+var _signal_post_edge: PackedInt32Array = PackedInt32Array()
+var _signal_lamp_meshes: Array[ArrayMesh] = []
 var _player_pose_seen: bool = false
 var _previous_player_pos: Vector3 = Vector3.ZERO
 var _last_player_ticket_s: float = -1000.0
@@ -73,10 +79,18 @@ const NEAR_MISS_CLEARANCE_M: float = 0.6
 const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
 const PLAYER_HALF_WIDTH_M: float = 0.65
 const SIGNAL_POOL_SIZE: int = 8
-const SIGNAL_CYCLE_S: float = 24.0
+## Two-phase junctions: the main road's approaches get green together, then the cross road's.
+## Per phase: green, amber, then a short all-red so the junction clears.
+const SIGNAL_GREEN_S: float = 12.0
+const SIGNAL_AMBER_S: float = 2.5
+const SIGNAL_ALL_RED_S: float = 1.5
+const SIGNAL_CYCLE_S: float = 2.0 * (SIGNAL_GREEN_S + SIGNAL_AMBER_S + SIGNAL_ALL_RED_S)
+const SIGNAL_BRAKE_MPS2: float = 3.5 # amber: stop only if this braking is enough
+enum Light { GREEN, AMBER, RED }
 const SIGNAL_ENFORCEMENT_FINE_INR: int = 200
 const SIGNAL_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
 const SIGNAL_MIN_WIDTH_M: float = 6.0
+const SIGNAL_POSTS_FILE: String = "res://data/world/signal_posts.json"
 
 func _ready() -> void:
 	rng.seed = 600028
@@ -127,6 +141,9 @@ func _ready() -> void:
 			_signal_nodes.append(node_id)
 			if _ticket_rng.randf() < 0.25:
 				_enforced_signal_nodes[node_id] = true
+	for node_id: int in _signal_nodes:
+		_setup_signal_junction(node_id)
+	_load_signal_posts()
 	_build_signal_pool()
 	_initial_spawn.call_deferred()
 
@@ -282,89 +299,230 @@ func _physics_process(delta: float) -> void:
 	if _signal_refresh_timer >= 1.0:
 		_signal_refresh_timer = 0.0
 		_refresh_signal_lights()
+	else:
+		_update_signal_lamps()
 
+## Signal posts: per post one body mesh (pole, black housing, sun visors, white backboard rim) and
+## one lamp mesh, swapped between three pre-lit versions (red / amber / green on) as the phase
+## changes — two draw calls per post, shared meshes, no per-post materials.
 func _build_signal_pool() -> void:
-	var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
+	var body: ArrayMesh = _signal_body_mesh()
+	_signal_lamp_meshes.clear()
+	for lit: int in 3:
+		_signal_lamp_meshes.append(_signal_lamp_mesh(lit))
 	for i: int in SIGNAL_POOL_SIZE:
 		var post: Node3D = Node3D.new()
 		post.name = "TrafficSignal_%d" % i
 		post.visible = false
-		var pole: MeshInstance3D = MeshInstance3D.new()
-		var pole_mesh: CylinderMesh = CylinderMesh.new()
-		pole_mesh.top_radius = 0.08
-		pole_mesh.bottom_radius = 0.12
-		pole_mesh.height = 5.0
-		var pole_mat: StandardMaterial3D = StandardMaterial3D.new()
-		pole_mat.albedo_color = Color(0.18, 0.2, 0.21)
-		pole_mesh.material = pole_mat
-		pole.mesh = pole_mesh
-		pole.position = Vector3(3.5, 2.5, 0.0)
-		post.add_child(pole)
-		var housing: MeshInstance3D = MeshInstance3D.new()
-		var housing_mesh: BoxMesh = BoxMesh.new()
-		housing_mesh.size = Vector3(0.52, 1.65, 0.48)
-		var housing_mat: StandardMaterial3D = StandardMaterial3D.new()
-		housing_mat.albedo_color = Color(0.04, 0.05, 0.05)
-		housing_mesh.material = housing_mat
-		housing.mesh = housing_mesh
-		housing.position = Vector3(3.5, 4.8, 0.0)
-		post.add_child(housing)
-		var lamp_mats: Array[StandardMaterial3D] = []
-		for lamp_i: int in 3:
-			var lamp: MeshInstance3D = MeshInstance3D.new()
-			lamp.name = "Lamp_%d" % lamp_i
-			var sphere: SphereMesh = SphereMesh.new()
-			sphere.radius = 0.15
-			sphere.height = 0.3
-			lamp.mesh = sphere
-			lamp.position = Vector3(3.5, 5.35 - float(lamp_i) * 0.55, 0.0)
-			var mat: StandardMaterial3D = StandardMaterial3D.new()
-			mat.albedo_color = colours[lamp_i].darkened(0.78)
-			mat.emission_enabled = true
-			mat.emission = colours[lamp_i].darkened(0.8)
-			lamp.material_override = mat
-			post.add_child(lamp)
-			lamp_mats.append(mat)
-		_signal_lamp_materials.append(lamp_mats)
+		var shell: MeshInstance3D = MeshInstance3D.new()
+		shell.name = "Body"
+		shell.mesh = body
+		post.add_child(shell)
+		var lamps: MeshInstance3D = MeshInstance3D.new()
+		lamps.name = "Lamps"
+		lamps.mesh = _signal_lamp_meshes[0]
+		lamps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		post.add_child(lamps)
 		add_child(post)
 		_signal_posts.append(post)
+		_signal_post_node.append(-1)
+		_signal_post_edge.append(-1)
+
+static func _signal_body_mesh() -> ArrayMesh:
+	var st: SurfaceTool = MeshKit.begin()
+	var grey: Color = Color(0.2, 0.22, 0.23)
+	var black: Color = Color(0.04, 0.05, 0.05)
+	var white: Color = Color(0.9, 0.9, 0.88)
+	MeshKit.tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 4.2, 0.0), 0.09, grey, 8)
+	MeshKit.box(st, Vector3(0.0, 0.25, 0.0), Vector3(0.34, 0.5, 0.34), Color(0.95, 0.85, 0.1)) # yellow base collar
+	MeshKit.box(st, Vector3(0.0, 4.8, 0.06), Vector3(0.62, 1.78, 0.06), white) # backboard rim
+	MeshKit.box(st, Vector3(0.0, 4.8, 0.12), Vector3(0.48, 1.62, 0.36), black) # housing
+	for k: int in 3:
+		MeshKit.box(st, Vector3(0.0, 5.33 - float(k) * 0.53 + 0.16, 0.42), Vector3(0.4, 0.03, 0.24), black) # visor
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 0.6
+	return MeshKit.finish(st, mat)
+
+## Three lamp discs on the housing's +Z face; `lit` 0 = red, 1 = amber, 2 = green.
+static func _signal_lamp_mesh(lit: int) -> ArrayMesh:
+	var st: SurfaceTool = MeshKit.begin()
+	var colours: Array[Color] = [Color(1.0, 0.08, 0.05), Color(1.0, 0.6, 0.05), Color(0.08, 1.0, 0.3)]
+	for k: int in 3:
+		var c: Color = colours[k] if k == lit else colours[k].darkened(0.82)
+		MeshKit.disc(st, Vector3(0.0, 5.33 - float(k) * 0.53, 0.305), Vector3.BACK, 0.16, c, 14)
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # lamps glow, day and night
+	return MeshKit.finish(st, mat)
+
+## Tests freeze the signal clock (seconds) with this; < 0 = real time.
+var signal_clock_override: float = -1.0
 
 func _signal_phase(node_id: int) -> float:
-	return fposmod(float(Time.get_ticks_msec()) / 1000.0 + float(node_id * 7), SIGNAL_CYCLE_S)
+	var clock: float = signal_clock_override if signal_clock_override >= 0.0 else float(Time.get_ticks_msec()) / 1000.0
+	return fposmod(clock + float(node_id * 7), SIGNAL_CYCLE_S)
 
-## Vehicle stopping distance from the junction's stop line; INF means the light is green.
+## Split a junction's roads into the main road (phase 0: the widest arm and whatever runs in
+## line with it) and the cross road (phase 1), and set the stop line back from the node so a
+## queue waits before the crossing, not inside it.
+func _setup_signal_junction(node_id: int) -> void:
+	var dirs: Dictionary = {}
+	var widest: int = -1
+	var stop_back: float = 0.0
+	for edge_id: int in graph.node_edges[node_id]:
+		var e: RoadGraph.Edge = graph.edges[edge_id]
+		var away: Vector3 = (e.points[1] - e.points[0]) if e.a == node_id else (e.points[e.points.size() - 2] - e.points[e.points.size() - 1])
+		away.y = 0.0
+		dirs[edge_id] = away.normalized()
+		if widest < 0 or e.width > graph.edges[widest].width:
+			widest = edge_id
+		stop_back = maxf(stop_back, e.width * 0.5)
+	var axis: Vector3 = dirs[widest]
+	var groups: Dictionary = {}
+	var cross: int = 0
+	var least_aligned: int = -1
+	for edge_id: int in dirs:
+		var along: float = absf((dirs[edge_id] as Vector3).dot(axis))
+		groups[edge_id] = 0 if along >= 0.7 else 1
+		cross += int(groups[edge_id])
+		if least_aligned < 0 or along < absf((dirs[least_aligned] as Vector3).dot(axis)):
+			least_aligned = edge_id
+	if cross == 0:
+		groups[least_aligned] = 1 # every arm in line: still give the odd one its own phase
+	_signal_set[node_id] = true
+	_signal_group[node_id] = groups
+	_signal_stop_back[node_id] = stop_back + 1.0
+
+## The light shown to traffic arriving at `node_id` along `edge_id`.
+func approach_light(node_id: int, edge_id: int) -> Light:
+	var group: int = int((_signal_group.get(node_id, {}) as Dictionary).get(edge_id, 0))
+	var half: float = SIGNAL_CYCLE_S * 0.5
+	var t: float = fposmod(_signal_phase(node_id) - float(group) * half, SIGNAL_CYCLE_S)
+	if t < SIGNAL_GREEN_S:
+		return Light.GREEN
+	if t < SIGNAL_GREEN_S + SIGNAL_AMBER_S:
+		return Light.AMBER
+	return Light.RED
+
+func is_signal_junction(node_id: int) -> bool:
+	return _signal_set.has(node_id)
+
+func signal_stop_back(node_id: int) -> float:
+	return float(_signal_stop_back.get(node_id, 0.0))
+
+## Distance to this vehicle's stop line if it must stop for the light; INF means drive on.
+## Amber: stop only when there is room to brake comfortably, otherwise clear the junction.
+## A vehicle already at or past the stop line never stops (it would block the crossing).
 func signal_stop_gap(vehicle: TrafficVehicleAI) -> float:
 	if vehicle.turning:
 		return INF
 	var edge: RoadGraph.Edge = graph.edges[vehicle.edge]
 	var node_id: int = edge.b if vehicle.dir > 0 else edge.a
-	if not _signal_nodes.has(node_id) or _signal_phase(node_id) < 10.0:
+	if not _signal_set.has(node_id):
 		return INF
-	return maxf(0.0, edge.length - vehicle.t - vehicle.half_length() - 1.4)
+	var light: Light = approach_light(node_id, vehicle.edge)
+	if light == Light.GREEN:
+		return INF
+	# The bumper waits at the stop line, but never so close that the centre is inside the turn
+	# blend (from there the vehicle is already "turning" and ignores the light — the old bug).
+	var hl: float = vehicle.half_length()
+	var line: float = maxf(float(_signal_stop_back[node_id]), minf(TrafficVehicleAI.TURN_BLEND_M, edge.length * 0.45) + 0.4 - hl)
+	var gap: float = edge.length - vehicle.t - hl - line
+	if gap < -0.5:
+		return INF
+	if light == Light.AMBER:
+		var v: float = vehicle.current_speed_mps
+		if gap < v * v / (2.0 * SIGNAL_BRAKE_MPS2):
+			return INF
+	# Treated as a stopped lead, which the follower keeps FOLLOW_MIN_GAP_M behind: shift it so
+	# the bumper stops ~0.3 m short of the stop line.
+	return maxf(0.0, gap) + TrafficVehicleAI.FOLLOW_MIN_GAP_M - 0.3
+
+## Kerb-side post spots per signal junction (tools/osm/build_signal_posts.py): node id →
+## [[x, z, yaw], …], one per big approach, always off the carriageway.
+func _load_signal_posts() -> void:
+	_signal_post_spots.clear()
+	var f: FileAccess = FileAccess.open(SIGNAL_POSTS_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if not (parsed is Dictionary):
+		return
+	for key: Variant in (parsed as Dictionary):
+		_signal_post_spots[int(str(key))] = (parsed as Dictionary)[key]
+
+## World transform of a signal post: on the left kerb of an approach, lamps facing the queue.
+## Junctions without a measured kerb spot get no post (better none than one in a lane).
+func signal_post_spots(node_id: int) -> Array[Transform3D]:
+	var out: Array[Transform3D] = []
+	for spot: Variant in _signal_post_spots.get(node_id, []):
+		var a: Array = spot as Array
+		var y: float = graph.nodes[node_id].y
+		out.append(Transform3D(Basis(Vector3.UP, float(a[2])), Vector3(float(a[0]), y, float(a[1]))))
+	return out
+
+## Approach edge each post at `node_id` serves (same order as signal_post_spots).
+func signal_post_edges(node_id: int) -> PackedInt32Array:
+	var out: PackedInt32Array = PackedInt32Array()
+	for spot: Variant in _signal_post_spots.get(node_id, []):
+		var a: Array = spot as Array
+		out.append(int(a[3]) if a.size() > 3 else -1)
+	return out
 
 func _refresh_signal_lights() -> void:
 	var near: Array[Array] = []
+	var origin: Vector3 = _player.global_position if _player != null else Vector3.INF
 	for node_id: int in _signal_nodes:
-		var d: float = _player.global_position.distance_to(graph.nodes[node_id]) if _player != null else INF
-		if d < 190.0:
-			near.append([d, node_id])
+		if _player == null or origin.distance_to(graph.nodes[node_id]) >= 190.0:
+			continue
+		var spots: Array[Transform3D] = signal_post_spots(node_id)
+		var spot_edges: PackedInt32Array = signal_post_edges(node_id)
+		for k: int in spots.size():
+			near.append([origin.distance_to(spots[k].origin), node_id, spots[k], spot_edges[k]])
 	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	for i: int in _signal_posts.size():
 		var post: Node3D = _signal_posts[i]
 		if i >= near.size():
 			post.visible = false
 			continue
-		var node_id: int = int(near[i][1])
-		post.global_position = graph.nodes[node_id]
+		post.global_transform = near[i][2] as Transform3D
 		post.visible = true
-		var phase: float = _signal_phase(node_id)
-		var active_lamp: int = 2 if phase < 10.0 else (1 if phase < 12.0 else 0)
-		var mats: Array = _signal_lamp_materials[i]
-		var colours: Array[Color] = [Color(0.95, 0.06, 0.04), Color(1.0, 0.58, 0.04), Color(0.05, 0.9, 0.2)]
-		for lamp_i: int in 3:
-			var mat: StandardMaterial3D = mats[lamp_i]
-			mat.albedo_color = colours[lamp_i] if lamp_i == active_lamp else colours[lamp_i].darkened(0.78)
-			mat.emission = colours[lamp_i] * (2.0 if lamp_i == active_lamp else 0.08)
+		_signal_post_node[i] = int(near[i][1])
+		_signal_post_edge[i] = int(near[i][3])
+	_update_signal_lamps()
+
+## Lamps follow each post's own approach every frame (placement only changes once a second).
+func _update_signal_lamps() -> void:
+	for i: int in _signal_posts.size():
+		var post: Node3D = _signal_posts[i]
+		if not post.visible:
+			continue
+		var light: Light = approach_light(_signal_post_node[i], _signal_post_edge[i])
+		var lamp: int = 2 if light == Light.GREEN else (1 if light == Light.AMBER else 0)
+		var mi: MeshInstance3D = post.get_node("Lamps") as MeshInstance3D
+		if mi.mesh != _signal_lamp_meshes[lamp]:
+			mi.mesh = _signal_lamp_meshes[lamp]
+
+## Which road the player came in on: the arm whose direction out of the junction best matches
+## where the player was. -1 if the player isn't near any arm.
+func player_approach_edge(node_id: int, from_pos: Vector3) -> int:
+	var centre: Vector3 = graph.nodes[node_id]
+	var rel: Vector3 = Vector3(from_pos.x - centre.x, 0.0, from_pos.z - centre.z)
+	if rel.length() < 0.1:
+		return -1
+	rel = rel.normalized()
+	var best: int = -1
+	var best_dot: float = 0.5
+	for edge_id: int in graph.node_edges[node_id]:
+		var e: RoadGraph.Edge = graph.edges[edge_id]
+		var away: Vector3 = (e.points[1] - e.points[0]) if e.a == node_id else (e.points[e.points.size() - 2] - e.points[e.points.size() - 1])
+		away.y = 0.0
+		var d: float = rel.dot(away.normalized())
+		if d > best_dot:
+			best_dot = d
+			best = edge_id
+	return best
 
 func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 	if not _player_pose_seen:
@@ -378,11 +536,18 @@ func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 	if now_s - _last_player_ticket_s < 8.0:
 		_previous_player_pos = pos
 		return
-	for node_id: int in _signal_nodes:
-		if not _enforced_signal_nodes.has(node_id) or pos.distance_to(graph.nodes[node_id]) > 5.0 or _previous_player_pos.distance_to(graph.nodes[node_id]) <= 7.0:
+	# Red-light camera / constable: the player crosses an enforced junction's stop line (enters
+	# its stop circle from outside) while their own approach shows red. Amber is never fined.
+	for node_id: int in _enforced_signal_nodes:
+		var centre: Vector3 = graph.nodes[node_id]
+		var r: float = float(_signal_stop_back[node_id])
+		var now_d: float = Vector2(pos.x - centre.x, pos.z - centre.z).length()
+		var was_d: float = Vector2(_previous_player_pos.x - centre.x, _previous_player_pos.z - centre.z).length()
+		if now_d > r or was_d <= r or was_d > r + 12.0:
 			continue
-		if _signal_phase(node_id) < 12.0:
-			continue
+		var from_edge: int = player_approach_edge(node_id, _previous_player_pos)
+		if from_edge < 0 or approach_light(node_id, from_edge) != Light.RED:
+			break
 		if _player is RigidBody3D and (_player as RigidBody3D).linear_velocity.length() > 2.0:
 			var fine: int = mini(SIGNAL_ENFORCEMENT_FINE_INR, GameState.wallet_inr)
 			if fine > 0 and GameState.spend(fine):
