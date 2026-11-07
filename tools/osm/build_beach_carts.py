@@ -206,6 +206,13 @@ def main() -> int:
                     break
             cell.extend(mine)
 
+    # Only chunks the streamer actually loads (manifest) — a beach-only chunk has none.
+    loadable = {tuple(c) for c in manifest["chunks"]}
+    dropped = len(carts)
+    carts = [c for c in carts if (math.floor(c[0] / CHUNK), math.floor(c[1] / CHUNK)) in loadable]
+    dropped -= len(carts)
+    beach_n = sum(1 for c in carts if c[5] < 0)
+    market_n = len(carts) - beach_n
     # One flat list for the shop-name boards (scripts/world/CartSigns.gd).
     (WORLD / "carts.json").write_text(json.dumps(carts, separators=(",", ":")))
     per_chunk: dict = {}
@@ -220,6 +227,8 @@ def main() -> int:
         path.write_text(json.dumps(d, separators=(",", ":")))
     for key, items in per_chunk.items():
         (WORLD / "dress" / f"c_{key[0]}_{key[1]}.json").write_text(json.dumps({"carts": items}, separators=(",", ":")))
+    if dropped:
+        print(f"  ({dropped} carts fell in chunks the streamer never loads — left out)")
     builds = [0] * 5
     for c in carts:
         builds[BUILDS[c[3]]] += 1
