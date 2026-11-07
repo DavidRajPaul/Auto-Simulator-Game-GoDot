@@ -100,6 +100,9 @@ const ZONE_PALETTES: Dictionary = {
 ## Plain surfaces sample the blank plaster cell and take their colour from the vertex paint.
 const PLAIN_CELL: Vector2 = Vector2(7, 0)
 const PLAIN_UV: Vector2 = Vector2(0.3, 0.5)
+## Push-cart open-only / closed-only parts: added to UV2.y (atlas rows are 0–3, so never clashes).
+const GATE_OPEN_UV2: float = 100.0
+const GATE_CLOSED_UV2: float = 200.0
 const PARAPET_M: float = 0.9
 const LEDGE_MAX_FLOORS: int = 5
 const PARAPET_T: float = 0.18
@@ -602,6 +605,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	_medians(m, faces, dress.get("medians", []))
 	_barricades(m, faces, dress.get("barricades", []))
+	# Marina / Santhome: the sand fenced off from the road (tools/osm/build_beach_fence.py).
+	_barricades(m, faces, dress.get("beach_fence", []))
 	for cart: Array in dress.get("carts", []):
 		_cart(m, faces, cart)
 	if dressing_enabled:
@@ -845,9 +850,9 @@ func _stall(m: MeshBuf, s: Array) -> void:
 
 ## Push-cart shop (tools/osm/build_beach_carts.py): [x, z, yaw, variant, name, ground y,
 ## open hour, close hour]. Merged into the chunk mesh; a solid box so the auto bumps it. The
-## open-only / closed-only parts carry the gate and hours in their UV (PLAIN_UV + whole numbers,
-## so the facade lookup is unchanged) and building_facade.gdshader hides the part that doesn't
-## match `clock_hour`. Names: CartSigns.
+## open-only / closed-only parts carry their hours in UV (PLAIN_UV + whole numbers, so the facade
+## lookup is unchanged) and the gate in UV2.y (+GATE_OPEN_UV2 / +GATE_CLOSED_UV2 on the atlas
+## row); building_facade.gdshader hides the part that doesn't match `clock_hour`. Names: CartSigns.
 func _cart(m: MeshBuf, faces: PackedVector3Array, s: Array) -> void:
 	var kind: int = int(s[3])
 	if kind < 0 or kind >= _cart_kit.size():
@@ -864,11 +869,16 @@ func _cart(m: MeshBuf, faces: PackedVector3Array, s: Array) -> void:
 	var nn: PackedVector3Array = kit["n"]
 	var col: PackedColorArray = kit["c"]
 	var gates: PackedByteArray = kit["g"]
-	var uvs: Array[Vector2] = [PLAIN_UV, PLAIN_UV + Vector2(100.0 + float(open_h), float(close_h)), PLAIN_UV + Vector2(200.0 + float(open_h), float(close_h))]
+	# Hours ride in UV (whole numbers on top of PLAIN_UV), the gate in UV2.y (+100 / +200 on the
+	# atlas row). The gate must live in UV2: roofs use world metres / ROOF_TILE_M as UV, so any
+	# "big UV" test also caught every roof east of x ≈ 300 m and flung it into the sky.
+	var hours_uv: Vector2 = PLAIN_UV + Vector2(float(open_h), float(close_h))
+	var uvs: Array[Vector2] = [PLAIN_UV, hours_uv, hours_uv]
+	var cells: Array[Vector2] = [PLAIN_CELL, PLAIN_CELL + Vector2(0.0, GATE_OPEN_UV2), PLAIN_CELL + Vector2(0.0, GATE_CLOSED_UV2)]
 	for i: int in v.size():
 		var p: Vector3 = v[i]
 		var q: Vector3 = nn[i]
-		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], uvs[gates[i]], PLAIN_CELL)
+		m.add(at + Vector3(p.x * c + p.z * n, p.y + ground, -p.x * n + p.z * c), Vector3(q.x * c + q.z * n, q.y, -q.x * n + q.z * c), col[i], uvs[gates[i]], cells[gates[i]])
 	var across: Vector2 = Vector2(c, -n) # the cart's local +X (its width)
 	var centre: Vector2 = Vector2(at.x, at.z)
 	_wall_faces(faces, centre - across * 0.95, centre + across * 0.95, 0.0, 2.2, 1.05)

@@ -172,6 +172,29 @@ func _test_full_map(city: Node) -> void:
 	SignalBus.full_map_requested.emit(false)
 	await get_tree().process_frame
 	_check("Full map closes and resumes", not fm.visible and not get_tree().paused)
+	# Nov 7 playtest: holding the gas while a child taps the mini-map. The gas finger's drags reach
+	# the map (no touch focus) — they must not become a ghost finger that swallows the ✕ tap.
+	var hud: TouchHUD = city.find_children("*", "TouchHUD", true, false)[0] as TouchHUD
+	hud._finger_on(0, "Accelerate") # the gas pedal held by finger 0
+	var gas_held: bool = Input.is_action_pressed("accelerate")
+	SignalBus.full_map_requested.emit(true)
+	await get_tree().process_frame
+	_check("Opening the map lets go of the gas", gas_held and not Input.is_action_pressed("accelerate"))
+	var ghost: InputEventScreenDrag = InputEventScreenDrag.new()
+	ghost.index = 0
+	ghost.position = Vector2(fm.size.x - 200.0, fm.size.y - 150.0)
+	ghost.relative = Vector2(3.0, 1.0)
+	fm._gui_input(ghost)
+	var tap_at: Vector2 = Vector2(fm.size.x - 52.0, 52.0) # ✕ (FullMap._draw_chrome: 64 px, 20 px in)
+	for pressed: bool in [true, false]:
+		var t: InputEventScreenTouch = InputEventScreenTouch.new()
+		t.index = 1
+		t.position = tap_at
+		t.pressed = pressed
+		fm._gui_input(t)
+	await get_tree().process_frame
+	_check("✕ closes the map while another finger is still down", not fm.visible and not get_tree().paused)
+	SignalBus.full_map_requested.emit(false)
 
 func _test_collisions() -> void:
 	var main: Node = (load("res://scenes/main_phase1_greybox.tscn") as PackedScene).instantiate()

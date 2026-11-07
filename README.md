@@ -235,7 +235,7 @@ flowchart LR
     OSM["OpenStreetMap<br/>Overpass API"] -->|"fetch_osm.py<br/>OSM Import"| RAW["data/osm/*.gz"]
     RAW -->|"osm2streets (Rust)<br/>run_osm2streets.py<br/>OSM Streets"| LANES["data/osm/streets/*.geojson.gz"]
     RAW & LANES -->|"build_world.py<br/>streets.py · earcut"| WD["data/world/<br/>chunks · road_graph · manifest"]
-    WD -->|"build_street_dressing.py<br/>place_city_props.py<br/>build_street_signs.py<br/>build_signal_posts.py · build_barricades.py<br/>build_beach_carts.py · add_lodges_eateries.py<br/>build_medians.py · build_road_works.py<br/>fetch_pois.py → build_building_names.py"| WD2["dress/ · city_props · street_signs<br/>building_names"]
+    WD -->|"build_street_dressing.py<br/>place_city_props.py<br/>build_street_signs.py<br/>build_signal_posts.py · build_barricades.py<br/>build_beach_carts.py · build_beach_fence.py<br/>add_lodges_eateries.py<br/>build_medians.py · build_road_works.py<br/>fetch_pois.py → build_building_names.py"| WD2["dress/ · city_props · street_signs<br/>building_names"]
   end
   subgraph Art["Assets"]
     DL["Downloads, recordings,<br/>Stitch art"] --> INC["assets_src/incoming/<br/>(not exported)"]
@@ -621,7 +621,7 @@ See [`AGENTS.md`](AGENTS.md). In short: communicate only through `SignalBus`, ty
 
 ## 🗺️ Map data
 
-Roads, buildings, coastline, water, parks and place names come from **OpenStreetMap** (© OpenStreetMap contributors, ODbL) via `tools/osm`. Lane-level geometry comes from **osm2streets** (A/B Street, Apache-2.0), built and run by **Actions → OSM Streets**. Zones, landmarks, auto stands, services and flood spots are configured in `tools/osm/config.py`. To rebuild locally: `pip install mapbox-earcut numpy && python3 tools/osm/build_world.py`, then the dressing scripts (`build_street_dressing.py`, `place_city_props.py`, `build_street_signs.py`, `build_signal_posts.py`, `build_barricades.py`, `build_beach_carts.py`, `build_medians.py`, `build_road_works.py`, and last `add_lodges_eateries.py`); preview with `python3 tools/osm/preview_map.py out.png 2.0 x0 z0 x1 z1`.
+Roads, buildings, coastline, water, parks and place names come from **OpenStreetMap** (© OpenStreetMap contributors, ODbL) via `tools/osm`. Lane-level geometry comes from **osm2streets** (A/B Street, Apache-2.0), built and run by **Actions → OSM Streets**. Zones, landmarks, auto stands, services and flood spots are configured in `tools/osm/config.py`. To rebuild locally: `pip install mapbox-earcut numpy && python3 tools/osm/build_world.py`, then the dressing scripts (`build_street_dressing.py`, `place_city_props.py`, `build_street_signs.py`, `build_signal_posts.py`, `build_barricades.py`, `build_beach_carts.py`, `build_beach_fence.py`, `build_medians.py`, `build_road_works.py`, and last `add_lodges_eateries.py`); preview with `python3 tools/osm/preview_map.py out.png 2.0 x0 z0 x1 z1`.
 
 ## 📜 Licence & credits
 

@@ -182,7 +182,7 @@ def main() -> int:
         d = json.loads(path.read_text())
         d.pop("carts", None)
         dress[(int(k[1]), int(k[2]))] = (path, d)
-        for kind, rad in (("trees", 1.2), ("poles", 0.8), ("xfmr", 1.6), ("stalls", 2.4), ("parking", 2.4), ("barricades", 1.6)):
+        for kind, rad in (("trees", 1.2), ("poles", 0.8), ("xfmr", 1.6), ("stalls", 2.4), ("parking", 2.4), ("barricades", 1.6), ("beach_fence", 1.6)):
             for it in d.get(kind, []):
                 busy.setdefault((int(it[0] // 4), int(it[1] // 4)), []).append((float(it[0]), float(it[1]), rad))
         for m in d.get("medians", []):  # never in the strip between two carriageways
