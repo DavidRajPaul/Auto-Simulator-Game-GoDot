@@ -212,6 +212,11 @@ func _ready() -> void:
 		_root.visible = not open
 		if open:
 			release_all())
+	# The full map pauses the tree, so this HUD never sees the gas finger lift while it is open:
+	# let go of everything now, or the auto would shoot off when the map closes.
+	SignalBus.full_map_state_changed.connect(func(open: bool) -> void:
+		if open:
+			release_all())
 
 func _process(delta: float) -> void:
 	var now: int = Engine.get_process_frames()

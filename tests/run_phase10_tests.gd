@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_signals_work(city)
 	await _test_road_works_barricades(city)
 	_test_carts(city)
+	await _test_beach_fence(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -408,9 +409,12 @@ func _test_carts(city: Node) -> void:
 	var faces: int = 0
 	for ch: Node in holder.get_children():
 		if ch is MeshInstance3D:
-			var uvs: PackedVector2Array = (ch as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
-			for uv: Vector2 in uvs:
-				if uv.x > 150.0 and absf(fposmod(uv.x, 1.0) - WorldChunkStreamer.PLAIN_UV.x) < 0.01 and int(uv.x) - 200 == int(sample[6]) and int(uv.y) == int(sample[7]):
+			var arrays: Array = (ch as MeshInstance3D).mesh.surface_get_arrays(0)
+			var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+			var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+			for k: int in uvs.size():
+				var uv: Vector2 = uvs[k]
+				if uv2s[k].y > 150.0 and absf(fposmod(uv.x, 1.0) - WorldChunkStreamer.PLAIN_UV.x) < 0.01 and int(uv.x) == int(sample[6]) and int(uv.y) == int(sample[7]):
 					uv_ok = true
 					break
 		if ch is CollisionShape3D:
@@ -419,6 +423,23 @@ func _test_carts(city: Node) -> void:
 	_check("Carts are solid", faces >= 36, "%d faces" % faces)
 	holder.free()
 	_check("The facade shader gates shop parts by the clock", (load("res://shaders/building_facade.gdshader") as Shader).code.contains("clock_hour"))
+	# Regression (Nov 7 playtest): roofs far from the origin have UVs in the hundreds; the gate used
+	# to be read from UV, so those roofs collapsed half-way to (0, 0, 0) — white beams over the
+	# streets of Santhome. Only cart parts may carry a gate (UV2.y > 50).
+	var chunk: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/chunks/c_7_9.json")) as Dictionary
+	var town: Node3D = world._buildings(chunk["blds"] as Array, {}, [])
+	var far_uv: bool = false
+	var gated_roofs: int = 0
+	for ch: Node in town.get_children():
+		if ch is MeshInstance3D:
+			var arrays: Array = (ch as MeshInstance3D).mesh.surface_get_arrays(0)
+			for uv: Vector2 in arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array:
+				far_uv = far_uv or uv.x > 150.0
+			for uv2: Vector2 in arrays[Mesh.ARRAY_TEX_UV2] as PackedVector2Array:
+				if uv2.y > 50.0:
+					gated_roofs += 1
+	town.free()
+	_check("Buildings far from the origin are never clock-gated (no sky beams)", far_uv and gated_roofs == 0, "%d gated vertices" % gated_roofs)
 	var signs: CartSigns = city.get_node("CartSigns") as CartSigns
 	var first_board: Array = []
 	for c: Array in carts:
@@ -667,3 +688,55 @@ func _check(test_name: String, ok: bool, detail: String = "") -> void:
 	else:
 		_failed += 1
 		printerr("  FAIL  ", test_name, ("  (" + detail + ")") if detail != "" else "")
+
+## Nov 7 playtest: the auto drove off Santhome / Kamarajar Salai onto the Marina sand. The city
+## side of the beach is now a near-continuous barricade row (tools/osm/build_beach_fence.py).
+func _test_beach_fence(city: Node) -> void:
+	var fence: Array = []
+	var dir_access: DirAccess = DirAccess.open("res://data/world/dress")
+	for f: String in dir_access.get_files():
+		if f.ends_with(".json"):
+			var dd: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + f)) as Dictionary
+			fence.append_array(dd.get("beach_fence", []))
+	var tm: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var g: RoadGraph = tm.graph
+	var in_lane: int = 0
+	for i: int in range(0, fence.size(), 5):
+		var b: Array = fence[i]
+		var c: Dictionary = g.closest_point(Vector3(float(b[0]), 0.0, float(b[1])))
+		if int(c["edge"]) >= 0 and float(c["dist"]) < g.edges[int(c["edge"])].width * 0.5:
+			in_lane += 1
+	_check("Marina and Santhome beaches are fenced off from the road", fence.size() > 2000, "%d barricades" % fence.size())
+	_check("No beach-fence barricade stands in a lane", in_lane == 0, "%d in a lane" % in_lane)
+	# Drive at the fence from the Santhome side (where the playtest auto got onto the sand).
+	var areas: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/areas.json")) as Dictionary
+	var beach: PackedVector2Array = PackedVector2Array()
+	for p: Array in (areas["beach"] as Array)[1]:
+		beach.append(Vector2(float(p[0]), float(p[1])))
+	var target: Vector2 = Vector2(2238.0, 1880.0)
+	var near: Array = fence[0]
+	for b: Array in fence:
+		if Vector2(float(b[0]), float(b[1])).distance_to(target) < Vector2(float(near[0]), float(near[1])).distance_to(target):
+			near = b
+	var at: Vector2 = Vector2(float(near[0]), float(near[1]))
+	var along: Vector2 = Vector2(sin(float(near[2])), cos(float(near[2])))
+	var inward: Vector2 = Vector2(along.y, -along.x)
+	if not Geometry2D.is_point_in_polygon(at + inward * 5.0, beach):
+		inward = -inward
+	var auto: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	auto.freeze = false
+	var start: Vector2 = at - inward * 9.0
+	var look: Vector2 = at + inward * 20.0
+	SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(Vector3(look.x - start.x, 0.0, look.y - start.y), Vector3.UP), Vector3(start.x, 1.0, start.y)))
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	await get_tree().physics_frame
+	world.update_streaming(true)
+	for i: int in 30:
+		await get_tree().physics_frame
+	Input.action_press("accelerate")
+	var deepest: float = -99.0
+	for i: int in 300:
+		await get_tree().physics_frame
+		deepest = maxf(deepest, (Vector2(auto.global_position.x, auto.global_position.z) - at).dot(inward))
+	Input.action_release("accelerate")
+	_check("Driving at the beach fence never reaches the sand", deepest < 1.5, "%.1f m past the fence line" % deepest)
