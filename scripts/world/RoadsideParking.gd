@@ -1,6 +1,7 @@
 class_name RoadsideParking
 extends RefCounted
-## Chunk-scoped, batched parked vehicle visuals and one combined collision hull.
+## Chunk-scoped, batched parked vehicle visuals; each vehicle a static box that turns into a real
+## rigid body when the player's auto comes close (ParkedVehicleSet).
 ## Uses the actual traffic GLBs, not greybox vehicle stand-ins.
 ##
 ## Every vehicle is scaled UNIFORMLY to its real length (LENGTHS_M) and stands with its lowest
@@ -43,10 +44,9 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 	var parking: Array = (parsed as Dictionary).get("parking", [])
 	if parking.is_empty():
 		return
-	var holder: Node3D = Node3D.new()
+	var holder: ParkedVehicleSet = ParkedVehicleSet.new()
 	holder.name = "RoadsideParking"
 	chunk.add_child(holder)
-	var faces: PackedVector3Array = PackedVector3Array()
 	# [kind, file, records]: cars are split across the paint files by spot order.
 	var groups: Array = []
 	for kind: int in MODELS.size():
@@ -99,6 +99,11 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 		# For tests: the fitted vehicle's box relative to its spot (lowest point must be y = 0).
 		var fitted: AABB = AABB((bounds.position - anchor) * k, bounds.size * k)
 		holder.set_meta("fit_%d" % kind, fitted)
+		var group_id: int = holder.groups.size()
+		var group_info: Dictionary = {"mms": [] as Array[MultiMesh], "parts": []}
+		holder.groups.append(group_info)
+		var fit_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(fit), -anchor * fit)
+		var pkey_group: String = PaintSwap.key_of(model_path)
 		for mi: MeshInstance3D in meshes:
 			if mi.mesh == null:
 				continue
@@ -118,12 +123,15 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 			inst.visibility_range_end = VISIBILITY_M
 			holder.add_child(inst)
 			var relative: Transform3D = _relative(mi, holder)
+			(group_info["mms"] as Array[MultiMesh]).append(mm)
+			# What a woken (rigid) copy of this vehicle draws: same mesh, single-instance paint.
+			var solo: Material = PaintSwap.material_for(mi.mesh.surface_get_material(0), pkey, false) if swap != null else mi.material_override
+			(group_info["parts"] as Array).append([mi.mesh, fit_transform * relative, solo])
 			for i: int in records.size():
 				var rec: Array = records[i]
 				var yaw: float = float(rec[2])
 				var origin: Vector3 = _spot(rec, ground)
 				var placement: Transform3D = Transform3D(Basis(Vector3.UP, yaw), origin)
-				var fit_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(fit), -anchor * fit)
 				mm.set_instance_transform(i, placement * fit_transform * relative)
 				if swap != null:
 					var h: int = absi(int(origin.x * 13.0) * 31 + int(origin.z * 7.0))
@@ -133,22 +141,22 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 					else:
 						pc = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
 					mm.set_instance_custom_data(i, pc)
-		# Collider for all parked vehicles in this chunk, without a body per vehicle.
-		for rec: Array in records:
-			_append_box(faces, _spot(rec, ground), float(rec[2]), dim)
+		# One record per vehicle: static box until the auto comes close (ParkedVehicleSet).
+		for i: int in records.size():
+			var rec: Array = records[i]
+			var origin: Vector3 = _spot(rec, ground)
+			var paint: Color = PaintSwap.NO_PAINT
+			if pkey_group != "":
+				var h: int = absi(int(origin.x * 13.0) * 31 + int(origin.z * 7.0))
+				if pkey_group == "share_auto":
+					paint = PaintSwap.AUTO_ELECTRIC[h % 2] if h % 3 == 0 else PaintSwap.NO_PAINT
+				else:
+					paint = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
+			holder.records.append({"kind": kind, "origin": origin, "yaw": float(rec[2]), "dim": dim,
+				"group": group_id, "inst": i, "paint": paint})
 		source.queue_free()
-	if not faces.is_empty():
-		var body: StaticBody3D = StaticBody3D.new()
-		body.name = "ParkedVehicleCollision"
-		body.collision_layer = 1
-		body.collision_mask = 0
-		var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
-		shape.backface_collision = true
-		shape.set_faces(faces)
-		var collider: CollisionShape3D = CollisionShape3D.new()
-		collider.shape = shape
-		body.add_child(collider)
-		holder.add_child(body)
+	if not holder.records.is_empty():
+		holder.build_colliders()
 
 ## `node`'s transform in `ancestor`'s space from local transforms (works outside the tree).
 static func _relative(node: Node3D, ancestor: Node3D) -> Transform3D:

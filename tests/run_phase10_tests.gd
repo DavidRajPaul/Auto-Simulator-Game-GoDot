@@ -29,6 +29,7 @@ func _run() -> void:
 	await _test_traffic_smooth(city)
 	await _test_signals_work(city)
 	await _test_road_works_barricades(city)
+	_test_carts(city)
 	city.queue_free()
 	await get_tree().physics_frame
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -339,6 +340,43 @@ func _test_road_works_barricades(city: Node) -> void:
 	_check("Barricades are solid", faces >= sample.size() * 24, "%d faces" % faces)
 	holder.free()
 	auto.freeze = false
+
+## Nov 7: Marina push-cart shops from the owner's beach photos, and carts by market stalls.
+func _test_carts(city: Node) -> void:
+	var carts: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/carts.json")) as Array
+	var beach: int = 0
+	var builds: Dictionary = {}
+	var names: Dictionary = {}
+	for c: Array in carts:
+		beach += 1 if float(c[5]) < 0.0 else 0
+		builds[int(BeachCartKit.VARIANTS[int(c[3])][0])] = true
+		names[int(c[4])] = true
+	_check("Hundreds of push-cart shops on the beach and by market stalls", beach > 200 and carts.size() - beach > 150, "%d beach, %d market" % [beach, carts.size() - beach])
+	_check("All five cart builds and many shop names are used", builds.size() == 5 and names.size() >= 20, "%d builds, %d names" % [builds.size(), names.size()])
+	var kit: Array[Dictionary] = BeachCartKit.arrays()
+	var worst: int = 0
+	for v: Dictionary in kit:
+		worst = maxi(worst, (v["v"] as PackedVector3Array).size() / 3)
+	_check("Every cart variant stays low-poly", kit.size() == BeachCartKit.VARIANTS.size() and worst < 900, "max %d triangles" % worst)
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var holder: Node3D = world._buildings([], {"carts": carts.slice(0, 6)}, [])
+	var faces: int = 0
+	for ch: Node in holder.get_children():
+		if ch is CollisionShape3D:
+			faces = ((ch as CollisionShape3D).shape as ConcavePolygonShape3D).get_faces().size()
+	_check("Carts are solid", faces >= 6 * 36, "%d faces" % faces)
+	holder.free()
+	var signs: CartSigns = city.get_node("CartSigns") as CartSigns
+	var first_board: Array = []
+	for c: Array in carts:
+		if not (kit[int(c[3])]["label"] as Array).is_empty():
+			first_board = c
+			break
+	signs.refresh(Vector3(float(first_board[0]), 0.0, float(first_board[1])) + Vector3(3, 0, 3))
+	var named: bool = false
+	for l: Label3D in signs._pool:
+		named = named or (l.visible and l.text == str(BeachCartKit.NAMES[int(first_board[4])][0]))
+	_check("A nearby cart shows its shop name", signs.shown_count() > 0 and named)
 
 func _test_trees() -> void:
 	var counts: Dictionary = {}
