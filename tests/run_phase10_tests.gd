@@ -194,11 +194,17 @@ func _test_signals_work(city: Node) -> void:
 	var v: TrafficVehicleAI = tm.pool[0]
 	tm.place_vehicle(v, approach, edge.length - 70.0 if dir > 0 else 70.0, dir, 0)
 	v.current_speed_mps = v.cruise_speed_mps
-	for i: int in 600:
+	# Up to 20 s of red: the car must come to rest and never roll past the stop line.
+	var closest: float = INF
+	for i: int in 1200:
 		await get_tree().physics_frame
+		if v.edge == approach and not v.turning:
+			closest = minf(closest, g.edges[approach].length - v.t - v.half_length())
+		if i > 300 and v.current_speed_mps < 0.2:
+			break
 	var left_to_node: float = g.edges[v.edge].length - v.t if v.edge == approach else -1.0
 	_check("On red, traffic stops before the stop line (not in the junction)",
-		v.active and v.edge == approach and v.current_speed_mps < 0.5 and left_to_node - v.half_length() >= tm.signal_stop_back(node_id) - 0.05 and left_to_node - v.half_length() < tm.signal_stop_back(node_id) + 4.5 and not v.turning,
+		v.active and v.edge == approach and v.current_speed_mps < 0.5 and closest >= tm.signal_stop_back(node_id) - 0.05 and left_to_node - v.half_length() < tm.signal_stop_back(node_id) + 4.5 and not v.turning,
 		"bumper %.1f m from the junction centre, stop line %.1f m, %.1f m/s" % [left_to_node - v.half_length(), tm.signal_stop_back(node_id), v.current_speed_mps])
 	tm.signal_clock_override = green_clock
 	for i: int in 600:
