@@ -43,14 +43,19 @@ CLIPS = {
     "dodge": ("Dodging_Back", "root"),
     "stumble": ("Stumble_Backwards", "root"),
     "fallen": ("Fallen_Idle", "root"),
+    # Gestures and getting up. Slow, in-place poses are baked at 15 fps (half the keys, same look).
+    "get_up": ("Getting_Up", "inplace"),
+    "wave": ("Waving_3", "inplace", 15),
+    "talk": ("Talking", "inplace", 15),
+    "drink": ("Drinking", "inplace", 15),
 }
 
 
-def bake(target: dict, src: Rig, mode: str) -> dict:
+def bake(target: dict, src: Rig, mode: str, fps: int = FPS) -> dict:
     """process_people.bake_clip, plus a "root" mode that keeps the hips' travel from frame 0."""
     g = src.g
     dur = g.anim_duration(0)
-    n = max(2, int(round(dur * FPS)) + 1)
+    n = max(2, int(round(dur * fps)) + 1)
     times = np.linspace(0.0, dur, n)
     s_rest = src.pose(src.rest)
     align = {}
@@ -142,7 +147,7 @@ def main() -> int:
     raw = Path(sys.argv[1]) if len(sys.argv) > 1 else RAW
     conv = os.environ.get("FBX2GLTF", "FBX2glTF")
     sources = {}
-    for name, (stem, mode) in CLIPS.items():
+    for name, (stem, mode, *_fps) in CLIPS.items():
         fbx = next(iter(sorted(raw.glob(f"*{stem}.fbx"))), None)
         glb = raw / f"{stem}.glb"
         if fbx is not None and (not glb.exists() or glb.stat().st_mtime < fbx.stat().st_mtime):
@@ -151,7 +156,7 @@ def main() -> int:
             raise SystemExit(f"missing {stem}.fbx / .glb in {raw}")
         rig = Rig(Gltf(glb), 0, None)
         rig.fit_skeleton_only()
-        sources[name] = (rig, mode)
+        sources[name] = (rig, mode, _fps[0] if _fps else FPS)
     meta = json.loads(META.read_text())
     for pid, info in meta["people"].items():
         path = PEOPLE / f"{pid}.glb"
@@ -159,7 +164,7 @@ def main() -> int:
             continue
         target_rig = Rig(Gltf(path), 0, None)
         target = target_rig.pose(target_rig.rest)
-        baked = {name: bake(target, src, mode) for name, (src, mode) in sources.items()}
+        baked = {name: bake(target, src, mode, fps) for name, (src, mode, fps) in sources.items()}
         add_clips(path, baked)
         info["run_speed"] = round(baked["run"]["speed"], 3)
         info["moves"] = {n: [round(float(c["move"][0]), 3), round(float(c["move"][2]), 3), round(c["duration"], 3)]

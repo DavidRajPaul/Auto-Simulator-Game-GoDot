@@ -60,6 +60,10 @@ const STUMBLE_SHARE: float = 0.3
 const HIT_SPEED_MPS: float = 4.0
 const FALLEN_S: Vector2 = Vector2(2.5, 4.5)
 const GET_UP_BLEND_S: float = 0.7
+## Standing people now and then do one Mixamo gesture (talking on a phone, sipping, waving at an
+## auto). A gesture plays once, then they go back to standing; the gap is random per person.
+const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
+const GESTURE_GAP_S: Vector2 = Vector2(6.0, 14.0)
 ## Only traffic this close to the player can upset anyone (walkers further away aren't animated).
 const THREAT_M: float = 60.0
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
@@ -110,10 +114,12 @@ class Walker:
 	var dodge: Vector3 = Vector3.ZERO
 	var recovery: float = 0.0
 	var running: bool = false
-	## "" or the reaction clip playing: "dodge", "stumble", "fallen".
+	## "" or the clip playing: "dodge", "stumble", "fallen", "get_up", "gesture".
 	var react: String = ""
 	var react_t: float = 0.0
 	var move: Vector3 = Vector3.ZERO
+	## Standing people: seconds until their next gesture.
+	var gesture_in: float = 0.0
 	var paintable: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
 
@@ -240,6 +246,7 @@ func _spawn(w: Walker) -> bool:
 	w.dodge = Vector3.ZERO
 	w.recovery = 0.0
 	w.react = ""
+	w.gesture_in = rng.randf_range(GESTURE_GAP_S.x, GESTURE_GAP_S.y)
 	w.running = not w.idle and _run_pace.has(w.id) and rng.randf() < RUN_SHARE
 	if w.running:
 		w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y)
@@ -331,6 +338,9 @@ func _clear(p: Vector3, out: Vector3) -> bool:
 	return SignalBus.walkable(p.x, p.z) and SignalBus.walkable(q.x, q.z)
 
 func _step(w: Walker, delta: float) -> void:
+	# A gesture is harmless to interrupt: a vehicle about to pass takes priority over it.
+	if w.react == "gesture" and w.recovery <= 0.0 and _has_reactions(w) and _check_threats(w):
+		return
 	if w.react != "":
 		_step_react(w, delta)
 		return
@@ -349,6 +359,11 @@ func _step(w: Walker, delta: float) -> void:
 		w.node.rotate_object_local(Vector3.FORWARD, deg_to_rad(18.0) * minf(w.recovery, 1.0))
 		return
 	if w.idle and w.startle <= 0.0:
+		w.gesture_in -= delta
+		if w.gesture_in <= 0.0:
+			w.gesture_in = rng.randf_range(GESTURE_GAP_S.x, GESTURE_GAP_S.y)
+			if _start_gesture(w):
+				return
 		_apply(w)
 		return
 	if w.startle > 0.0:
@@ -515,9 +530,18 @@ func _step_react(w: Walker, delta: float) -> void:
 		_apply(w)
 		return
 	if w.react == "fallen":
-		# Up again (Mixamo has no matching get-up here: a slow blend back to the feet).
+		# Up again: Mixamo's getting-up clip where the model has one, else a slow blend to the feet.
 		w.react = ""
-		_resume(w, GET_UP_BLEND_S)
+		if w.anim.has_animation("get_up"):
+			_play_once(w, "get_up")
+		else:
+			_resume(w, GET_UP_BLEND_S)
+		_apply(w)
+		return
+	if w.react == "get_up" or w.react == "gesture":
+		# Clip finished (both stay where they are): back to walking or standing.
+		w.react = ""
+		_resume(w, 0.2)
 		_apply(w)
 		return
 	# The clip has carried the body `move` from the node: put the node there and continue from
@@ -534,6 +558,24 @@ func _step_react(w: Walker, delta: float) -> void:
 		_resume(w, 0.0)
 	w.anim.advance(0.0)
 	_apply(w)
+
+## Stand-still gesture for a person waiting at the kerb; _step_react resumes them when it ends.
+func _start_gesture(w: Walker) -> bool:
+	var clip: String = GESTURE_CLIPS[rng.randi() % GESTURE_CLIPS.size()]
+	if w.anim == null or not w.anim.has_animation(clip):
+		return false
+	_play_once(w, clip)
+	w.react = "gesture"
+	return true
+
+## Plays a non-looping clip in place (getting up, a gesture) and times the reaction to its length.
+func _play_once(w: Walker, clip: String) -> void:
+	var anim: Animation = w.anim.get_animation(clip)
+	anim.loop_mode = Animation.LOOP_NONE
+	w.react = clip
+	w.react_t = anim.length
+	w.anim.play(clip, 0.1)
+	w.anim.speed_scale = 1.0
 
 func _apply(w: Walker) -> void:
 	var fwd: Vector3 = Vector3(w.heading.x, 0.0, w.heading.z)

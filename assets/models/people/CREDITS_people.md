@@ -11,3 +11,4 @@
 | `assets/models/people/man_casual.glb` | chennai_man_rpm | "Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character |
 | `assets/models/people/girl_churidar.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_pavadai.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
+| `assets/models/people/mixamo_ch22.glb` | Mixamo "Ch22" (skinned Walk.fbx, owner-supplied) | Adobe Mixamo character, used under the Mixamo terms (royalty-free in games; raw FBX not redistributed) |

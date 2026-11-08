@@ -29,6 +29,7 @@ func _run() -> void:
 	await _test_walking(city.get_node("PedestrianManager") as PedestrianManager)
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
 	await _test_reactions(city.get_node("PedestrianManager") as PedestrianManager)
+	await _test_gestures(city.get_node("PedestrianManager") as PedestrianManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
 	_test_grounding(city)
@@ -956,6 +957,31 @@ func _test_seated_driver(city: Node) -> void:
 
 
 ## Owner's Mixamo clips (Nov 8): joggers, and people a vehicle nearly hits jump back or fall.
+func _test_gestures(pm: PedestrianManager) -> void:
+	var sets_ok: bool = true
+	for w: PedestrianManager.Walker in pm.people:
+		if w.anim == null or not w.anim.has_animation("get_up"):
+			continue
+		for clip: String in ["get_up", "talk", "drink", "wave"]:
+			sets_ok = sets_ok and w.anim.has_animation(clip)
+	_check("Pedestrians with Mixamo sets have get-up and gesture clips", sets_ok)
+	var idler: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.idle and w.react == "" and w.anim.has_animation("talk"):
+			idler = w
+			break
+	if idler == null:
+		_check("Found a standing person to gesture", false)
+		return
+	pm._start_gesture(idler)
+	_check("A standing person does a gesture once, not on a loop", idler.react == "gesture" and idler.anim.current_animation in PedestrianManager.GESTURE_CLIPS and idler.anim.get_animation(idler.anim.current_animation).loop_mode == Animation.LOOP_NONE, idler.react)
+	for f: int in 60 * 12:
+		await get_tree().physics_frame
+		if idler.react == "":
+			break
+	_check("…then they go back to standing", idler.react == "" and idler.anim.current_animation == "idle", idler.anim.current_animation)
+
+
 func _test_reactions(pm: PedestrianManager) -> void:
 	var clips_ok: bool = true
 	for w: PedestrianManager.Walker in pm.people:
@@ -1002,7 +1028,8 @@ func _test_reactions(pm: PedestrianManager) -> void:
 	var start: Vector3 = w2.pos
 	var was: String = w2.react
 	var lay: bool = false
-	for f: int in 60 * 10:
+	# Stumble, lying (up to 4.5 s), then Mixamo's 7.6 s getting-up clip: allow for all of it.
+	for f: int in 60 * 20:
 		await get_tree().physics_frame
 		lay = lay or w2.react == "fallen"
 		if w2.react == "":
