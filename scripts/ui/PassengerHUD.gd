@@ -157,6 +157,9 @@ func _ready() -> void:
 	SignalBus.haggle_resolved.connect(_on_haggle_resolved)
 	SignalBus.ride_updated.connect(_on_ride_updated)
 	SignalBus.ride_completed.connect(_on_ride_completed)
+	SignalBus.ride_abandoned.connect(func(line: String) -> void:
+		_ride_card.visible = false
+		toast(line, 4.5))
 	SignalBus.hint_requested.connect(func(text: String, seconds: float) -> void:
 		_hint.text = text
 		_hint_timer = seconds)

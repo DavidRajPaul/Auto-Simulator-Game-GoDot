@@ -41,6 +41,7 @@ func _run() -> void:
 	await _test_shift_clock()
 	await _test_settings(main, hud)
 	await _test_garage_pause(ui)
+	await _test_wreck_rescue(main, auto, services, ui, hud)
 
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
@@ -319,6 +320,127 @@ func _test_garage_pause(ui: GarageUI) -> void:
 	ui.open_pause()
 	_check("Pause menu shows settings", ui.is_open() and ui._modal_body.get_child_count() >= 5)
 	ui.close_modal()
+
+## Nov 8 owner questions: a wrecked auto with no money, the rider on board, the horn. The wreck
+## panel explains itself and always has the free patch-up (ads stay optional); a wrecked auto can
+## be towed to the nearest garage; the rider jumps out and runs on the frightened run with no fare
+## and no rating; the horn is silent and greyed out.
+func _test_wreck_rescue(main: Node, auto: AutoRickshawController, services: ServicePoints, ui: GarageUI, hud: TouchHUD) -> void:
+	GameState.tutorial_active = false
+	GameState.repair_free()
+	GameState.wallet_inr = 0
+	var garage: Dictionary = services.nearest("garage", auto.global_position)
+	var spot: Vector3 = Vector3.INF
+	for off: Vector3 in [Vector3(140, 0, 0), Vector3(-140, 0, 0), Vector3(0, 0, 140), Vector3(0, 0, -140), Vector3(220, 0, 220)]:
+		var q: Vector3 = (garage["pos"] as Vector3) + off
+		if services.services.all(func(sv: Dictionary) -> bool: return (sv["pos"] as Vector3).distance_to(q) > 30.0):
+			spot = q
+			break
+	_check("Found a wreck spot away from every service", spot != Vector3.INF)
+	auto.global_transform = Transform3D(Basis.IDENTITY, spot + Vector3(0, 1, 0))
+	auto.linear_velocity = Vector3.ZERO
+	await _physics(30)
+	# A ride in progress when the auto catches fire.
+	var savari: SavariManager = main.get_node("SavariManager") as SavariManager
+	var phud: PassengerHUD = main.get_node("PassengerHUD") as PassengerHUD
+	var abandoned: Array[String] = []
+	var on_abandon: Callable = func(line: String) -> void: abandoned.append(line)
+	SignalBus.ride_abandoned.connect(on_abandon)
+	savari.rider = savari.archetypes[0]
+	savari.destination = {"pos": spot + Vector3(600, 0, 0), "name": "Test"}
+	savari.route = {}
+	savari.agreed_fare = 120
+	savari._rider_person = "woman_saree_green"
+	savari.state = SavariManager.State.RIDING
+	phud._ride_card.visible = true
+	var rides: int = GameState.completed_savaris
+	var fwd: Vector3 = -auto.global_basis.z
+	var left: Vector3 = Vector3.UP.cross(Vector3(fwd.x, 0.0, fwd.z).normalized())
+	for i: int in 12:
+		if GameState.is_wrecked():
+			break
+		SignalBus.player_collision.emit(14.0)
+	await _physics(2)
+	_check("Crashing to 0 % wrecks the auto", GameState.is_wrecked())
+	_check("Fire mid-ride: the ride ends with the rider's line", savari.state == SavariManager.State.COOLDOWN and savari.rider == null
+		and abandoned.size() == 1 and abandoned[0] == tr("RIDER_FLED_FIRE"))
+	_check("No fare and no rating for a ride the fire ended", GameState.wallet_inr == 0 and GameState.completed_savaris == rides)
+	_check("The ride card goes away", not phud._ride_card.visible)
+	var runner: Node3D = savari._fleer.get_node_or_null("Runner_woman_saree_green") as Node3D
+	var ap: AnimationPlayer = runner.find_child("AnimationPlayer", true, false) as AnimationPlayer if runner != null else null
+	_check("The rider gets out on the kerb (left) side", savari._fleer.visible and runner != null and runner.visible
+		and (savari._fleer.global_position - auto.global_position).dot(left) > 0.5)
+	_check("The rider runs on the frightened run", ap != null and ap.current_animation == "flee" and ap.is_playing())
+	var run_from: Vector3 = savari._fleer.global_position
+	await _physics(90)
+	_check("The rider runs away from the burning auto", savari._fleer.global_position.distance_to(run_from) > 1.5
+		and savari._fleer.global_position.distance_to(auto.global_position) > run_from.distance_to(auto.global_position))
+	# The wreck panel with an empty wallet.
+	await _process_frames(2)
+	var rows: VBoxContainer = ui._wreck_rows
+	_check("Wreck panel shows what happened and the money", ui._wreck_card.visible and ui._wreck_title.text == tr("WRECKED_MSG")
+		and ui._wreck_detail.text == tr("WRECK_DETAIL") % [UIKit.inr(GameState.repair_cost()), UIKit.inr(0)], ui._wreck_detail.text)
+	_check("Free patch-up is always offered, so ads stay optional", rows.get_node_or_null("Patch") != null)
+	_check("An ad repair is offered only when an ad is ready", (rows.get_node_or_null("AdRepair") != null) == AdMonetizationManager.can_offer_rewarded("ad_wreck_repair"))
+	_check("No pay option with an empty wallet", rows.get_node_or_null("Pay") == null)
+	var tow_row: Node = rows.get_node_or_null("Tow")
+	_check("Empty wallet: a free tow to the nearest garage, no ad needed", tow_row != null and rows.get_node_or_null("AdTow") == null
+		and (tow_row.get_node("Button") as Button).text == tr("WRECK_TOW_FREE_BTN")
+		and (tow_row.get_node("Desc") as Label).text.begins_with(tr("WRECK_TOW_DESC").get_slice("%", 0)))
+	_check("The engine-on-fire panel hides the old service bar", not ui._service_bar.visible)
+	# The horn is silent and greyed out while wrecked.
+	var horns: Array[int] = [0]
+	var on_horn: Callable = func(_p: Vector3, _f: Vector3, _r: float, _t: int) -> void: horns[0] += 1
+	SignalBus.horn_blasted.connect(on_horn)
+	Input.action_press("horn")
+	await _physics(3)
+	Input.action_release("horn")
+	auto.blow_horn()
+	_check("No horn from a wrecked auto", horns[0] == 0)
+	var horn_icon: TextureRect = hud._buttons["Horn"]["icon"] as TextureRect
+	_check("Horn button is greyed out while wrecked", horn_icon.modulate == TouchHUD.HORN_OFF_TINT)
+	_check("The fire warning gives way to the wreck panel", hud._banner == null or not hud._banner.visible)
+	# Free patch-up.
+	((rows.get_node("Patch") as Node).get_node("Button") as Button).pressed.emit()
+	await _process_frames(2)
+	_check("Patch-up runs again at 15 %, panel closes", not GameState.is_wrecked() and GameState.condition == GameState.PATCH_UP_CONDITION
+		and not ui._wreck_card.visible)
+	auto.blow_horn()
+	_check("Horn works again after the patch-up", horns[0] == 1 and horn_icon.modulate == Color.WHITE)
+	SignalBus.horn_blasted.disconnect(on_horn)
+	# Wrecked again with money: pay option, then a paid tow to the garage.
+	GameState.wallet_inr = 500
+	for i: int in 12:
+		if GameState.is_wrecked():
+			break
+		SignalBus.player_collision.emit(14.0)
+	await _process_frames(2)
+	var pay_row: Node = rows.get_node_or_null("Pay")
+	var cost: int = GameState.repair_cost()
+	_check("With money: pay option says what it buys", pay_row != null
+		and (pay_row.get_node("Button") as Button).text == tr("WRECK_PAY_BTN") % UIKit.inr(mini(cost, 500))
+		and (pay_row.get_node("Desc") as Label).text == (tr("WRECK_PAY_FULL_DESC") if 500 >= cost else tr("WRECK_PAY_DESC") % mini(100, floori(float(500) / GameState.REPAIR_COST_PER_POINT))))
+	var tow_btn: Button = (rows.get_node("Tow") as Node).get_node("Button") as Button
+	_check("Paid tow shows its price", tow_btn.text == tr("WRECK_TOW_BTN") % UIKit.inr(ServicePoints.TOW_COST_INR))
+	var target: Dictionary = services.nearest("garage", auto.global_position)
+	tow_btn.pressed.emit()
+	await _physics(30)
+	await _process_frames(2)
+	_check("Tow drops the wreck at the nearest garage for ₹210", (target["pos"] as Vector3).distance_to(auto.global_position) < 6.0
+		and GameState.wallet_inr == 500 - ServicePoints.TOW_COST_INR, "%.1f m, ₹%d" % [(target["pos"] as Vector3).distance_to(auto.global_position), GameState.wallet_inr])
+	_check("Towing does not repair: still wrecked at the garage", GameState.is_wrecked() and ui._wreck_card.visible)
+	_check("At the garage the panel offers the garage instead of a tow", rows.get_node_or_null("Garage") != null and rows.get_node_or_null("Tow") == null)
+	((rows.get_node("Garage") as Node).get_node("Button") as Button).pressed.emit()
+	_check("Open garage from the wreck panel", ui.is_open() and ui._modal_title.text == tr("GARAGE"))
+	ui.close_modal()
+	GameState.repair()
+	await _process_frames(2)
+	_check("Repair at the garage clears the wreck panel", not GameState.is_wrecked() and not ui._wreck_card.visible)
+	# The runner disappears once out of the way.
+	await _physics(int(SavariManager.FLEER_SECONDS * 60.0))
+	_check("The fled rider is gone after a few seconds", not savari._fleer.visible)
+	SignalBus.ride_abandoned.disconnect(on_abandon)
+	GameState.repair_free()
 
 # --- Helpers ------------------------------------------------------------------------------
 

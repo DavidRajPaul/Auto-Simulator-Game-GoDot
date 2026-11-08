@@ -46,6 +46,11 @@ func _ready() -> void:
 		var r: Dictionary = tow_to_nearest_fuel(_player_pos if from == Vector3.ZERO else from)
 		if not r.is_empty():
 			SignalBus.teleport_requested.emit(r["transform"]))
+	SignalBus.wreck_tow_requested.connect(func(from: Vector3) -> void:
+		var r: Dictionary = tow_to_nearest_garage(_player_pos if from == Vector3.ZERO else from)
+		if not r.is_empty():
+			SignalBus.teleport_requested.emit(r["transform"]))
+	SignalBus.garage_quote_provider = garage_quote
 
 func _physics_process(_delta: float) -> void:
 	var near: Dictionary = {}
@@ -83,6 +88,23 @@ func tow_to_nearest_fuel(from: Vector3) -> Dictionary:
 		return {}
 	var p: Vector3 = target["pos"]
 	return {"transform": Transform3D(Basis(Vector3.UP, float(target["yaw"])), p + Vector3(0, 1.0, 0)), "name": target["name"]}
+
+## Wrecked (engine dead, on fire): tow to the nearest garage. Like the fuel tow it costs
+## TOW_COST_INR or whatever is left in the wallet, so an empty wallet is towed for free.
+func tow_to_nearest_garage(from: Vector3) -> Dictionary:
+	var target: Dictionary = nearest("garage", from)
+	if target.is_empty() or not GameState.spend(mini(TOW_COST_INR, GameState.wallet_inr)):
+		return {}
+	var p: Vector3 = target["pos"]
+	return {"transform": Transform3D(Basis(Vector3.UP, float(target["yaw"])), p + Vector3(0, 1.0, 0)), "name": target["name"]}
+
+## What the wreck panel shows for the tow: the nearest garage's name and straight-line km.
+func garage_quote(from: Vector3) -> Dictionary:
+	var g: Dictionary = nearest("garage", from)
+	if g.is_empty():
+		return {}
+	var p: Vector3 = g["pos"]
+	return {"name": str(g["name"]), "km": Vector2(p.x - from.x, p.z - from.z).length() / 1000.0, "pos": p}
 
 # --- Markers (simple silhouettes until Phase 5 art) -----------------------------------
 

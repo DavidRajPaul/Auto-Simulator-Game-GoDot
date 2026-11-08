@@ -677,6 +677,10 @@ func switch_off_engine() -> void:
 	SignalBus.engine_switched_off.emit()
 
 func blow_horn() -> void:
+	# Wrecked: the driver is getting away from a burning engine, not honking, and a horn would still
+	# push traffic and people around the wreck.
+	if use_player_profile and GameState.is_wrecked():
+		return
 	SignalBus.horn_blasted.emit(global_position, -global_transform.basis.z, stats.horn_radius_m, stats.horn_tier)
 
 ## Returns true once the engine is running again.
