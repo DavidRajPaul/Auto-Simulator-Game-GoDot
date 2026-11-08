@@ -48,6 +48,8 @@ CLIPS = {
     "wave": ("Waving_3", "inplace", 15),
     "talk": ("Talking", "inplace", 15),
     "drink": ("Drinking", "inplace", 15),
+    # Fleeing from a burning auto: a frightened run, and a run that looks back over the shoulder.
+    "flee_look": ("Run_Look_Back", "inplace", 30),
 }
 
 
@@ -169,6 +171,8 @@ def main() -> int:
         info["run_speed"] = round(baked["run"]["speed"], 3)
         info["moves"] = {n: [round(float(c["move"][0]), 3), round(float(c["move"][2]), 3), round(c["duration"], 3)]
                          for n, c in baked.items() if n != "run"}
+        for n in ("flee_look",):
+            info[f"{n}_speed"] = round(baked[n]["speed"], 3)
         print(f"OK   {pid}: +{', '.join(baked)}  run {info['run_speed']:.2f} m/s, "
               f"dodge back {-info['moves']['dodge'][1]:.2f} m, {path.stat().st_size // 1024} KB")
     META.write_text(json.dumps(meta, indent=1, sort_keys=True))

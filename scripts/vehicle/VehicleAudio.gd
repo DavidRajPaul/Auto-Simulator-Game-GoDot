@@ -18,6 +18,15 @@ const HORN_AIR_FILE: String = "res://assets/audio/vehicle/horn_air.ogg"
 const AIR_HORN_TIER: int = 2
 const KICK_FILE: String = "res://assets/audio/vehicle/kick_start.ogg"
 const TICK_FILE: String = "res://assets/audio/vehicle/indicator_tick.ogg"
+## Engine on fire (the flame stage of DamageFX): the engine is silent and this is heard instead.
+const FIRE_FILE: String = "res://assets/audio/vehicle/fire_loop.ogg"
+const IGNITE_FILE: String = "res://assets/audio/vehicle/fire_ignite.ogg"
+const FIRE_VOLUME_DB: float = -5.0
+const STEAM_FILE: String = "res://assets/audio/vehicle/steam_hiss.ogg"
+const BODY_FILE: String = "res://assets/audio/vehicle/impact_body.ogg"
+## Same threshold as the flames on screen (DamageFX stage 4 = FIRE_FROM and up, and the wreck).
+const FIRE_STAGE: int = 4
+const BURN_CHECK_S: float = 0.2
 
 @export var engine_volume_db: float = -6.0
 @export var horn_volume_db: float = -2.0
@@ -31,12 +40,26 @@ var _tock: AudioStream
 var _tick_stream: AudioStream
 var _speed_kmh: float = 0.0
 var _engine_running: bool = true
+var _fire: AudioStreamPlayer3D
+var _ignite: AudioStreamPlayer3D
+var _steam: AudioStreamPlayer3D
+var _thud: AudioStreamPlayer3D
+var _burning: bool = false
+var _burn_check_t: float = 0.0
 
 func _ready() -> void:
 	_engine = _make_player("Engine", stream_or(ENGINE_FILE, _build_engine_loop()), engine_volume_db)
 	_horn = _make_player("Horn", stream_or(HORN_FILE, _build_horn()), horn_volume_db)
 	_horn_air = _make_player("HornAir", stream_or(HORN_AIR_FILE, _horn.stream), horn_volume_db)
 	_clunk = _make_player("KickClunk", stream_or(KICK_FILE, _build_clunk()), -4.0)
+	_fire = _make_player("EngineFire", stream_or(FIRE_FILE, _build_fire_loop()), FIRE_VOLUME_DB)
+	_ignite = _make_player("EngineIgnite", stream_or(IGNITE_FILE, _build_ignite()), -2.0)
+	_steam = _make_player("SteamHiss", stream_or(STEAM_FILE, _build_ignite()), -6.0)
+	_thud = _make_player("BodyThud", stream_or(BODY_FILE, _build_clunk()), -2.0)
+	SignalBus.pedestrian_bumped.connect(func(p: Vector3, _v: Vector3) -> void:
+		_thud.global_position = p
+		_thud.play()
+	)
 	# Indicator relay: heard inside the cab, so a plain (non-positional) player.
 	_tick_stream = stream_or(TICK_FILE, _build_tick(1800.0))
 	_tock = _build_tick(1350.0) if not ResourceLoader.exists(TICK_FILE) else _tick_stream
@@ -62,6 +85,10 @@ func _play_horn(tier: int) -> void:
 	(_horn_air if tier >= AIR_HORN_TIER else _horn).play()
 
 func _process(delta: float) -> void:
+	_burn_check_t -= delta
+	if _burn_check_t <= 0.0:
+		_burn_check_t = BURN_CHECK_S
+		_set_burning(DamageFX.stage_for(GameState.damage_severity(), GameState.is_wrecked()) >= FIRE_STAGE)
 	if not _engine_running:
 		return
 	var t: float = clampf(_speed_kmh / TOP_SPEED_KMH, 0.0, 1.0)
@@ -76,7 +103,7 @@ func _apply_drivetrain(s: VehicleStats) -> void:
 	var loop_file: String = s.engine_loop if s.engine_loop != "" and ResourceLoader.exists(s.engine_loop) else ENGINE_FILE
 	_engine.stream = _build_ev_whine() if is_ev else stream_or(loop_file, _build_engine_loop())
 	_engine.volume_db = engine_volume_db - (8.0 if is_ev else 0.0)
-	if _engine_running:
+	if _engine_running and not _burning:
 		_engine.play()
 
 func _build_ev_whine() -> AudioStreamWAV:
@@ -95,9 +122,27 @@ func _set_engine(on: bool) -> void:
 	_engine_running = on
 	if on:
 		_engine.pitch_scale = IDLE_PITCH
-		_engine.play()
+		if not _burning:
+			_engine.play()
 	else:
 		_engine.stop()
+
+## On fire the engine is dead: its sound stops and the fire roars in its place (and a whoomph
+## when it catches). Back to normal when the damage is repaired below the flame stage.
+func _set_burning(on: bool) -> void:
+	if on == _burning:
+		return
+	_burning = on
+	SignalBus.vehicle_burning.emit(on)
+	if on:
+		_engine.stop()
+		_ignite.play()
+		_fire.play()
+	else:
+		_fire.stop()
+		_steam.play()
+		if _engine_running:
+			_engine.play()
 
 func _make_player(player_name: String, stream: AudioStream, volume_db: float) -> AudioStreamPlayer3D:
 	var p: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
@@ -160,6 +205,39 @@ static func stream_or(path: String, fallback: AudioStream) -> AudioStream:
 				(s as AudioStreamOggVorbis).loop = true
 			return s
 	return fallback
+
+## Fire roaring under the bonnet: a low, swaying rumble with sharp crackling pops. One second, looped.
+func _build_fire_loop() -> AudioStreamWAV:
+	var n: int = MIX_RATE
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1138
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	samples.resize(n)
+	var rumble: float = 0.0
+	for i: int in n:
+		rumble += (rng.randf_range(-1.0, 1.0) - rumble) * 0.03 # one-pole low-pass: the roar
+		var sway: float = 0.75 + 0.25 * sin(TAU * 3.0 * float(i) / n) # 3 cycles per loop: seamless
+		samples[i] = rumble * 2.2 * sway
+	for k: int in 14: # pops, each a short decaying burst
+		var start: int = rng.randi() % n
+		var amp: float = rng.randf_range(0.25, 0.7)
+		for j: int in int(MIX_RATE * 0.02):
+			samples[(start + j) % n] += amp * rng.randf_range(-1.0, 1.0) * exp(-float(j) / (MIX_RATE * 0.004))
+	return _to_wav(samples, true)
+
+## The catch: a noisy swell with a fast front, half a second.
+func _build_ignite() -> AudioStreamWAV:
+	var n: int = int(MIX_RATE * 0.6)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 451
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	samples.resize(n)
+	var lp: float = 0.0
+	for i: int in n:
+		var t: float = float(i) / MIX_RATE
+		lp += (rng.randf_range(-1.0, 1.0) - lp) * 0.2
+		samples[i] = lp * minf(t / 0.02, 1.0) * exp(-t * 5.0) * 0.9
+	return _to_wav(samples, false)
 
 ## Indicator relay click: a 25 ms damped burst.
 func _build_tick(freq: float) -> AudioStreamWAV:

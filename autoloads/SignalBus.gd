@@ -146,6 +146,11 @@ signal back_requested()
 signal ui_modal_changed(open: bool)
 ## A walker had to jump out of the auto's way (PedestrianManager).
 signal pedestrian_startled(pos: Vector3)
+## The player's auto hit someone who had not got out of the way: the auto loses speed by the
+## pedestrian's share of the mass (AutoRickshawController), the person goes down along its path.
+signal pedestrian_bumped(pos: Vector3, car_velocity: Vector3)
+## The player's auto caught fire (true) or the fire was put out (false).
+signal vehicle_burning(on: bool)
 # --- Controls (gear, indicators, lamps) --------------------------------------------
 ## +1 drive, -1 reverse.
 signal gear_changed(gear: int)

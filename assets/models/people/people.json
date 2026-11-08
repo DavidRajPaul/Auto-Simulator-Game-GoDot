@@ -3,6 +3,7 @@
  "people": {
   "girl_churidar": {
    "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.571,
    "height": 1.55,
    "moves": {
     "dodge": [
@@ -19,6 +20,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -47,6 +53,7 @@
   },
   "girl_pavadai": {
    "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.615,
    "height": 1.52,
    "moves": {
     "dodge": [
@@ -63,6 +70,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -91,6 +103,7 @@
   },
   "man_casual": {
    "credit": "\"Dhanush 3d model\" by Peter Charles (Sketchfab), CC BY 4.0 \u2014 face repainted as a generic character",
+   "flee_look_speed": 1.656,
    "height": 1.72,
    "moves": {
     "dodge": [
@@ -107,6 +120,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -135,6 +153,7 @@
   },
   "mixamo_ch22": {
    "credit": "Mixamo character \"Ch22\" (Adobe Mixamo) \u2014 used under the Mixamo terms, royalty-free in games; the raw FBX is not redistributed",
+   "flee_look_speed": 1.828,
    "height": 1.72,
    "moves": {
     "dodge": [
@@ -151,6 +170,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -179,6 +203,7 @@
   },
   "old_man_veshti": {
    "credit": "\"Indian Old man walking\" by anandmohan662 (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.686,
    "height": 1.66,
    "moves": {
     "dodge": [
@@ -195,6 +220,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -223,6 +253,7 @@
   },
   "woman_modern": {
    "credit": "\"Modern Indian Woman\" by Pixel_Monster (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.576,
    "height": 1.58,
    "moves": {
     "dodge": [
@@ -239,6 +270,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -267,6 +303,7 @@
   },
   "woman_saree_green": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
+   "flee_look_speed": 1.573,
    "height": 1.58,
    "moves": {
     "dodge": [
@@ -283,6 +320,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -311,6 +353,7 @@
   },
   "woman_saree_maroon": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
+   "flee_look_speed": 1.533,
    "height": 1.54,
    "moves": {
     "dodge": [
@@ -327,6 +370,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -355,6 +403,7 @@
   },
   "woman_saree_violet": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.553,
    "height": 1.56,
    "moves": {
     "dodge": [
@@ -371,6 +420,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,
@@ -399,6 +453,7 @@
   },
   "young_man": {
    "credit": "\"Alex Texel A-pose\" by alex.texelsales (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.767,
    "height": 1.72,
    "moves": {
     "dodge": [
@@ -415,6 +470,11 @@
      0.0,
      -0.0,
      1.5
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
     ],
     "get_up": [
      0.0,

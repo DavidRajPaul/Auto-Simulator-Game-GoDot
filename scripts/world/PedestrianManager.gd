@@ -64,8 +64,21 @@ const GET_UP_BLEND_S: float = 0.7
 ## auto). A gesture plays once, then they go back to standing; the gap is random per person.
 const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
 const GESTURE_GAP_S: Vector2 = Vector2(6.0, 14.0)
+## A burning auto scares everyone within FIRE_SCARE_M: they run straight away from it for FLEE_S.
+const FIRE_SCARE_M: float = 22.0
+const FLEE_S: Vector2 = Vector2(5.0, 8.0)
+const FLEE_PACE: Vector2 = Vector2(1.0, 1.15) # × the clip's own pace, so the legs stay natural
+const SCREAM_FILES: Array[String] = [
+	"res://assets/audio/people/scream_1.ogg", "res://assets/audio/people/scream_2.ogg",
+	"res://assets/audio/people/scream_3.ogg", "res://assets/audio/people/scream_4.ogg",
+]
 ## Only traffic this close to the player can upset anyone (walkers further away aren't animated).
 const THREAT_M: float = 60.0
+## The auto's footprint for a body hit: a person it reaches (and who did not dodge in time) is struck.
+const BUMP_HALF_WIDTH_M: float = 0.95
+const BUMP_HALF_LENGTH_M: float = 1.5
+const BUMP_MIN_MPS: float = 1.5
+const BUMP_COOLDOWN_S: float = 1.0
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
 const SHARE: Dictionary = {
     "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
@@ -87,6 +100,11 @@ var _last_player: Vector3 = Vector3.ZERO
 var _has_player: bool = false
 var _timer: float = 0.0
 var _run_pace: Dictionary = {}
+var _flee_look_pace: Dictionary = {}
+var _fire_on: bool = false
+var _screams: Array[AudioStreamPlayer3D] = []
+var _scream_streams: Array[AudioStream] = []
+var _scream_next: int = 0
 ## id -> {clip: Vector3(local x, local z, seconds)}: where each root-motion clip leaves the body.
 var _moves: Dictionary = {}
 var _traffic: ChennaiTrafficManager
@@ -120,11 +138,19 @@ class Walker:
 	var move: Vector3 = Vector3.ZERO
 	## Standing people: seconds until their next gesture.
 	var gesture_in: float = 0.0
+	## Running away from a fire: the clip, its pace, the direction and the time left.
+	var fleeing: bool = false
+	var flee_clip: String = ""
+	var flee_pace: float = 2.2
+	var flee_dir: Vector3 = Vector3.FORWARD
+	var flee_t: float = 0.0
 	var paintable: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
 
 func _ready() -> void:
 	rng.seed = 600028
+	SignalBus.vehicle_burning.connect(func(on: bool) -> void: _fire_on = on)
+	_setup_screams()
 	_load_people()
 	var slots: Array[int] = []
 	for k: int in _scenes.size():
@@ -177,6 +203,8 @@ func _load_people() -> void:
 		_native_pace[str(id)] = maxf(float(info.get("walk_speed", 1.2)), 0.1)
 		if info.has("run_speed"):
 			_run_pace[str(id)] = maxf(float(info["run_speed"]), 0.1)
+		if info.has("flee_look_speed"):
+			_flee_look_pace[str(id)] = maxf(float(info["flee_look_speed"]), 0.1)
 		var mv: Dictionary = {}
 		for clip: String in (info.get("moves", {}) as Dictionary):
 			var m: Array = info["moves"][clip]
@@ -194,6 +222,8 @@ func _process(delta: float) -> void:
 	_player_vel = (_player - _last_player) / delta if _last_player != Vector3.ZERO else Vector3.ZERO
 	_last_player = _player
 	_gather_threats(delta)
+	_check_player_bumps()
+	_check_fire_scares()
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = UPDATE_S
@@ -358,6 +388,9 @@ func _step(w: Walker, delta: float) -> void:
 		_apply(w)
 		w.node.rotate_object_local(Vector3.FORWARD, deg_to_rad(18.0) * minf(w.recovery, 1.0))
 		return
+	if w.fleeing:
+		_step_flee(w, delta)
+		return
 	if w.idle and w.startle <= 0.0:
 		w.gesture_in -= delta
 		if w.gesture_in <= 0.0:
@@ -467,6 +500,33 @@ func _gather_threats(delta: float) -> void:
 func _has_reactions(w: Walker) -> bool:
 	return w.anim != null and w.anim.has_animation("dodge") and (_moves.get(w.id, {}) as Dictionary).has("dodge")
 
+## The auto has a body. Someone it reaches who is not already dodging or falling is hit: they go
+## down along the auto's path, and SignalBus.pedestrian_bumped slows the auto by their share of its mass.
+func _check_player_bumps() -> void:
+	var speed: float = _player_vel.length()
+	if not _has_player or speed < BUMP_MIN_MPS:
+		return
+	var fwd: Vector3 = Vector3(_player_fwd.x, 0.0, _player_fwd.z).normalized()
+	var side: Vector3 = Vector3(-fwd.z, 0.0, fwd.x)
+	var dir: Vector3 = Vector3(_player_vel.x, 0.0, _player_vel.z).normalized()
+	for w: Walker in people:
+		if not w.active or w.recovery > 0.0 or (w.react != "" and w.react != "gesture"):
+			continue
+		var rel: Vector3 = w.pos - _player
+		rel.y = 0.0
+		if absf(rel.dot(side)) > BUMP_HALF_WIDTH_M or absf(rel.dot(fwd)) > BUMP_HALF_LENGTH_M:
+			continue
+		w.recovery = BUMP_COOLDOWN_S # one hit per pass, however many frames the body stays in the footprint
+		if not _start_react(w, "stumble", dir) and not _start_react(w, "dodge", dir):
+			if w.anim.has_animation("fallen"):
+				w.react = "fallen"
+				w.react_t = FALLEN_S.x
+				w.anim.get_animation("fallen").loop_mode = Animation.LOOP_LINEAR
+				w.anim.play("fallen", 0.1)
+		_scream(w.pos)
+		SignalBus.pedestrian_startled.emit(w.pos)
+		SignalBus.pedestrian_bumped.emit(w.pos, _player_vel)
+
 ## A vehicle whose path passes within NEAR_MISS_M in the next REACT_AHEAD_S: jump back, or
 ## stumble and fall (always, if it's going to hit at speed).
 func _check_threats(w: Walker) -> bool:
@@ -558,6 +618,78 @@ func _step_react(w: Walker, delta: float) -> void:
 		_resume(w, 0.0)
 	w.anim.advance(0.0)
 	_apply(w)
+
+## A burning auto scares everyone close to it: they run off from it, screaming.
+func _check_fire_scares() -> void:
+	if not _fire_on or not _has_player:
+		return
+	for w: Walker in people:
+		if not w.active or w.fleeing or w.anim == null or (w.react != "" and w.react != "gesture"):
+			continue
+		var d: Vector3 = w.pos - _player
+		d.y = 0.0
+		if d.length() <= FIRE_SCARE_M:
+			_start_flee(w)
+
+## Starts a run straight away from the auto: a running clip, or the look-back run, at its own pace.
+func _start_flee(w: Walker) -> void:
+	var options: Array[String] = []
+	if w.anim.has_animation("run"):
+		options.append("run")
+	if w.anim.has_animation("flee_look"):
+		options.append("flee_look")
+	if options.is_empty():
+		return
+	var away: Vector3 = w.pos - _player
+	away.y = 0.0
+	if away.length() < 0.05:
+		away = Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))
+	w.flee_clip = options[rng.randi() % options.size()]
+	var native: float = float(_run_pace.get(w.id, 2.2)) if w.flee_clip == "run" else float(_flee_look_pace.get(w.id, 1.6))
+	w.flee_pace = native * rng.randf_range(FLEE_PACE.x, FLEE_PACE.y)
+	w.flee_dir = away.normalized()
+	w.flee_t = rng.randf_range(FLEE_S.x, FLEE_S.y)
+	w.react = ""
+	w.fleeing = true
+	w.anim.get_animation(w.flee_clip).loop_mode = Animation.LOOP_LINEAR
+	w.anim.play(w.flee_clip, 0.2)
+	w.anim.speed_scale = w.flee_pace / native
+	_scream(w.pos)
+
+## Running off from the fire, straight away from the auto. Stops at the kerb or when the time is up,
+## then the usual path walking takes over again (the walker eases back onto the kerb line).
+func _step_flee(w: Walker, delta: float) -> void:
+	w.flee_t -= delta
+	var step: Vector3 = w.pos + w.flee_dir * w.flee_pace * delta
+	if w.flee_t <= 0.0 or not SignalBus.walkable(step.x, step.z) or not _on_pavement(step):
+		w.fleeing = false
+		_resume(w, 0.4)
+		_apply(w)
+		return
+	w.pos = step
+	w.heading = w.heading.slerp(w.flee_dir, clampf(TURN_RATE * delta, 0.0, 1.0)).normalized()
+	_apply(w)
+
+## Screams come from a small pool of 3D players, so a crowd of them does not cost more than three voices.
+func _setup_screams() -> void:
+	for path: String in SCREAM_FILES:
+		if ResourceLoader.exists(path):
+			_scream_streams.append(load(path) as AudioStream)
+	for i: int in 3:
+		var pl: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+		pl.unit_size = 6.0
+		pl.max_distance = 60.0
+		add_child(pl)
+		_screams.append(pl)
+
+func _scream(p: Vector3) -> void:
+	if _scream_streams.is_empty() or _screams.is_empty():
+		return
+	var pl: AudioStreamPlayer3D = _screams[_scream_next]
+	_scream_next = (_scream_next + 1) % _screams.size()
+	pl.stream = _scream_streams[rng.randi() % _scream_streams.size()]
+	pl.global_position = p + Vector3(0.0, 1.5, 0.0)
+	pl.play()
 
 ## Stand-still gesture for a person waiting at the kerb; _step_react resumes them when it ends.
 func _start_gesture(w: Walker) -> bool:

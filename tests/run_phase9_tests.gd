@@ -23,6 +23,7 @@ func _run() -> void:
 	var city: Node = (load(CITY) as PackedScene).instantiate()
 	add_child(city)
 	await _physics(150)
+	var home: Transform3D = (city.get_node("AutoRickshaw") as Node3D).global_transform
 	_test_surface_heights(city.get_node("World") as WorldChunkStreamer)
 	_test_pedestrians(city.get_node("PedestrianManager") as PedestrianManager)
 	_test_seated_driver(city)
@@ -30,6 +31,8 @@ func _run() -> void:
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
 	await _test_reactions(city.get_node("PedestrianManager") as PedestrianManager)
 	await _test_gestures(city.get_node("PedestrianManager") as PedestrianManager)
+	_test_bumps(city.get_node("PedestrianManager") as PedestrianManager)
+	await _test_fire_scares(city.get_node("PedestrianManager") as PedestrianManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
 	_test_grounding(city)
@@ -37,7 +40,7 @@ func _run() -> void:
 	_test_dressing(city.get_node("World") as WorldChunkStreamer)
 	_test_ambience(city.get_node("AmbienceAudio") as AmbienceAudio)
 	await _test_bus_stops(city)
-	await _test_parked_physics(city)
+	await _test_parked_physics(city, home)
 	_test_colour_variety(city)
 	city.queue_free()
 	await _physics(2)
@@ -812,7 +815,7 @@ func _test_ambience(a: AmbienceAudio) -> void:
 
 ## Nov 7: hitting a parked vehicle did nothing. Now the vehicle wakes into a rigid body with its
 ## real mass: a scooter is knocked away / over, a car barely shifts and stops the auto.
-func _test_parked_physics(city: Node) -> void:
+func _test_parked_physics(city: Node, home: Transform3D) -> void:
 	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
 	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
 	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
@@ -820,6 +823,13 @@ func _test_parked_physics(city: Node) -> void:
 	for v: TrafficVehicleAI in traffic.pool:
 		v.deactivate()
 	GameState.tutorial_active = false
+	# The candidates are only the parked vehicles in chunks that are loaded around the auto, so
+	# start from the spawn point (where the city's chunks are loaded) instead of wherever the
+	# bus-stop test left the auto.
+	SignalBus.teleport_requested.emit(home)
+	await _physics(2)
+	world.update_streaming(true)
+	await _physics(120)
 	var results: Dictionary = {}
 	for kind: int in [0, 1]:
 		# A parked vehicle of this kind with a clear 16 m run-up behind it.
@@ -843,7 +853,7 @@ func _test_parked_physics(city: Node) -> void:
 			if set_ != null:
 				break
 		if set_ == null:
-			_check("Found a parked %s with a clear run-up" % ["scooter", "car"][kind], false)
+			_check("Found a parked %s with a clear run-up" % ["scooter", "car"][kind], false, "%d chunks loaded" % world.loaded.size())
 			continue
 		var r: Dictionary = set_.records[idx]
 		var origin: Vector3 = r["origin"]
@@ -962,7 +972,7 @@ func _test_gestures(pm: PedestrianManager) -> void:
 	for w: PedestrianManager.Walker in pm.people:
 		if w.anim == null or not w.anim.has_animation("get_up"):
 			continue
-		for clip: String in ["get_up", "talk", "drink", "wave"]:
+		for clip: String in ["get_up", "talk", "drink", "wave", "flee_look"]:
 			sets_ok = sets_ok and w.anim.has_animation(clip)
 	_check("Pedestrians with Mixamo sets have get-up and gesture clips", sets_ok)
 	var idler: PedestrianManager.Walker = null
@@ -980,6 +990,56 @@ func _test_gestures(pm: PedestrianManager) -> void:
 		if idler.react == "":
 			break
 	_check("…then they go back to standing", idler.react == "" and idler.anim.current_animation == "idle", idler.anim.current_animation)
+
+
+func _test_fire_scares(pm: PedestrianManager) -> void:
+	var target: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.react == "" and not w.fleeing and w.anim != null and w.anim.has_animation("run"):
+			target = w
+			break
+	if target == null:
+		_check("Found a pedestrian to scare", false)
+		return
+	# The auto is right beside them and on fire.
+	pm._has_player = true
+	pm._player = target.pos + Vector3(0.0, 0.0, 0.8)
+	pm._player_vel = Vector3.ZERO
+	SignalBus.vehicle_burning.emit(true)
+	pm._check_fire_scares()
+	_check("A pedestrian beside a burning auto runs off", target.fleeing and target.anim.current_animation in ["run", "flee_look"], target.anim.current_animation)
+	SignalBus.vehicle_burning.emit(false)
+	for f: int in 60 * 12:
+		await get_tree().physics_frame
+		if not target.fleeing:
+			break
+	_check("…and stops running once they are clear of it", not target.fleeing and target.react == "")
+
+
+func _test_bumps(pm: PedestrianManager) -> void:
+	var target: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.react == "" and w.recovery <= 0.0:
+			target = w
+			break
+	if target == null:
+		_check("Found a pedestrian to bump", false)
+		return
+	var bumps: Array = []
+	var record := func(_p: Vector3, v: Vector3) -> void: bumps.append(v)
+	SignalBus.pedestrian_bumped.connect(record)
+	# The auto a metre behind the person, doing 6 m/s straight at them (heading -z).
+	pm._has_player = true
+	pm._player_fwd = Vector3(0.0, 0.0, -1.0)
+	pm._player_vel = Vector3(0.0, 0.0, -6.0)
+	pm._player = target.pos + Vector3(0.0, 0.0, 0.5)
+	pm._check_player_bumps()
+	var first: int = bumps.size()
+	pm._check_player_bumps()
+	SignalBus.pedestrian_bumped.disconnect(record)
+	_check("A pedestrian the auto reaches is hit", first >= 1 and target.recovery > 0.0 and target.react != "", "hits %d" % first)
+	_check("…once per pass, not on every frame", bumps.size() == first)
+	_check("…and they go down, not stand there", target.react in ["stumble", "dodge", "fallen"], target.react)
 
 
 func _test_reactions(pm: PedestrianManager) -> void:

@@ -265,13 +265,23 @@ func update_streaming(blocking: bool) -> void:
 			if _available.has(k):
 				wanted[k] = true
 	for k: Vector2i in wanted:
-		if loaded.has(k) or _pending.has(k):
+		if loaded.has(k):
+			continue
+		if _pending.has(k):
+			if blocking:
+				# A worker is already building this chunk. A blocking load must return with it
+				# attached: skipping it left the beach fence without collision for seconds after a
+				# teleport, and the auto drove straight through it (phase 10 on CI).
+				WorkerThreadPool.wait_for_task_completion(int(_pending[k]))
+				_pending.erase(k)
 			continue
 		if blocking:
 			_attach(k, _build_chunk(k))
 		else:
 			var key: Vector2i = k
 			_pending[k] = WorkerThreadPool.add_task(func() -> void: _build_chunk_threaded(key), false, "chunk %s" % k)
+	if blocking:
+		_attach_finished()
 	# Unload with one chunk of hysteresis so driving along a border doesn't thrash.
 	for k: Vector2i in loaded.keys():
 		if absi(k.x - c.x) > load_radius_chunks + 1 or absi(k.y - c.y) > load_radius_chunks + 1:
