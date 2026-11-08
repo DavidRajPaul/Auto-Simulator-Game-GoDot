@@ -22,6 +22,8 @@ const TICK_FILE: String = "res://assets/audio/vehicle/indicator_tick.ogg"
 const FIRE_FILE: String = "res://assets/audio/vehicle/fire_loop.ogg"
 const IGNITE_FILE: String = "res://assets/audio/vehicle/fire_ignite.ogg"
 const FIRE_VOLUME_DB: float = -5.0
+const STEAM_FILE: String = "res://assets/audio/vehicle/steam_hiss.ogg"
+const BODY_FILE: String = "res://assets/audio/vehicle/impact_body.ogg"
 ## Same threshold as the flames on screen (DamageFX stage 4 = FIRE_FROM and up, and the wreck).
 const FIRE_STAGE: int = 4
 const BURN_CHECK_S: float = 0.2
@@ -40,6 +42,8 @@ var _speed_kmh: float = 0.0
 var _engine_running: bool = true
 var _fire: AudioStreamPlayer3D
 var _ignite: AudioStreamPlayer3D
+var _steam: AudioStreamPlayer3D
+var _thud: AudioStreamPlayer3D
 var _burning: bool = false
 var _burn_check_t: float = 0.0
 
@@ -50,6 +54,12 @@ func _ready() -> void:
 	_clunk = _make_player("KickClunk", stream_or(KICK_FILE, _build_clunk()), -4.0)
 	_fire = _make_player("EngineFire", stream_or(FIRE_FILE, _build_fire_loop()), FIRE_VOLUME_DB)
 	_ignite = _make_player("EngineIgnite", stream_or(IGNITE_FILE, _build_ignite()), -2.0)
+	_steam = _make_player("SteamHiss", stream_or(STEAM_FILE, _build_ignite()), -6.0)
+	_thud = _make_player("BodyThud", stream_or(BODY_FILE, _build_clunk()), -2.0)
+	SignalBus.pedestrian_bumped.connect(func(p: Vector3, _v: Vector3) -> void:
+		_thud.global_position = p
+		_thud.play()
+	)
 	# Indicator relay: heard inside the cab, so a plain (non-positional) player.
 	_tick_stream = stream_or(TICK_FILE, _build_tick(1800.0))
 	_tock = _build_tick(1350.0) if not ResourceLoader.exists(TICK_FILE) else _tick_stream
@@ -123,12 +133,14 @@ func _set_burning(on: bool) -> void:
 	if on == _burning:
 		return
 	_burning = on
+	SignalBus.vehicle_burning.emit(on)
 	if on:
 		_engine.stop()
 		_ignite.play()
 		_fire.play()
 	else:
 		_fire.stop()
+		_steam.play()
 		if _engine_running:
 			_engine.play()
 

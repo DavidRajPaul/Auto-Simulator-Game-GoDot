@@ -61,8 +61,12 @@ the in-game Credits text (`CREDITS` in `scripts/ui/MainMenu.gd`).
 | `ambience/rain_roof_loop.ogg` | Monsoon rain on the canopy | BigSoundBank #1293 | CC0 |
 | `traffic/truck_horn.ogg` | Bus / lorry honk-back | BigSoundBank #2721 | CC0 |
 | `ui/click, select, back, coin, goal, level_up, refused.ogg` | Menus, fare paid, goal, level-up, "can't" (`UISfx.gd`) | Kenney Interface Sounds | CC0 |
+| `vehicle/fire_loop.ogg`, `fire_ignite.ogg` | Fire roar and ignition while the auto burns (`VehicleAudio.gd`, engine silent) | Freesound, see `CREDITS_sfx.md` | TO CHECK |
+| `vehicle/steam_hiss.ogg` | Steam when the fire goes out (`VehicleAudio.gd`) | Freesound, see `CREDITS_sfx.md` | TO CHECK |
+| `vehicle/impact_body.ogg` | Body thud on a pedestrian hit (`VehicleAudio.gd`) | Freesound, see `CREDITS_sfx.md` | TO CHECK |
+| `people/scream_1..4.ogg` | Pedestrian screams when a car hits or a fire scares people (`PedestrianManager.gd`) | Freesound, see `CREDITS_sfx.md` | TO CHECK |
 
-Credits: `audio/CREDITS_vehicle.md`, `audio/CREDITS_fetched.md`, `audio/ui/LICENSE_Kenney_Interface_Sounds.txt`.
+Credits: `audio/CREDITS_vehicle.md`, `audio/CREDITS_fetched.md`, `audio/CREDITS_sfx.md` (the 8 new sounds; licences must be checked on Freesound before release), `audio/ui/LICENSE_Kenney_Interface_Sounds.txt`.
 Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised sound, so builds and tests never depend on downloads.
 
 ### 🔤 Fonts — `assets/fonts/` (1.2 MB)
