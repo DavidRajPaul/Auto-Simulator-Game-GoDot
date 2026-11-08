@@ -45,10 +45,16 @@ var current_bus_stops: Node = null
 var surface_height_provider: Callable = Callable()
 ## Set by WorldChunkStreamer: (x, z) -> false inside a building footprint.
 var walkable_provider: Callable = Callable()
+## Set by ServicePoints: (from: Vector3) -> {name, km, pos} of the nearest garage, {} if none.
+var garage_quote_provider: Callable = Callable()
 
 ## Can a person stand at (x, z)? (not inside a building). True when no world is streaming.
 func walkable(x: float, z: float) -> bool:
 	return bool(walkable_provider.call(x, z)) if walkable_provider.is_valid() else true
+
+## Nearest garage to `from` for the wreck panel's tow offer: {name, km, pos}, or {}.
+func garage_quote(from: Vector3) -> Dictionary:
+	return garage_quote_provider.call(from) as Dictionary if garage_quote_provider.is_valid() else {}
 
 ## Ask the world to stand a model on the drawn ground at its (x, z) once that chunk's surface
 ## heights are known (now if loaded, else when the chunk streams in). Used by every static prop
@@ -111,6 +117,9 @@ signal ride_updated(info: Dictionary)
 signal passenger_alighted()
 ## breakdown from FareCalculator.settle() plus {destination, archetype_name, line}
 signal ride_completed(breakdown: Dictionary)
+## The auto caught fire mid-ride: the rider got out and ran, no fare (SavariManager). `line` is
+## the already-translated message for the HUD.
+signal ride_abandoned(line: String)
 signal wallet_balance_changed(new_balance_inr: int, delta_inr: int)
 signal stand_respect_changed(new_xp: int, star_rating: float)
 
@@ -132,6 +141,8 @@ signal shift_ended(summary: Dictionary)
 signal settings_changed(settings: Dictionary)
 signal pause_requested(open: bool)
 signal tow_requested(from_position: Vector3)
+## A wrecked auto can't drive to a garage: tow it to the nearest one (ServicePoints).
+signal wreck_tow_requested(from_position: Vector3)
 signal teleport_requested(xform: Transform3D)
 # --- Comfort (Phase 5) ------------------------------------------------------
 signal recover_available(available: bool)

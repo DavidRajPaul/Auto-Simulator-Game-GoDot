@@ -13,6 +13,11 @@ var _root: Control
 var _clock: Label
 var _service_bar: HBoxContainer
 var _wreck_shown: bool = false
+## Wreck panel (condition 0, engine on fire): its own card, so every rescue can say what it gives.
+var _wreck_card: PanelContainer
+var _wreck_title: Label
+var _wreck_detail: Label
+var _wreck_rows: VBoxContainer
 var _service_msg: Label
 var _pause_btn: Button
 var _modal: PanelContainer
@@ -46,6 +51,7 @@ func _ready() -> void:
 	_pause_btn.custom_minimum_size = Vector2(72, 56)
 	_root.add_child(_pause_btn)
 	_paint_pause_button()
+	_build_wreck_card()
 	_build_modal()
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -61,7 +67,7 @@ func _ready() -> void:
 	SignalBus.recover_available.connect(_on_recover_available)
 	SignalBus.vehicle_wrecked.connect(_on_wrecked)
 	SignalBus.rewarded_ad_failed.connect(func(placement: String, _why: String) -> void:
-		if placement == "ad_wreck_repair" and _wreck_shown:
+		if (placement == "ad_wreck_repair" or placement == "ad_tow") and _wreck_shown:
 			_show_wreck(tr("AD_NOT_READY")))
 	if GameState.is_wrecked():
 		_on_wrecked.call_deferred(true)
@@ -73,7 +79,9 @@ func _ready() -> void:
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	SignalBus.wallet_balance_changed.connect(func(_b: int, _d: int) -> void:
 		if _modal.visible and _modal_title.text == tr("GARAGE"):
-			_render_garage())
+			_render_garage()
+		if _wreck_shown:
+			_show_wreck(""))
 	_clock.text = "%s %d · %s" % [tr("DAY"), GameState.day, GameState.clock_text()]
 
 # --- Helpers ------------------------------------------------------------------------------
@@ -111,6 +119,11 @@ func _layout() -> void:
 	_service_bar.position = Vector2(vp.x * 0.5 - 220.0, vp.y * 0.58)
 	_service_msg.position = Vector2(0.0, vp.y * 0.52)
 	_service_msg.size = Vector2(vp.x, 30.0)
+	# Top centre, between the top-left buttons and the clock: the burning auto stays in view below.
+	var ww: float = minf(640.0, vp.x - 40.0)
+	_wreck_card.custom_minimum_size = Vector2(ww, 0.0)
+	_wreck_card.size = Vector2(ww, 0.0)
+	_wreck_card.position = Vector2((vp.x - ww) * 0.5, 92.0)
 	_modal.custom_minimum_size = Vector2(minf(880.0, vp.x - 40.0), minf(600.0, vp.y - 40.0))
 	_modal.position = (vp - _modal.custom_minimum_size) * 0.5
 	if _dim != null:
@@ -127,6 +140,12 @@ func _on_service_available(kind: String, info: Dictionary) -> void:
 func _render_service() -> void:
 	for c: Node in _service_bar.get_children():
 		c.queue_free()
+	if GameState.is_wrecked():
+		# The wreck panel owns the screen; at a garage it gains "Open garage".
+		_service_bar.visible = false
+		_service_msg.text = ""
+		_show_wreck("")
+		return
 	_service_msg.text = str(_service_info.get("name", ""))
 	var stats: VehicleStats = GameState.active_stats()
 	var is_ev: bool = stats.fuel_type == 2
@@ -147,14 +166,17 @@ func _render_service() -> void:
 	_service_bar.visible = true
 
 func _hide_service() -> void:
+	var was_garage: bool = _service_kind == "garage"
 	_service_kind = ""
+	if was_garage and _wreck_shown:
+		_show_wreck("")
 	_service_bar.visible = false
 	_service_msg.text = ""
 	_out_of_fuel_shown = false
 
 func _on_fuel(level: float, _capacity: float) -> void:
 	_fuel_level = level
-	if level <= 0.0 and _speed_kmh < 2.0 and not _out_of_fuel_shown and _service_kind == "":
+	if level <= 0.0 and _speed_kmh < 2.0 and not _out_of_fuel_shown and _service_kind == "" and not GameState.is_wrecked():
 		_out_of_fuel_shown = true
 		for c: Node in _service_bar.get_children():
 			c.queue_free()
@@ -174,31 +196,112 @@ func _on_fuel(level: float, _capacity: float) -> void:
 ## roadside repair, or, with no money and no ad, a free patch-up so the player is never stuck.
 func _on_wrecked(wrecked: bool) -> void:
 	if wrecked:
+		_service_bar.visible = false
+		_service_msg.text = ""
+		_out_of_fuel_shown = false
 		_show_wreck("")
 	elif _wreck_shown:
 		_wreck_shown = false
-		_hide_service()
+		_wreck_card.visible = false
+		if _service_kind != "":
+			_render_service()
 
+func _build_wreck_card() -> void:
+	_wreck_card = UIKit.card()
+	_wreck_card.name = "WreckCard"
+	_wreck_card.visible = false
+	_root.add_child(_wreck_card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	_wreck_card.add_child(box)
+	_wreck_title = UIKit.label("", 26, UIKit.YELLOW, true, 4)
+	_wreck_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_wreck_title)
+	_wreck_detail = UIKit.label("", 20, UIKit.JASMINE)
+	_wreck_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_wreck_detail)
+	_wreck_rows = VBoxContainer.new()
+	_wreck_rows.add_theme_constant_override("separation", 8)
+	box.add_child(_wreck_rows)
+
+## Wrecked (condition 0, engine on fire, the auto can't move). The card says what happened, what
+## a full repair costs against the wallet, and what each way out gives. The free patch-up is always
+## there, so the rewarded ads stay optional (an empty wallet with an ad ready used to show only the
+## ad). Options: watch an ad for a full repair; pay what the wallet allows; at a garage, open it;
+## elsewhere, a tow to the nearest garage (paid, or free for an ad); the free patch-up.
 func _show_wreck(note: String) -> void:
 	_wreck_shown = true
-	_service_kind = ""
-	for c: Node in _service_bar.get_children():
+	_service_bar.visible = false
+	_service_msg.text = ""
+	for c: Node in _wreck_rows.get_children():
+		_wreck_rows.remove_child(c)
 		c.queue_free()
-	_service_msg.text = tr("WRECKED_MSG") + ("\n" + note if note != "" else "")
-	var ad_ok: bool = AdMonetizationManager.can_offer_rewarded("ad_wreck_repair")
-	if ad_ok:
-		_service_bar.add_child(_button("▶ " + tr("AD_WRECK_REPAIR"), Color(0.12, 0.5, 0.22), func() -> void:
-			AdMonetizationManager.show_rewarded("ad_wreck_repair")))
+	_wreck_title.text = tr("WRECKED_MSG")
 	var cost: int = GameState.repair_cost()
-	if GameState.wallet_inr > 0:
-		_service_bar.add_child(_button("%s  ₹%d" % [tr("ROADSIDE_REPAIR"), mini(cost, GameState.wallet_inr)], Color(0.45, 0.3, 0.12), func() -> void:
-			GameState.repair()))
-	if not ad_ok and GameState.wallet_inr < cost:
-		_service_bar.add_child(_button(tr("PATCH_UP"), Color(0.25, 0.35, 0.6), func() -> void:
-			GameState.patch_up()))
-	_service_bar.visible = true
+	var wallet: int = GameState.wallet_inr
+	var detail: String = tr("WRECK_DETAIL") % [UIKit.inr(cost), UIKit.inr(wallet)]
+	if note != "":
+		detail += "\n" + note
+	_wreck_detail.text = detail
+	var today: String = RewardsEngine.today_string()
+	if AdMonetizationManager.can_offer_rewarded("ad_wreck_repair"):
+		_wreck_row("AdRepair", "▶ " + tr("WRECK_AD_BTN"), UIKit.Tone.GREEN,
+			tr("WRECK_AD_REPAIR_DESC") % GameState.rewards.remaining_today("ad_wreck_repair", today), func() -> void:
+				AdMonetizationManager.show_rewarded("ad_wreck_repair"))
+	if wallet > 0:
+		var pay: int = mini(cost, wallet)
+		var to_pct: int = mini(100, floori(GameState.condition + float(pay) / GameState.REPAIR_COST_PER_POINT))
+		var desc: String = tr("WRECK_PAY_FULL_DESC") if pay >= cost else tr("WRECK_PAY_DESC") % to_pct
+		_wreck_row("Pay", tr("WRECK_PAY_BTN") % UIKit.inr(pay), UIKit.Tone.ORANGE, desc, func() -> void:
+			GameState.repair())
+	if _service_kind == "garage":
+		_wreck_row("Garage", tr("OPEN_GARAGE"), UIKit.Tone.YELLOW, tr("WRECK_GARAGE_DESC"), func() -> void:
+			open_garage())
+	else:
+		var from: Vector3 = _last_player_pos()
+		var quote: Dictionary = SignalBus.garage_quote(from)
+		if not quote.is_empty():
+			# Like the fuel tow: TOW_COST_INR, or what is left in the wallet (an empty wallet tows free).
+			var tow: int = mini(ServicePoints.TOW_COST_INR, wallet)
+			var tow_btn: String = tr("WRECK_TOW_BTN") % UIKit.inr(tow) if tow > 0 else tr("WRECK_TOW_FREE_BTN")
+			_wreck_row("Tow", tow_btn, UIKit.Tone.RED,
+				tr("WRECK_TOW_DESC") % [str(quote["name"]), float(quote["km"])], func() -> void:
+					SignalBus.wreck_tow_requested.emit(_last_player_pos()))
+			if tow > 0 and AdMonetizationManager.can_offer_rewarded("ad_tow"):
+				_wreck_row("AdTow", "▶ " + tr("WRECK_AD_BTN"), UIKit.Tone.GREEN,
+					tr("WRECK_AD_TOW_DESC") % str(quote["name"]), func() -> void:
+						AdMonetizationManager.show_rewarded("ad_tow", {"from": _last_player_pos(), "to": "garage"}))
+	_wreck_row("Patch", tr("WRECK_PATCH_BTN"), UIKit.Tone.PURPLE,
+		tr("WRECK_PATCH_DESC") % int(GameState.PATCH_UP_CONDITION), func() -> void:
+			GameState.patch_up())
+	# One button width for every row, so the descriptions line up (Tamil labels are longer).
+	var widest: float = 190.0
+	for r: Node in _wreck_rows.get_children():
+		widest = maxf(widest, (r.get_node("Button") as Button).get_combined_minimum_size().x)
+	for r: Node in _wreck_rows.get_children():
+		(r.get_node("Button") as Button).custom_minimum_size.x = widest
+	_wreck_card.visible = true
+
+## One way out: an arcade button and, beside it, what it gives.
+func _wreck_row(row_name: String, text: String, tone: UIKit.Tone, desc: String, on_press: Callable) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.name = row_name
+	row.add_theme_constant_override("separation", 14)
+	var b: Button = UIKit.button(text, tone, on_press, 20)
+	b.name = "Button"
+	b.custom_minimum_size = Vector2(190.0, 56.0)
+	row.add_child(b)
+	var l: Label = UIKit.label(desc, 19, UIKit.JASMINE)
+	l.name = "Desc"
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(l)
+	_wreck_rows.add_child(row)
 
 func _on_recover_available(available: bool) -> void:
+	if GameState.is_wrecked():
+		return # a dead engine always looks "stuck"; the wreck panel already has the ways out
 	if not available:
 		if _service_kind == "" and not _out_of_fuel_shown:
 			_service_bar.visible = false

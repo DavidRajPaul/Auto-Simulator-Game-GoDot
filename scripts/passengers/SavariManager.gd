@@ -56,6 +56,12 @@ const ARCHETYPE_PEOPLE: Dictionary = {
 	"college_student": ["girl_churidar", "girl_pavadai", "woman_modern"],
 }
 const PEOPLE_DIR: String = "res://assets/models/people/"
+## The auto catches fire mid-ride: the rider gets out on the kerb side (left: India drives on the
+## left) and runs off on the frightened run ("flee", plain "run" if a model lacks it), away from
+## the rear engine, then is gone. A rider with no animated character (tourist) uses this one.
+const FLEER_FALLBACK: String = "man_casual"
+const FLEER_SECONDS: float = 8.0
+const FLEER_START_M: float = 1.1
 
 @export var world_dir: String = "res://data/world"
 @export var archetypes: Array[PassengerArchetype] = []
@@ -102,6 +108,13 @@ var _comfort_damping: float = 1.0
 var demand: float = 0.5
 var greed_streak: int = 0
 var deal_streak: int = 0 # Fair deals in a row: pays a small bonus, and walking away ends it.
+var _rider_person: String = "" # the people/*.glb id the current rider is played by
+var _fleer: Node3D
+var _fleer_chars: Dictionary = {} # person id -> its character under _fleer (made once each)
+var _fleer_dir: Vector3 = Vector3.ZERO
+var _fleer_t: float = 0.0
+var _fleer_speed: float = 1.5
+var _flee_speeds: Dictionary = {} # person id -> people.json flee_speed (the clip's true pace)
 
 func _ready() -> void:
 	SignalBus.savari_busy_provider = func() -> bool: return state != State.CRUISING and state != State.COOLDOWN
@@ -124,6 +137,8 @@ func _ready() -> void:
 	SignalBus.near_miss.connect(_on_near_miss)
 	SignalBus.road_graph_ready.connect(func(g: RoadGraph) -> void: graph = g)
 	SignalBus.scripted_hail_requested.connect(spawn_scripted_hail)
+	SignalBus.vehicle_wrecked.connect(_on_wrecked)
+	_load_flee_speeds()
 	graph = SignalBus.current_road_graph
 	_comfort_damping = GameState.active_stats().comfort_damping
 	SignalBus.vehicle_loadout_changed.connect(func(s: VehicleStats) -> void: _comfort_damping = s.comfort_damping)
@@ -197,6 +212,7 @@ func _build_parked_stand_autos() -> void:
 			SignalBus.ground_snap_requested.emit(parked)
 
 func _physics_process(delta: float) -> void:
+	_tick_fleer(delta)
 	if GameState.mission_active:
 		_clear_unscripted_hails()
 		return
@@ -208,11 +224,14 @@ func _physics_process(delta: float) -> void:
 	_animate_hails()
 	match state:
 		State.CRUISING:
-			if not GameState.tutorial_active:
+			if GameState.is_wrecked():
+				pass # nobody gets into a burning auto
+			elif not GameState.tutorial_active:
 				_maintain_hails()
+				_check_pickup()
 			else:
 				_clear_unscripted_hails() # the guided first ride places its one rider itself
-			_check_pickup()
+				_check_pickup()
 		State.HAGGLING:
 			_haggle_timer -= delta
 			if _haggle_timer <= 0.0:
@@ -571,6 +590,8 @@ func _close_deal(fare: int) -> void:
 			deal_streak = 0
 		greed_streak = maxi(0, greed_streak - 1)
 		GameState.add_respect(FareCalculator.RESPECT_XP_DEAL if fare <= _haggle_meter else FareCalculator.RESPECT_XP_DEAL / 2)
+	var ch: Node3D = (_haggle_hail["node"] as Node3D).get_node_or_null("Character") as Node3D
+	_rider_person = str(ch.get_meta("person_id", "")) if ch != null and ch.visible else ""
 	_remove_hail(_haggle_hail)
 	_haggle_hail = {}
 	_publish_hails()
@@ -648,6 +669,108 @@ func complete_ride() -> void:
 	rider = null
 	state = State.PAYOUT
 	_state_timer = PAYOUT_SECONDS
+
+# --- Fire mid-ride ---------------------------------------------------------------
+
+func _on_wrecked(wrecked: bool) -> void:
+	if not wrecked:
+		return
+	match state:
+		State.RIDING:
+			abandon_ride()
+		State.HAGGLING:
+			# Not on board yet: they simply walk off, with no respect lost on either side.
+			var a: PassengerArchetype = _haggle_hail["archetype"]
+			_rider_leaves(0, tr("RIDER_%s_REJECT" % a.id.to_upper()))
+
+## The auto is on fire with a rider on board: they jump out and run. No fare, and no rating, since
+## the driver didn't choose this. The route and destination ring clear, the HUD gets the line.
+func abandon_ride() -> void:
+	if state != State.RIDING:
+		return
+	SignalBus.passenger_alighted.emit()
+	_publish_route({})
+	_dest_marker.visible = false
+	SignalBus.ride_abandoned.emit(tr("RIDER_FLED_FIRE"))
+	_start_fleer(_rider_person)
+	rider = null
+	_rider_person = ""
+	state = State.COOLDOWN
+	_state_timer = REJECT_COOLDOWN_S
+
+func _load_flee_speeds() -> void:
+	var f: FileAccess = FileAccess.open(PedestrianManager.META_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var people: Dictionary = (JSON.parse_string(f.get_as_text()) as Dictionary).get("people", {})
+	for id: Variant in people:
+		var info: Dictionary = people[id]
+		_flee_speeds[str(id)] = maxf(float(info.get("flee_speed", info.get("run_speed", 1.5))), 0.1)
+
+## Puts the rider's character beside the auto and starts the frightened run.
+func _start_fleer(person: String) -> void:
+	var id: String = person if person != "" else FLEER_FALLBACK
+	var ch: Node3D = _fleer_chars.get(id) as Node3D
+	if ch == null:
+		var path: String = PEOPLE_DIR + id + ".glb"
+		if not ResourceLoader.exists(path):
+			return
+		ch = (load(path) as PackedScene).instantiate() as Node3D
+		ch.name = "Runner_" + id
+		ch.rotation.y = PI # characters face +Z; the runner node looks down -Z along its path
+		_fleer.add_child(ch)
+		_fleer_chars[id] = ch
+	for c: Node in _fleer.get_children():
+		(c as Node3D).visible = c == ch
+	var ap: AnimationPlayer = ch.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if ap == null:
+		return
+	var clip: String = "flee" if ap.has_animation("flee") else "run"
+	if not ap.has_animation(clip):
+		return
+	ap.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	ap.speed_scale = 1.0
+	ap.play(clip)
+	_fleer_speed = float(_flee_speeds.get(id, 1.5))
+	var fwd: Vector3 = Vector3(_player_fwd.x, 0.0, _player_fwd.z)
+	fwd = fwd.normalized() if fwd.length_squared() > 0.0001 else Vector3.FORWARD
+	var left: Vector3 = Vector3.UP.cross(fwd).normalized()
+	var start: Vector3 = _player_pos + left * FLEER_START_M
+	_fleer_dir = _flee_direction(start, fwd, left)
+	_fleer.global_position = Vector3(start.x, SignalBus.surface_height(start.x, start.z, _player_pos.y), start.z)
+	_fleer.global_basis = Basis.looking_at(_fleer_dir, Vector3.UP)
+	_fleer_t = FLEER_SECONDS
+	_fleer.visible = true
+
+## Away from the fire (the engine is at the back): forward-left, then left, then straight ahead;
+## the first whose next 8 m are walkable (not into a building), else forward-left anyway.
+func _flee_direction(start: Vector3, fwd: Vector3, left: Vector3) -> Vector3:
+	var options: Array[Vector3] = [(left * 0.75 + fwd * 0.66).normalized(), left, fwd]
+	for d: Vector3 in options:
+		var clear: bool = true
+		for m: float in [2.0, 4.0, 6.0, 8.0]:
+			var q: Vector3 = start + d * m
+			if not SignalBus.walkable(q.x, q.z):
+				clear = false
+				break
+		if clear:
+			return d
+	return options[0]
+
+func _tick_fleer(delta: float) -> void:
+	if _fleer == null or not _fleer.visible:
+		return
+	_fleer_t -= delta
+	if _fleer_t <= 0.0:
+		_fleer.visible = false
+		for c: Node in _fleer.get_children():
+			var ap: AnimationPlayer = c.find_child("AnimationPlayer", true, false) as AnimationPlayer
+			if ap != null:
+				ap.stop()
+		return
+	var p: Vector3 = _fleer.global_position + _fleer_dir * _fleer_speed * delta
+	p.y = SignalBus.surface_height(p.x, p.z, p.y)
+	_fleer.global_position = p
 
 func _distance_to_route() -> float:
 	var pts: PackedVector3Array = route.get("points", PackedVector3Array())
@@ -758,6 +881,10 @@ func _build_pools() -> void:
 		n.add_child(label)
 		add_child(n)
 		_hail_pool.append(n)
+	_fleer = Node3D.new()
+	_fleer.name = "FleeingRider"
+	_fleer.visible = false
+	add_child(_fleer)
 	_dest_marker = Node3D.new()
 	_dest_marker.name = "DestinationMarker"
 	_dest_marker.visible = false

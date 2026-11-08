@@ -189,6 +189,7 @@ func _ready() -> void:
 	set_control_scheme(int(GameState.settings.get("control_scheme", 1)))
 	SignalBus.ride_updated.connect(func(info: Dictionary) -> void: _ride_fare = int(info["fare"]))
 	SignalBus.ride_completed.connect(func(_b: Dictionary) -> void: _ride_fare = -1)
+	SignalBus.ride_abandoned.connect(func(_l: String) -> void: _ride_fare = -1)
 	SignalBus.lpg_empty.connect(func() -> void: _flash("Fuel empty! Tow to the nearest bunk.", 4.0, Tone.WARN))
 	SignalBus.fuel_low.connect(func(_level: float, _capacity: float) -> void: _flash("Fuel low! Head to the nearest bunk.", 4.0, Tone.WARN))
 	SignalBus.gear_changed.connect(_on_gear_changed)
@@ -793,6 +794,16 @@ func _apply_art() -> void:
 		_show_art(n, false)
 	_refresh_horn_art(GameState.active_stats())
 	SignalBus.vehicle_loadout_changed.connect(_refresh_horn_art)
+	SignalBus.vehicle_wrecked.connect(func(w: bool) -> void:
+		_refresh_horn_enabled()
+		if w:
+			# The wreck panel (GarageUI) takes over: the "Fire! Stop..." warning would only peek out
+			# from behind it.
+			_status_timer = 0.0
+			_status_label.text = ""
+			if _banner != null:
+				_banner.visible = false)
+	_refresh_horn_enabled()
 	_ripple = TextureRect.new()
 	_ripple.name = "Ripple"
 	_ripple.texture = _art("ripple")
@@ -817,6 +828,15 @@ func _refresh_horn_art(st: VehicleStats) -> void:
 		return
 	e["art"] = "air_horn" if st.horn_tier >= VehicleAudio.AIR_HORN_TIER else "horn"
 	_show_art("Horn", _held.has("Horn"))
+
+## Greyed out while the auto is wrecked: the horn does nothing then (AutoRickshawController).
+const HORN_OFF_TINT: Color = Color(0.45, 0.45, 0.45, 0.55)
+
+func _refresh_horn_enabled() -> void:
+	var e: Dictionary = _buttons.get("Horn", {})
+	if e.is_empty() or e.get("icon") == null:
+		return
+	(e["icon"] as TextureRect).modulate = HORN_OFF_TINT if GameState.is_wrecked() else Color.WHITE
 
 ## One reused ring under the finger: scale up and fade (no nodes created while driving).
 func _play_ripple(pos: Vector2) -> void:

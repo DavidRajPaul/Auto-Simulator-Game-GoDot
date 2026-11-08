@@ -328,7 +328,11 @@ func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
 			# Credit the tow fee, then tow: the ad makes the tow free.
 			var g2: Dictionary = grant_reward(placement, ServicePoints.TOW_COST_INR, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
 			if str(g2["refused"]) == "":
-				SignalBus.tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
+				# A wrecked auto is towed to a garage; an empty tank to a fuel station.
+				if str(ctx.get("to", "")) == "garage":
+					SignalBus.wreck_tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
+				else:
+					SignalBus.tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
 		_:
 			grant_reward(placement, int(ctx.get("inr", 0)), int(ctx.get("xp", 0)), "%s:%s" % [placement, str(ctx.get("id", Time.get_ticks_msec()))])
 
