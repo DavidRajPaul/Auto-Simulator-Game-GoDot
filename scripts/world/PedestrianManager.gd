@@ -101,6 +101,7 @@ var _has_player: bool = false
 var _timer: float = 0.0
 var _run_pace: Dictionary = {}
 var _flee_look_pace: Dictionary = {}
+var _flee_pace: Dictionary = {}
 var _fire_on: bool = false
 var _screams: Array[AudioStreamPlayer3D] = []
 var _scream_streams: Array[AudioStream] = []
@@ -205,6 +206,8 @@ func _load_people() -> void:
 			_run_pace[str(id)] = maxf(float(info["run_speed"]), 0.1)
 		if info.has("flee_look_speed"):
 			_flee_look_pace[str(id)] = maxf(float(info["flee_look_speed"]), 0.1)
+		if info.has("flee_speed"):
+			_flee_pace[str(id)] = maxf(float(info["flee_speed"]), 0.1)
 		var mv: Dictionary = {}
 		for clip: String in (info.get("moves", {}) as Dictionary):
 			var m: Array = info["moves"][clip]
@@ -638,6 +641,8 @@ func _start_flee(w: Walker) -> void:
 		options.append("run")
 	if w.anim.has_animation("flee_look"):
 		options.append("flee_look")
+	if w.anim.has_animation("flee"):
+		options.append("flee")
 	if options.is_empty():
 		return
 	var away: Vector3 = w.pos - _player
@@ -645,7 +650,11 @@ func _start_flee(w: Walker) -> void:
 	if away.length() < 0.05:
 		away = Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))
 	w.flee_clip = options[rng.randi() % options.size()]
-	var native: float = float(_run_pace.get(w.id, 2.2)) if w.flee_clip == "run" else float(_flee_look_pace.get(w.id, 1.6))
+	var native: float = float(_run_pace.get(w.id, 2.2))
+	if w.flee_clip == "flee_look":
+		native = float(_flee_look_pace.get(w.id, 1.6))
+	elif w.flee_clip == "flee":
+		native = float(_flee_pace.get(w.id, 2.2))
 	w.flee_pace = native * rng.randf_range(FLEE_PACE.x, FLEE_PACE.y)
 	w.flee_dir = away.normalized()
 	w.flee_t = rng.randf_range(FLEE_S.x, FLEE_S.y)
