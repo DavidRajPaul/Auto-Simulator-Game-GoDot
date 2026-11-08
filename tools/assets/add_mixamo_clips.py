@@ -14,6 +14,9 @@ Clips (CLIPS below):
                               by the clip's end offset (people.json "moves") when it finishes
   stumble  Stumble_Backwards  root motion kept, ends lying on the road
   fallen   Fallen_Idle        lying on the ground, loops
+  get_up, wave, talk, drink   in place (gestures at 15 fps)
+  flee_look  Run_Look_Back    in place, looking back over the shoulder (pace → flee_look_speed)
+  flee       Running_3        in place, frightened run (pace → flee_speed)
 
 Usage: FBX2GLTF=… python3 tools/assets/add_mixamo_clips.py [raw_folder]
 """
@@ -50,6 +53,7 @@ CLIPS = {
     "drink": ("Drinking", "inplace", 15),
     # Fleeing from a burning auto: a frightened run, and a run that looks back over the shoulder.
     "flee_look": ("Run_Look_Back", "inplace", 30),
+    "flee": ("Running_3", "inplace", 30),
 }
 
 
@@ -171,7 +175,7 @@ def main() -> int:
         info["run_speed"] = round(baked["run"]["speed"], 3)
         info["moves"] = {n: [round(float(c["move"][0]), 3), round(float(c["move"][2]), 3), round(c["duration"], 3)]
                          for n, c in baked.items() if n != "run"}
-        for n in ("flee_look",):
+        for n in ("flee_look", "flee"):
             info[f"{n}_speed"] = round(baked[n]["speed"], 3)
         print(f"OK   {pid}: +{', '.join(baked)}  run {info['run_speed']:.2f} m/s, "
               f"dodge back {-info['moves']['dodge'][1]:.2f} m, {path.stat().st_size // 1024} KB")
