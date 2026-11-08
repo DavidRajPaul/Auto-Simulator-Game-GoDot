@@ -28,6 +28,8 @@ func _run() -> void:
 	_test_seated_driver(city)
 	await _test_walking(city.get_node("PedestrianManager") as PedestrianManager)
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
+	await _test_reactions(city.get_node("PedestrianManager") as PedestrianManager)
+	await _test_gestures(city.get_node("PedestrianManager") as PedestrianManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
 	_test_grounding(city)
@@ -441,7 +443,7 @@ func _test_pedestrians(pm: PedestrianManager) -> void:
 func _test_walking(pm: PedestrianManager) -> void:
 	var w: PedestrianManager.Walker = null
 	for c: PedestrianManager.Walker in pm.people:
-		if c.active and not c.idle and c.startle <= 0.0:
+		if c.active and not c.idle and not c.running and c.startle <= 0.0 and c.react == "":
 			w = c
 			break
 	if w == null:
@@ -922,6 +924,20 @@ func _test_seated_driver(city: Node) -> void:
 	# Seated: head ~0.8 m above the hip, within the canopy; hands reach toward the handlebar (-Z).
 	_check("Seated hero fits under the canopy and faces forward", hb.end.y < AutoRickshawModel.GROUND_Y + 1.75 and hb.position.z < model.driver.position.z - 0.4,
 		str(hb))
+	# Nov 8 device photo: a sandal stuck out of the cowl by the front wheel. Feet rest on the
+	# driver's floor board (GROUND_Y + 0.35) and stay behind the front cowl (z > -0.78).
+	var feet_lo: float = 99.0
+	var feet_front: float = 99.0
+	if meshes.size() == 1:
+		var mi: MeshInstance3D = meshes[0] as MeshInstance3D
+		var xf: Transform3D = model.global_transform.affine_inverse() * mi.global_transform
+		for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array:
+			var p: Vector3 = xf * v
+			if p.y < AutoRickshawModel.GROUND_Y + 0.5:
+				feet_lo = minf(feet_lo, p.y)
+				feet_front = minf(feet_front, p.z)
+	_check("The driver's feet stay inside the auto (on the floor board, behind the cowl)", feet_lo > AutoRickshawModel.GROUND_Y + 0.34 and feet_front > -0.78,
+		"lowest %.3f, front %.3f" % [feet_lo - AutoRickshawModel.GROUND_Y, feet_front])
 	_check("No on-foot mode in this release (HeroFreeRoam removed)", city.get_node_or_null("HeroFreeRoam") == null)
 	SignalBus.camera_mode_changed.emit("Chase")
 	_check("Driver is visible in the chase camera", model.driver.visible)
@@ -939,3 +955,87 @@ func _test_seated_driver(city: Node) -> void:
 	var road: float = SignalBus.surface_height(auto.global_position.x, auto.global_position.z, WorldChunkStreamer.ROAD_Y)
 	_check("Auto tyres touch the drawn road surface (within 2 cm)", absf(lo - road) < 0.02 or (road < 0.0 and absf(lo - WorldChunkStreamer.ROAD_Y) < 0.02), "tyre %.3f, ground %.3f" % [lo, road])
 
+
+## Owner's Mixamo clips (Nov 8): joggers, and people a vehicle nearly hits jump back or fall.
+func _test_gestures(pm: PedestrianManager) -> void:
+	var sets_ok: bool = true
+	for w: PedestrianManager.Walker in pm.people:
+		if w.anim == null or not w.anim.has_animation("get_up"):
+			continue
+		for clip: String in ["get_up", "talk", "drink", "wave"]:
+			sets_ok = sets_ok and w.anim.has_animation(clip)
+	_check("Pedestrians with Mixamo sets have get-up and gesture clips", sets_ok)
+	var idler: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.idle and w.react == "" and w.anim.has_animation("talk"):
+			idler = w
+			break
+	if idler == null:
+		_check("Found a standing person to gesture", false)
+		return
+	pm._start_gesture(idler)
+	_check("A standing person does a gesture once, not on a loop", idler.react == "gesture" and idler.anim.current_animation in PedestrianManager.GESTURE_CLIPS and idler.anim.get_animation(idler.anim.current_animation).loop_mode == Animation.LOOP_NONE, idler.react)
+	for f: int in 60 * 12:
+		await get_tree().physics_frame
+		if idler.react == "":
+			break
+	_check("…then they go back to standing", idler.react == "" and idler.anim.current_animation == "idle", idler.anim.current_animation)
+
+
+func _test_reactions(pm: PedestrianManager) -> void:
+	var clips_ok: bool = true
+	for w: PedestrianManager.Walker in pm.people:
+		for clip: String in ["run", "dodge", "stumble", "fallen"]:
+			clips_ok = clips_ok and w.anim != null and w.anim.has_animation(clip)
+	_check("Every pedestrian has run, dodge, stumble and fallen clips", clips_ok)
+	# Joggers: run clip, playback matched to their pace.
+	var jogger: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and not w.idle and w.react == "":
+			jogger = w
+			break
+	jogger.running = true
+	jogger.pace = float(pm._run_pace[jogger.id])
+	pm._resume(jogger, 0.0)
+	_check("Joggers play the run clip at their own pace", jogger.anim.current_animation == "run" and is_equal_approx(jogger.anim.speed_scale, 1.0) and jogger.pace > 1.8, "%.2f m/s" % jogger.pace)
+	jogger.running = false
+	pm._resume(jogger, 0.0)
+	# A vehicle heading straight at two people: one is brushed (dodge or stumble), one is hit.
+	var picked: Array[PedestrianManager.Walker] = []
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.react == "" and w.anim.active and w != jogger:
+			picked.append(w)
+		if picked.size() == 2:
+			break
+	if picked.size() < 2:
+		_check("Found two people near the player to startle", false)
+		return
+	var results: Array[String] = []
+	for i: int in 2:
+		var w: PedestrianManager.Walker = picked[i]
+		var fwd: Vector3 = w.heading
+		# Pass on the road side, so the person steps back onto the pavement.
+		var side: Vector3 = Vector3(fwd.z, 0.0, -fwd.x) * w.side
+		var lateral: float = 1.3 if i == 0 else 0.3
+		var speed: float = 9.0
+		pm._threats = [[w.pos - fwd * 5.0 + side * lateral, fwd * speed]]
+		var started: bool = pm._check_threats(w)
+		results.append(w.react if started else "none")
+	pm._threats.clear()
+	_check("A vehicle about to brush past makes a person dodge or stumble", results[0] in ["dodge", "stumble"], results[0])
+	_check("A vehicle about to hit someone at speed knocks them over", results[1] == "stumble" or results[1] == "dodge", results[1])
+	var w2: PedestrianManager.Walker = picked[1]
+	var start: Vector3 = w2.pos
+	var was: String = w2.react
+	var lay: bool = false
+	# Stumble, lying (up to 4.5 s), then Mixamo's 7.6 s getting-up clip: allow for all of it.
+	for f: int in 60 * 20:
+		await get_tree().physics_frame
+		lay = lay or w2.react == "fallen"
+		if w2.react == "":
+			break
+	var moved: float = Vector2(w2.pos.x - start.x, w2.pos.z - start.z).length()
+	_check("The reaction carries them clear of the vehicle's path", moved > 1.5 and moved < 2.6, "%.2f m" % moved)
+	_check("A stumble ends lying on the road, then they get up", was != "stumble" or lay, was)
+	_check("After reacting they walk or stand again", w2.react == "" and w2.anim.current_animation in ["walk", "idle", "run"], w2.anim.current_animation)
+	_check("…and never end up inside a wall", SignalBus.walkable(w2.pos.x, w2.pos.z))
