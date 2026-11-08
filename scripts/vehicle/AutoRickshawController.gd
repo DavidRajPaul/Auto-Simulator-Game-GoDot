@@ -86,6 +86,8 @@ const BODY_FRICTION: float = 0.12
 const BODY_BOUNCE: float = 0.16
 const IMPACT_MIN_MPS: float = 1.2 # below this it's a scrape/touch, no damage
 const IMPACT_HARD_MPS: float = 8.0 # severity 1.0
+## Typical adult; the hit is inelastic, so the auto keeps mass / (mass + this) of its speed.
+const PEDESTRIAN_MASS_KG: float = 70.0
 const IMPACT_COOLDOWN_S: float = 0.3
 const POST_IMPACT_S: float = 0.5
 const POST_IMPACT_TILT_DAMP: float = 0.7 # fraction of roll/pitch rate removed per tick
@@ -97,6 +99,8 @@ var _scraping: bool = false
 var last_impact_mps: float = 0.0
 ## Velocity going into the last physics solve (contacts reported now come from that solve).
 var _pre_step_velocity: Vector3 = Vector3.ZERO
+## A pedestrian was hit this step (SignalBus.pedestrian_bumped): applied in _integrate_forces.
+var _bump_pending: bool = false
 
 ## Off in the cockpit view: the canopy/frame shadows sweeping over the dash as the auto turns
 ## read as flickering dark bands right in the driver's eyes.
@@ -104,6 +108,7 @@ var _self_shadows: bool = true
 var _police_stop_timer: float = 0.0
 
 func _ready() -> void:
+	SignalBus.pedestrian_bumped.connect(func(_p: Vector3, _v: Vector3) -> void: _bump_pending = true)
 	if use_player_profile:
 		stats = GameState.active_stats()
 	if stats == null:
@@ -243,6 +248,9 @@ static func chamfered_hull(size: Vector3, c: float) -> ConvexPolygonShape3D:
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var dt: float = state.step
+	if _bump_pending:
+		_bump_pending = false
+		state.linear_velocity *= mass / (mass + PEDESTRIAN_MASS_KG)
 	_impact_cooldown = maxf(0.0, _impact_cooldown - dt)
 	var best: float = 0.0
 	var best_i: int = -1

@@ -66,6 +66,11 @@ const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
 const GESTURE_GAP_S: Vector2 = Vector2(6.0, 14.0)
 ## Only traffic this close to the player can upset anyone (walkers further away aren't animated).
 const THREAT_M: float = 60.0
+## The auto's footprint for a body hit: a person it reaches (and who did not dodge in time) is struck.
+const BUMP_HALF_WIDTH_M: float = 0.95
+const BUMP_HALF_LENGTH_M: float = 1.5
+const BUMP_MIN_MPS: float = 1.5
+const BUMP_COOLDOWN_S: float = 1.0
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
 const SHARE: Dictionary = {
     "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
@@ -194,6 +199,7 @@ func _process(delta: float) -> void:
 	_player_vel = (_player - _last_player) / delta if _last_player != Vector3.ZERO else Vector3.ZERO
 	_last_player = _player
 	_gather_threats(delta)
+	_check_player_bumps()
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = UPDATE_S
@@ -466,6 +472,32 @@ func _gather_threats(delta: float) -> void:
 
 func _has_reactions(w: Walker) -> bool:
 	return w.anim != null and w.anim.has_animation("dodge") and (_moves.get(w.id, {}) as Dictionary).has("dodge")
+
+## The auto has a body. Someone it reaches who is not already dodging or falling is hit: they go
+## down along the auto's path, and SignalBus.pedestrian_bumped slows the auto by their share of its mass.
+func _check_player_bumps() -> void:
+	var speed: float = _player_vel.length()
+	if not _has_player or speed < BUMP_MIN_MPS:
+		return
+	var fwd: Vector3 = Vector3(_player_fwd.x, 0.0, _player_fwd.z).normalized()
+	var side: Vector3 = Vector3(-fwd.z, 0.0, fwd.x)
+	var dir: Vector3 = Vector3(_player_vel.x, 0.0, _player_vel.z).normalized()
+	for w: Walker in people:
+		if not w.active or w.recovery > 0.0 or (w.react != "" and w.react != "gesture"):
+			continue
+		var rel: Vector3 = w.pos - _player
+		rel.y = 0.0
+		if absf(rel.dot(side)) > BUMP_HALF_WIDTH_M or absf(rel.dot(fwd)) > BUMP_HALF_LENGTH_M:
+			continue
+		w.recovery = BUMP_COOLDOWN_S # one hit per pass, however many frames the body stays in the footprint
+		if not _start_react(w, "stumble", dir) and not _start_react(w, "dodge", dir):
+			if w.anim.has_animation("fallen"):
+				w.react = "fallen"
+				w.react_t = FALLEN_S.x
+				w.anim.get_animation("fallen").loop_mode = Animation.LOOP_LINEAR
+				w.anim.play("fallen", 0.1)
+		SignalBus.pedestrian_startled.emit(w.pos)
+		SignalBus.pedestrian_bumped.emit(w.pos, _player_vel)
 
 ## A vehicle whose path passes within NEAR_MISS_M in the next REACT_AHEAD_S: jump back, or
 ## stumble and fall (always, if it's going to hit at speed).

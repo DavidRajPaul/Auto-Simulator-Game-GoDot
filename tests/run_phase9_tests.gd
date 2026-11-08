@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_hail_rider(city.get_node("SavariManager") as SavariManager)
 	await _test_reactions(city.get_node("PedestrianManager") as PedestrianManager)
 	await _test_gestures(city.get_node("PedestrianManager") as PedestrianManager)
+	_test_bumps(city.get_node("PedestrianManager") as PedestrianManager)
 	_test_traffic_models(city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager)
 	_test_city_props(city.get_node("World") as WorldChunkStreamer)
 	_test_grounding(city)
@@ -980,6 +981,32 @@ func _test_gestures(pm: PedestrianManager) -> void:
 		if idler.react == "":
 			break
 	_check("…then they go back to standing", idler.react == "" and idler.anim.current_animation == "idle", idler.anim.current_animation)
+
+
+func _test_bumps(pm: PedestrianManager) -> void:
+	var target: PedestrianManager.Walker = null
+	for w: PedestrianManager.Walker in pm.people:
+		if w.active and w.react == "" and w.recovery <= 0.0:
+			target = w
+			break
+	if target == null:
+		_check("Found a pedestrian to bump", false)
+		return
+	var bumps: Array = []
+	var record := func(_p: Vector3, v: Vector3) -> void: bumps.append(v)
+	SignalBus.pedestrian_bumped.connect(record)
+	# The auto a metre behind the person, doing 6 m/s straight at them (heading -z).
+	pm._has_player = true
+	pm._player_fwd = Vector3(0.0, 0.0, -1.0)
+	pm._player_vel = Vector3(0.0, 0.0, -6.0)
+	pm._player = target.pos + Vector3(0.0, 0.0, 0.5)
+	pm._check_player_bumps()
+	var first: int = bumps.size()
+	pm._check_player_bumps()
+	SignalBus.pedestrian_bumped.disconnect(record)
+	_check("A pedestrian the auto reaches is hit", first >= 1 and target.recovery > 0.0 and target.react != "", "hits %d" % first)
+	_check("…once per pass, not on every frame", bumps.size() == first)
+	_check("…and they go down, not stand there", target.react in ["stumble", "dodge", "fallen"], target.react)
 
 
 func _test_reactions(pm: PedestrianManager) -> void:
