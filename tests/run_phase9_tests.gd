@@ -972,7 +972,7 @@ func _test_gestures(pm: PedestrianManager) -> void:
 	for w: PedestrianManager.Walker in pm.people:
 		if w.anim == null or not w.anim.has_animation("get_up"):
 			continue
-		for clip: String in ["get_up", "talk", "drink", "wave", "flee_look"]:
+		for clip: String in ["get_up", "talk", "drink", "wave", "flee_look", "flee"]:
 			sets_ok = sets_ok and w.anim.has_animation(clip)
 	_check("Pedestrians with Mixamo sets have get-up and gesture clips", sets_ok)
 	var idler: PedestrianManager.Walker = null
@@ -1007,7 +1007,7 @@ func _test_fire_scares(pm: PedestrianManager) -> void:
 	pm._player_vel = Vector3.ZERO
 	SignalBus.vehicle_burning.emit(true)
 	pm._check_fire_scares()
-	_check("A pedestrian beside a burning auto runs off", target.fleeing and target.anim.current_animation in ["run", "flee_look"], target.anim.current_animation)
+	_check("A pedestrian beside a burning auto runs off", target.fleeing and target.anim.current_animation in ["run", "flee_look", "flee"], target.anim.current_animation)
 	SignalBus.vehicle_burning.emit(false)
 	for f: int in 60 * 12:
 		await get_tree().physics_frame
