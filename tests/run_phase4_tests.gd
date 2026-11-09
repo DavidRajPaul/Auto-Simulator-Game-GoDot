@@ -532,7 +532,32 @@ func _test_fire_limp(main: Node, auto: AutoRickshawController, ui: GarageUI) -> 
 ## waiting at the marker, boards her, keeps her visible in the back, makes her get out of a burning
 ## auto (and its stops stop counting), boards her again, and walks her to the door at the end.
 ## Every rider quest is run through the same cycle.
+## Nov 9 device report: the person at a quest stop stood waist-deep in the pavement (the waiting
+## figures have their origin at the hip), and a second repair ad during a quest paid nothing (the
+## reward key was the in-game minute, which stands still during a quest).
+func _test_stop_person_and_second_ad(main: Node) -> void:
+	var markers: Node = main.find_child("QuestMarkers", true, false)
+	if markers != null:
+		var person: Node3D = markers.get("_person") as Node3D
+		var lift: float = float(markers.get("_person_lift"))
+		_check("The person at a quest stop stands on the pavement", person != null and lift > 0.5
+				and absf(QuestMarkers.lowest_point(person) + lift) < 0.02, "lift %.2f" % lift)
+	var minute: float = GameState.shift_minute
+	var running: bool = GameState.shift_running
+	GameState.shift_running = false
+	var repaired: int = 0
+	for n: int in 2:
+		GameState.condition = 0.0
+		SignalBus.condition_changed.emit(0.0)
+		AdMonetizationManager.show_rewarded("ad_wreck_repair")
+		await _process_frames(3)
+		repaired += 1 if GameState.condition >= 99.0 else 0
+	_check("A second repair ad in the same (frozen) minute still repairs", repaired == 2 and GameState.shift_minute == minute, "%d of 2" % repaired)
+	GameState.shift_running = running
+	GameState.repair_free()
+
 func _test_quest_rider(main: Node, auto: AutoRickshawController) -> void:
+	await _test_stop_person_and_second_ad(main)
 	var rider: QuestRider = main.get_node("QuestRider") as QuestRider
 	var director: MissionDirector = main.get_node("MissionDirector") as MissionDirector
 	for id: String in ["sq_004", "sq_003", "sq_014", "sq_021", "sq_009"]:
@@ -556,12 +581,17 @@ func _rider_cycle(rider: QuestRider, director: MissionDirector, auto: AutoRicksh
 	await _process_frames(3)
 	_check(who + "waits at its marker before the quest starts", rider.state == QuestRider.State.WAITING and rider.body != null
 			and rider.body.global_position.distance_to(d.start_anchor) < 15.0, QuestRider.State.keys()[rider.state])
-	_check(who + "…on a stone ledge", rider._ledge != null)
+	_check(who + "…on a stone ledge", rider._ledge != null and rider._ledge.visible)
 	_check(who + "the quest starts", director.start(id))
 	_check(who + "…and the rider walks to the auto rather than appearing in it", rider.state == QuestRider.State.BOARDING)
 	_check(who + "its stops don't count until the rider is in", director.rider_missing())
 	for i: int in 900:
 		if rider.state == QuestRider.State.ABOARD:
+			break
+		await get_tree().process_frame
+	_check(who + "…stepping in, not popping into the seat", rider._climbing > 0.0)
+	for i: int in 120:
+		if rider._climbing <= 0.0:
 			break
 		await get_tree().process_frame
 	await _process_frames(2)

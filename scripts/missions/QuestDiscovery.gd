@@ -126,7 +126,7 @@ func _on_navigation_state(active: bool, _start: Vector3, destination: Vector3) -
 
 func can_start(id: String) -> bool:
 	var q: MissionDef = registry.get_mission(id)
-	if q == null or not q.discoverable or not _has_pose or _speed_kmh > tuning.stopped_kmh or GameState.tutorial_active or GameState.mission_active or not GameState.mission_run.is_empty() or GameState.is_wrecked():
+	if q == null or not q.discoverable or not _has_pose or _speed_kmh > tuning.stopped_kmh or GameState.tutorial_active or GameState.mission_active or not GameState.mission_run.is_empty() or GameState.is_on_fire():
 		return false
 	if SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call()):
 		return false
@@ -149,7 +149,9 @@ func request_start(id: String) -> bool:
 	if tracked_id() == id:
 		track("") # the mission's own GPS takes over; arriving here was the point of the route
 	SignalBus.mission_start_requested.emit(id)
-	return true
+	# The director can still refuse (its own checks); report what actually happened so the HUD
+	# never closes the card on a start that didn't happen (Nov 9 device report).
+	return SignalBus.mission_start_requested.get_connections().is_empty() or GameState.mission_active
 
 func _road_approach(anchor: Vector3, radius: float) -> bool:
 	var graph: RoadGraph = SignalBus.current_road_graph

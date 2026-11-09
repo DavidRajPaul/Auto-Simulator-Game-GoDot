@@ -214,6 +214,8 @@ SQ02_SECOND,"Now the second shop. Don't spill!","இப்போது இரண
 SQ02_THIRD,"Last one: take it to the tea shop.","கடைசி: டீக்கடைக்குக் கொண்டு போ."
 SQ04_TITLE,"Paati Knows the Way","பாட்டிக்குத் தெரிந்த பாதை"
 SQ04_RIDER,"Paati","பாட்டி"
+RIDER_IN,"%s is in the auto.","%s ஆட்டோவில் ஏறிவிட்டார்."
+QUEST_NOT_ON_FIRE,"Put the fire out before starting a quest.","தீயை அணைத்த பிறகு வேலையைத் தொடங்கு."
 SQ03_RIDER,"Musician","இசைக்கலைஞர்"
 SQ09_RIDER,"Kutty","குட்டி"
 SQ14_RIDER,"Student","மாணவி"

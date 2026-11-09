@@ -14,6 +14,10 @@ const PERSON: String = "res://assets/models/people/waiting/man_casual_stand.glb"
 var _mm: MultiMesh
 var _sign: Label3D
 var _person: Node3D
+## The waiting figures are baked with their origin at the hip (feet ~0.9 m below), so standing
+## the origin on the pavement sank them to the waist (Nov 9 device report). Lift by the model's
+## own lowest point, so any figure works.
+var _person_lift: float = 0.0
 var _player: Vector3 = Vector3.ZERO
 var _has_pose: bool = false
 var _elapsed: float = 0.0
@@ -54,6 +58,7 @@ func _ready() -> void:
 		_person = scene.instantiate() as Node3D
 		_person.visible = false
 		add_child(_person)
+		_person_lift = -lowest_point(_person)
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void:
 		_player = p
 		_has_pose = true)
@@ -122,12 +127,25 @@ func _refresh_sign(entries: Array[Dictionary]) -> void:
 		by_road = at.move_toward(_job["target"] as Vector3, 1.3) # In front of the shop, not inside.
 	_show_person(not _job.is_empty() and _job["place_pos"] != Vector3.ZERO, by_road)
 
+## Lowest mesh point of `node` in its own space (0 for a model whose origin is at its feet).
+static func lowest_point(node: Node3D) -> float:
+	var lo: float = INF
+	for n: Node in node.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = n as MeshInstance3D
+		var xf: Transform3D = Transform3D.IDENTITY
+		var walk: Node = mi
+		while walk != null and walk != node:
+			xf = (walk as Node3D).transform * xf if walk is Node3D else xf
+			walk = walk.get_parent()
+		lo = minf(lo, (xf * mi.get_aabb()).position.y)
+	return lo if lo != INF else 0.0
+
 func _show_person(show_it: bool, at: Vector3) -> void:
 	if _person == null:
 		return
 	_person.visible = show_it
 	if show_it:
-		_person.position = Vector3(at.x, SignalBus.surface_height(at.x, at.z, 0.08), at.z)
+		_person.position = Vector3(at.x, SignalBus.surface_height(at.x, at.z, 0.08) + _person_lift, at.z)
 		_person.look_at(Vector3(_player.x, _person.position.y, _player.z) + Vector3(0.01, 0.0, 0.01), Vector3.UP, true)
 
 ## Gem (UV.x = 1, spun by the shader) over a thin flat ring. One surface, vertex data only.
