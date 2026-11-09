@@ -77,6 +77,7 @@ func _run() -> void:
 	check("completion reflected in journal", bool(discovery.catalogue()[0]["completed"]))
 	GameState.mission_completed.clear()
 	check("bad ID refused", not discovery.track("missing"))
+	await _navigation_tests(discovery, mission)
 	discovery.free()
 	# Godot 4.5.1 empties every Packed*Array when export converts text resources to binary:
 	# quests then fail validation in the APK only, while every source-tree test still passes.
@@ -90,12 +91,71 @@ func _run() -> void:
 	add_child(production)
 	check("Career catalogue reaches both maps", full._quest_rows.size() == 24 and mini._quests.size() == 24)
 	check("tracking reaches both maps", production.track("sq_001") and bool(full._quest_rows[0]["tracked"]) and bool(mini._quests[0]["tracked"]))
+	_full_map_tests(full)
 	full.free()
 	mini.free()
 	production.free()
 	SignalBus.current_road_graph = null
 	print("Quest discovery: %d passed, %d failed" % [passed, failed])
 	get_tree().quit(0 if failed == 0 else 1)
+
+## Nov 9 device test: "Go there" drew no route, a pin set mid-ride replaced the rider's route,
+## and "Clear route" left the quest marked as on route.
+func _navigation_tests(discovery: QuestDiscovery, mission: MissionDef) -> void:
+	var nav: CustomNavigation = CustomNavigation.new()
+	add_child(nav)
+	var routes: Array[int] = [0]
+	var on_route: Callable = func(_pts: PackedVector3Array) -> void: routes[0] += 1
+	SignalBus.route_updated.connect(on_route)
+	SignalBus.player_pose_updated.emit(Vector3(20, 0, 0), Vector3.FORWARD)
+	discovery.track(mission.id)
+	check("Go there builds a GPS route to the quest", nav._active and nav._gps != null and nav._destination == mission.start_anchor and routes[0] == 1)
+	discovery.track("")
+	check("Clear route removes the GPS route and the tracking", not nav._active and discovery.tracked_id() == "" and routes[0] == 2)
+	discovery.track(mission.id)
+	SignalBus.custom_navigation_cleared.emit()
+	check("map Clear also ends quest tracking", discovery.tracked_id() == "" and not nav._active)
+	discovery.track(mission.id)
+	SignalBus.passenger_boarded.emit(1, 0.0)
+	var before: int = routes[0]
+	SignalBus.custom_navigation_requested.emit(Vector3.ZERO, Vector3(180, 0, 0))
+	check("pin set mid-ride is queued, rider route untouched", nav.is_queued() and nav._destination == Vector3(180, 0, 0) and routes[0] == before)
+	check("a new pin replaces quest tracking", discovery.tracked_id() == "")
+	SignalBus.player_pose_updated.emit(Vector3(60, 0, 0), Vector3.FORWARD)
+	check("queued route never reroutes over the rider's", routes[0] == before)
+	SignalBus.passenger_alighted.emit()
+	await get_tree().process_frame
+	check("queued route goes up after drop-off", nav._active and not nav.is_queued() and nav._gps != null and routes[0] == before + 1)
+	SignalBus.custom_navigation_cleared.emit()
+	SignalBus.route_updated.disconnect(on_route)
+	nav.free()
+
+func _full_map_tests(full: FullMap) -> void:
+	full.size = Vector2(1280, 720)
+	check("journal pages fit the catalogue", full._journal_pages() == ceili(full._quest_rows.size() / 5.0))
+	full._journal_open = true
+	full._journal_page = full._journal_pages() - 1
+	full._journal_next = Rect2(Vector2(500, 500), Vector2(20, 20))
+	full._tap_button(Vector2(505, 505))
+	check("next stops on the last page with quests", full._journal_page == full._journal_pages() - 1)
+	full._journal_panel = Rect2(Vector2.ZERO, Vector2(100, 100))
+	full._tap_button(Vector2(900, 900))
+	check("a tap on the map closes the quest list", not full._journal_open)
+	full._quest_selected = "sq_001"
+	full._tap_map(Vector2(-5000, -5000))
+	check("a tap on empty map closes the quest card", full._quest_selected == "")
+	full._quest_selected = "sq_001"
+	full._clear_rect = Rect2(Vector2(700, 700), Vector2(40, 40))
+	full._tap_button(Vector2(710, 710))
+	check("Clear closes the quest card", full._quest_selected == "")
+	full._legend_rect = Rect2(Vector2(300, 0), Vector2(40, 40))
+	full._tap_button(Vector2(310, 10))
+	check("Legend opens", full._legend_open and not full._journal_open)
+	var missing: Array[String] = []
+	for kind: String in FullMap.LEGEND_ITEMS:
+		if tr("MAP_KEY_" + kind.to_upper()) == "MAP_KEY_" + kind.to_upper():
+			missing.append(kind)
+	check("every legend entry has a string " + str(missing), missing.is_empty())
 
 func _count_hint(_message: String, _seconds: float) -> void:
 	hints += 1
