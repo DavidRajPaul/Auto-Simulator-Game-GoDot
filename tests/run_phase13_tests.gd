@@ -136,18 +136,17 @@ func _registry_tests() -> void:
 	check("Production twenty-four-quest pack valid", registry.load_pack(load("res://data/missions/career_quests.tres") as MissionPack) and registry.definitions.size() == 24)
 
 func _interrupt_tests() -> void:
-	for reason: String in ["abandoned", "tow", "wreck", "shift_end"]:
+	for reason: String in ["abandoned", "tow", "shift_end"]:
 		pose(0)
 		director.start("test_foundation")
 		if reason == "tow":
 			SignalBus.tow_requested.emit(Vector3.ZERO)
-		elif reason == "wreck":
-			SignalBus.vehicle_wrecked.emit(true)
 		elif reason == "shift_end":
 			SignalBus.shift_ended.emit({})
 		else:
 			director.abandon(reason)
 		check("AC08 cleanup on " + reason, director.run == null and not GameState.mission_active and GameState.shift_minute == 600.0)
+	_wreck_rule_tests()
 	pose(0)
 	director.start("test_foundation")
 	var saved: Dictionary = GameState.to_dict().duplicate(true)
@@ -158,6 +157,61 @@ func _interrupt_tests() -> void:
 	GameState.mission_completed["future_pack_quest"] = {"stars": 3}
 	GameState.from_dict(GameState.to_dict().duplicate(true))
 	check("Unknown history retained", GameState.mission_completed.has("future_pack_quest"))
+
+## Owner rules (Nov 9) for a wreck mid-quest: a timed quest is quit and starts over; any other quest
+## waits while the driver can still pay or watch an ad for a repair, and fails when they can't.
+func _wreck_rule_tests() -> void:
+	var definition: MissionDef = director.registry.get_mission("test_foundation")
+	var deadlines: Array[float] = []
+	for stage: MissionStage in definition.stages:
+		deadlines.append(stage.deadline_s)
+		stage.deadline_s = 0.0
+	var config: AdConfig = AdMonetizationManager.config
+	var placements: PackedStringArray = config.rewarded_enabled_placements
+	var no_wreck_ad: PackedStringArray = PackedStringArray()
+	for p: String in placements:
+		if p != "ad_wreck_repair":
+			no_wreck_ad.append(p)
+	var wallet: int = GameState.wallet_inr
+	# Not timed, money for a repair: the quest waits.
+	pose(0)
+	GameState.wallet_inr = 500
+	director.start("test_foundation")
+	SignalBus.vehicle_wrecked.emit(true)
+	check("Wreck, not timed, money left: the quest carries on", director.run != null and director.run.status == "active")
+	director.abandon()
+	# Not timed, no money and no repair ad: it fails (and can be retried later).
+	pose(0)
+	GameState.wallet_inr = 0
+	config.rewarded_enabled_placements = no_wreck_ad
+	director.start("test_foundation")
+	SignalBus.vehicle_wrecked.emit(true)
+	check("Wreck, not timed, no money and no ad: the quest fails", director.run != null and director.run.status == "failed" and not GameState.mission_active)
+	director.abandon()
+	# Not timed, no money, the ad was offered but would not show: it fails then.
+	config.rewarded_enabled_placements = placements + PackedStringArray(["ad_wreck_repair"])
+	pose(0)
+	director.start("test_foundation")
+	GameState.condition = 0.0
+	SignalBus.vehicle_wrecked.emit(true)
+	var waiting: bool = director.run != null and director.run.status == "active" and AdMonetizationManager.can_offer_rewarded("ad_wreck_repair")
+	config.rewarded_enabled_placements = no_wreck_ad
+	SignalBus.rewarded_ad_failed.emit("ad_wreck_repair", "not_loaded")
+	check("…and when the repair ad fails to show", waiting and director.run != null and director.run.status == "failed")
+	director.abandon()
+	GameState.repair_free()
+	config.rewarded_enabled_placements = placements
+	# Timed: quit and back to the start, whatever the wallet.
+	definition.stages[0].deadline_s = 999.0
+	GameState.wallet_inr = 500
+	pose(0)
+	director.start("test_foundation")
+	SignalBus.vehicle_wrecked.emit(true)
+	check("Wreck on a timed quest: it is quit and starts over", director.is_timed("test_foundation") and director.run == null
+			and GameState.mission_run.is_empty() and not GameState.mission_active and not GameState.mission_completed.has("test_foundation_never"))
+	for i: int in definition.stages.size():
+		definition.stages[i].deadline_s = deadlines[i]
+	GameState.wallet_inr = wallet
 
 func _save_tests() -> void:
 	var original_path: String = GameState.save_path

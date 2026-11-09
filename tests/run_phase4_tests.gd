@@ -485,6 +485,24 @@ func _test_fire_limp(main: Node, auto: AutoRickshawController, ui: GarageUI) -> 
 			and burning <= auto.stats.max_speed_kmh * AutoRickshawController.LIMP_FIRE.x + 2.0,
 			"healthy %.1f, burning %.1f km/h" % [healthy, burning])
 	_check("…and it misfires under throttle", misfires.size() >= 1, "%d misfires in 4 s" % misfires.size())
+	# The fire spreads, very slowly: about four minutes from the first flames to a wreck.
+	GameState.condition = 8.0
+	GameState._fire_drain = 0.0 # the drive above already started the next step
+	GameState.burn(10.0)
+	var after_10s: float = GameState.condition
+	var wrecks: Array[bool] = []
+	var on_wreck: Callable = func(w: bool) -> void: wrecks.append(w)
+	SignalBus.vehicle_wrecked.connect(on_wreck)
+	GameState.condition = 0.1
+	GameState.burn(5.0)
+	SignalBus.vehicle_wrecked.disconnect(on_wreck)
+	_check("A fire left burning drains condition slowly", is_equal_approx(after_10s, 8.0 - GameState.FIRE_DRAIN_PER_S * 10.0)
+			and (100.0 - DamageFX.FIRE_FROM * 100.0) / GameState.FIRE_DRAIN_PER_S >= 180.0,
+			"%.2f after 10 s" % after_10s)
+	_check("…until the auto is wrecked", GameState.is_wrecked() and wrecks == [true])
+	GameState.repair_free()
+	GameState.condition = 8.0
+	SignalBus.condition_changed.emit(GameState.condition)
 	# Nobody waits for, or gets into, a burning auto.
 	var savari: SavariManager = main.get_node("SavariManager") as SavariManager
 	await _process_frames(3)

@@ -396,6 +396,8 @@ func _physics_process(delta: float) -> void:
 		throttle_in = 0.0
 	if _update_limp(delta):
 		throttle_in = 0.0
+	if use_player_profile:
+		GameState.burn(delta)
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)
 	var target_steer: float = steer_in * deg_to_rad(stats.max_steer_angle_deg) * speed_steer_factor

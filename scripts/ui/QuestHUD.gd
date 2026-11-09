@@ -318,3 +318,5 @@ func _on_finished(id: String, status: String, reason: String) -> void:
 		_refresh()
 		if status == "completed":
 			SignalBus.hint_requested.emit(tr("QUEST_COMPLETED") % UIKit.inr(_reward), 4.0)
+		elif reason == "wreck_timed":
+			SignalBus.hint_requested.emit(tr("QUEST_RESET_WRECK"), 5.0)

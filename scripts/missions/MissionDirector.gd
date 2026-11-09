@@ -44,8 +44,10 @@ func _ready() -> void:
 	SignalBus.mission_retry_requested.connect(retry)
 	SignalBus.mission_abandon_requested.connect(abandon)
 	SignalBus.tow_requested.connect(func(_pos: Vector3) -> void: abandon("tow"))
-	SignalBus.vehicle_wrecked.connect(func(wrecked: bool) -> void:
-		if wrecked: abandon("wreck"))
+	SignalBus.vehicle_wrecked.connect(_on_wrecked)
+	SignalBus.rewarded_ad_failed.connect(func(placement: String, _reason: String) -> void:
+		if placement == "ad_wreck_repair" and GameState.is_wrecked():
+			_on_wrecked(true))
 	SignalBus.shift_ended.connect(func(_summary: Dictionary) -> void: abandon("shift_end"))
 	SignalBus.road_graph_ready.connect(func(_graph: RoadGraph) -> void: _route_dirty = true)
 	SignalBus.mission_profile_loaded.connect(_on_profile_loaded)
@@ -331,6 +333,29 @@ func _advance(next_id: String = "") -> void:
 	var index: int = definition.stage_index(next_id) if next_id != "" else definition.stage_index(run.stage_id) + 1
 	_enter_stage(index)
 	_busy = false
+
+## Wrecked mid-quest (owner rules, Nov 9). A timed quest can't be finished fairly after a wreck, so
+## it is quit and starts again from the beginning. Any other quest waits while the driver gets the
+## auto going again, and fails only when there is no way to: no money for a repair and no repair ad.
+func _on_wrecked(wrecked: bool) -> void:
+	if not wrecked or _busy or run == null or run.status != "active":
+		return
+	if is_timed(run.quest_id):
+		abandon("wreck_timed")
+	elif not _wreck_recoverable():
+		_fail("wreck_stranded")
+
+func is_timed(quest_id: String) -> bool:
+	var definition: MissionDef = registry.get_mission(quest_id)
+	if definition == null:
+		return false
+	for stage: MissionStage in definition.stages:
+		if stage.deadline_s > 0.0:
+			return true
+	return false
+
+func _wreck_recoverable() -> bool:
+	return GameState.wallet_inr >= GameState.REPAIR_COST_PER_POINT or AdMonetizationManager.can_offer_rewarded("ad_wreck_repair")
 
 func _fail(reason: String) -> void:
 	run.status = "failed"
