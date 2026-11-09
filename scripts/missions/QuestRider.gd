@@ -26,6 +26,10 @@ const WALK_MPS: float = 0.75
 const DOOR_SIDE_M: float = 1.05 # where she stands beside the auto to climb in or out
 const STEP_BACK_M: float = 4.0 # how far from a burning auto she waits
 const LEDGE: Vector3 = Vector3(0.62, 0.48, 0.46)
+const LEDGE_BASE: Color = Color(0.56, 0.2, 0.14) # red oxide
+const LEDGE_TOP: Color = Color(0.78, 0.74, 0.68) # granite slab
+## Climbing in or out of the auto takes this long, so it reads as getting in, not vanishing.
+const CLIMB_S: float = 0.6
 const SCAN_S: float = 1.0
 const HOP_M: float = 0.06 # the puppy's hop height while she moves (no walk clip yet)
 const WALK_CLIP: String = "walk"
@@ -55,6 +59,8 @@ var _has_pose: bool = false
 var _speed_kmh: float = 0.0
 var _scan: float = 0.0
 var _burning: bool = false
+var _climbing: float = 0.0 # > 0 while a climb-in / climb-out tween plays
+var _tween: Tween
 
 func _ready() -> void:
 	director = get_node_or_null(director_path) as MissionDirector
@@ -82,6 +88,9 @@ func _process(delta: float) -> void:
 	if _scan <= 0.0:
 		_scan = SCAN_S
 		_update_waiting()
+	if _climbing > 0.0:
+		_climbing -= delta
+		return
 	match state:
 		State.BOARDING:
 			if _speed_kmh > DRIVE_OFF_KMH:
@@ -89,7 +98,7 @@ func _process(delta: float) -> void:
 			else:
 				_walk_target = _door_point()
 				if _step_walk(delta):
-					_sit_in_auto()
+					_sit_in_auto(true)
 		State.OUT:
 			if not _burning and not GameState.is_on_fire() and _auto() != null and _speed_kmh <= PICKUP_KMH \
 					and body.global_position.distance_to(_auto().global_position) <= PICKUP_M:
@@ -154,22 +163,42 @@ func _ledge_spot(anchor: Vector3) -> Transform3D:
 	spot.y = SignalBus.surface_height(spot.x, spot.z, anchor.y)
 	return Transform3D(Basis.looking_at(facing, Vector3.UP, true), spot)
 
-## A worn granite thinnai for her to wait on (one box, one draw call).
+## A thinnai for her to wait on: a red-oxide block under a pale granite slab, so it reads as a
+## seat and not as more pavement (Nov 9: a pavement-grey box looked like the road had swallowed
+## her legs). One vertex-coloured mesh, one draw call.
 func _make_ledge() -> Node3D:
-	var holder: Node3D = Node3D.new()
-	holder.name = "Ledge"
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = LEDGE
-	mi.mesh = box
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var slab: float = 0.07
+	# Behind her hip (she faces +Z), so her legs hang in front of it.
+	_box(st, Vector3(0.0, (LEDGE.y - slab) * 0.5, -0.1), Vector3(LEDGE.x, LEDGE.y - slab, LEDGE.z), LEDGE_BASE)
+	_box(st, Vector3(0.0, LEDGE.y - slab * 0.5, -0.08), Vector3(LEDGE.x + 0.08, slab, LEDGE.z + 0.08), LEDGE_TOP)
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.62, 0.58, 0.52)
-	mat.roughness = 0.95
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 0.9
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "Ledge"
+	mi.mesh = st.commit()
 	mi.material_override = mat
-	# The box is centred: lift it onto the pavement, a little behind her hip (she faces +Z).
-	mi.position = Vector3(0.0, LEDGE.y * 0.5, -0.1)
-	holder.add_child(mi)
-	return holder
+	return mi
+
+static func _box(st: SurfaceTool, c: Vector3, size: Vector3, colour: Color) -> void:
+	var h: Vector3 = size * 0.5
+	var faces: Array = [
+		[Vector3.UP, [Vector3(-h.x, h.y, h.z), Vector3(h.x, h.y, h.z), Vector3(h.x, h.y, -h.z), Vector3(-h.x, h.y, -h.z)]],
+		[Vector3.BACK, [Vector3(-h.x, -h.y, h.z), Vector3(h.x, -h.y, h.z), Vector3(h.x, h.y, h.z), Vector3(-h.x, h.y, h.z)]],
+		[Vector3.FORWARD, [Vector3(h.x, -h.y, -h.z), Vector3(-h.x, -h.y, -h.z), Vector3(-h.x, h.y, -h.z), Vector3(h.x, h.y, -h.z)]],
+		[Vector3.RIGHT, [Vector3(h.x, -h.y, h.z), Vector3(h.x, -h.y, -h.z), Vector3(h.x, h.y, -h.z), Vector3(h.x, h.y, h.z)]],
+		[Vector3.LEFT, [Vector3(-h.x, -h.y, -h.z), Vector3(-h.x, -h.y, h.z), Vector3(-h.x, h.y, h.z), Vector3(-h.x, h.y, -h.z)]],
+	]
+	for f: Array in faces:
+		var q: Array = f[1]
+		# The sides are a shade darker than the top, so the edge reads.
+		var shade: Color = colour if f[0] == Vector3.UP else colour.darkened(0.25)
+		for i: int in [0, 1, 2, 0, 2, 3]:
+			st.set_color(shade)
+			st.set_normal(f[0])
+			st.add_vertex(c + (q[i] as Vector3))
 
 # --- Quest life cycle ------------------------------------------------------------
 
@@ -218,12 +247,32 @@ func _on_burning(on: bool) -> void:
 func _get_out(to: Vector3, then: State) -> void:
 	var auto: AutoRickshawController = _auto()
 	if auto != null and state == State.ABOARD:
+		# Step down from the seat to the kerb-side door, then walk on.
+		var seat: Vector3 = body.global_position
+		body.reparent(self, true)
+		body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		var out: Vector3 = _door_point()
-		_detach_to_world(out)
+		var face: Vector3 = Vector3(out.x - seat.x, 0.0, out.z - seat.z)
+		face = face.normalized() if face.length_squared() > 0.0001 else Vector3.FORWARD
+		body.global_transform = Transform3D(Basis.looking_at(face, Vector3.UP, true).scaled(Vector3.ONE * _size), seat)
+		if to == Vector3.INF:
+			var away: Vector3 = out - auto.global_position
+			away.y = 0.0
+			to = out + away.normalized() * STEP_BACK_M
+		_walk_target = to
+		_after_walk = then
+		_walk_follow_auto = false
+		_play(WALK_CLIP, WALK_MPS / (_walk_native_mps * _size), 0.2)
+		_kill_tween()
+		_tween = create_tween()
+		_tween.tween_property(body, "global_position", out, CLIMB_S)
+		_climbing = CLIMB_S
+		state = State.LEAVING
+		return
 	if to == Vector3.INF:
-		var away: Vector3 = body.global_position - (auto.global_position if auto != null else body.global_position + Vector3.FORWARD)
-		away.y = 0.0
-		to = body.global_position + away.normalized() * STEP_BACK_M
+		var away2: Vector3 = body.global_position - (auto.global_position if auto != null else body.global_position + Vector3.FORWARD)
+		away2.y = 0.0
+		to = body.global_position + away2.normalized() * STEP_BACK_M
 	_start_walk(to, then, false)
 	state = State.LEAVING
 
@@ -329,19 +378,38 @@ func _place_sitting(hip: Vector3, facing: Vector3) -> void:
 	body.global_transform = Transform3D(b.scaled(Vector3.ONE * _size), hip - b * (_seat_hip * _size))
 	_play(SIT_CLIP, 1.0, 0.0)
 
-func _sit_in_auto() -> void:
+## Seats her on the rear bench. `climb`: she steps in from where she stands (the door) over
+## CLIMB_S, sitting down as she goes, and the HUD says she's in; otherwise she is placed (resume).
+func _sit_in_auto(climb: bool = false) -> void:
 	var auto: AutoRickshawController = _auto()
 	if auto == null or body == null:
 		return
 	var model: Node3D = auto.get_node_or_null("Model") as Node3D
 	var parent: Node3D = model if model != null else auto
+	var from: Vector3 = body.global_position
 	body.reparent(parent, false)
 	body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	var b: Basis = Basis(Vector3.UP, PI) # glTF faces +Z; the auto drives along -Z
-	body.transform = Transform3D(b.scaled(Vector3.ONE * _size), PASSENGER_HIP - b * (_seat_hip * _size))
-	_play(SIT_CLIP, 1.0, 0.0) # no blend: a walking pose sliding into the seat reads as a glitch
+	var seat: Vector3 = PASSENGER_HIP - b * (_seat_hip * _size)
+	_kill_tween()
+	if climb:
+		body.transform = Transform3D(b.scaled(Vector3.ONE * _size), parent.global_transform.affine_inverse() * from)
+		_play(SIT_CLIP, 1.0, 0.3)
+		_tween = create_tween()
+		_tween.tween_property(body, "position", seat, CLIMB_S).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_climbing = CLIMB_S
+		SignalBus.hint_requested.emit(tr("RIDER_IN") % _name(), 2.5)
+	else:
+		body.transform = Transform3D(b.scaled(Vector3.ONE * _size), seat)
+		_play(SIT_CLIP, 1.0, 0.0) # placed straight in: no blend from whatever pose she had
 	_clear_ledge_later()
 	state = State.ABOARD
+
+func _kill_tween() -> void:
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_tween = null
+	_climbing = 0.0
 
 func _detach_to_world(at: Vector3) -> void:
 	body.reparent(self, false)
@@ -411,6 +479,7 @@ func _clear_ledge_later() -> void:
 		_ledge = null
 
 func _clear() -> void:
+	_kill_tween()
 	_clear_ledge_later()
 	if body != null:
 		body.queue_free()

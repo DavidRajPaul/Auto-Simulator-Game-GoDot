@@ -186,7 +186,7 @@ func _on_leave() -> void:
 func _begin_prompt() -> void:
 	if not _prompt.is_empty() and SignalBus.quest_action_provider.is_valid():
 		if not bool(SignalBus.quest_action_provider.call("start", str(_prompt["id"]))):
-			SignalBus.hint_requested.emit(tr("QUEST_STOP_AT_KERB"), 3.0)
+			SignalBus.hint_requested.emit(tr("QUEST_NOT_ON_FIRE") if GameState.is_on_fire() else tr("QUEST_STOP_AT_KERB"), 3.0)
 
 func _refresh() -> void:
 	var hidden: bool = _modal or _map_open or GameState.tutorial_active

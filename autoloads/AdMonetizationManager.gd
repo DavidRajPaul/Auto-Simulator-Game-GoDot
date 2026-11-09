@@ -23,6 +23,8 @@ var _rides_since_interstitial: int = 0
 var _speed_kmh: float = 0.0
 var _pending: Dictionary = {} # placement -> context for an in-flight rewarded ad
 
+var _ad_serial: int = 0
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	config = load(CONFIG_PATH) as AdConfig if ResourceLoader.exists(CONFIG_PATH) else AdConfig.new()
@@ -64,6 +66,11 @@ func show_rewarded(placement: String, context: Dictionary = {}) -> bool:
 	if not can_offer_rewarded(placement):
 		SignalBus.rewarded_ad_failed.emit(placement, "unavailable")
 		return false
+	# One id per ad view: rewards were keyed by the in-game minute, which stands still during a
+	# quest, so a second repair ad was refused as a duplicate (Nov 9 device report).
+	_ad_serial += 1
+	context = context.duplicate()
+	context["ad_id"] = "%d-%d" % [int(Time.get_unix_time_from_system()), _ad_serial]
 	_pending[placement] = context
 	if not provider.show_rewarded(placement):
 		_pending.erase(placement)

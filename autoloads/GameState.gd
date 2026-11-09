@@ -315,18 +315,18 @@ func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
 			grant_reward(placement, int(ctx.get("inr", 0)), 0, "%s:%s" % [placement, str(ctx.get("ride_id", ""))])
 		"ad_fuel_rescue":
 			var s: VehicleStats = base_stats(active_vehicle)
-			var g: Dictionary = grant_reward(placement, 0, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			var g: Dictionary = grant_reward(placement, 0, 0, _ad_key(placement, ctx))
 			if str(g["refused"]) == "":
 				fuel_level = maxf(fuel_level, s.fuel_capacity * 0.5)
 				SignalBus.refueled.emit(fuel_level)
 		"ad_wreck_repair":
 			# Placeholder until real ads: the mock provider shows a fake ad, then this runs.
-			var g3: Dictionary = grant_reward(placement, 0, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			var g3: Dictionary = grant_reward(placement, 0, 0, _ad_key(placement, ctx))
 			if str(g3["refused"]) == "":
 				repair_free()
 		"ad_tow":
 			# Credit the tow fee, then tow: the ad makes the tow free.
-			var g2: Dictionary = grant_reward(placement, ServicePoints.TOW_COST_INR, 0, "%s:%d:%d" % [placement, day, int(shift_minute)])
+			var g2: Dictionary = grant_reward(placement, ServicePoints.TOW_COST_INR, 0, _ad_key(placement, ctx))
 			if str(g2["refused"]) == "":
 				# A wrecked auto is towed to a garage; an empty tank to a fuel station.
 				if str(ctx.get("to", "")) == "garage":
@@ -335,6 +335,13 @@ func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
 					SignalBus.tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
 		_:
 			grant_reward(placement, int(ctx.get("inr", 0)), int(ctx.get("xp", 0)), "%s:%s" % [placement, str(ctx.get("id", Time.get_ticks_msec()))])
+
+## The once-only key for an ad's reward: the ad view's own id (AdMonetizationManager), falling
+## back to day and minute for callers that don't pass one.
+func _ad_key(placement: String, ctx: Dictionary) -> String:
+	if ctx.has("ad_id"):
+		return "%s:%s" % [placement, str(ctx["ad_id"])]
+	return "%s:%d:%d" % [placement, day, int(shift_minute)]
 
 # --- Money, respect, rating ------------------------------------------------------
 
