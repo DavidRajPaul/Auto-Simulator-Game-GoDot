@@ -547,9 +547,34 @@ func _on_collision(impulse: float) -> void:
 	if condition < 40.0 and previous >= 40.0:
 		_loadout_changed() # crossed into "worn out"
 
+## A fire that is not put out spreads, very slowly: from the first flames (12 %) to a wreck takes
+## about four minutes, so a driver who heads for a garage gets there, but leaving it burning wrecks it.
+const FIRE_DRAIN_PER_S: float = 0.05
+const FIRE_DRAIN_STEP: float = 0.25 # applied in steps, so condition_changed isn't sent every frame
+var _fire_drain: float = 0.0
+
+func burn(delta: float) -> void:
+	if not is_on_fire() or is_wrecked() or tutorial_active or delta <= 0.0:
+		_fire_drain = 0.0
+		return
+	_fire_drain += FIRE_DRAIN_PER_S * delta
+	if _fire_drain < FIRE_DRAIN_STEP:
+		return
+	var previous: float = condition
+	condition = maxf(0.0, condition - _fire_drain)
+	_fire_drain = 0.0
+	SignalBus.condition_changed.emit(condition)
+	if is_wrecked() and previous > 0.0:
+		SignalBus.vehicle_wrecked.emit(true)
+
 ## Condition 0: the engine is dead and the auto burns until it is repaired or towed.
 func is_wrecked() -> bool:
 	return condition <= 0.0 and not tutorial_active
+
+## Flames are showing (DamageFX fire stage) or the auto is wrecked. Nobody gets in, no refuelling,
+## no side quests; the controller's limp mode is cutting the engine.
+func is_on_fire() -> bool:
+	return is_wrecked() or (not tutorial_active and damage_severity() >= DamageFX.FIRE_FROM)
 
 ## 0 (fine) .. 1 (wrecked): drives the smoke, then the fire (DamageFX).
 func damage_severity() -> float:

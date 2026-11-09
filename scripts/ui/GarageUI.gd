@@ -151,7 +151,9 @@ func _render_service() -> void:
 	var is_ev: bool = stats.fuel_type == 2
 	match _service_kind:
 		"lpg", "ev":
-			if (_service_kind == "ev") != is_ev:
+			if GameState.is_on_fire():
+				_service_msg.text = tr("NO_FUEL_ON_FIRE") # the bunk won't fill a burning auto
+			elif (_service_kind == "ev") != is_ev:
 				_service_msg.text = tr("WRONG_FUEL_EV") if _service_kind == "ev" else tr("WRONG_FUEL_LPG")
 			else:
 				var cost: int = GameState.fuel_cost_to_fill()

@@ -138,6 +138,8 @@ func _ready() -> void:
 	SignalBus.road_graph_ready.connect(func(g: RoadGraph) -> void: graph = g)
 	SignalBus.scripted_hail_requested.connect(spawn_scripted_hail)
 	SignalBus.vehicle_wrecked.connect(_on_wrecked)
+	# Flames are enough: nobody stays in (or gets into) a burning auto, wrecked or not.
+	SignalBus.vehicle_burning.connect(_on_wrecked)
 	_load_flee_speeds()
 	graph = SignalBus.current_road_graph
 	_comfort_damping = GameState.active_stats().comfort_damping
@@ -224,8 +226,8 @@ func _physics_process(delta: float) -> void:
 	_animate_hails()
 	match state:
 		State.CRUISING:
-			if GameState.is_wrecked():
-				pass # nobody gets into a burning auto
+			if GameState.is_on_fire():
+				_clear_unscripted_hails() # nobody waits for, or gets into, a burning auto
 			elif not GameState.tutorial_active:
 				_maintain_hails()
 				_check_pickup()

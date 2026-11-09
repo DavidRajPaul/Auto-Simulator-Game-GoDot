@@ -241,11 +241,15 @@ func _test_audio(auto: AutoRickshawController) -> void:
 		return
 	var engine: AudioStreamPlayer3D = audio.get_node("Engine") as AudioStreamPlayer3D
 	var horn: AudioStreamPlayer3D = audio.get_node("Horn") as AudioStreamPlayer3D
-	# On fire the engine goes silent and the fire roars instead; it comes back when the fire is out.
-	audio._set_burning(true)
-	_check("Engine silent while the auto is on fire", not engine.playing and audio._fire.playing)
+	# On fire the limping engine keeps coughing under the fire roar (Nov 9); only a wreck kills it.
 	audio._set_engine(true)
-	_check("Engine stays silent on fire even after a restart", not engine.playing)
+	audio._set_burning(true)
+	_check("On fire the fire roars over a still-running engine", engine.playing and audio._fire.playing)
+	audio._set_dead(true)
+	_check("Wrecked, the engine goes silent", not engine.playing)
+	audio._set_engine(true)
+	_check("…and stays silent even after a restart", not engine.playing)
+	audio._set_dead(false)
 	audio._set_burning(false)
 	_check("Engine back and fire out when the fire is put out", engine.playing and not audio._fire.playing)
 	# Either the real recorded loop (assets/audio/vehicle, looping OGG) or the procedural fallback.
