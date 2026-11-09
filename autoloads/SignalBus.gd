@@ -235,6 +235,8 @@ signal mission_abandon_requested(reason: String)
 signal mission_ownership_changed(active: bool)
 signal mission_stage_changed(quest_id: String, stage_id: String, objective_key: String, choices: PackedStringArray)
 signal mission_finished(quest_id: String, status: String, reason: String)
+## True while the quest's rider (QuestRider) is in the auto. Unset: no rider system in the scene.
+var quest_rider_aboard_provider: Callable = Callable()
 signal mission_profile_loaded
 signal mission_interact_requested(quest_id: String, stage_id: String)
 signal mission_stage_info(info: Dictionary)

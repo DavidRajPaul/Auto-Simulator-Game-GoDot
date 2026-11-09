@@ -52,3 +52,6 @@ category = "help"
 reward_inr = 145
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("calm"), SubResource("care"), SubResource("thanks")])
+rider_model = "res://assets/models/people/quest/puppy/scene.gltf"
+rider_name_key = "SQ09_RIDER"
+rider_scale = 0.65

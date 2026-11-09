@@ -45,3 +45,5 @@ category = "help"
 reward_inr = 175
 reward_xp = 20
 stages = Array[ExtResource("stage")]([SubResource("plan"), SubResource("folder"), SubResource("interview")])
+rider_model = "res://assets/models/people/quest/job_seeker.glb"
+rider_name_key = "SQ21_RIDER"

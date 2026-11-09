@@ -75,3 +75,5 @@ category = "skill"
 reward_inr = 155
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("case"), SubResource("approach"), SubResource("gate"), SubResource("verify"), SubResource("handover")])
+rider_model = "res://assets/models/people/quest/musician.glb"
+rider_name_key = "SQ03_RIDER"
