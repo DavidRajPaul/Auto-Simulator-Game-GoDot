@@ -18,6 +18,8 @@ extends Resource
 ## clips. They wait at the start, ride in the back and get out at the last stage's place_pos.
 @export var rider_model: String = ""
 @export var rider_name_key: String = ""
+## Scale of the rider model against a person (the puppy is smaller than a person).
+@export var rider_scale: float = 1.0
 @export var reward_inr: int = 0
 @export var reward_xp: int = 0
 @export var scenario_minute: float = -1.0

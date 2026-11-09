@@ -35,7 +35,8 @@ func _run() -> void:
 	director = city.get_node("MissionDirector") as MissionDirector
 	auto = city.get_node("AutoRickshaw") as AutoRickshawController
 	var rig: CameraRig = city.get_node("CameraRig") as CameraRig
-	var d: MissionDef = director.registry.get_mission("sq_004")
+	var quest: String = OS.get_environment("SHOT_QUEST") if OS.get_environment("SHOT_QUEST") != "" else "sq_004"
+	var d: MissionDef = director.registry.get_mission(quest)
 	# Park on the road beside the marker.
 	var graph: RoadGraph = SignalBus.current_road_graph
 	var cp: Dictionary = graph.closest_point(d.start_anchor)
@@ -56,7 +57,7 @@ func _run() -> void:
 	side = side.normalized()
 	var fwd: Vector3 = -auto.global_basis.z
 	await _shot("1_waiting", p + Vector3(0, 0.9, 0), p + side * 3.5 + fwd * 2.0 + Vector3(0, 1.6, 0))
-	print("start ", director.start("sq_004"))
+	print("start ", director.start(quest))
 	await _frames(70)
 	p = rider.body.global_position
 	await _shot("2_boarding", p + Vector3(0, 0.9, 0), auto.global_position + side * 5.0 + fwd * 3.5 + Vector3(0, 2.2, 0))
@@ -65,14 +66,11 @@ func _run() -> void:
 			break
 		await get_tree().physics_frame
 	await _frames(30)
-	var sk: Skeleton3D = rider.body.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
-	var model: Node3D = auto.get_node("Model") as Node3D
-	for bone: String in ["Hip", "Head", "L_Foot"]:
-		print("BONE ", bone, " in auto space ", model.global_transform.affine_inverse() * (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bone))).origin)
-	print("BONE seat_hip ", rider._seat_hip, " driver hip ", AutoRickshawModel.DRIVER_HIP, " target ", QuestRider.PASSENGER_HIP)
+	print("SEAT ", rider.seat_point_in_auto(), " target ", QuestRider.PASSENGER_HIP)
 	var right: Vector3 = auto.global_basis.x
 	await _shot("3_aboard_side", auto.global_position + Vector3(0, 0.9, 0) + auto.global_basis.z * 0.4, auto.global_position + right * 2.6 + auto.global_basis.z * 1.4 + Vector3(0, 1.4, 0))
 	await _shot("4_aboard_back", auto.global_position + Vector3(0, 1.0, 0), auto.global_position + auto.global_basis.z * 4.0 - right * 1.5 + Vector3(0, 1.8, 0))
+	await _shot("5b_aboard_above", auto.global_position + Vector3(0, 0.9, 0), auto.global_position + right * -2.2 + auto.global_basis.z * 1.0 + Vector3(0, 3.2, 0))
 	await _shot("5_aboard_front", auto.global_position + Vector3(0, 1.0, 0) + auto.global_basis.z * 0.4, auto.global_position - auto.global_basis.z * 3.2 + right * 1.2 + Vector3(0, 1.5, 0))
 	GameState.condition = 8.0
 	SignalBus.condition_changed.emit(8.0)

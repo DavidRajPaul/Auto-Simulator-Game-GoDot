@@ -13,7 +13,8 @@ extends Node3D
 
 enum State { NONE, WAITING, BOARDING, ABOARD, OUT, LEAVING }
 
-const SCALE: float = 1.55 # the Tripo model is one unit tall; she is about 1.5 m
+const DEFAULT_SIZE: float = 1.55 # the Tripo models are one unit tall; a person is about 1.5 m
+var _size: float = DEFAULT_SIZE # this rider's scale (MissionDef.rider_scale)
 ## Her hip on the auto's rear bench (AutoRickshawModel space; the auto drives along -Z).
 const PASSENGER_HIP: Vector3 = Vector3(0.18, AutoRickshawModel.GROUND_Y + 0.78, 0.46)
 const SHOW_WAITING_M: float = 140.0
@@ -26,6 +27,7 @@ const DOOR_SIDE_M: float = 1.05 # where she stands beside the auto to climb in o
 const STEP_BACK_M: float = 4.0 # how far from a burning auto she waits
 const LEDGE: Vector3 = Vector3(0.62, 0.48, 0.46)
 const SCAN_S: float = 1.0
+const HOP_M: float = 0.06 # the puppy's hop height while she moves (no walk clip yet)
 const WALK_CLIP: String = "walk"
 const SIT_CLIP: String = "sit"
 
@@ -38,7 +40,10 @@ var body: Node3D
 var _model_path: String = ""
 var _anim: AnimationPlayer
 var _skeleton: Skeleton3D
-var _seat_hip: Vector3 = Vector3(0.018, 0.354, 0.014) # hip above her feet in the sit clip
+var _seat_hip: Vector3 = Vector3.ZERO # where her hip is in body space: measured from the sit clip
+var _has_sit: bool = false
+var _has_walk: bool = false
+var _bob_t: float = 0.0 # a rider with no walk clip (the puppy) hops along instead
 var _walk_native_mps: float = 1.0
 var _ledge: Node3D
 var _wait_spot: Transform3D
@@ -191,10 +196,17 @@ func _on_finished(id: String, status: String, _reason: String) -> void:
 	var door: Vector3 = Vector3.INF
 	if status == "completed":
 		var d: MissionDef = _definition(id)
-		var last: MissionStage = d.stages[d.stages.size() - 1] if d != null and not d.stages.is_empty() else null
-		if last != null and last.place_pos != Vector3.ZERO:
-			door = last.place_pos
+		if d != null:
+			door = door_for(d)
 	_get_out(door, State.NONE)
+
+## Where the rider gets out when the quest is done: the last stop that has a place (the puppy's
+## quest ends on a dialogue after its clinic stop). Vector3.INF when no stop has one.
+static func door_for(d: MissionDef) -> Vector3:
+	for i: int in range(d.stages.size() - 1, -1, -1):
+		if d.stages[i].place_pos != Vector3.ZERO:
+			return d.stages[i].place_pos
+	return Vector3.INF
 
 func _on_burning(on: bool) -> void:
 	_burning = on
@@ -230,7 +242,8 @@ func _spawn(d: MissionDef) -> bool:
 		return false
 	body = scene.instantiate() as Node3D
 	body.name = "Rider"
-	body.scale = Vector3.ONE * SCALE
+	_size = DEFAULT_SIZE * maxf(d.rider_scale, 0.05)
+	body.scale = Vector3.ONE * _size
 	body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(body)
 	quest_id = d.id
@@ -247,6 +260,9 @@ func _prepare_clips() -> void:
 	if _anim == null:
 		return
 	var lib: AnimationLibrary = AnimationLibrary.new()
+	_has_sit = false
+	_has_walk = false
+	_seat_hip = Vector3.ZERO
 	for clip: String in _anim.get_animation_list():
 		var key: String = WALK_CLIP if clip.begins_with("walk") else (SIT_CLIP if clip.begins_with("sit") else "")
 		if key == "":
@@ -255,8 +271,10 @@ func _prepare_clips() -> void:
 		var a: Animation = source.duplicate(true) as Animation
 		a.loop_mode = Animation.LOOP_LINEAR
 		if key == SIT_CLIP:
+			_has_sit = true
 			_seat_hip = _hip_at(clip, 0.0)
 		else:
+			_has_walk = true
 			var drift: Vector3 = _hip_at(clip, source.length) - _hip_at(clip, 0.0)
 			drift.y = 0.0
 			_walk_native_mps = maxf(drift.length() / maxf(source.length, 0.01), 0.05)
@@ -265,7 +283,7 @@ func _prepare_clips() -> void:
 	_anim.add_animation_library("rider", lib)
 	_anim.stop()
 
-## Her Hip bone in body space (model units, before SCALE) at `time` into `clip`.
+## Her Hip bone in body space (model units, before _size) at `time` into `clip`.
 func _hip_at(clip: String, time: float) -> Vector3:
 	if _skeleton == null:
 		return _seat_hip
@@ -274,7 +292,7 @@ func _hip_at(clip: String, time: float) -> Vector3:
 	_skeleton.force_update_all_bone_transforms()
 	var hip: int = _skeleton.find_bone("Hip")
 	if hip < 0:
-		return _seat_hip
+		return Vector3.ZERO
 	var world: Vector3 = _skeleton.global_transform * _skeleton.get_bone_global_pose(hip).origin
 	return body.global_transform.affine_inverse() * world
 
@@ -308,7 +326,7 @@ func _stand() -> void:
 ## Sits with her hip at `hip`, facing `facing`.
 func _place_sitting(hip: Vector3, facing: Vector3) -> void:
 	var b: Basis = Basis.looking_at(facing, Vector3.UP, true)
-	body.global_transform = Transform3D(b.scaled(Vector3.ONE * SCALE), hip - b * (_seat_hip * SCALE))
+	body.global_transform = Transform3D(b.scaled(Vector3.ONE * _size), hip - b * (_seat_hip * _size))
 	_play(SIT_CLIP, 1.0, 0.0)
 
 func _sit_in_auto() -> void:
@@ -320,7 +338,7 @@ func _sit_in_auto() -> void:
 	body.reparent(parent, false)
 	body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	var b: Basis = Basis(Vector3.UP, PI) # glTF faces +Z; the auto drives along -Z
-	body.transform = Transform3D(b.scaled(Vector3.ONE * SCALE), PASSENGER_HIP - b * (_seat_hip * SCALE))
+	body.transform = Transform3D(b.scaled(Vector3.ONE * _size), PASSENGER_HIP - b * (_seat_hip * _size))
 	_play(SIT_CLIP, 1.0, 0.0) # no blend: a walking pose sliding into the seat reads as a glitch
 	_clear_ledge_later()
 	state = State.ABOARD
@@ -329,7 +347,7 @@ func _detach_to_world(at: Vector3) -> void:
 	body.reparent(self, false)
 	body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	at.y = SignalBus.surface_height(at.x, at.z, at.y)
-	body.global_transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * SCALE), at)
+	body.global_transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * _size), at)
 
 ## Beside the auto on the kerb side (the side she is on, else the left), just behind the middle.
 func _door_point() -> Vector3:
@@ -357,9 +375,21 @@ func _start_walk(to: Vector3, then: State, follow_auto: bool) -> void:
 		var p: Vector3 = body.global_position
 		p.y = SignalBus.surface_height(p.x, p.z, p.y)
 		body.global_position = p
-	_play(WALK_CLIP, WALK_MPS / (_walk_native_mps * SCALE))
+	_play(WALK_CLIP, WALK_MPS / (_walk_native_mps * _size))
 
-## Moves her toward the walk target. True on arrival.
+## Where her hip is in the auto's model space, for checks: the measured hip, or her body origin when
+## she has no hip bone (the puppy, which sits as a standing dog on the bench).
+func seat_point_in_auto() -> Vector3:
+	var auto: AutoRickshawController = _auto()
+	var model: Node3D = auto.get_node_or_null("Model") as Node3D if auto != null else null
+	if model == null or body == null or body.get_parent() != model:
+		return Vector3.INF
+	if _skeleton == null or _skeleton.find_bone("Hip") < 0:
+		return model.global_transform.affine_inverse() * body.global_position
+	var world: Vector3 = _skeleton.global_transform * _skeleton.get_bone_global_pose(_skeleton.find_bone("Hip")).origin
+	return model.global_transform.affine_inverse() * world
+
+## Moves her toward the walk target. True on arrival. Without a walk clip she hops, at a walking pace.
 func _step_walk(delta: float) -> bool:
 	var to: Vector3 = _walk_target - body.global_position
 	to.y = 0.0
@@ -369,7 +399,10 @@ func _step_walk(delta: float) -> bool:
 	var step: Vector3 = to / d * minf(WALK_MPS * delta, d)
 	var p: Vector3 = body.global_position + step
 	p.y = SignalBus.surface_height(p.x, p.z, p.y)
-	body.global_transform = Transform3D(Basis.looking_at(to / d, Vector3.UP, true).scaled(Vector3.ONE * SCALE), p)
+	if not _has_walk:
+		_bob_t += delta
+		p.y += absf(sin(_bob_t * 9.0)) * HOP_M
+	body.global_transform = Transform3D(Basis.looking_at(to / d, Vector3.UP, true).scaled(Vector3.ONE * _size), p)
 	return false
 
 func _clear_ledge_later() -> void:

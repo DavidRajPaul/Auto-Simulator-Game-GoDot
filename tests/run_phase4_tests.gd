@@ -531,13 +531,20 @@ func _test_fire_limp(main: Node, auto: AutoRickshawController, ui: GarageUI) -> 
 ## Owner report (Nov 9): "Paati smiles" with nobody in the auto. A quest with a rider shows her
 ## waiting at the marker, boards her, keeps her visible in the back, makes her get out of a burning
 ## auto (and its stops stop counting), boards her again, and walks her to the door at the end.
+## Every rider quest is run through the same cycle.
 func _test_quest_rider(main: Node, auto: AutoRickshawController) -> void:
 	var rider: QuestRider = main.get_node("QuestRider") as QuestRider
 	var director: MissionDirector = main.get_node("MissionDirector") as MissionDirector
-	var d: MissionDef = director.registry.get_mission("sq_004")
-	_check("Paati's quest has a rider", d.rider_model != "" and ResourceLoader.exists(d.rider_model) and rider.needs_rider("sq_004"))
+	for id: String in ["sq_004", "sq_003", "sq_014", "sq_021", "sq_009"]:
+		await _rider_cycle(rider, director, auto, id)
+
+func _rider_cycle(rider: QuestRider, director: MissionDirector, auto: AutoRickshawController, id: String) -> void:
+	var d: MissionDef = director.registry.get_mission(id)
+	var who: String = id + " "
+	_check(who + "has a rider model that loads", d.rider_model != "" and ResourceLoader.exists(d.rider_model) and rider.needs_rider(id))
 	GameState.repair_free()
-	GameState.mission_completed.erase("sq_004")
+	GameState.mission_completed.erase(id)
+	GameState.mission_active = false
 	var graph: RoadGraph = SignalBus.current_road_graph
 	var cp: Dictionary = graph.closest_point(d.start_anchor)
 	var pd: Array[Vector3] = graph.sample(int(cp["edge"]), float(cp["s"]), 1)
@@ -547,33 +554,30 @@ func _test_quest_rider(main: Node, auto: AutoRickshawController) -> void:
 	await _physics(60)
 	rider._scan = 0.0
 	await _process_frames(3)
-	_check("She waits at the quest marker before it starts", rider.state == QuestRider.State.WAITING and rider.body != null
+	_check(who + "waits at its marker before the quest starts", rider.state == QuestRider.State.WAITING and rider.body != null
 			and rider.body.global_position.distance_to(d.start_anchor) < 15.0, QuestRider.State.keys()[rider.state])
-	_check("…on a stone ledge", rider._ledge != null)
-	_check("The quest starts", director.start("sq_004"))
-	_check("…and she walks to the auto rather than appearing in it", rider.state == QuestRider.State.BOARDING)
-	_check("Its stops don't count until she is in", director.rider_missing())
+	_check(who + "…on a stone ledge", rider._ledge != null)
+	_check(who + "the quest starts", director.start(id))
+	_check(who + "…and the rider walks to the auto rather than appearing in it", rider.state == QuestRider.State.BOARDING)
+	_check(who + "its stops don't count until the rider is in", director.rider_missing())
 	for i: int in 900:
 		if rider.state == QuestRider.State.ABOARD:
 			break
 		await get_tree().process_frame
-	var model: Node3D = auto.get_node("Model") as Node3D
-	var sk: Skeleton3D = rider.body.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 	await _process_frames(2)
-	var hip: Vector3 = model.global_transform.affine_inverse() * (sk.global_transform * sk.get_bone_global_pose(sk.find_bone("Hip"))).origin
-	_check("She rides in the back seat of the auto", rider.state == QuestRider.State.ABOARD and rider.body.get_parent() == model
-			and hip.distance_to(QuestRider.PASSENGER_HIP) < 0.08 and not director.rider_missing(), "hip %s" % hip)
-	# A fire: she gets out and waits, and the quest's stops wait for her.
+	var seat: Vector3 = rider.seat_point_in_auto()
+	_check(who + "the rider rides in the back seat of the auto", rider.state == QuestRider.State.ABOARD and seat.is_finite()
+			and seat.distance_to(QuestRider.PASSENGER_HIP) < 0.08 and not director.rider_missing(), "seat %s" % seat)
 	GameState.condition = 8.0
 	SignalBus.condition_changed.emit(8.0)
 	SignalBus.vehicle_burning.emit(true)
-	_check("She gets out of a burning auto", rider.state in [QuestRider.State.LEAVING, QuestRider.State.OUT] and rider.body.get_parent() == rider and director.rider_missing())
+	_check(who + "the rider gets out of a burning auto", rider.state in [QuestRider.State.LEAVING, QuestRider.State.OUT] and rider.body.get_parent() == rider and director.rider_missing())
 	for i: int in 600:
 		if rider.state == QuestRider.State.OUT:
 			break
 		await get_tree().process_frame
 	var gap: float = rider.body.global_position.distance_to(auto.global_position)
-	_check("…and waits a few steps away", rider.state == QuestRider.State.OUT and gap > 3.0, "%.1f m" % gap)
+	_check(who + "…and waits a few steps away", rider.state == QuestRider.State.OUT and gap > 3.0, "%.1f m" % gap)
 	GameState.repair_free()
 	SignalBus.condition_changed.emit(GameState.condition)
 	SignalBus.vehicle_burning.emit(false)
@@ -581,14 +585,15 @@ func _test_quest_rider(main: Node, auto: AutoRickshawController) -> void:
 		if rider.state == QuestRider.State.ABOARD:
 			break
 		await get_tree().process_frame
-	_check("Fire out and stopped beside her: she gets back in", rider.state == QuestRider.State.ABOARD and not director.rider_missing())
-	# The end: she gets out and walks to the door.
+	_check(who + "fire out and stopped beside the rider: back in", rider.state == QuestRider.State.ABOARD and not director.rider_missing())
 	director._complete()
-	var last: MissionStage = d.stages[d.stages.size() - 1]
-	_check("At the end she gets out and walks to the door", rider.state == QuestRider.State.LEAVING and rider.body.get_parent() == rider
-			and rider._walk_target.distance_to(last.place_pos) < 0.5)
+	var door: Vector3 = QuestRider.door_for(d)
+	_check(who + "at the end the rider gets out and walks to the door", door.is_finite() and rider.state == QuestRider.State.LEAVING and rider.body.get_parent() == rider
+			and rider._walk_target.distance_to(door) < 0.5)
 	rider._clear()
-	GameState.mission_completed.erase("sq_004")
+	if director.run != null:
+		director.abandon()
+	GameState.mission_completed.erase(id)
 	GameState.repair_free()
 
 func _physics(frames: int) -> void:

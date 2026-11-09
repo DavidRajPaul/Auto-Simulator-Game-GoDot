@@ -74,3 +74,5 @@ category = "exploration"
 reward_inr = 170
 reward_xp = 15
 stages = Array[ExtResource("stage")]([SubResource("notice"), SubResource("copy"), SubResource("verify"), SubResource("printer"), SubResource("gate"), SubResource("handover")])
+rider_model = "res://assets/models/people/quest/student.glb"
+rider_name_key = "SQ14_RIDER"
