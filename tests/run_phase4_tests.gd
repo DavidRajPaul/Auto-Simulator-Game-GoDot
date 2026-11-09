@@ -41,6 +41,7 @@ func _run() -> void:
 	await _test_shift_clock()
 	await _test_settings(main, hud)
 	await _test_garage_pause(ui)
+	await _test_fire_limp(main, auto, ui)
 	await _test_wreck_rescue(main, auto, services, ui, hud)
 
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
@@ -443,6 +444,70 @@ func _test_wreck_rescue(main: Node, auto: AutoRickshawController, services: Serv
 	GameState.repair_free()
 
 # --- Helpers ------------------------------------------------------------------------------
+
+## Owner report (Nov 9): flames showing and the auto still drove smoothly. Under black smoke and
+## fire the engine limps (less power, lower top speed, misfires), and a burning auto takes no
+## riders and no LPG.
+func _top_speed_after(auto: AutoRickshawController, frames: int) -> float:
+	auto.global_transform = Transform3D(auto.global_basis.orthonormalized(), auto.global_position + Vector3(0, 0.3, 0))
+	auto.linear_velocity = Vector3.ZERO
+	auto.angular_velocity = Vector3.ZERO
+	await _physics(20)
+	var top: float = 0.0
+	Input.action_press("accelerate")
+	for i: int in frames:
+		await get_tree().physics_frame
+		top = maxf(top, auto.current_speed_kmh)
+	Input.action_release("accelerate")
+	auto.linear_velocity = Vector3.ZERO
+	await _physics(10)
+	return top
+
+func _test_fire_limp(main: Node, auto: AutoRickshawController, ui: GarageUI) -> void:
+	GameState.tutorial_active = false
+	GameState.repair_free()
+	await _physics(5)
+	auto._update_limp(0.016)
+	_check("A healthy engine has full power", is_equal_approx(auto.limp_power, 1.0) and is_equal_approx(auto.limp_speed, 1.0) and not GameState.is_on_fire())
+	var start: Transform3D = auto.global_transform
+	var healthy: float = await _top_speed_after(auto, 240)
+	GameState.condition = 8.0 # flames (severity 0.92)
+	SignalBus.condition_changed.emit(GameState.condition)
+	var misfires: Array[float] = []
+	var on_misfire: Callable = func(t: float) -> void: misfires.append(t)
+	SignalBus.engine_misfired.connect(on_misfire)
+	auto.global_transform = start
+	var burning: float = await _top_speed_after(auto, 240)
+	SignalBus.engine_misfired.disconnect(on_misfire)
+	_check("On fire the auto is on fire for every system", GameState.is_on_fire() and not GameState.is_wrecked())
+	_check("On fire the engine limps: far less power and top speed",
+			is_equal_approx(auto.limp_power, AutoRickshawController.LIMP_FIRE.y) and burning < healthy * 0.6
+			and burning <= auto.stats.max_speed_kmh * AutoRickshawController.LIMP_FIRE.x + 2.0,
+			"healthy %.1f, burning %.1f km/h" % [healthy, burning])
+	_check("…and it misfires under throttle", misfires.size() >= 1, "%d misfires in 4 s" % misfires.size())
+	# Nobody waits for, or gets into, a burning auto.
+	var savari: SavariManager = main.get_node("SavariManager") as SavariManager
+	await _process_frames(3)
+	var waiting: int = 0
+	for h: Dictionary in savari.hails:
+		waiting += 0 if bool(h.get("scripted", false)) else 1
+	_check("No riders hail a burning auto", waiting == 0, "%d waiting" % waiting)
+	# No LPG for a burning auto.
+	ui._service_kind = "lpg"
+	ui._service_info = {"name": "Test bunk"}
+	ui._render_service()
+	var fill_offered: bool = false
+	for c: Node in ui._service_bar.get_children():
+		fill_offered = fill_offered or (c is Button and not (c as Button).is_queued_for_deletion())
+	_check("The LPG bunk won't fill a burning auto", ui._service_msg.text == tr("NO_FUEL_ON_FIRE") and not fill_offered)
+	ui._service_kind = ""
+	ui._hide_service()
+	GameState.repair_free()
+	auto.global_transform = start
+	auto.linear_velocity = Vector3.ZERO
+	await _physics(10)
+	auto._update_limp(0.016)
+	_check("Repaired, the engine is back to full power", is_equal_approx(auto.limp_power, 1.0) and not GameState.is_on_fire())
 
 func _physics(frames: int) -> void:
 	for i: int in frames:

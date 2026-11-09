@@ -162,6 +162,8 @@ signal pedestrian_startled(pos: Vector3)
 signal pedestrian_bumped(pos: Vector3, car_velocity: Vector3)
 ## The player's auto caught fire (true) or the fire was put out (false).
 signal vehicle_burning(on: bool)
+## The failing engine cut out for this long (limp mode under black smoke or fire).
+signal engine_misfired(seconds: float)
 # --- Controls (gear, indicators, lamps) --------------------------------------------
 ## +1 drive, -1 reverse.
 signal gear_changed(gear: int)

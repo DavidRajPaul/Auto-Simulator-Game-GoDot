@@ -84,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	tick(delta)
 
 func start(id: String) -> bool:
-	if _busy or run != null or GameState.mission_active or GameState.tutorial_active or GameState.is_wrecked() or not _has_pose:
+	if _busy or run != null or GameState.mission_active or GameState.tutorial_active or GameState.is_on_fire() or not _has_pose:
 		return false
 	if SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call()):
 		return false
@@ -345,7 +345,7 @@ func _fail(reason: String) -> void:
 	SignalBus.mission_finished.emit(run.quest_id, "failed", reason)
 
 func retry() -> bool:
-	if _busy or run == null or run.status != "failed" or GameState.is_wrecked():
+	if _busy or run == null or run.status != "failed" or GameState.is_on_fire():
 		return false
 	if GameState.tutorial_active or (SignalBus.savari_busy_provider.is_valid() and bool(SignalBus.savari_busy_provider.call())):
 		return false

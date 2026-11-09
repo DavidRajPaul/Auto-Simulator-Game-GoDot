@@ -72,6 +72,19 @@ var _brake_lamps: MeshInstance3D
 var _indicator_lamps: Array[MeshInstance3D] = [] # [left, right]
 var _last_kick_s: float = -10.0
 var _clock_s: float = 0.0 # physics time (deterministic under --fixed-fps)
+## Limp mode: a badly damaged engine loses power and top speed and cuts out now and then.
+## Black smoke = struggling, flames = barely going (crawl to a garage, or stop).
+const LIMP_BLACK: Vector2 = Vector2(0.65, 0.6) # × top speed, × engine force
+const LIMP_FIRE: Vector2 = Vector2(0.35, 0.3)
+const MISFIRE_GAP_BLACK_S: Vector2 = Vector2(3.0, 6.0)
+const MISFIRE_GAP_FIRE_S: Vector2 = Vector2(0.8, 2.2)
+const MISFIRE_BLACK_S: Vector2 = Vector2(0.12, 0.3)
+const MISFIRE_FIRE_S: Vector2 = Vector2(0.3, 0.7)
+var limp_speed: float = 1.0
+var limp_power: float = 1.0
+var _misfire_t: float = 0.0
+var _misfire_next: float = 0.0
+var _limp_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
@@ -381,6 +394,8 @@ func _physics_process(delta: float) -> void:
 	# Wrecked (condition 0): the engine is dead and burning until it is repaired or towed.
 	if use_player_profile and GameState.is_wrecked():
 		throttle_in = 0.0
+	if _update_limp(delta):
+		throttle_in = 0.0
 
 	var speed_steer_factor: float = clampf(1.0 - (current_speed_kmh / 95.0) * 0.55, 0.38, 1.0)
 	var target_steer: float = steer_in * deg_to_rad(stats.max_steer_angle_deg) * speed_steer_factor
@@ -445,11 +460,11 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	var wheel_fwd_speed: float = w_fwd.dot(pt_vel)
 	var long_f: float = -wheel_fwd_speed * 12.0
 	if not is_front and not is_engine_stalled and throttle_in > 0.01:
-		if gear == GEAR_DRIVE and current_speed_kmh < stats.max_speed_kmh:
+		if gear == GEAR_DRIVE and current_speed_kmh < stats.max_speed_kmh * limp_speed:
 			var torque_curve: float = 1.0 - stats.torque_falloff * clampf(current_speed_kmh / stats.max_speed_kmh, 0.0, 1.0)
-			long_f += throttle_in * stats.engine_peak_force_n * 0.5 * torque_curve
-		elif gear == GEAR_REVERSE and (forward_speed_mps > 0.0 or current_speed_kmh < stats.reverse_max_speed_kmh):
-			long_f -= throttle_in * stats.engine_peak_force_n * 0.25 # reverse gear: ACCEL drives backwards
+			long_f += throttle_in * stats.engine_peak_force_n * 0.5 * torque_curve * limp_power
+		elif gear == GEAR_REVERSE and (forward_speed_mps > 0.0 or current_speed_kmh < stats.reverse_max_speed_kmh * limp_speed):
+			long_f -= throttle_in * stats.engine_peak_force_n * 0.25 * limp_power # reverse gear: ACCEL drives backwards
 	# Brakes oppose whichever way the wheel is rolling (forwards or in reverse).
 	if brake_in > 0.01 and absf(wheel_fwd_speed) > 0.3:
 		long_f -= signf(wheel_fwd_speed) * brake_in * stats.service_brake_force_n / 3.0
@@ -667,6 +682,38 @@ func _lamp_mesh(lamp_name: String, centres: Array[Vector3], size: Vector3, mat: 
 	mi.visible = false
 	add_child(mi)
 	return mi
+
+## Limp mode from the damage stage (DamageFX): sets limp_speed / limp_power and runs the misfire
+## clock. True while the engine has cut out, so the throttle does nothing for that moment.
+func _update_limp(delta: float) -> bool:
+	limp_speed = 1.0
+	limp_power = 1.0
+	if not use_player_profile or GameState.tutorial_active or GameState.is_wrecked():
+		_misfire_t = 0.0
+		return false
+	var stage: int = DamageFX.stage_for(GameState.damage_severity(), false)
+	if stage < 3:
+		_misfire_t = 0.0
+		_misfire_next = 0.0
+		return false
+	var fire: bool = stage >= 4
+	var limp: Vector2 = LIMP_FIRE if fire else LIMP_BLACK
+	limp_speed = limp.x
+	limp_power = limp.y
+	if _misfire_t > 0.0:
+		_misfire_t -= delta
+		return true
+	_misfire_next -= delta
+	if _misfire_next > 0.0:
+		return false
+	var gap: Vector2 = MISFIRE_GAP_FIRE_S if fire else MISFIRE_GAP_BLACK_S
+	_misfire_next = _limp_rng.randf_range(gap.x, gap.y)
+	if is_engine_stalled or (current_speed_kmh < 1.0 and Input.get_action_strength("accelerate") < 0.05):
+		return false # only a working engine under load coughs
+	var cut: Vector2 = MISFIRE_FIRE_S if fire else MISFIRE_BLACK_S
+	_misfire_t = _limp_rng.randf_range(cut.x, cut.y)
+	SignalBus.engine_misfired.emit(_misfire_t)
+	return true
 
 ## Engine off (tutorial start, later: key-off at a stand). The kick-starter brings it back.
 func switch_off_engine() -> void:

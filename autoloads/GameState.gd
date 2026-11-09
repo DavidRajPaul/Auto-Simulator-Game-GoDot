@@ -551,6 +551,11 @@ func _on_collision(impulse: float) -> void:
 func is_wrecked() -> bool:
 	return condition <= 0.0 and not tutorial_active
 
+## Flames are showing (DamageFX fire stage) or the auto is wrecked. Nobody gets in, no refuelling,
+## no side quests; the controller's limp mode is cutting the engine.
+func is_on_fire() -> bool:
+	return is_wrecked() or (not tutorial_active and damage_severity() >= DamageFX.FIRE_FROM)
+
 ## 0 (fine) .. 1 (wrecked): drives the smoke, then the fire (DamageFX).
 func damage_severity() -> float:
 	return clampf(1.0 - condition / 100.0, 0.0, 1.0)

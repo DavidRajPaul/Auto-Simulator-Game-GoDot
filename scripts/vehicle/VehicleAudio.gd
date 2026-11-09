@@ -45,6 +45,12 @@ var _ignite: AudioStreamPlayer3D
 var _steam: AudioStreamPlayer3D
 var _thud: AudioStreamPlayer3D
 var _burning: bool = false
+## Wrecked: the engine is dead. Burning but not wrecked: it keeps running, quieter and coughing.
+var _dead: bool = false
+var _misfire_t: float = 0.0
+var _is_ev: bool = false
+const SICK_DB: float = -6.0
+const MISFIRE_DB: float = -22.0
 var _burn_check_t: float = 0.0
 
 func _ready() -> void:
@@ -78,6 +84,7 @@ func _ready() -> void:
 	SignalBus.speed_updated.connect(_on_speed)
 	SignalBus.horn_blasted.connect(func(_o: Vector3, _f: Vector3, _r: float, tier: int) -> void: _play_horn(tier))
 	SignalBus.engine_stalled_in_water.connect(func(_p: Vector3) -> void: _set_engine(false))
+	SignalBus.engine_misfired.connect(func(s: float) -> void: _misfire_t = s)
 	SignalBus.engine_restarted.connect(func() -> void: _set_engine(true))
 	SignalBus.kick_start_attempt.connect(func(_r: float) -> void: _clunk.play())
 
@@ -89,8 +96,12 @@ func _process(delta: float) -> void:
 	if _burn_check_t <= 0.0:
 		_burn_check_t = BURN_CHECK_S
 		_set_burning(DamageFX.stage_for(GameState.damage_severity(), GameState.is_wrecked()) >= FIRE_STAGE)
-	if not _engine_running:
+		_set_dead(GameState.is_wrecked())
+	if not _engine_running or _dead:
 		return
+	_misfire_t = maxf(_misfire_t - delta, 0.0)
+	var base_db: float = _engine_base_db() + (SICK_DB if _burning else 0.0)
+	_engine.volume_db = base_db + (MISFIRE_DB if _misfire_t > 0.0 else 0.0)
 	var t: float = clampf(_speed_kmh / TOP_SPEED_KMH, 0.0, 1.0)
 	var target_pitch: float = lerpf(IDLE_PITCH, TOP_PITCH, sqrt(t))
 	if Input.is_action_pressed("accelerate"):
@@ -100,10 +111,11 @@ func _process(delta: float) -> void:
 ## EV autos get a quiet electric whine instead of the LPG putter.
 func _apply_drivetrain(s: VehicleStats) -> void:
 	var is_ev: bool = s.fuel_type == 2
+	_is_ev = is_ev
 	var loop_file: String = s.engine_loop if s.engine_loop != "" and ResourceLoader.exists(s.engine_loop) else ENGINE_FILE
 	_engine.stream = _build_ev_whine() if is_ev else stream_or(loop_file, _build_engine_loop())
-	_engine.volume_db = engine_volume_db - (8.0 if is_ev else 0.0)
-	if _engine_running and not _burning:
+	_engine.volume_db = _engine_base_db()
+	if _engine_running and not _dead:
 		_engine.play()
 
 func _build_ev_whine() -> AudioStreamWAV:
@@ -122,27 +134,37 @@ func _set_engine(on: bool) -> void:
 	_engine_running = on
 	if on:
 		_engine.pitch_scale = IDLE_PITCH
-		if not _burning:
+		if not _dead:
 			_engine.play()
 	else:
 		_engine.stop()
 
-## On fire the engine is dead: its sound stops and the fire roars in its place (and a whoomph
-## when it catches). Back to normal when the damage is repaired below the flame stage.
+## On fire the fire roars over a sick, coughing engine (and a whoomph when it catches). Back to
+## normal when the damage is repaired below the flame stage.
 func _set_burning(on: bool) -> void:
 	if on == _burning:
 		return
 	_burning = on
 	SignalBus.vehicle_burning.emit(on)
 	if on:
-		_engine.stop()
 		_ignite.play()
 		_fire.play()
 	else:
 		_fire.stop()
 		_steam.play()
-		if _engine_running:
-			_engine.play()
+
+## Wrecked: the engine is dead and silent until it is repaired.
+func _set_dead(dead: bool) -> void:
+	if dead == _dead:
+		return
+	_dead = dead
+	if dead:
+		_engine.stop()
+	elif _engine_running:
+		_engine.play()
+
+func _engine_base_db() -> float:
+	return engine_volume_db - (8.0 if _is_ev else 0.0)
 
 func _make_player(player_name: String, stream: AudioStream, volume_db: float) -> AudioStreamPlayer3D:
 	var p: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
