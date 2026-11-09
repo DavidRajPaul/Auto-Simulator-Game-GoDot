@@ -72,6 +72,18 @@ const SCREAM_FILES: Array[String] = [
 	"res://assets/audio/people/scream_1.ogg", "res://assets/audio/people/scream_2.ogg",
 	"res://assets/audio/people/scream_3.ogg", "res://assets/audio/people/scream_4.ogg",
 ]
+## Fire panic is one crowd moment, not a queue. When the auto catches fire, everyone in range
+## screams together: up to PANIC_BURST voices, each starting a little apart (PANIC_ONSET_S) at its
+## own pitch, so they overlap like a crowd. After that, someone who walks up to the fire late
+## screams at most once every PANIC_LATE_GAP_S, and nobody screams twice for the same fire.
+const SCREAM_VOICES: int = 6
+const PANIC_BURST: int = 5
+const PANIC_ONSET_S: Vector2 = Vector2(0.0, 0.45)
+const PANIC_LATE_GAP_S: Vector2 = Vector2(2.5, 5.0)
+## The recordings are women's voices; men get them lower so they don't sound like the women.
+const MALE_PITCH: Vector2 = Vector2(0.74, 0.86)
+const FEMALE_PITCH: Vector2 = Vector2(0.95, 1.12)
+const SCREAM_DB: Vector2 = Vector2(-4.0, 0.0)
 ## Only traffic this close to the player can upset anyone (walkers further away aren't animated).
 const THREAT_M: float = 60.0
 ## The auto's footprint for a body hit: a person it reaches (and who did not dodge in time) is struck.
@@ -105,7 +117,12 @@ var _flee_pace: Dictionary = {}
 var _fire_on: bool = false
 var _screams: Array[AudioStreamPlayer3D] = []
 var _scream_streams: Array[AudioStream] = []
-var _scream_next: int = 0
+var _scream_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## Screams waiting for their onset: [seconds left, position, character id].
+var _panic_pending: Array[Array] = []
+## True from the moment the auto catches fire until the first scare check: that check is the burst.
+var _panic_burst: bool = false
+var _late_scream_in: float = 0.0
 ## id -> {clip: Vector3(local x, local z, seconds)}: where each root-motion clip leaves the body.
 var _moves: Dictionary = {}
 var _traffic: ChennaiTrafficManager
@@ -146,11 +163,14 @@ class Walker:
 	var flee_dir: Vector3 = Vector3.FORWARD
 	var flee_t: float = 0.0
 	var paintable: bool = false
+	## Already screamed at the current fire (cleared when a new fire starts or it goes out).
+	var fire_screamed: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
 
 func _ready() -> void:
 	rng.seed = 600028
-	SignalBus.vehicle_burning.connect(func(on: bool) -> void: _fire_on = on)
+	_scream_rng.seed = 600029
+	SignalBus.vehicle_burning.connect(_on_vehicle_burning)
 	_setup_screams()
 	_load_people()
 	var slots: Array[int] = []
@@ -227,6 +247,7 @@ func _process(delta: float) -> void:
 	_gather_threats(delta)
 	_check_player_bumps()
 	_check_fire_scares()
+	_step_screams(delta)
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = UPDATE_S
@@ -526,7 +547,7 @@ func _check_player_bumps() -> void:
 				w.react_t = FALLEN_S.x
 				w.anim.get_animation("fallen").loop_mode = Animation.LOOP_LINEAR
 				w.anim.play("fallen", 0.1)
-		_scream(w.pos)
+		_scream(w.pos, w.id)
 		SignalBus.pedestrian_startled.emit(w.pos)
 		SignalBus.pedestrian_bumped.emit(w.pos, _player_vel)
 
@@ -622,20 +643,53 @@ func _step_react(w: Walker, delta: float) -> void:
 	w.anim.advance(0.0)
 	_apply(w)
 
-## A burning auto scares everyone close to it: they run off from it, screaming.
+func _on_vehicle_burning(on: bool) -> void:
+	if on == _fire_on:
+		return
+	_fire_on = on
+	_panic_burst = on
+	_panic_pending.clear()
+	_late_scream_in = 0.0
+	for w: Walker in people:
+		w.fire_screamed = false
+
+## A burning auto scares everyone close to it: they run off from it, screaming (see PANIC_BURST).
 func _check_fire_scares() -> void:
 	if not _fire_on or not _has_player:
 		return
+	var burst: bool = _panic_burst
+	_panic_burst = false
+	var voiced: int = 0
 	for w: Walker in people:
 		if not w.active or w.fleeing or w.anim == null or (w.react != "" and w.react != "gesture"):
 			continue
 		var d: Vector3 = w.pos - _player
 		d.y = 0.0
-		if d.length() <= FIRE_SCARE_M:
-			_start_flee(w)
+		if d.length() > FIRE_SCARE_M or not _start_flee(w) or w.fire_screamed:
+			continue
+		# Silent extras still run: a crowd's screams blend, they don't need one voice each.
+		w.fire_screamed = true
+		if burst:
+			if voiced < PANIC_BURST:
+				voiced += 1
+				_panic_pending.append([_scream_rng.randf_range(PANIC_ONSET_S.x, PANIC_ONSET_S.y), w.pos, w.id])
+		elif _late_scream_in <= 0.0:
+			_late_scream_in = _scream_rng.randf_range(PANIC_LATE_GAP_S.x, PANIC_LATE_GAP_S.y)
+			_panic_pending.append([0.0, w.pos, w.id])
+
+## Plays the screams whose onset has come, and counts down the gap before a late one.
+func _step_screams(delta: float) -> void:
+	_late_scream_in = maxf(_late_scream_in - delta, 0.0)
+	for i: int in range(_panic_pending.size() - 1, -1, -1):
+		var e: Array = _panic_pending[i]
+		e[0] = float(e[0]) - delta
+		if float(e[0]) <= 0.0:
+			_panic_pending.remove_at(i)
+			_scream(e[1] as Vector3, String(e[2]))
 
 ## Starts a run straight away from the auto: a running clip, or the look-back run, at its own pace.
-func _start_flee(w: Walker) -> void:
+## False when this person has no running clip.
+func _start_flee(w: Walker) -> bool:
 	var options: Array[String] = []
 	if w.anim.has_animation("run"):
 		options.append("run")
@@ -644,7 +698,7 @@ func _start_flee(w: Walker) -> void:
 	if w.anim.has_animation("flee"):
 		options.append("flee")
 	if options.is_empty():
-		return
+		return false
 	var away: Vector3 = w.pos - _player
 	away.y = 0.0
 	if away.length() < 0.05:
@@ -663,7 +717,7 @@ func _start_flee(w: Walker) -> void:
 	w.anim.get_animation(w.flee_clip).loop_mode = Animation.LOOP_LINEAR
 	w.anim.play(w.flee_clip, 0.2)
 	w.anim.speed_scale = w.flee_pace / native
-	_scream(w.pos)
+	return true
 
 ## Running off from the fire, straight away from the auto. Stops at the kerb or when the time is up,
 ## then the usual path walking takes over again (the walker eases back onto the kerb line).
@@ -679,24 +733,39 @@ func _step_flee(w: Walker, delta: float) -> void:
 	w.heading = w.heading.slerp(w.flee_dir, clampf(TURN_RATE * delta, 0.0, 1.0)).normalized()
 	_apply(w)
 
-## Screams come from a small pool of 3D players, so a crowd of them does not cost more than three voices.
+## Screams come from a small pool of 3D players, so a crowd costs at most SCREAM_VOICES voices.
 func _setup_screams() -> void:
 	for path: String in SCREAM_FILES:
 		if ResourceLoader.exists(path):
 			_scream_streams.append(load(path) as AudioStream)
-	for i: int in 3:
+	for i: int in SCREAM_VOICES:
 		var pl: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 		pl.unit_size = 6.0
 		pl.max_distance = 60.0
 		add_child(pl)
 		_screams.append(pl)
 
-func _scream(p: Vector3) -> void:
+## One scream from a free voice, so it never cuts off a scream still playing. With every voice busy,
+## the one nearest its end is reused. Men's voices are pitched lower than women's.
+func _scream(p: Vector3, id: String) -> void:
 	if _scream_streams.is_empty() or _screams.is_empty():
 		return
-	var pl: AudioStreamPlayer3D = _screams[_scream_next]
-	_scream_next = (_scream_next + 1) % _screams.size()
-	pl.stream = _scream_streams[rng.randi() % _scream_streams.size()]
+	var pl: AudioStreamPlayer3D = null
+	var most_done: float = -1.0
+	for v: AudioStreamPlayer3D in _screams:
+		if not v.playing:
+			pl = v
+			break
+		var length: float = v.stream.get_length() if v.stream != null else 0.0
+		var done: float = v.get_playback_position() / maxf(length, 0.01)
+		if done > most_done:
+			most_done = done
+			pl = v
+	var female: bool = id.begins_with("woman") or id.begins_with("girl")
+	var pitch: Vector2 = FEMALE_PITCH if female else MALE_PITCH
+	pl.stream = _scream_streams[_scream_rng.randi() % _scream_streams.size()]
+	pl.pitch_scale = _scream_rng.randf_range(pitch.x, pitch.y)
+	pl.volume_db = _scream_rng.randf_range(SCREAM_DB.x, SCREAM_DB.y)
 	pl.global_position = p + Vector3(0.0, 1.5, 0.0)
 	pl.play()
 

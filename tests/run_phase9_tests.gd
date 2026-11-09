@@ -1001,6 +1001,14 @@ func _test_fire_scares(pm: PedestrianManager) -> void:
 	if target == null:
 		_check("Found a pedestrian to scare", false)
 		return
+	# A few more people stand around them, so the fire has a crowd to scare.
+	var crowd: Array[PedestrianManager.Walker] = [target]
+	for w: PedestrianManager.Walker in pm.people:
+		if crowd.size() >= 4:
+			break
+		if w != target and w.active and w.react == "" and not w.fleeing and w.anim != null and w.anim.has_animation("run"):
+			w.pos = target.pos + Vector3(1.5 * crowd.size(), 0.0, 0.0)
+			crowd.append(w)
 	# The auto is right beside them and on fire.
 	pm._has_player = true
 	pm._player = target.pos + Vector3(0.0, 0.0, 0.8)
@@ -1008,6 +1016,23 @@ func _test_fire_scares(pm: PedestrianManager) -> void:
 	SignalBus.vehicle_burning.emit(true)
 	pm._check_fire_scares()
 	_check("A pedestrian beside a burning auto runs off", target.fleeing and target.anim.current_animation in ["run", "flee_look", "flee"], target.anim.current_animation)
+	var queued: int = pm._panic_pending.size()
+	var scared: int = 0
+	for w: PedestrianManager.Walker in pm.people:
+		scared += 1 if w.fire_screamed else 0
+	var onsets_ok: bool = true
+	for e: Array in pm._panic_pending:
+		onsets_ok = onsets_ok and float(e[0]) <= PedestrianManager.PANIC_ONSET_S.y
+	_check("The crowd screams together when the fire starts, not one by one",
+			crowd.size() >= 2 and scared >= crowd.size() and queued == mini(scared, PedestrianManager.PANIC_BURST) and onsets_ok,
+			"crowd %d, scared %d, queued %d" % [crowd.size(), scared, queued])
+	pm._step_screams(PedestrianManager.PANIC_ONSET_S.y + 0.05)
+	_check("…all of them start within the onset window, so they overlap", pm._panic_pending.is_empty())
+	# Their run ends while the auto is still burning: they run again, but don't scream again.
+	for w: PedestrianManager.Walker in crowd:
+		w.fleeing = false
+	pm._check_fire_scares()
+	_check("Nobody screams twice at the same fire", pm._panic_pending.is_empty() and target.fleeing, "pending %d" % pm._panic_pending.size())
 	SignalBus.vehicle_burning.emit(false)
 	for f: int in 60 * 12:
 		await get_tree().physics_frame
