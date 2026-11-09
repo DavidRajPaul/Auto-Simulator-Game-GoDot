@@ -1,6 +1,8 @@
 extends Node
 ## Dev-only: renders the city scene to $SHOT_OUT. SHOT_CAM=0/1/2 camera mode, SHOT_DRIVE=seconds of throttle,
-## SHOT_RIDE=1 starts a ride (to show the guide line + nav banner), SHOT_MAP=1 opens the full map.
+## SHOT_RIDE=1 starts a ride (to show the guide line + nav banner), SHOT_MAP=1 opens the full map;
+## SHOT_MAP_PANEL=legend / journal / route then shows the map key, the last side-quest page, or
+## "Go there" on the first quest.
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -147,6 +149,23 @@ func _run() -> void:
 		(city.get_node("AutoRickshaw") as Node3D).visible = false
 	if OS.get_environment("SHOT_MAP") == "1":
 		SignalBus.full_map_requested.emit(true)
+		var fm: FullMap = (city.get_node("PassengerHUD") as PassengerHUD).full_map
+		match OS.get_environment("SHOT_MAP_PANEL"):
+			"legend":
+				fm._legend_open = true
+			"journal":
+				fm._journal_open = true
+				fm._journal_page = 999 # clamps to the last page that has quests
+			"route":
+				# A quest 400-1500 m away, so the route is long enough to see.
+				fm._quest_selected = str(fm._quest_rows[0]["id"])
+				for q: Dictionary in fm._quest_rows:
+					var d: float = Vector2((q["position"] as Vector3).x - fm._player.x, (q["position"] as Vector3).z - fm._player.z).length()
+					if d > 400.0 and d < 1500.0 and bool(q["unlocked"]):
+						fm._quest_selected = str(q["id"])
+						break
+				fm._track_selected()
+		fm.queue_redraw()
 	for i: int in 20:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(OS.get_environment("SHOT_OUT"))

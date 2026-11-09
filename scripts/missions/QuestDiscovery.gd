@@ -14,6 +14,7 @@ var _inside: Dictionary = {}
 var _modal: bool = false
 var _prompt_id: String = ""
 var _dismissed_id: String = ""
+var _restore_route: bool = true # a tracked quest from the save gets its route back on the first pose
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
@@ -24,7 +25,11 @@ func _ready() -> void:
 	SignalBus.quest_action_provider = Callable(self, "action")
 	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void:
 		_position = p
-		_has_pose = true)
+		_has_pose = true
+		if _restore_route and SignalBus.current_road_graph != null:
+			_restore_route = false
+			_route_to_tracked.call_deferred())
+	SignalBus.custom_navigation_state_changed.connect(_on_navigation_state)
 	SignalBus.speed_updated.connect(func(s: float) -> void: _speed_kmh = s)
 	SignalBus.ui_modal_changed.connect(func(open: bool) -> void: _modal = open)
 	SignalBus.mission_profile_loaded.connect(func() -> void:
@@ -82,13 +87,42 @@ func catalogue() -> Array[Dictionary]:
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["id"]) < str(b["id"]))
 	return result
 
+## "Go there" / "Clear route". Tracking IS the GPS route to the quest's start: the old version
+## only saved the id, so the button drew nothing on either map (Nov 9 device test).
 func track(id: String) -> bool:
 	if id != "" and (registry.get_mission(id) == null or not registry.get_mission(id).discoverable):
 		return false
+	var was: String = tracked_id()
+	_set_tracked(id)
+	if id != "":
+		_route_to_tracked()
+	elif was != "":
+		SignalBus.custom_navigation_cleared.emit()
+	return true
+
+func tracked_id() -> String:
+	return str(GameState.settings.get("quest_track_id", ""))
+
+func _set_tracked(id: String) -> void:
+	if tracked_id() == id:
+		return
 	GameState.settings["quest_track_id"] = id
 	GameState.save_game()
 	SignalBus.quest_tracking_changed.emit(id)
-	return true
+
+func _route_to_tracked() -> void:
+	var q: MissionDef = registry.get_mission(tracked_id())
+	if q != null and not GameState.mission_completed.has(q.id):
+		SignalBus.custom_navigation_requested.emit(_position, q.start_anchor)
+
+## The route went away (arrived, Clear, another pin, a quest started) or now points somewhere
+## else: the quest is no longer the one being driven to.
+func _on_navigation_state(active: bool, _start: Vector3, destination: Vector3) -> void:
+	var q: MissionDef = registry.get_mission(tracked_id())
+	if q == null:
+		return
+	if not active or Vector2(destination.x - q.start_anchor.x, destination.z - q.start_anchor.z).length() > 2.0:
+		_set_tracked("")
 
 func can_start(id: String) -> bool:
 	var q: MissionDef = registry.get_mission(id)
@@ -112,6 +146,8 @@ func request_start(id: String) -> bool:
 		for option: String in stage.target_options:
 			if not bool(graph.find_route(_position, stage.target_options[option] as Vector3).get("ok", false)):
 				return false
+	if tracked_id() == id:
+		track("") # the mission's own GPS takes over; arriving here was the point of the route
 	SignalBus.mission_start_requested.emit(id)
 	return true
 
