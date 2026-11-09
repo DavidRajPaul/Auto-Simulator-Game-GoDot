@@ -2,7 +2,7 @@ extends Node
 ## Dev-only: renders the city scene to $SHOT_OUT. SHOT_CAM=0/1/2 camera mode, SHOT_DRIVE=seconds of throttle,
 ## SHOT_RIDE=1 starts a ride (to show the guide line + nav banner), SHOT_MAP=1 opens the full map;
 ## SHOT_MAP_PANEL=legend / journal / route then shows the map key, the last side-quest page, or
-## "Go there" on the first quest.
+## "Go there" on the first quest, or pin = Drop Pin mode with a pin placed.
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -156,6 +156,11 @@ func _run() -> void:
 			"journal":
 				fm._journal_open = true
 				fm._journal_page = 999 # clamps to the last page that has quests
+			"pin":
+				# Drop Pin mode with a pin placed a few hundred metres ahead of the auto.
+				fm._select_mode = 2
+				fm._custom_destination = Vector3(fm._player.x + 140.0, 0.0, fm._player.z - 90.0)
+				fm._has_custom_destination = true
 			"route":
 				# A quest 400-1500 m away, so the route is long enough to see.
 				fm._quest_selected = str(fm._quest_rows[0]["id"])
