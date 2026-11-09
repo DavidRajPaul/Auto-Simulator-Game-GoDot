@@ -173,5 +173,7 @@ func _run() -> void:
 		fm.queue_redraw()
 	for i: int in 20:
 		await get_tree().process_frame
+	# Draw calls for the frame just rendered: compare a map-closed and a map-open run to price the map.
+	print("SHOT_DRAWS=%d" % RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))
 	get_viewport().get_texture().get_image().save_png(OS.get_environment("SHOT_OUT"))
 	get_tree().quit()

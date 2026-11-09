@@ -760,3 +760,6 @@ MAP_PIN_HELP,"Tap or drag to place the pin","குறியை வைக்க�
 MAP_DROP_PIN_FIRST,"Drop a pin on the map first","முதலில் வரைபடத்தில் குறி வை"
 NAV_QUEUED_RIDE,"Rider on board. Your route starts after the drop-off.","பயணி உள்ளார். இறக்கிய பிறகு உன் வழி தொடங்கும்."
 NAV_BLOCKED_MISSION,"Finish the side quest first.","முதலில் பக்கக் கதையை முடி."
+MAP_DROP_PIN,"Drop Pin","பின் வை"
+MAP_SET_ROUTE,"Set Route","வழி அமை"
+MAP_CLEAR,"Clear","அழி"
