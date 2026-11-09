@@ -14,6 +14,10 @@ extends Resource
 @export var unlock_level: int = 1
 @export var prerequisites: PackedStringArray = []
 @export var stages: Array[MissionStage] = []
+## The person the quest is about, if they ride along (QuestRider): a rigged glb with sit and walk
+## clips. They wait at the start, ride in the back and get out at the last stage's place_pos.
+@export var rider_model: String = ""
+@export var rider_name_key: String = ""
 @export var reward_inr: int = 0
 @export var reward_xp: int = 0
 @export var scenario_minute: float = -1.0

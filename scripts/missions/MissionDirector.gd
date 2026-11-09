@@ -227,7 +227,7 @@ func tick(delta: float) -> void:
 	if stage.avoid_radius_m > 0.0 and _has_pose and _position.distance_to(stage.avoid_center) < stage.avoid_radius_m:
 		_fail("diversion")
 		return
-	if stage.kind == "goto" and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
+	if stage.kind == "goto" and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh and not rider_missing():
 		_advance()
 	elif stage.kind == "yield" and _signalled and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
 		_advance()
@@ -242,7 +242,7 @@ func _publish_action_state(force: bool) -> void:
 	if stage == null or not _has_pose:
 		return
 	var in_range: bool = stage.kind in LOCATED_KINDS and _position.distance_to(_stage_target(stage)) <= stage.radius_m
-	var ready: bool = in_range and absf(_speed) <= stage.arrival_speed_kmh
+	var ready: bool = in_range and absf(_speed) <= stage.arrival_speed_kmh and not rider_missing()
 	if force or ready != _action_ready or in_range != _action_in_range:
 		_action_ready = ready
 		_action_in_range = in_range
@@ -264,6 +264,8 @@ func interact(quest_id: String, stage_id: String) -> bool:
 		return false
 	var stage: MissionStage = current_stage()
 	if stage.kind not in ["photo", "inspect", "calm", "park", "cargo"] or not _has_pose or _position.distance_to(_stage_target(stage)) > stage.radius_m or absf(_speed) > stage.arrival_speed_kmh:
+		return false
+	if rider_missing():
 		return false
 	if stage.quality_key != "" and float(run.flags.get(stage.quality_key, 100.0)) < stage.quality_floor:
 		_fail("quality")
@@ -344,6 +346,13 @@ func _on_wrecked(wrecked: bool) -> void:
 		abandon("wreck_timed")
 	elif not _wreck_recoverable():
 		_fail("wreck_stranded")
+
+## A quest with a rider (MissionDef.rider_model) only counts its stops while she is in the auto.
+func rider_missing() -> bool:
+	if run == null or not SignalBus.quest_rider_aboard_provider.is_valid():
+		return false
+	var definition: MissionDef = registry.get_mission(run.quest_id)
+	return definition != null and definition.rider_model != "" and not bool(SignalBus.quest_rider_aboard_provider.call())
 
 func is_timed(quest_id: String) -> bool:
 	var definition: MissionDef = registry.get_mission(quest_id)
