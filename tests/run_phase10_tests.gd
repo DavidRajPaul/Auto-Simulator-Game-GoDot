@@ -259,8 +259,62 @@ func _test_signals_work(city: Node) -> void:
 	tm._previous_player_pos = before
 	tm._on_player_signal_pose(after, -outward)
 	_check("Crossing on green is free", GameState.wallet_inr == wallet)
+	await _test_fine_notice(city, tm, auto, before, after, outward, red_clock)
 	auto.linear_velocity = Vector3.ZERO
 	tm.signal_clock_override = -1.0
+
+## Owner request (Nov 10): no constable stepping in front of the auto. A red-light fine is a notice
+## with everything the player needs, debited at once; a short wallet pays what it can and the rest
+## comes out of the next money earned.
+func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshawController, before: Vector3, after: Vector3, outward: Vector3, red_clock: float) -> void:
+	var police: Node = city.get_node_or_null("TrafficPolice")
+	_check("No hidden constable to step in front of the auto", police == null or police.find_child("HiddenSignalConstable", true, false) == null)
+	var ui: GarageUI = city.get_node("GarageUI") as GarageUI
+	# The ₹200 fine above opened its own notice: close it first.
+	ui._fine_queue.clear()
+	if ui.is_open():
+		ui.close_modal()
+	var notices: Array[Dictionary] = []
+	var on_fine: Callable = func(info: Dictionary) -> void: notices.append(info)
+	SignalBus.traffic_fine_issued.connect(on_fine)
+	# A short wallet: ₹50 of the ₹200 now, ₹150 owed.
+	GameState.fine_due_inr = 0
+	GameState.wallet_inr = 50
+	auto.linear_velocity = -outward * 8.0
+	var speed: float = auto.linear_velocity.length()
+	tm._last_player_ticket_s = -100.0
+	tm.signal_clock_override = red_clock
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	var info: Dictionary = notices[0] if notices.size() == 1 else {}
+	_check("A red with ₹50 in the wallet: ₹50 paid now, ₹150 still due", GameState.wallet_inr == 0 and GameState.fine_due_inr == 150
+			and int(info.get("amount", 0)) == 200 and int(info.get("paid", 0)) == 50 and int(info.get("due", 0)) == 150, str(info))
+	_check("The fine doesn't stop the auto", is_equal_approx(auto.linear_velocity.length(), speed))
+	_check("The notice says what, where and when", str(info.get("reason", "")) == "red_light" and str(info.get("challan", "")).begins_with("TN-CHN-")
+			and info.has("place") and info.has("day") and info.has("minute"))
+	await get_tree().process_frame
+	var ok: Node = ui._modal_body.find_child("FineOk", true, false)
+	_check("…shown as a notice that pauses the game", ui.is_open() and ui._modal_title.text == tr("FINE_TITLE") and ok != null and get_tree().paused, "open %s title %s ok %s paused %s" % [ui.is_open(), ui._modal_title.text, ok != null, get_tree().paused])
+	var texts: String = ""
+	for l: Node in ui._modal_body.find_children("*", "Label", true, false):
+		texts += (l as Label).text + "|"
+	_check("…listing the fine, paid now, still due and what happens next", "₹200" in texts and "₹50" in texts and "₹150" in texts and (tr("FINE_DUE_NOTE") % "₹150") in texts, texts)
+	ui.close_modal()
+	_check("OK closes it and the game carries on", not ui.is_open() and not get_tree().paused)
+	# The rest comes out of the next earnings.
+	GameState.add_inr(100)
+	_check("₹100 earned: all of it pays the fine (₹50 still due)", GameState.fine_due_inr == 50 and GameState.wallet_inr == 0)
+	GameState.add_inr(100)
+	_check("₹100 more: the last ₹50 of the fine, ₹50 to the wallet", GameState.fine_due_inr == 0 and GameState.wallet_inr == 50)
+	GameState.fine_due_inr = 80
+	GameState.add_inr(150, false)
+	_check("Money that is already spoken for (the tow ad) isn't taken", GameState.fine_due_inr == 80 and GameState.wallet_inr == 200)
+	var saved: Dictionary = GameState.to_dict()
+	GameState.fine_due_inr = 0
+	GameState.from_dict(saved)
+	_check("A pending fine survives a save", GameState.fine_due_inr == 80)
+	GameState.fine_due_inr = 0
+	SignalBus.traffic_fine_issued.disconnect(on_fine)
 
 ## Nov 7: metro rail works at the Lighthouse with TAKE DIVERSION signs, and Chennai barricades.
 func _test_road_works_barricades(city: Node) -> void:

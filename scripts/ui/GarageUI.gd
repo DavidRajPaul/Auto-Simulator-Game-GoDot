@@ -32,6 +32,8 @@ var _current_tab: String = "TAB_REPAIR"
 var _dim: ColorRect
 var _modal_ribbon: PanelContainer
 
+var _fine_queue: Array[Dictionary] = []
+
 func _ready() -> void:
 	layer = 15
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -58,6 +60,7 @@ func _ready() -> void:
 	SignalBus.shift_clock_updated.connect(func(d: int, _m: float) -> void: _clock.text = "%s %d · %s" % [tr("DAY"), d, GameState.clock_text()])
 	SignalBus.service_available.connect(_on_service_available)
 	SignalBus.service_unavailable.connect(_hide_service)
+	SignalBus.traffic_fine_issued.connect(show_fine)
 	SignalBus.fuel_changed.connect(_on_fuel)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
 	SignalBus.shift_ended.connect(_on_shift_ended)
@@ -360,6 +363,7 @@ func _build_modal() -> void:
 func _open_modal(title: String) -> void:
 	_modal_title.text = title
 	for c: Node in _modal_body.get_children():
+		_modal_body.remove_child(c) # detach now: a queued node keeps its name and its place
 		c.queue_free()
 	_modal.visible = true
 	_dim.visible = true
@@ -375,6 +379,56 @@ func close_modal() -> void:
 	SignalBus.ui_modal_changed.emit(false)
 	get_tree().paused = false
 	AdMonetizationManager.set_screen("driving")
+	if not _fine_queue.is_empty():
+		show_fine.call_deferred(_fine_queue.pop_front())
+
+# --- Traffic fine notice ----------------------------------------------------------------------
+
+## A traffic fine, shown as a notice that pauses the game until the player taps OK: what the
+## offence was, where and when, the fine, what was paid now and what is still owed (taken from
+## the next money earned), and the balance left. Queued behind any modal already open.
+func show_fine(info: Dictionary) -> void:
+	if _modal.visible:
+		_fine_queue.append(info)
+		return
+	_open_modal(tr("FINE_TITLE"))
+	_fine_row(tr("FINE_CHALLAN"), str(info.get("challan", "")))
+	_fine_row(tr("FINE_OFFENCE"), tr("FINE_REASON_" + str(info.get("reason", "")).to_upper()))
+	var place: String = str(info.get("place", ""))
+	_fine_row(tr("FINE_WHERE"), place if place != "" else tr("FINE_WHERE_UNKNOWN"))
+	_fine_row(tr("FINE_WHEN"), "%s %d · %s" % [tr("DAY"), int(info.get("day", 1)), GameState.clock_text(int(info.get("minute", 0)))])
+	_fine_row(tr("FINE_AMOUNT"), _rupees(int(info.get("amount", 0))), UIKit.YELLOW)
+	_fine_row(tr("FINE_PAID_NOW"), _rupees(int(info.get("paid", 0))), UIKit.GREEN)
+	var due: int = int(info.get("due", 0))
+	if due > 0:
+		_fine_row(tr("FINE_STILL_DUE"), _rupees(due), UIKit.RED)
+		_fine_note(tr("FINE_DUE_NOTE") % _rupees(int(info.get("total_due", due))))
+	_fine_row(tr("FINE_BALANCE"), _rupees(int(info.get("balance", 0))))
+	_fine_note(tr("FINE_TIP_" + str(info.get("reason", "")).to_upper()))
+	var ok: Button = UIKit.button(tr("OK"), UIKit.Tone.YELLOW, close_modal, 26)
+	ok.name = "FineOk"
+	ok.custom_minimum_size = Vector2(240, 72)
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_modal_body.add_child(ok)
+
+func _rupees(v: int) -> String:
+	return "₹" + UIKit.inr(v)
+
+func _fine_row(caption: String, value: String, colour: Color = UIKit.JASMINE) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	var c: Label = UIKit.label(caption, 22, Color(UIKit.JASMINE, 0.75))
+	c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(c)
+	var v: Label = UIKit.label(value, 24, colour, true)
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(v)
+	_modal_body.add_child(row)
+
+func _fine_note(text: String) -> void:
+	var l: Label = UIKit.label(text, 20, Color(UIKit.JASMINE, 0.85))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size.x = 420.0
+	_modal_body.add_child(l)
 
 func is_open() -> bool:
 	return _modal.visible

@@ -63,6 +63,9 @@ var no_ads: bool = false
 var _crashed_this_ride: bool = false
 const CLEAN_RIDE_CRASH_MPS: float = 3.0
 var wallet_inr: int = 500
+## Traffic fines not yet paid (the wallet was short); taken from the next money that comes in.
+var fine_due_inr: int = 0
+var fines_issued: int = 0 # challan numbers
 var stand_respect_xp: int = 100
 var star_rating: float = 4.5
 var completed_savaris: int = 0
@@ -235,7 +238,8 @@ func grant_reward(source: String, inr: int, xp: int, id: String = "") -> Diction
 	var g: Dictionary = rewards.grant(source, inr, xp, id, RewardsEngine.today_string())
 	if str(g["refused"]) == "":
 		if int(g["inr"]) > 0:
-			add_inr(int(g["inr"]))
+			# The tow ad's money pays for the tow straight away: a pending fine doesn't take it.
+			add_inr(int(g["inr"]), source != "ad_tow")
 		if int(g["xp"]) > 0:
 			add_driver_xp(int(g["xp"]))
 		SignalBus.reward_granted.emit(source, int(g["inr"]), int(g["xp"]))
@@ -345,9 +349,40 @@ func _ad_key(placement: String, ctx: Dictionary) -> String:
 
 # --- Money, respect, rating ------------------------------------------------------
 
-func add_inr(amount: int) -> void:
+## Money in or out. Money coming in first pays off any pending fine (fine_due_inr), unless
+## `collect_fines` is false (a credit that is already spoken for, like the tow ad's tow fare).
+func add_inr(amount: int, collect_fines: bool = true) -> void:
+	if amount > 0 and collect_fines and fine_due_inr > 0:
+		var taken: int = mini(amount, fine_due_inr)
+		fine_due_inr -= taken
+		amount -= taken
+		SignalBus.fine_recovered.emit(taken, fine_due_inr)
+		SignalBus.hint_requested.emit((tr("FINE_RECOVERED_PART") % [taken, fine_due_inr]) if fine_due_inr > 0 else (tr("FINE_RECOVERED_DONE") % taken), 4.0)
+		if amount == 0:
+			SignalBus.wallet_balance_changed.emit(wallet_inr, 0)
+			return
 	wallet_inr = maxi(0, wallet_inr + amount)
 	SignalBus.wallet_balance_changed.emit(wallet_inr, amount)
+
+## A traffic fine. Takes what the wallet can pay now; the rest is owed (fine_due_inr) and comes out
+## of the next money earned. Announces a notice (traffic_fine_issued) with everything the player
+## needs: what, where, when, fine, paid now, still due, balance. Returns that notice.
+func issue_fine(reason: String, amount: int, place: String = "") -> Dictionary:
+	amount = maxi(amount, 0)
+	var paid: int = mini(amount, wallet_inr)
+	if paid > 0:
+		wallet_inr -= paid
+		SignalBus.wallet_balance_changed.emit(wallet_inr, -paid)
+	fine_due_inr += amount - paid
+	fines_issued += 1
+	var info: Dictionary = {
+		"reason": reason, "place": place, "amount": amount, "paid": paid,
+		"due": amount - paid, "total_due": fine_due_inr, "balance": wallet_inr,
+		"day": day, "minute": int(shift_minute), "challan": "TN-CHN-%05d" % fines_issued,
+	}
+	SignalBus.traffic_fine_issued.emit(info)
+	save_game()
+	return info
 
 func spend(amount: int) -> bool:
 	if amount > wallet_inr:
@@ -696,8 +731,8 @@ func _on_component_impact(info: Dictionary) -> void:
 
 # --- Shift clock ------------------------------------------------------------------------
 
-func clock_text() -> String:
-	var m: int = int(shift_minute)
+func clock_text(minute: int = -1) -> String:
+	var m: int = int(shift_minute) if minute < 0 else minute
 	var h: int = m / 60
 	return "%d:%02d %s" % [((h + 11) % 12) + 1, m % 60, "AM" if h < 12 else "PM"]
 
@@ -808,7 +843,9 @@ func _key() -> String:
 func to_dict() -> Dictionary:
 	return {
 		"missions": {"schema": 1, "run": mission_run.duplicate(true), "completed": mission_completed.duplicate(true)},
-		"version": SAVE_VERSION, "wallet": wallet_inr, "respect": stand_respect_xp, "rating": star_rating,
+		"version": SAVE_VERSION, "wallet": wallet_inr,
+		"fine_due": fine_due_inr,
+		"fines_issued": fines_issued, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
 		"fuel": fuel_level, "condition": condition, "parked": parked_autos.duplicate(true), "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
@@ -827,6 +864,8 @@ func from_dict(d: Dictionary) -> void:
 		if missions.get("completed") is Dictionary:
 			mission_completed = (missions["completed"] as Dictionary).duplicate(true)
 	wallet_inr = int(d.get("wallet", wallet_inr))
+	fine_due_inr = int(d.get("fine_due", 0))
+	fines_issued = int(d.get("fines_issued", 0))
 	stand_respect_xp = int(d.get("respect", stand_respect_xp))
 	star_rating = float(d.get("rating", star_rating))
 	completed_savaris = int(d.get("rides", completed_savaris))
