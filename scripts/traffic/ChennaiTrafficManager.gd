@@ -526,7 +526,16 @@ func player_approach_edge(node_id: int, from_pos: Vector3) -> int:
 			best = edge_id
 	return best
 
-func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
+## The road's name for a notice, in the player's language, or "" when it has none.
+func _road_name(edge_id: int) -> String:
+	if graph == null or edge_id < 0 or edge_id >= graph.edges.size():
+		return ""
+	var e: RoadGraph.Edge = graph.edges[edge_id]
+	if TranslationServer.get_locale().begins_with("ta") and e.road_name_ta != "":
+		return e.road_name_ta
+	return e.road_name
+
+func _on_player_signal_pose(pos: Vector3, _heading: Vector3) -> void:
 	if not _player_pose_seen:
 		_previous_player_pos = pos
 		_player_pose_seen = true
@@ -551,10 +560,8 @@ func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 		if from_edge < 0 or approach_light(node_id, from_edge) != Light.RED:
 			break
 		if _player is RigidBody3D and (_player as RigidBody3D).linear_velocity.length() > 2.0:
-			var fine: int = mini(SIGNAL_ENFORCEMENT_FINE_INR, GameState.wallet_inr)
-			if fine > 0 and GameState.spend(fine):
-				SignalBus.police_intercept_requested.emit(pos, heading, fine)
-				SignalBus.hint_requested.emit("Police stop · ₹%d fine. Red signal violation." % fine, 3.0)
+			# The full fine always stands: what the wallet can't cover now is owed (GameState).
+			GameState.issue_fine("red_light", SIGNAL_ENFORCEMENT_FINE_INR, _road_name(from_edge))
 			_last_player_ticket_s = now_s
 		break
 	_previous_player_pos = pos

@@ -26,7 +26,11 @@ signal water_depth_changed(depth_m: float)
 signal horn_blasted(origin: Vector3, forward_dir: Vector3, radius_m: float, horn_tier: int)
 signal traffic_vehicle_shifted(sub_lane: int)
 ## Police enforcement at a randomly selected red-light junction.
-signal police_intercept_requested(position: Vector3, heading: Vector3, fine_inr: int)
+## A traffic fine (GameState.issue_fine): what it was for, where, the amount, what was paid now
+## and what is still due. GarageUI shows it as a notice.
+signal traffic_fine_issued(info: Dictionary)
+## Part of a pending fine was taken from money that just came in.
+signal fine_recovered(taken_inr: int, still_due_inr: int)
 
 # --- UI / controls -------------------------------------------------------
 signal wiper_toggled(is_on: bool)
