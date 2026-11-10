@@ -4,7 +4,14 @@
     <!-- Android 13+: asked at runtime by NammaReminderPlugin.requestPermission(), never at launch. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <application>
+    <!--
+        Target SDK 36 (Android 16, required by Google Play): Android 16 stops calling onBackPressed and
+        stops sending KEYCODE_BACK to apps targeting 36 (predictive back). Godot 4.5.1 still handles back
+        through onBackPressed, so without this the game's back button (pause, close menus) would just exit.
+        This keeps the classic back behaviour; the manifest merger copies it into the game's <application>.
+        Remove once Godot (4.7+) handles predictive back and the project upgrades.
+    -->
+    <application android:enableOnBackInvokedCallback="false">
         <!-- Godot v2 plugin registration: the name after "v2." must equal getPluginName(). -->
         <meta-data
             android:name="org.godotengine.plugin.v2.NammaReminder"
