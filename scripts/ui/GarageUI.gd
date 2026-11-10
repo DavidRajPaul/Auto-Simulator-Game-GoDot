@@ -59,6 +59,9 @@ func _ready() -> void:
 	_layout()
 	SignalBus.shift_clock_updated.connect(func(d: int, _m: float) -> void: _clock.text = "%s %d · %s" % [tr("DAY"), d, GameState.clock_text()])
 	SignalBus.service_available.connect(_on_service_available)
+	DailyReminder.changed.connect(func() -> void:
+		if _modal.visible and _modal_title.text == tr("GAME_PAUSED"):
+			open_pause())
 	SignalBus.service_unavailable.connect(_hide_service)
 	SignalBus.traffic_fine_issued.connect(show_fine)
 	SignalBus.fuel_changed.connect(_on_fuel)
@@ -555,6 +558,11 @@ func _render_settings() -> void:
 		func(i: int) -> void:
 			GameState.set_setting("auto_reverse", i == 0)
 			open_pause())
+	if DailyReminder.is_supported():
+		_choice_row(tr("DAILY_REMINDER"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if DailyReminder.is_on() else 1,
+			func(i: int) -> void:
+				DailyReminder.set_enabled(i == 0)
+				open_pause())
 	var vl: Label = Label.new()
 	vl.text = tr("VOLUME")
 	vl.add_theme_font_size_override("font_size", 22)

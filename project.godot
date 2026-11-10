@@ -25,6 +25,7 @@ SignalBus="*res://autoloads/SignalBus.gd"
 GameState="*res://autoloads/GameState.gd"
 CrashReporter="*res://autoloads/CrashReporter.gd"
 AdMonetizationManager="*res://autoloads/AdMonetizationManager.gd"
+DailyReminder="*res://autoloads/DailyReminder.gd"
 
 [debug]
 
@@ -154,3 +155,7 @@ experimental/attach_screenshot=false
 [editor]
 
 export/convert_text_resources_to_binary=false
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/namma_reminder/plugin.cfg")

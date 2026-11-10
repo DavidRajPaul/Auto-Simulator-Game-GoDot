@@ -75,6 +75,7 @@ func _ready() -> void:
 	add_child(sfx)
 	SignalBus.back_requested.connect(_on_back)
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
+	DailyReminder.changed.connect(_on_reminder_changed)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	AdMonetizationManager.set_screen("main_menu")
@@ -132,7 +133,8 @@ func open_daily() -> void:
 	if available:
 		var claim: Button = UIKit.button("%s  ₹%d" % [tr("CLAIM"), int(st["inr"])], UIKit.Tone.GREEN, func() -> void:
 			GameState.claim_daily_reward()
-			close_panel(), 26, "coin")
+			close_panel()
+			DailyReminder.maybe_ask(), 26, "coin")
 		claim.custom_minimum_size = Vector2(0, 68)
 		_panel_body.add_child(claim)
 	else:
@@ -311,6 +313,13 @@ func open_settings() -> void:
 		func(i: int) -> void:
 			GameState.set_setting("graphics", i)
 			open_settings())
+	if DailyReminder.is_supported():
+		_choice(tr("DAILY_REMINDER"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if DailyReminder.is_on() else 1,
+			func(i: int) -> void:
+				DailyReminder.set_enabled(i == 0)
+				open_settings())
+		if OS.is_debug_build():
+			_panel_body.add_child(UIKit.button(tr("REMINDER_TEST"), UIKit.Tone.PURPLE, DailyReminder.send_test, 20))
 	# Replay the guided first ride next time the city loads.
 	var done: bool = bool(s.get("first_ride_done", false))
 	_panel_body.add_child(UIKit.button(tr("REPLAY_TUTORIAL") if done else tr("TUTORIAL_QUEUED"),
@@ -321,6 +330,11 @@ func open_settings() -> void:
 	# Wiping a career is rare and final, so it lives here rather than beside Continue.
 	if GameState.has_save():
 		_panel_body.add_child(UIKit.button(tr("NEW_GAME"), UIKit.Tone.RED, new_career, 22))
+
+## Permission answered / back from Android's notification settings: redraw the toggle.
+func _on_reminder_changed() -> void:
+	if _panel.visible and _panel_title.text == tr("SETTINGS"):
+		open_settings()
 
 func open_credits() -> void:
 	_open_panel(tr("CREDITS"))

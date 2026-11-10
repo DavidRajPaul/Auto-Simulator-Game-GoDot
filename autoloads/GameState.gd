@@ -105,7 +105,8 @@ var shift_running: bool = true
 var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs": 0}
 
 var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
-	"vibration": true, "guidance_arrow": true, "first_ride_step": 0, "first_ride_done": false, "auto_reverse": true}
+	"vibration": true, "guidance_arrow": true, "first_ride_step": 0, "first_ride_done": false, "auto_reverse": true,
+	"daily_reminder": true, "reminder_asked": false}
 
 ## First-ride tutorial running (TutorialDirector sets it). While true: no interstitials, no fuel
 ## burn, thin traffic, no random riders, and crashes cannot wear the auto below tutorial_min_condition.
