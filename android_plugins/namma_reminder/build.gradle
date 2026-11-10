@@ -1,0 +1,36 @@
+// Daily reminder Godot Android plugin (v2). Builds build/outputs/aar/namma_reminder-release.aar;
+// CI copies it to addons/namma_reminder/bin/ before the Godot export. See docs/DAILY_REMINDER.md.
+// Same AGP and Kotlin versions as Godot 4.5.1's own Android build template
+// (platform/android/java/app/config.gradle), so the plugin and the game share one toolchain.
+// When upgrading Godot, match these to the new template (never newer than it).
+plugins {
+    id 'com.android.library' version '8.6.1'
+    id 'org.jetbrains.kotlin.android' version '2.1.20'
+}
+
+android {
+    namespace 'com.davidrajpaul.nammaauto.reminder'
+    compileSdk 35
+    defaultConfig {
+        minSdk 24 // Godot 4.5 minimum
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+dependencies {
+    // Provided by the game at runtime (godot-lib, which also brings the Kotlin stdlib); not bundled.
+    compileOnly 'org.godotengine:godot:4.5.1.stable'
+    // A local AAR carries no dependency metadata: keep these in sync with
+    // addons/namma_reminder/export_plugin.gd (_get_android_dependencies).
+    implementation 'androidx.work:work-runtime:2.9.1'
+    implementation 'androidx.core:core:1.12.0'
+}
