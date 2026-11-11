@@ -36,6 +36,9 @@ var step_label: Label
 var name_label: Label
 ## Speech bubble with the mentor's full line.
 var bubble: PanelContainer
+## Golden ripples rolling off the strip and the bubble, so the tutorial is noticed at a glance.
+var _strip_ripple: GoldenRipple
+var _bubble_ripple: GoldenRipple
 var line_label: Label
 var skip_button: Button
 ## Progress dots as ONE label ("●●●○○…"): ten separate panels cost ten 2D draw calls.
@@ -88,6 +91,8 @@ func _ready() -> void:
 	add_child(_chip)
 	_build_strip()
 	_build_bubble()
+	_strip_ripple = _make_ripple(card, 30)
+	_bubble_ripple = _make_ripple(bubble, 16)
 	SignalBus.tutorial_step_started.connect(_on_step)
 	SignalBus.tutorial_hint.connect(_on_hint)
 	SignalBus.tutorial_spotlight.connect(_on_spotlight)
@@ -192,6 +197,15 @@ func _build_bubble() -> void:
 	bubble.add_child(line_label)
 	bubble.visible = false
 	add_child(bubble)
+
+func _make_ripple(panel: Control, radius: int) -> GoldenRipple:
+	var r: GoldenRipple = GoldenRipple.new()
+	r.target = panel
+	r.corner_radius = radius
+	r.name = panel.name + "Ripple"
+	add_child(r)
+	move_child(r, panel.get_index()) # drawn beneath the panel, so only the outer ring shows
+	return r
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size

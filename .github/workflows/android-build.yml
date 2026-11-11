@@ -93,7 +93,7 @@ jobs:
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          for suite in run_quest_experience_tests run_six_quest_tests run_twelve_quest_tests run_twenty_four_quest_tests run_crash_reporter_tests run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests run_phase12_tests run_phase13_tests run_quest_discovery_tests run_reminder_tests run_store_config_tests; do
+          for suite in run_quest_experience_tests run_six_quest_tests run_twelve_quest_tests run_twenty_four_quest_tests run_crash_reporter_tests run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests run_phase12_tests run_phase13_tests run_quest_discovery_tests run_reminder_tests run_store_config_tests run_golden_ripple_tests; do
             echo "::group::$suite"
             timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
             echo "::endgroup::"
