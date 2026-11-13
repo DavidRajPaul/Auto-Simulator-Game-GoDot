@@ -304,6 +304,17 @@ def classify(chunks_dir: Path = WORLD / "chunks", write: bool = True) -> Counter
     if write:
         for f, d in data.items():
             f.write_text(json.dumps(d, separators=(",", ":")))
+        # Where bells are heard (scripts/world/AmbienceAudio.gd).
+        spots = {"temples": [], "churches": []}
+        for k, (_, _, b) in enumerate(blds):
+            key = {"tp": "temples", "ch": "churches"}.get(b["t"])
+            if key:
+                spots[key].append([round(cents[k][0], 1), round(cents[k][1], 1)])
+        manifest = json.loads((WORLD / "manifest.json").read_text())
+        for lm in manifest.get("landmarks", []):
+            if lm.get("kind") == "gopuram":
+                spots["temples"].append([round(lm["x"], 1), round(lm["z"], 1)])
+        (WORLD / "sound_spots.json").write_text(json.dumps(spots, separators=(",", ":")) + "\n")
     print("classified", len(blds), "buildings;", fronts, "face a street")
     for t, c in counts.most_common():
         print(f"  {t} {c:6d}  {TYPES[t]}")

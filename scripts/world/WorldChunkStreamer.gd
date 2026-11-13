@@ -38,6 +38,17 @@ const SURF_STYLE: Dictionary = {
 	"centre": [Color(0.92, 0.82, 0.42), 0.07],
 }
 const UP_LAYER_Y: float = 0.012
+## Surface kind for shaders/street_surface.gdshader (stored in UV.x).
+const SURF_KIND: Dictionary = {"road": 0.0, "junction": 0.0, "walk": 1.0, "lane": 2.0, "centre": 2.0}
+## Paved plots (data/world/plots, tools/osm/build_plots.py): [colour, shader kind]. They lie
+## just under the road layers, so roads and footpaths cover their edges.
+const PAVE_STYLE: Dictionary = {
+	"cement": [Color(0.63, 0.62, 0.59), 3.0],
+	"paver": [Color(0.58, 0.56, 0.54), 4.0],
+}
+const PLOT_Y: float = 0.012
+const GROUND_COLOUR: Color = Color(0.5, 0.45, 0.385)
+const GROUND_KIND: float = 5.0
 const MEDIAN_KERB_H: float = 0.24
 const MEDIAN_COLLIDE_H: float = 1.25
 const MEDIAN_BLACK: Color = Color(0.07, 0.07, 0.075)
@@ -55,7 +66,7 @@ const ROOF_TILE_M: float = 6.0
 ## Facade atlas cells (column, row) — see tools/art/make_facade_atlas.py for the map.
 const CELLS_HOME: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(2, 0), Vector2(3, 0), Vector2(4, 0), Vector2(0, 0), Vector2(4, 0)]
 const CELLS_OFFICE: Array[Vector2] = [Vector2(5, 0), Vector2(6, 0)]
-const CELLS_HOUSE_GROUND: Array[Vector2] = [Vector2(0, 1), Vector2(1, 1), Vector2(0, 1)]
+const CELLS_HOUSE_GROUND: Array[Vector2] = [Vector2(0, 1), Vector2(0, 0), Vector2(0, 1)]
 const CELLS_SHOPS: Array[Vector2] = [Vector2(2, 1), Vector2(3, 1), Vector2(4, 1), Vector2(5, 1), Vector2(6, 1), Vector2(7, 1),
 	Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(3, 2), Vector2(4, 2), Vector2(5, 2), Vector2(6, 2), Vector2(7, 2)]
 const ROOF_CELLS: Array[Vector2] = [Vector2(2, 3), Vector2(3, 3)]
@@ -148,6 +159,8 @@ var _timer: float = 0.0
 var wetness: float = 0.0
 var _water_mat: ShaderMaterial
 var _road_mat: StandardMaterial3D
+var _street_mat: ShaderMaterial
+var _ground_mat: ShaderMaterial
 var _bld_mat: ShaderMaterial
 ## Roadside and park trees (owner's models, near model + far impostors, see StreetTrees.gd).
 var trees: StreetTrees
@@ -186,6 +199,8 @@ var skyline: Node3D
 static var details_enabled: bool = true
 ## Chennai building types (BuildingStyles). Off = every building takes the older generic skin.
 static var typed_enabled: bool = true
+## Paved plots, street-side compound walls and gates (data/world/plots).
+static var plots_enabled: bool = true
 static var dressing_enabled: bool = true
 var skyline_home: Transform3D = Transform3D.IDENTITY
 
@@ -207,6 +222,10 @@ func _ready() -> void:
 	_road_mat.vertex_color_is_srgb = true
 	_road_mat.roughness = 0.95
 	_road_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_street_mat = ShaderMaterial.new()
+	_street_mat.shader = load("res://shaders/street_surface.gdshader") as Shader
+	_street_mat.set_shader_parameter("detail", load("res://assets/textures/ground_detail.png"))
+	_street_mat.set_shader_parameter("rich", int(GameState.settings.get("graphics", 1)) > 0)
 	_bld_mat = ShaderMaterial.new()
 	_bld_mat.shader = load("res://shaders/building_facade.gdshader") as Shader
 	_bld_mat.set_shader_parameter("atlas", load("res://assets/textures/facade_atlas.png") as Texture2D)
@@ -252,6 +271,9 @@ func _update_wetness(delta: float) -> void:
 	_road_mat.albedo_color = Color.WHITE.lerp(Color(0.8, 0.82, 0.86), wetness)
 	_road_mat.roughness = lerpf(0.95, 0.3, wetness)
 	_road_mat.metallic_specular = lerpf(0.5, 0.9, wetness)
+	_street_mat.set_shader_parameter("wet", wetness)
+	if _ground_mat != null:
+		_ground_mat.set_shader_parameter("wet", wetness)
 	if _water_mat != null:
 		_water_mat.set_shader_parameter("monsoon", wetness)
 
@@ -411,14 +433,24 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var data: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
 	var root: Node3D = Node3D.new()
 	root.name = "Chunk_%d_%d" % [k.x, k.y]
+	var plot: Dictionary = {}
+	if plots_enabled:
+		var pf: FileAccess = FileAccess.open(world_dir.path_join("plots/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
+		if pf != null:
+			plot = JSON.parse_string(pf.get_as_text()) as Dictionary
 	var mesh: ArrayMesh = null
 	if data.has("surf"):
-		mesh = _surface_mesh(data["surf"] as Dictionary)
+		mesh = _surface_mesh(data["surf"] as Dictionary, plot.get("pave", {}) as Dictionary)
 		root.set_meta("surface_heights", _surface_heights(k, data["surf"] as Dictionary))
 	elif data.has("roads"):
 		mesh = _road_mesh(data["roads"] as Array)
+	elif plot.has("pave"):
+		mesh = _surface_mesh({}, plot["pave"] as Dictionary)
 	var walls: Array = _compounds.get("%d,%d" % [k.x, k.y], [])
-	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls))
+	var plot_walls: Array = plot.get("walls", [])
+	var gates: Array = plot.get("gates", [])
+	# Walkers treat every wall and gate as solid, whoever built it.
+	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + gates))
 	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Roads"
@@ -431,32 +463,31 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
-	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty():
-		root.add_child(_buildings(blds, dress, walls))
+	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty() or not plot_walls.is_empty():
+		root.add_child(_buildings(blds, dress, walls, plot_walls, gates))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
 		root.set_meta("trees", StreetTrees.records(dress["trees"] as Array))
 	return root
 
 ## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
-func _surface_mesh(surf: Dictionary) -> ArrayMesh:
+func _surface_mesh(surf: Dictionary, pave: Dictionary = {}) -> ArrayMesh:
 	var verts: PackedVector3Array = PackedVector3Array()
 	var cols: PackedColorArray = PackedColorArray()
+	var kinds: PackedVector2Array = PackedVector2Array()
 	var idx: PackedInt32Array = PackedInt32Array()
+	# Paving first: it is the lowest layer.
+	for cls: String in pave:
+		if not PAVE_STYLE.has(cls):
+			continue
+		var pstyle: Array = PAVE_STYLE[cls]
+		_surface_part(verts, cols, kinds, idx, pave[cls] as Dictionary, pstyle[0] as Color, PLOT_Y, float(pstyle[1]))
 	for kind: String in surf:
 		var base_kind: String = kind.trim_suffix("_up")
 		if not SURF_STYLE.has(base_kind):
 			continue
 		var style: Array = SURF_STYLE[base_kind]
-		var colour: Color = style[0]
 		var y: float = float(style[1]) + (UP_LAYER_Y if kind.ends_with("_up") else 0.0)
-		var part: Dictionary = surf[kind]
-		var v: Array = part["v"]
-		var offset: int = verts.size()
-		for i: int in range(0, v.size(), 2):
-			verts.append(Vector3(float(v[i]), y, float(v[i + 1])))
-			cols.append(colour)
-		for t: Variant in part["i"]:
-			idx.append(int(t) + offset)
+		_surface_part(verts, cols, kinds, idx, surf[kind] as Dictionary, style[0] as Color, y, float(SURF_KIND[base_kind]))
 	if idx.is_empty():
 		return null
 	var normals: PackedVector3Array = PackedVector3Array()
@@ -467,11 +498,24 @@ func _surface_mesh(surf: Dictionary) -> ArrayMesh:
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_TEX_UV] = kinds
 	arrays[Mesh.ARRAY_INDEX] = idx
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.surface_set_material(0, _road_mat)
+	mesh.surface_set_material(0, _street_mat)
 	return mesh
+
+## Append one pre-triangulated layer ({"v": [x, z, ...], "i": [...]}) at height y.
+func _surface_part(verts: PackedVector3Array, cols: PackedColorArray, kinds: PackedVector2Array, idx: PackedInt32Array,
+		part: Dictionary, colour: Color, y: float, kind: float) -> void:
+	var v: Array = part["v"]
+	var offset: int = verts.size()
+	for i: int in range(0, v.size(), 2):
+		verts.append(Vector3(float(v[i]), y, float(v[i + 1])))
+		cols.append(colour)
+		kinds.append(Vector2(kind, 0.0))
+	for t: Variant in part["i"]:
+		idx.append(int(t) + offset)
 
 func _road_mesh(roads: Array) -> ArrayMesh:
 	var st: SurfaceTool = SurfaceTool.new()
@@ -525,7 +569,7 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 ## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
 ## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
 ## One mesh + one trimesh wall collider per chunk.
-func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3D:
+func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_walls: Array = [], gates: Array = []) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
@@ -542,6 +586,10 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 		_dbox(m, Vector3(mid.x, h * 0.5, mid.y), Vector3(a.distance_to(b), h, thickness), (b - a).normalized(), colour)
 		_dbox(m, Vector3(mid.x, h, mid.y), Vector3(a.distance_to(b), 0.12, thickness + 0.12), (b - a).normalized(), colour.darkened(0.15))
 		_wall_faces(faces, a, b, 0.0, h + 0.06, thickness)
+	for wall: Array in plot_walls:
+		_compound_wall(m, faces, wall)
+	for gate: Array in gates:
+		_compound_gate(m, faces, gate)
 	for b: Dictionary in blds:
 		var flat: Array = b["p"]
 		var pts: PackedVector2Array = PackedVector2Array()
@@ -731,6 +779,81 @@ func _typed_building(m: MeshBuf, faces: PackedVector3Array, b: Dictionary, pts: 
 			_roof_dome(m, pts, tri, h)
 		"ch":
 			_roof_cross(m, pts, tri, h)
+
+## The paint of the building a compound wall or gate belongs to (same seed, so it matches).
+static func _compound_paint(wall: Array) -> Color:
+	var zone: String = BuildingStyles.ZONE_IDS[clampi(int(wall[8]), 0, BuildingStyles.ZONE_IDS.size() - 1)]
+	return BuildingStyles.paint(str(wall[6]), zone, int(wall[7])).lerp(Color(0.95, 0.94, 0.9), 0.3)
+
+## Street-side compound wall (tools/osm/build_plots.py): [x0, z0, x1, z1, h, thickness, type, seed, zone].
+## Both faces show the weathered wall run from the atlas; a long wall carries the stencilled
+## panel once. Temple walls are kaavi: red and white stripes.
+func _compound_wall(m: MeshBuf, faces: PackedVector3Array, wall: Array) -> void:
+	var a: Vector2 = Vector2(float(wall[0]), float(wall[1]))
+	var b: Vector2 = Vector2(float(wall[2]), float(wall[3]))
+	var length: float = a.distance_to(b)
+	if length < 0.2:
+		return
+	var h: float = float(wall[4])
+	var half: float = float(wall[5]) * 0.5
+	var along: Vector2 = (b - a) / length
+	var n2: Vector2 = Vector2(-along.y, along.x)
+	var temple: bool = str(wall[6]) == "tp"
+	var paint: Color = Color.WHITE if temple else _compound_paint(wall)
+	var cell: Vector2 = BuildingStyles.KAAVI if temple else BuildingStyles.COMPOUND
+	var v0: float = 0.0 if temple else BuildingStyles.WALL_RUN_V.x
+	var vh: float = (h / FLOOR_M) if temple else BuildingStyles.WALL_RUN_V.y
+	var seed_i: int = int(wall[7]) + int(a.x * 7.0) + int(a.y * 3.0)
+	# Where the stencilled panel sits along the wall (-1 = none).
+	var panel_at: float = -1.0
+	if not temple and length >= 5.5 and BuildingStyles.h01(seed_i, 91) < 0.3:
+		panel_at = 1.0 + BuildingStyles.h01(seed_i, 92) * (length - 2.0 - BuildingStyles.WALL_PANEL_M)
+	for side: float in [1.0, -1.0]:
+		var off: Vector2 = n2 * half * side
+		var n: Vector3 = Vector3(n2.x, 0.0, n2.y) * side
+		var cuts: Array[float] = [0.0, length]
+		if panel_at >= 0.0:
+			cuts = [0.0, panel_at, panel_at + BuildingStyles.WALL_PANEL_M, length]
+		for k: int in cuts.size() - 1:
+			var p0: Vector2 = a + along * cuts[k] + off
+			var p1: Vector2 = a + along * cuts[k + 1] + off
+			var uv: Rect2 = Rect2(cuts[k] / BuildingStyles.WALL_RUN_M, v0, (cuts[k + 1] - cuts[k]) / BuildingStyles.WALL_RUN_M, vh)
+			if panel_at >= 0.0 and k == 1:
+				uv = BuildingStyles.WALL_PANEL_UV
+			_tquad(m, _v3(p0, 0.0), _v3(p1, 0.0), _v3(p1, h), _v3(p0, h), uv, cell, paint, n)
+	var cap: Color = (Color(0.72, 0.2, 0.14) if temple else paint.lerp(Color(0.9, 0.89, 0.85), 0.4)).darkened(0.06)
+	var o: Vector2 = n2 * (half + 0.03)
+	_face(m, [_v3(a - o, h), _v3(b - o, h), _v3(b + o, h), _v3(a + o, h)], Vector3.UP, cap)
+	_face(m, [_v3(a - o, 0.0), _v3(a + o, 0.0), _v3(a + o, h), _v3(a - o, h)], _v3(-along, 0.0), cap.darkened(0.1))
+	_face(m, [_v3(b - o, 0.0), _v3(b + o, 0.0), _v3(b + o, h), _v3(b - o, h)], _v3(along, 0.0), cap.darkened(0.1))
+	_wall_faces(faces, a, b, 0.0, h + 0.06, half * 2.0)
+
+## Gate in a compound wall: two piers and a pair of steel leaves (closed, solid).
+func _compound_gate(m: MeshBuf, faces: PackedVector3Array, gate: Array) -> void:
+	var a: Vector2 = Vector2(float(gate[0]), float(gate[1]))
+	var b: Vector2 = Vector2(float(gate[2]), float(gate[3]))
+	var length: float = a.distance_to(b)
+	if length < 1.0:
+		return
+	var h: float = float(gate[4])
+	var along: Vector2 = (b - a) / length
+	var n2: Vector2 = Vector2(-along.y, along.x)
+	var pier: Color = (Color(0.93, 0.9, 0.82) if str(gate[6]) == "tp" else _compound_paint(gate)).lerp(Color(0.96, 0.95, 0.92), 0.35)
+	for p: Vector2 in [a + along * 0.2, b - along * 0.2]:
+		_dbox(m, Vector3(p.x, (h + 0.3) * 0.5, p.y), Vector3(0.4, h + 0.3, 0.4), along, pier)
+		_dbox(m, Vector3(p.x, h + 0.36, p.y), Vector3(0.5, 0.12, 0.5), along, pier.darkened(0.12))
+	var g0: Vector2 = a + along * 0.4
+	var g1: Vector2 = b - along * 0.4
+	var mid: Vector2 = (g0 + g1) * 0.5
+	var top: float = h - 0.05
+	for side: float in [1.0, -1.0]:
+		var n: Vector3 = Vector3(n2.x, 0.0, n2.y) * side
+		var off: Vector2 = n2 * 0.04 * side
+		for leaf: Array in [[g0, mid], [mid, g1]]:
+			var l0: Vector2 = (leaf[0] as Vector2) + off
+			var l1: Vector2 = (leaf[1] as Vector2) + off
+			_tquad(m, _v3(l0, 0.06), _v3(l1, 0.06), _v3(l1, top), _v3(l0, top), BuildingStyles.GATE_LEAF_UV, BuildingStyles.COMPOUND, Color.WHITE, n)
+	_wall_faces(faces, g0, g1, 0.0, top, 0.1)
 
 static func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)
@@ -1585,10 +1708,11 @@ func _build_ground() -> void:
 	var b: Array = manifest["bounds"]
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(float(b[2]) - float(b[0]) + 1200.0, float(b[3]) - float(b[1]) + 1200.0)
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.58, 0.53, 0.44)
-	mat.roughness = 1.0
-	plane.material = mat
+	# Packed earth with the same world-space detail as the roads (one extra material, same shader).
+	_ground_mat = _street_mat.duplicate() as ShaderMaterial
+	_ground_mat.set_shader_parameter("fixed_kind", GROUND_KIND)
+	_ground_mat.set_shader_parameter("fixed_colour", GROUND_COLOUR)
+	plane.material = _ground_mat
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	mi.mesh = plane
 	mi.position = Vector3((float(b[0]) + float(b[2])) * 0.5, GROUND_VISUAL_Y, (float(b[1]) + float(b[3])) * 0.5)

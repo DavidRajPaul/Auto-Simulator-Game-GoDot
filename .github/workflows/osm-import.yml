@@ -42,6 +42,8 @@ jobs:
           python3 tools/osm/build_compounds.py --fetch
           # Last: building types + street-facing walls (docs/CHENNAI_BUILDINGS.md).
           python3 tools/osm/classify_buildings.py
+          # Paved plots, compound walls and gates (needs "t" / "fw" and every dressing pass).
+          python3 tools/osm/build_plots.py
       - name: Commit results
         run: |
           git config user.name "osm-import[bot]"
