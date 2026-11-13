@@ -184,6 +184,8 @@ var _pending_snaps: Dictionary = {}
 var skyline: Node3D
 ## Detail layer switches (tests / profiling).
 static var details_enabled: bool = true
+## Chennai building types (BuildingStyles). Off = every building takes the older generic skin.
+static var typed_enabled: bool = true
 static var dressing_enabled: bool = true
 var skyline_home: Transform3D = Transform3D.IDENTITY
 
@@ -561,6 +563,9 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 		for i: int in pts.size():
 			area2 += pts[i - 1].cross(pts[i])
 		var outward_sign: float = 1.0 if area2 > 0.0 else -1.0
+		if typed_enabled and heritage == "" and b.has("t"):
+			_typed_building(m, faces, b, pts, h, zone, seed_i, outward_sign, absf(area2) * 0.5)
+			continue
 		var floors: float = h / FLOOR_M
 		var detailed: bool = details_enabled and h <= DETAIL_MAX_H and not (kind in ["office", "shed"])
 		for i: int in pts.size():
@@ -646,6 +651,358 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = []) -> Node3
 	cs.shape = shape
 	holder.add_child(cs)
 	return holder
+
+# --- Chennai building types -----------------------------------------------------------------------
+
+## A building whose type ("t") and street-facing walls ("fw") are known
+## (tools/osm/classify_buildings.py). The street front gets the type's real face, bay by bay:
+## shop boards, stilt parking, balconies, the staircase jaali, showroom cladding. Walls that
+## face no street stay one cheap quad per floor band, so the triangles go where the player looks.
+func _typed_building(m: MeshBuf, faces: PackedVector3Array, b: Dictionary, pts: PackedVector2Array, h: float,
+		zone: String, seed_raw: int, outward_sign: float, area: float) -> void:
+	var t: String = str(b["t"])
+	var seed_i: int = absi(seed_raw * 7919 + int(pts[0].x * 3.0) + int(pts[0].y * 5.0)) & 0x7FFFFFFF
+	var front: Dictionary = {}
+	var main_wall: int = -1
+	var rank: int = 0
+	for w: Array in b.get("fw", []):
+		front[int(w[0])] = int(w[1])
+		if main_wall < 0:
+			main_wall = int(w[0])
+			rank = int(w[1])
+	var st: Dictionary = BuildingStyles.style(t, zone, h, seed_i, rank)
+	var colour: Color = BuildingStyles.paint(t, zone, seed_i)
+	var rich: bool = details_enabled and h <= DETAIL_MAX_H
+	var floors: float = h / FLOOR_M
+	for i: int in pts.size():
+		var a: Vector2 = pts[i - 1]
+		var c: Vector2 = pts[i]
+		var e: Vector2 = c - a
+		var length: float = e.length()
+		if length < 0.01:
+			continue
+		var n2: Vector2 = Vector2(e.y, -e.x).normalized() * outward_sign
+		var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+		var tint: Color = colour.darkened(0.08 * (1.0 - absf(n2.x)))
+		var top: float = minf(h, COLLIDER_MAX_H)
+		faces.append_array([Vector3(a.x, 0.0, a.y), Vector3(c.x, 0.0, c.y), Vector3(c.x, top, c.y),
+			Vector3(a.x, 0.0, a.y), Vector3(c.x, top, c.y), Vector3(a.x, top, a.y)])
+		if front.has(i) and length >= 2.4:
+			_front_wall(m, a, c, n2, h, tint, st, seed_i + i * 131, rich, i == main_wall)
+			continue
+		var bays: float = maxf(1.0, roundf(length / BAY_M)) if length >= 2.0 else length / BAY_M
+		var ground_top: float = minf(h, FLOOR_M)
+		_quad(m, a, c, 0.0, ground_top, n, tint, Vector2(0.0, 0.0), Vector2(bays, ground_top / FLOOR_M),
+			BuildingStyles.pick(st["side_ground"] as Array, seed_i + i, 31))
+		if h > FLOOR_M:
+			_quad(m, a, c, FLOOR_M, h, n, tint, Vector2(0.0, 1.0), Vector2(bays, floors),
+				BuildingStyles.pick(st["side_upper"] as Array, seed_i + i, 32))
+			# Hand-painted advert high on a blind side wall.
+			if rich and bool(st["advert"]) and length >= 7.5 and h >= 9.0 and BuildingStyles.h01(seed_i + i, 33) < 0.10:
+				var mid: Vector2 = (a + c) * 0.5
+				var half: Vector2 = e / length * 2.9
+				var y1: float = h - 0.5
+				_tquad(m, _v3(mid - half + n2 * 0.07, y1 - 5.4), _v3(mid + half + n2 * 0.07, y1 - 5.4), _v3(mid + half + n2 * 0.07, y1),
+					_v3(mid - half + n2 * 0.07, y1), Rect2(0.03, 0.12, 0.94, 0.76), BuildingStyles.WALL_ADVERT, tint, n)
+	var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
+	var roof_kind: String = str(st["roof"])
+	if roof_kind in ["tiles", "sheet", "thatch"] and pts.size() == 4 and _pitched_roof(m, pts, h, roof_kind, colour, seed_i, outward_sign):
+		return
+	var clay: bool = roof_kind == "terrace" and BuildingStyles.h01(seed_i, 41) < 0.45
+	var roof: Color = Color.WHITE if clay else ROOF_COLOUR.lerp(colour, 0.35).darkened(BuildingStyles.h01(seed_i, 42) * 0.12)
+	var rcell: Vector2 = BuildingStyles.ROOF_CLAY if clay else ROOF_CELLS[seed_i % ROOF_CELLS.size()]
+	for k: int in range(0, tri.size(), 3):
+		var q0: Vector2 = pts[tri[k]]
+		var q1: Vector2 = pts[tri[k + 1]]
+		var q2: Vector2 = pts[tri[k + 2]]
+		if (q1 - q0).cross(q2 - q0) < 0.0:
+			var tmp: Vector2 = q1
+			q1 = q2
+			q2 = tmp
+		for p: Vector2 in [q0, q1, q2]:
+			m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
+	if not rich or t in ["of", "sd"]:
+		return
+	_roof_details(m, pts, tri, h, colour, seed_i, area, outward_sign)
+	match t:
+		"tp":
+			_roof_shrine(m, pts, tri, h, seed_i)
+		"mq":
+			_roof_dome(m, pts, tri, h)
+		"ch":
+			_roof_cross(m, pts, tri, h)
+
+static func _v3(p: Vector2, y: float) -> Vector3:
+	return Vector3(p.x, y, p.y)
+
+## Street front: one ground quad and one upper strip per bay, each with its own atlas cell.
+func _front_wall(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, tint: Color, st: Dictionary,
+		seed_i: int, rich: bool, is_main: bool) -> void:
+	var e: Vector2 = c - a
+	var length: float = e.length()
+	var along: Vector2 = e / length
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var nb: int = maxi(1, int(roundf(length / BAY_M)))
+	var bay_w: float = length / float(nb)
+	var ground_top: float = minf(h, FLOOR_M)
+	var floors_f: float = h / FLOOR_M
+	var floors: int = maxi(1, floori(floors_f + 0.01))
+	var shops: bool = bool(st["shops"])
+	var ground: Array = st["front_ground"]
+	var upper: Array = st["front_upper"]
+	var stair_bay: int = (seed_i % nb) if (bool(st["stair"]) and nb >= 3 and floors >= 2) else -1
+	var concrete: Color = tint.lerp(Color(0.92, 0.91, 0.88), 0.55)
+	# A showroom's sign covers the first floors of its main front: leave those bays plain cladding.
+	var sign_cell: int = int(st["sign"]) if is_main else -1
+	for k: int in nb:
+		var p0: Vector2 = a.lerp(c, float(k) / float(nb))
+		var p1: Vector2 = a.lerp(c, float(k + 1) / float(nb))
+		var gcell: Vector2 = BuildingStyles.pick(ground, seed_i + k * 13, 51)
+		if shops and BuildingStyles.h01(seed_i + k * 13, 52) < 0.07:
+			gcell = BuildingStyles.SHUTTER
+		elif st["entrance"] != null and k == floori(float(nb) * 0.5):
+			gcell = st["entrance"]   # the door, gate or portico: once per street front
+		_quad(m, p0, p1, 0.0, ground_top, n, tint, Vector2(0.0, 0.0), Vector2(1.0, ground_top / FLOOR_M), gcell)
+		var is_shop: bool = BuildingStyles.SHOPS.has(gcell)
+		if rich and is_shop and bay_w >= 2.6:
+			if BuildingStyles.h01(seed_i + k * 5, 53) < 0.6:
+				var col: Color = AWNING_COLOURS[int(BuildingStyles.h01(seed_i + k * 11, 54) * float(AWNING_COLOURS.size())) % AWNING_COLOURS.size()]
+				_awning(m, p0 + along * 0.12, p1 - along * 0.12, n2, 2.95, 2.5, 1.35, col)
+		if h <= FLOOR_M + 0.4:
+			continue
+		var ucell: Vector2 = BuildingStyles.pick(upper, seed_i + k * 29, 55)
+		if k == stair_bay:
+			ucell = BuildingStyles.JAALI
+		_quad(m, p0, p1, FLOOR_M, h, n, tint, Vector2(0.0, 1.0), Vector2(1.0, floors_f), ucell)
+		if not rich:
+			continue
+		# The shop's own board again on the first floor: stacked signs are the look of a bazaar street.
+		if is_shop and floors >= 2 and sign_cell < 0 and BuildingStyles.h01(seed_i + k * 7, 56) < 0.45:
+			var r: Rect2 = BuildingStyles.SHOP_BOARD_UV
+			var q0: Vector2 = p0 + along * 0.1 + n2 * 0.14
+			var q1: Vector2 = p1 - along * 0.1 + n2 * 0.14
+			var by: float = FLOOR_M + 0.25
+			var bh: float = minf(0.95, (bay_w - 0.2) * 0.23)
+			_tquad(m, _v3(q0, by), _v3(q1, by), _v3(q1, by + bh), _v3(q0, by + bh), r, gcell, Color.WHITE, n)
+		elif (ucell == BuildingStyles.BALCONY or ucell == BuildingStyles.BALCONY_WASH) and bay_w >= 2.6 \
+				and BuildingStyles.h01(seed_i + k * 3, 57) < float(st["balcony"]):
+			for f: int in range(1, mini(floors, LEDGE_MAX_FLOORS + 1)):
+				if float(f) * FLOOR_M + 1.0 > h:
+					break
+				_balcony(m, (p0 + p1) * 0.5, along, n2, float(f) * FLOOR_M, bay_w - 0.5, tint, ucell == BuildingStyles.BALCONY_WASH, seed_i + k * 17 + f)
+	if not rich:
+		return
+	if bool(st["ledges"]):
+		var a2: Vector2 = a + along * 0.15
+		var c2: Vector2 = c - along * 0.15
+		for k: int in range(1, mini(floors, LEDGE_MAX_FLOORS)):
+			var y: float = float(k) * FLOOR_M + LEDGE_AT_M + 0.12
+			if y > h - 0.25:
+				break
+			_ledge(m, a2, c2, n2, y, LEDGE_OUT_M, LEDGE_T, concrete, false)
+	if not is_main:
+		return
+	if sign_cell >= 0 and h >= FLOOR_M * 2.0 and length >= 5.0:
+		# Showroom name across the front: a 2 : 1 hoarding cell, as wide as the wall allows.
+		var sw: float = minf(length - 0.8, minf(11.0, (h - FLOOR_M - 0.4) * 2.0))
+		var sh: float = sw * 0.5
+		var mid: Vector2 = (a + c) * 0.5 + n2 * 0.18
+		var y0: float = FLOOR_M + 0.2
+		_tquad(m, _v3(mid - along * sw * 0.5, y0), _v3(mid + along * sw * 0.5, y0), _v3(mid + along * sw * 0.5, y0 + sh),
+			_v3(mid - along * sw * 0.5, y0 + sh), BuildingStyles.FULL_CELL, Vector2(float(sign_cell), BuildingStyles.HOARDING_ROW), Color.WHITE, n)
+	if int(st["hoarding"]) >= 0 and length >= 5.0:
+		_roof_hoarding(m, (a + c) * 0.5 - n2 * 0.35, along, n2, h, minf(length * 0.85, 9.0), int(st["hoarding"]))
+
+## Textured quad v0→v1 (bottom) → v2→v3 (top) showing `uv` (x, y bottom, w, h in bay/floor UVs)
+## of one atlas cell, wound to face `want_n`.
+func _tquad(m: MeshBuf, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3, uv: Rect2, cell: Vector2, col: Color, want_n: Vector3) -> void:
+	var vs: Array[Vector3] = [v0, v1, v2, v3]
+	var ts: Array[Vector2] = [uv.position, Vector2(uv.end.x, uv.position.y), uv.end, Vector2(uv.position.x, uv.end.y)]
+	var nrm: Vector3 = (v1 - v0).cross(v3 - v0)
+	var order: PackedInt32Array = PackedInt32Array([0, 2, 1, 0, 3, 2])
+	if nrm.dot(want_n) < 0.0:
+		order = PackedInt32Array([0, 1, 2, 0, 2, 3])
+		nrm = -nrm
+	var nn: Vector3 = nrm.normalized() if nrm.length() > 0.0001 else want_n
+	for k: int in order:
+		m.add(vs[k], nn, col, ts[k], cell)
+
+## Cantilevered balcony with a solid parapet (the common brick-and-plaster kind), seen from
+## below: front, two ends, underside, top rim. Washing hangs over the rail on some.
+func _balcony(m: MeshBuf, at: Vector2, along: Vector2, n2: Vector2, floor_y: float, width: float, paint: Color, washing: bool, seed_i: int) -> void:
+	var depth: float = 0.95
+	var hgt: float = 1.0
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var u: Vector3 = Vector3(along.x, 0.0, along.y) * width * 0.5
+	var base: Vector3 = Vector3(at.x, floor_y - 0.12, at.y)
+	var out: Vector3 = n * depth
+	var up: Vector3 = Vector3(0.0, hgt + 0.12, 0.0)
+	var body: Color = paint.lerp(Color(0.95, 0.94, 0.9), 0.3)
+	_face(m, [base - u + out, base + u + out, base + u + out + up, base - u + out + up], n, body)
+	_face(m, [base - u, base - u + out, base - u + out + up, base - u + up], -u.normalized(), body.darkened(0.1))
+	_face(m, [base + u, base + u + out, base + u + out + up, base + u + up], u.normalized(), body.darkened(0.1))
+	_face(m, [base - u, base + u, base + u + out, base - u + out], Vector3.DOWN, body.darkened(0.3))
+	_face(m, [base - u + up, base + u + up, base + u + out + up, base - u + out + up], Vector3.UP, body.darkened(0.45))
+	if not washing:
+		return
+	var x: float = -width * 0.5 + 0.15
+	var k: int = 0
+	var a3: Vector3 = Vector3(along.x, 0.0, along.y)
+	var face_at: Vector3 = base + out + n * 0.04 + up
+	while x < width * 0.5 - 0.4 and k < 4:
+		var w: float = 0.3 + BuildingStyles.h01(seed_i, 60 + k) * 0.35
+		var drop: float = 0.35 + BuildingStyles.h01(seed_i, 70 + k) * 0.35
+		var cloth: Color = BuildingStyles.WASHING[int(BuildingStyles.h01(seed_i, 80 + k) * float(BuildingStyles.WASHING.size())) % BuildingStyles.WASHING.size()]
+		_face(m, [face_at + a3 * x - Vector3(0.0, drop, 0.0), face_at + a3 * (x + w) - Vector3(0.0, drop, 0.0),
+			face_at + a3 * (x + w), face_at + a3 * x], n, cloth)
+		x += w + 0.1 + BuildingStyles.h01(seed_i, 90 + k) * 0.3
+		k += 1
+
+## Hoarding on a steel frame over the street front: two posts, the board, its plain back.
+func _roof_hoarding(m: MeshBuf, at: Vector2, along: Vector2, n2: Vector2, h: float, width: float, cell: int) -> void:
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var a3: Vector3 = Vector3(along.x, 0.0, along.y)
+	var bh: float = width * 0.5
+	var y0: float = h + PARAPET_M + 0.5
+	var mid: Vector3 = Vector3(at.x, 0.0, at.y)
+	var steel: Color = Color(0.22, 0.23, 0.25)
+	for s: float in [-0.36, 0.36]:
+		var foot: Vector3 = mid + a3 * width * s - n * 0.12
+		_dbox(m, foot + Vector3(0.0, h + (y0 + bh - h) * 0.5, 0.0), Vector3(0.14, y0 + bh - h, 0.14), along, steel)
+	var v0: Vector3 = mid - a3 * width * 0.5 + Vector3(0.0, y0, 0.0)
+	var v1: Vector3 = mid + a3 * width * 0.5 + Vector3(0.0, y0, 0.0)
+	var up: Vector3 = Vector3(0.0, bh, 0.0)
+	_tquad(m, v0, v1, v1 + up, v0 + up, BuildingStyles.FULL_CELL, Vector2(float(cell), BuildingStyles.HOARDING_ROW), Color.WHITE, n)
+	_face(m, [v0 - n * 0.05, v1 - n * 0.05, v1 - n * 0.05 + up, v0 - n * 0.05 + up], -n, Color(0.4, 0.41, 0.42))
+
+## Pitched roof on a four-cornered footprint: a tiled or thatched gable with eaves, or a
+## single-slope sheet roof. Returns false when the footprint is too skewed to take one.
+func _pitched_roof(m: MeshBuf, pts: PackedVector2Array, h: float, kind: String, paint: Color, seed_i: int, outward_sign: float) -> bool:
+	var p: Array[Vector2] = [pts[0], pts[1], pts[2], pts[3]]
+	if (p[1] - p[0]).length() < (p[2] - p[1]).length():
+		p = [pts[1], pts[2], pts[3], pts[0]]
+	# p0→p1 and p3→p2 are now the long sides.
+	var long_len: float = ((p[1] - p[0]).length() + (p[2] - p[3]).length()) * 0.5
+	var span: float = ((p[3] - p[0]).length() + (p[2] - p[1]).length()) * 0.5
+	if span < 2.0 or span > 9.0 or long_len > 24.0 or absf((p[1] - p[0]).normalized().dot((p[2] - p[3]).normalized())) < 0.9:
+		return false
+	var wall: Color = paint.darkened(0.05)
+	if kind == "sheet":
+		var rise: float = clampf(span * 0.16, 0.45, 1.1)
+		var ov: float = 0.3
+		var down: Vector2 = (p[3] - p[0]).normalized()
+		var lng: Vector2 = (p[1] - p[0]).normalized()
+		var hi0: Vector3 = _v3(p[0] - down * ov - lng * ov, h + rise + 0.05)
+		var hi1: Vector3 = _v3(p[1] - down * ov + lng * ov, h + rise + 0.05)
+		var lo1: Vector3 = _v3(p[2] + down * ov + lng * ov, h + 0.08)
+		var lo0: Vector3 = _v3(p[3] + down * ov - lng * ov, h + 0.08)
+		var sheet: Color = BuildingStyles.SHEET_COLOURS[seed_i % BuildingStyles.SHEET_COLOURS.size()]
+		var uv: Rect2 = Rect2(0.0, 0.0, long_len / 2.4, span / 2.4)
+		_tquad(m, lo0, lo1, hi1, hi0, uv, BuildingStyles.ROOF_SHEET, sheet, Vector3.UP)
+		_tquad(m, lo0, lo1, hi1, hi0, uv, BuildingStyles.ROOF_SHEET, sheet.darkened(0.45), Vector3.DOWN)
+		# Wall carried up to the sheet on the high side and the two ends.
+		_face(m, [_v3(p[0], h), _v3(p[1], h), _v3(p[1], h + rise), _v3(p[0], h + rise)], _v3(-down, 0.0), wall)
+		for s: Array in [[p[0], p[3], -lng], [p[1], p[2], lng]]:
+			var hi: Vector2 = s[0]
+			var lo: Vector2 = s[1]
+			var o: Vector2 = s[2]
+			_tri_facing(m, _v3(hi, h), _v3(lo, h), _v3(hi, h + rise), _v3(o, 0.0), wall)
+		return true
+	var rh: float = clampf(span * 0.3, 0.9, 3.2)
+	var ov2: float = 0.55
+	var r0: Vector2 = (p[0] + p[3]) * 0.5
+	var r1: Vector2 = (p[1] + p[2]) * 0.5
+	var ridge_dir: Vector2 = (r1 - r0).normalized()
+	var ra: Vector3 = _v3(r0 - ridge_dir * ov2, h + rh)
+	var rb: Vector3 = _v3(r1 + ridge_dir * ov2, h + rh)
+	var cell: Vector2 = BuildingStyles.ROOF_THATCH if kind == "thatch" else BuildingStyles.ROOF_TILES
+	var slope_len: float = sqrt(span * span * 0.25 + rh * rh)
+	var uv2: Rect2 = Rect2(0.0, 0.0, (long_len + ov2 * 2.0) / 3.0, (slope_len + ov2) / 3.0)
+	var drop: float = ov2 * rh / (span * 0.5)
+	for side: int in 2:
+		var e0: Vector2 = p[0] if side == 0 else p[3]
+		var e1: Vector2 = p[1] if side == 0 else p[2]
+		var o0: Vector2 = (e0 - r0).normalized()
+		var o1: Vector2 = (e1 - r1).normalized()
+		var v0: Vector3 = _v3(e0 + o0 * ov2 - ridge_dir * ov2, h - drop)
+		var v1: Vector3 = _v3(e1 + o1 * ov2 + ridge_dir * ov2, h - drop)
+		var up_n: Vector3 = (Vector3.UP * (span * 0.5) + _v3(o0, 0.0) * rh).normalized()
+		_tquad(m, v0, v1, rb, ra, uv2, cell, Color.WHITE, up_n)
+		_tquad(m, v0, v1, rb, ra, uv2, cell, Color(0.45, 0.4, 0.36), -up_n)
+	# Gable ends in the wall colour.
+	_tri_facing(m, _v3(p[0], h), _v3(p[3], h), _v3(r0, h + rh), _v3(-ridge_dir, 0.0), wall)
+	_tri_facing(m, _v3(p[1], h), _v3(p[2], h), _v3(r1, h + rh), _v3(ridge_dir, 0.0), wall)
+	return true
+
+## Plain triangle wound to face `want_n`.
+func _tri_facing(m: MeshBuf, a: Vector3, b: Vector3, c: Vector3, want_n: Vector3, col: Color) -> void:
+	var nrm: Vector3 = (b - a).cross(c - a)
+	var vs: Array[Vector3] = [a, c, b]
+	if nrm.dot(want_n) < 0.0:
+		vs = [a, b, c]
+		nrm = -nrm
+	var nn: Vector3 = nrm.normalized() if nrm.length() > 0.0001 else want_n
+	for v: Vector3 in vs:
+		m.add(v, nn, col, PLAIN_UV, PLAIN_CELL)
+
+## Centre of the largest roof triangle: a spot that is always inside the footprint.
+func _roof_spot(pts: PackedVector2Array, tri: PackedInt32Array) -> Vector3:
+	var best: float = 0.0
+	var at: Vector2 = pts[0]
+	for t: int in range(0, tri.size(), 3):
+		var ar: float = absf((pts[tri[t + 1]] - pts[tri[t]]).cross(pts[tri[t + 2]] - pts[tri[t]])) * 0.5
+		if ar > best:
+			best = ar
+			at = (pts[tri[t]] + pts[tri[t + 1]] + pts[tri[t + 2]]) / 3.0
+	return Vector3(at.x, best, at.y)
+
+## Street-corner temple: a small stepped vimana in painted stucco with a gilt kalasam.
+func _roof_shrine(m: MeshBuf, pts: PackedVector2Array, tri: PackedInt32Array, h: float, seed_i: int) -> void:
+	var spot: Vector3 = _roof_spot(pts, tri)
+	if spot.y < 9.0:
+		return
+	var s: float = clampf(sqrt(spot.y) * 0.75, 1.6, 5.0)
+	var y: float = h
+	var tiers: Array[Color] = [Color(0.95, 0.86, 0.62), Color(0.56, 0.78, 0.86), Color(0.94, 0.66, 0.6), Color(0.95, 0.86, 0.62)]
+	for k: int in 4:
+		var w: float = s * (1.0 - float(k) * 0.2)
+		var th: float = s * 0.36
+		_dbox(m, Vector3(spot.x, y + th * 0.5, spot.z), Vector3(w, th, w), Vector2.RIGHT, tiers[(k + seed_i) % tiers.size()])
+		y += th
+	_trunk(m, Vector3(spot.x, y, spot.z), Vector3(spot.x, y + s * 0.3, spot.z), s * 0.3, s * 0.12, Color(0.94, 0.66, 0.6))
+	_trunk(m, Vector3(spot.x, y + s * 0.3, spot.z), Vector3(spot.x, y + s * 0.55, spot.z), s * 0.07, 0.02, Color(0.9, 0.72, 0.2))
+
+## Mosque: a green dome on a drum and two slim minarets.
+func _roof_dome(m: MeshBuf, pts: PackedVector2Array, tri: PackedInt32Array, h: float) -> void:
+	var spot: Vector3 = _roof_spot(pts, tri)
+	if spot.y < 12.0:
+		return
+	var r: float = clampf(sqrt(spot.y) * 0.45, 1.4, 4.0)
+	var c: Vector3 = Vector3(spot.x, h, spot.z)
+	var white: Color = Color(0.95, 0.95, 0.92)
+	var green: Color = Color(0.16, 0.5, 0.34)
+	_trunk(m, c, c + Vector3(0, r * 0.5, 0), r, r, white)
+	_trunk(m, c + Vector3(0, r * 0.5, 0), c + Vector3(0, r * 1.05, 0), r * 1.02, r * 0.8, green)
+	_trunk(m, c + Vector3(0, r * 1.05, 0), c + Vector3(0, r * 1.45, 0), r * 0.8, r * 0.3, green)
+	_trunk(m, c + Vector3(0, r * 1.45, 0), c + Vector3(0, r * 1.9, 0), 0.08, 0.02, Color(0.9, 0.75, 0.25))
+	for k: int in [0, 1]:
+		var p: Vector2 = pts[k % pts.size()].lerp(Vector2(spot.x, spot.z), 0.12)
+		var b: Vector3 = Vector3(p.x, h, p.y)
+		_trunk(m, b, b + Vector3(0, 5.5, 0), 0.4, 0.32, white)
+		_trunk(m, b + Vector3(0, 5.5, 0), b + Vector3(0, 6.0, 0), 0.55, 0.55, green)
+		_trunk(m, b + Vector3(0, 6.0, 0), b + Vector3(0, 7.2, 0), 0.42, 0.03, green)
+
+## Church: a short bell turret with a cross.
+func _roof_cross(m: MeshBuf, pts: PackedVector2Array, tri: PackedInt32Array, h: float) -> void:
+	var spot: Vector3 = _roof_spot(pts, tri)
+	if spot.y < 6.0:
+		return
+	var c: Vector3 = Vector3(spot.x, h, spot.z)
+	var cream: Color = Color(0.95, 0.93, 0.86)
+	_dbox(m, c + Vector3(0, 1.6, 0), Vector3(1.8, 3.2, 1.8), Vector2.RIGHT, cream)
+	_trunk(m, c + Vector3(0, 3.2, 0), c + Vector3(0, 5.2, 0), 1.3, 0.05, Color(0.62, 0.3, 0.22))
+	_dbox(m, c + Vector3(0, 6.1, 0), Vector3(0.16, 1.8, 0.16), Vector2.RIGHT, cream)
+	_dbox(m, c + Vector3(0, 6.4, 0), Vector3(1.0, 0.16, 0.16), Vector2.RIGHT, cream)
 
 static func building_colour(kind: String, zone: String, seed_f: float) -> Color:
 	var palette: Array = KIND_PALETTES.get(kind, ZONE_PALETTES.get(zone, ZONE_PALETTES[""]))

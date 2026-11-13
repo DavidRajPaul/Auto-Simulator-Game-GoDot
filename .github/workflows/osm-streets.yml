@@ -43,11 +43,13 @@ jobs:
         run: python3 tools/osm/run_osm2streets.py
       - name: Rebuild world chunks with the new geometry
         run: |
-          pip install mapbox-earcut numpy scipy shapely
+          pip install mapbox-earcut numpy pillow scipy shapely
           python3 tools/osm/build_world.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
           python3 tools/osm/build_compounds.py
+          # Last: building types + street-facing walls (docs/CHENNAI_BUILDINGS.md).
+          python3 tools/osm/classify_buildings.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"
