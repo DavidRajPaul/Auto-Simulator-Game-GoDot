@@ -62,7 +62,8 @@ res://
 ├── shaders/tree_impostor.gdshader   # Far trees: one camera-facing card per tree, blends the 2 nearest baked views, lit + toned like the model
 ├── shaders/dust_haze.gdshader       # Wind-gust road dust: procedural value-noise billboards, no texture
 ├── shaders/rain_overlay.gdshader    # Screen rain, windscreen drops, wiper arm
-├── shaders/building_facade.gdshader # Facade atlas: UV = bay/floor, UV2 = atlas cell, COLOR = paint
+├── shaders/building_facade.gdshader # Facade atlas (8×8 cells): UV = bay/floor, UV2 = atlas cell, COLOR = paint
+├── tools/osm/classify_buildings.py  # LAST step of a map rebuild: building type "t" + street-facing walls "fw" into every chunk
 ├── assets/                          # ALL shipped art + sound: audio/, fonts/, fx/, icon/ (app icon too), models/, textures/, ui/
 │   └── README.md                    # Asset catalog (file → used by → source → licence) + how to add/replace — update with every asset change
 ├── assets_src/incoming/             # user downloads awaiting integration (.gdignore, not exported)
@@ -98,6 +99,7 @@ res://
 │   ├── world/
 │   │   ├── WorldChunkStreamer.gd    # Streams data/world chunks (threaded), areas, landmarks, spawn
 │   │   ├── StreetStallKit.gd        # Vegetable, fancy, petti kadai and flower stalls merged into chunk meshes
+│   │   ├── BuildingStyles.gd        # What each building type looks like: atlas cells, paint, roof, extras (docs/CHENNAI_BUILDINGS.md)
 │   │   ├── QuestPlaces.gd           # Quest places standing in the city (QuestPlaceKit.gd = the models)
 │   │   ├── QuestMarkers.gd          # Side quest gem + ring (one MultiMesh), named sign, person waiting at a job stop
 │   │   ├── StreetTrees.gd           # Owner's tree models: near MultiMesh per species + one far impostor batch
@@ -133,6 +135,7 @@ res://
     ├── run_phase6_tests.gd/.tscn    # Gears, indicators, give-way, driver levels, goals, facades, sounds
     ├── run_phase7_tests.gd/.tscn    # Game UI screens: kit, home, haggle, ride-complete, level-up, menus hide HUD
     ├── run_phase11_tests.gd/.tscn   # First-ride tutorial: bot plays all 10 steps, skip, replay, resume, scripted world
+    ├── run_buildings_tests.gd/.tscn # Building types, facade atlas, typed geometry, vertex budget (shot_buildings.tscn renders streets)
     └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display); PROBE_SCENE env picks the scene
 ```
 
@@ -266,6 +269,7 @@ res://
 * Shop rows + hours (Nov 7): carts also stand in kerb rows of 5–6 (`build_beach_carts.py` ROWS) with a shop type and hours (`[…, open h, close h]`; open == close = shut all day; close may pass 24). Names/types/hours are generated into `data/world/cart_shops.json`. Every cart variant has always / open-only / closed-only parts (`BeachCartKit` per-vertex `g`); `_cart` writes gate + hours into the vertex UV as `PLAIN_UV + whole numbers` (fract unchanged, so the atlas lookup is identical) and `building_facade.gdshader` collapses the part that doesn't match `clock_hour` — never add per-cart nodes to switch shops. Don't compress the chunk mesh's UVs (half floats would lose the 0.3 fraction). `tools/osm/add_lodges_eateries.py` adds mansions / PGs / hotels / restaurants (`"f": 3`; converted filler keeps its old self in `"o"`) and appends `"lodge"`-tagged boards to `building_names.json`: run it after `build_building_names.py` and the dressing passes.
 * Bargaining (Nov 6, `docs/BARGAINING.md`): riders open with an offer and hide a top price; clues lean it, asks get countered, greed costs patience. Never show odds or percentages. One language per screen: rider lines are `RIDER_<ID>_*` keys, never mixed Tamil and English, which replaces the old "rider dialogue stays Tanglish" rule. No near-miss, stunt or pedestrian popups: they were disturbing, and the stats stay silent.
 * GPS ownership (Nov 9 device test): side-quest mission > Savari ride > `CustomNavigation` (map pin or a side quest's "Go there"). `CustomNavigation` suspends on `passenger_boarded` and resumes (deferred) on `passenger_alighted`; a pin set mid-ride is QUEUED (`is_queued()`, drawn "After drop-off" on the full map) and never publishes `route_updated` while a rider or a mission owns the GPS. Quest tracking IS that route: `QuestDiscovery.track(id)` requests it, and any route change that no longer ends at the quest (arrival, Clear, a new pin, Start) clears `quest_track_id`. FullMap: chrome (✕, zoom, ◎) is checked before any panel, a tap on the map closes the quest list / card / Legend, the journal never pages past its last quest, and the Legend draws its icons with the map's own draw helpers — add a `LEGEND_ITEMS` entry + `MAP_KEY_*` string for any new map symbol. `SHOT_MAP=1 SHOT_MAP_PANEL=legend|journal|route` in `tests/shot_city.tscn` renders them.
+* Chennai building types (Nov 13, `docs/CHENNAI_BUILDINGS.md`; owner: "does not look like Chennai"): `tools/osm/classify_buildings.py` writes `"t"` (shop row, showroom, flats, house, old tiled house, hamlet dwelling, tenement, school, hospital, …) and `"fw"` (walls that face a street, with road rank) into every chunk building; `BuildingStyles` maps a type to atlas cells, paint and roof; `WorldChunkStreamer._typed_building` builds the street front bay by bay and leaves blind walls as one quad per floor band. Detail goes ONLY on `fw` walls: that is why the new city has fewer vertices than the old one (221k vs 302k over 6 chunks), so don't add per-wall detail back to side walls. Run `classify_buildings.py` LAST after anything that adds or rewrites chunk buildings (`build_world.py`, `fill_empty_lots.py`, `add_lodges_eateries.py`); a building without `"t"` falls back to the older skin. The atlas is 2048² (8×8 cells of 256 px, VRAM-compressed, mipmapped; the shader caps the mip level so cells never bleed): keep the middle of cell (7, 0) flat near-white (`PLAIN_UV`), map a whole cell with `BuildingStyles.FULL_CELL` (an exact UV of 1.0 wraps through `fract()`), and paint hoardings 2 : 1. Godot does NOT re-import a regenerated PNG when a scene runs: after `make_facade_atlas.py` run `--import`, or every screenshot shows the old atlas (an hour was lost to a "too bright at night" glow that was already fixed on disk). Google Maps photorealistic tiles were considered and rejected (licence forbids extraction and offline use; far over the triangle and download budget). Boards stay generic trades. `tests/run_buildings_tests` + `tests/shot_buildings.tscn`.
 * `application/config/quit_on_go_back=false`: the Android back button becomes `SignalBus.back_requested` (pause / resume in game, close panel / quit in the menu).
 
 ---

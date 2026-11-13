@@ -36,6 +36,8 @@ jobs:
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
           python3 tools/osm/fill_empty_lots.py
+          # Last: building types + street-facing walls (docs/CHENNAI_BUILDINGS.md).
+          python3 tools/osm/classify_buildings.py
           python3 tools/osm/audit_city_density.py
       - name: Check dressing kept trees, parking and street shops
         run: |
