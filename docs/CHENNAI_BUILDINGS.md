@@ -96,9 +96,7 @@ SHOT_DIR=/tmp/shots SHOT_LIST="usman|-3061,2026,-3065,2.3,2056" \
 
 ## Not done yet
 
-- The ground between the road and the buildings is still bare sand in many places. Real Chennai
-  plots run to the footpath behind a compound wall. This is now the biggest thing that makes a
-  street look unlike Chennai.
+- ~~Bare sand between road and buildings~~ done in `docs/CHENNAI_STREETS.md` (paved plots, compound walls).
 - Individual buildings are typical for their street, not portraits of the real ones. Named
   landmarks are still the hand-built ones in `docs/CHENNAI_ARCHITECTURE_AUDIT.md`.
 - OSM places are sparse (about 2,000 in the box), so most schools, clinics and banks are still

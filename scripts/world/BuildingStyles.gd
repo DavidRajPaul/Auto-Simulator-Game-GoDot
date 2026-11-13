@@ -62,6 +62,15 @@ const SHOPS: Array[Vector2] = [Vector2(3, 1), Vector2(4, 1), Vector2(5, 1), Vect
 const SHOP_BOARD_UV: Rect2 = Rect2(0.012, 0.758, 0.976, 0.222)
 ## A whole cell on one quad. Just inside 0..1: the shader takes fract(), so an exact 1.0 wraps.
 const FULL_CELL: Rect2 = Rect2(0.004, 0.004, 0.992, 0.992)
+## Cell COMPOUND holds three things (tools/art/make_facade_atlas.py c_compound_gate):
+## a wall run across the top half (tiles left-right, 3.4 m per tile), one gate leaf bottom left,
+## a stencilled wall panel bottom right. v is measured from the bottom of the cell.
+const WALL_RUN_V: Vector2 = Vector2(0.51, 0.48)
+const WALL_RUN_M: float = 3.4
+const GATE_LEAF_UV: Rect2 = Rect2(0.012, 0.012, 0.476, 0.476)
+const WALL_PANEL_UV: Rect2 = Rect2(0.512, 0.012, 0.476, 0.476)
+const WALL_PANEL_M: float = 1.7
+const ZONE_IDS: PackedStringArray = ["", "marina", "mylapore", "anna_salai", "t_nagar"]
 
 # --- paint ---------------------------------------------------------------------------------------
 ## Exterior emulsion as Chennai actually buys it: creams and peaches first, then the mint, sky
@@ -196,7 +205,7 @@ static func style(t: String, zone: String, h: float, seed_i: int, rank: int) -> 
 		"fl":
 			# Newer flats stand on stilt parking; older ones have a gate, a door and ground-floor homes.
 			var stilts: bool = h >= 8.6 and h01(seed_i, 28) < 0.6
-			s["front_ground"] = [STILT_BIKES, STILT_CAR, STILT_BIKES] if stilts else [WIN_GRILLE, COMPOUND, WIN_TWIN]
+			s["front_ground"] = [STILT_BIKES, STILT_CAR, STILT_BIKES] if stilts else [WIN_GRILLE, WIN_TWIN, WIN_GRILLE]
 			if not stilts:
 				s["entrance"] = PORTICO
 			s["front_upper"] = [BALCONY, WIN_GRILLE, BALCONY_WASH, WIN_AC, BALCONY, WIN_BOX, WIN_TWIN]
@@ -206,7 +215,7 @@ static func style(t: String, zone: String, h: float, seed_i: int, rank: int) -> 
 			s["stair"] = true
 		"hs":
 			s["entrance"] = PORTICO if r < 0.6 else HOUSE_DOOR
-			s["front_ground"] = [WIN_GRILLE, COMPOUND, WIN_TWIN]
+			s["front_ground"] = [WIN_GRILLE, WIN_TWIN, WIN_GRILLE]
 			s["front_upper"] = [BALCONY, WIN_GRILLE, WIN_TWIN, WIN_AC, BALCONY_WASH]
 			s["side_upper"] = [WIN_GRILLE, VENTS, PLAIN, WIN_TWIN, PARTY_WALL]
 			s["balcony"] = 0.7
@@ -232,7 +241,6 @@ static func style(t: String, zone: String, h: float, seed_i: int, rank: int) -> 
 			s["side_upper"] = [TENEMENT, PARTY_WALL]
 			s["stair"] = true
 		"sc":
-			s["entrance"] = COMPOUND
 			s["front_ground"] = [SCHOOL]
 			s["front_upper"] = [SCHOOL]
 			s["side_ground"] = [SCHOOL]

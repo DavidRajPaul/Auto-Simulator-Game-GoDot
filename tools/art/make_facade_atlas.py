@@ -17,7 +17,8 @@ the terrace, and the hoardings (silks, jewellers, Aadi sale, TNPSC coaching, fla
 Cell map (row, col). Rows 0–3 keep the meaning they had in the 8×4 atlas:
   0 upper floors   0 grilled window + sunshade · 1 balcony · 2 twin windows · 3 ventilators + pipe
                    4 sliding window + AC · 5 office glass · 6 office strip window · 7 PLAIN plaster
-  1 ground floor   0 house door + window · 1 compound wall + gate · 2 shutter (closed) · 3–7 shops
+  1 ground floor   0 house door + window · 1 compound wall run / gate leaf / stencilled panel
+                   2 shutter (closed) · 3–7 shops
   2 ground floor   0–7 shops
   3 special        0 temple wall (kaavi) · 1 temple door · 2 cement terrace · 3 terrace + tank
                    4 heritage window · 5 thinnai veranda · 6–7 civic arches
@@ -513,21 +514,58 @@ def c_house_ground() -> Cell:
 
 
 def c_compound_gate() -> Cell:
-    c = ground_base(0.8)
-    c.rect(0, 120, C, C, (230, 229, 224), tint=True)
-    c.shade(0, 118, C, 132, 0.2, 3.0)
-    c.rect(0, 112, C, 122, (212, 211, 205), tint=True)
-    c.streaks([(x, 122, rng.uniform(30, 90), 3.0, 0.3) for x in (14, 40, 58, 200, 226, 244)])
-    c.rect(72, 100, 84, C, (214, 213, 208), tint=True)
-    c.rect(172, 100, 184, C, (214, 213, 208), tint=True)
-    c.rect(84, 108, 172, C - 2, (30, 32, 36))
-    for gx in np.arange(88, 172, 7):
-        c.line([(gx, 112), (gx, C - 4)], (86, 88, 92), 2.0)
-        c.poly([(gx - 2.5, 112), (gx + 2.5, 112), (gx, 104)], (196, 160, 60))
-    c.rect(84, 170, 172, 176, (86, 88, 92))
-    c.rect(190, 150, 240, 176, (250, 250, 246))
-    c.text(192, 151, 46, 12, "NO", (190, 30, 30), "ExtraBold")
-    c.text(192, 162, 46, 12, "PARKING", (190, 30, 30), "ExtraBold")
+    """Compound walls and gates (WorldChunkStreamer._compound_wall / _compound_gate), three parts:
+    top half      a wall run, tiles left-right: coping, lime wash, monsoon runs, splash-back
+    bottom left   one gate leaf (mirrored for the pair): painted steel sheet with spear tops
+    bottom right  a wall panel with the stencil every Chennai wall carries, and torn posters
+    """
+    c = Cell()
+    H = C // 2
+    # --- wall run -----------------------------------------------------------------------------
+    c.plaster(232, 1.7)
+    c.rect(0, 0, C, 9, (224, 223, 217), tint=True)              # coping
+    c.rect(0, 9, C, 12, (150, 149, 144), tint=True)
+    c.shade(0, 10, C, 26, 0.3, 5.0)
+    c.streaks([(rng.uniform(4, C - 4), 11, rng.uniform(24, 100), rng.uniform(1.6, 4.5), rng.uniform(0.2, 0.42)) for _ in range(15)], blur=2.4)
+    c.blotches(6, 0.14, y1=H, size=(18, 50))
+    c.shade(0, H - 26, C, H + 4, 0.34, 9.0)                     # splash-back and dust at the foot
+    for jx in (0, 127.5):                                       # a pier every 1.7 m
+        c.rect(jx - 6, 0, jx + 6, H, (236, 235, 230), tint=True)
+        c.shade(jx + 6, 10, jx + 11, H, 0.2, 2.0)
+    c.line([(60, 40), (66, 70), (58, 96), (64, 122)], (150, 148, 142), 1.0, tint=True)   # hairline crack
+    # --- gate leaf ----------------------------------------------------------------------------
+    steel = (38, 44, 50)
+    c.rect(0, H, H, C, (30, 30, 32))
+    c.gradient(4, H + 16, H - 2, C - 6, (58, 66, 74), (40, 46, 52))
+    for gx in np.arange(4, H - 2, 15.5):                        # pressed-sheet ribs
+        c.rect(gx, H + 16, gx + 2, C - 6, (78, 88, 96))
+        c.rect(gx + 2, H + 16, gx + 3.5, C - 6, (26, 30, 34))
+    for gy in (H + 16, H + 66, C - 12):                         # frame rails
+        c.rect(2, gy, H - 1, gy + 6, steel)
+    c.rect(2, H + 10, 8, C - 4, steel)
+    c.rect(H - 7, H + 10, H - 1, C - 4, steel)
+    for gx in np.arange(8, H - 4, 10):                          # spear tops, gilt
+        c.rect(gx + 1.5, H + 3, gx + 3.5, H + 16, steel)
+        c.poly([(gx - 0.5, H + 8), (gx + 5.5, H + 8), (gx + 2.5, H)], (204, 166, 60))
+    c.rect(30, H + 30, 104, H + 60, (250, 250, 246))            # the plate on every gate
+    c.text(32, H + 31, 70, 13, "NO PARKING", (190, 24, 30), "ExtraBold")
+    c.text(32, H + 44, 70, 13, "IN FRONT OF GATE", (190, 24, 30), "Bold")
+    c.rect(H - 16, H + 76, H - 9, H + 88, (190, 190, 186))      # latch
+    c.streaks([(rng.uniform(10, H - 10), H + 16, rng.uniform(30, 80), 2.0, 0.22) for _ in range(5)])
+    c.shade(0, C - 14, H, C + 4, 0.3, 5.0)
+    # --- stencilled wall panel ----------------------------------------------------------------
+    c.rect(H, H, C, H + 9, (224, 223, 217), tint=True)
+    c.rect(H, H + 9, C, H + 12, (150, 149, 144), tint=True)
+    c.shade(H, H + 10, C, H + 26, 0.3, 5.0)
+    c.text(H + 8, H + 26, H - 16, 22, "STICK NO BILLS", (30, 44, 110), "ExtraBold")
+    for k, (px, py, pw, ph, col) in enumerate([(H + 10, H + 58, 44, 50, (236, 208, 60)), (H + 60, H + 54, 50, 36, (228, 226, 216)),
+                                                (H + 66, H + 92, 46, 26, (214, 90, 70))]):
+        c.rect(px, py, px + pw, py + ph, col)                    # posters, half torn off
+        for ly in np.arange(py + 6, py + ph - 4, 6):
+            c.line([(px + 4, ly), (px + pw - 4 - (k * 7) % 12, ly)], tuple(int(v * 0.45) for v in col), 1.2)
+        c.poly([(px + pw - 14, py), (px + pw, py), (px + pw, py + 16)], (226, 225, 220), tint=True)
+    c.streaks([(rng.uniform(H + 4, C - 4), H + 11, rng.uniform(30, 100), rng.uniform(1.6, 4.0), rng.uniform(0.2, 0.4)) for _ in range(8)], blur=2.4)
+    c.shade(H, C - 26, C, C + 4, 0.34, 9.0)
     return c
 
 
