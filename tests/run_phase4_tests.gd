@@ -302,7 +302,7 @@ func _test_settings(main: Node, hud: TouchHUD) -> void:
 	GameState.set_setting("control_scheme", 0)
 	_check("Handlebar drag restored", hud._steer_zone.visible)
 	GameState.set_setting("language", "ta")
-	_check("Tamil UI strings", tr("GARAGE") == "கேரேஜ்" and tr("FILL_LPG") == "LPG நிரப்பு")
+	_check("Tamil UI strings", tr("GARAGE") == "கேரேஜ்" and tr("FILL_LPG") == "எல்பிஜி ஃபில் பண்ணு" and tr("QUEST_JOURNAL") == "கூடுதல் சவால்கள்")
 	var tamil: Font = load("res://assets/fonts/NotoSansTamil-Regular.ttf") as Font
 	_check("Tamil font installed as UI fallback", ThemeDB.fallback_font.fallbacks.has(tamil))
 	GameState.set_setting("language", "en")
