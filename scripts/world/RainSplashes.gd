@@ -1,21 +1,31 @@
 class_name RainSplashes
 extends Node3D
-## Rain hitting the ground (Nov 14 owner question: "will rain splash when it hits the ground?").
+## Rain round the camera (Nov 14 owner question: "will rain splash when it hits the ground?";
+## Nov 14 device report: "the rain is very bad, white boxes behind the auto").
+##  * Falling rain: ONE MultiMesh of STREAKS thin lit streaks in a world-anchored grid that wraps
+##    round the camera (shaders/rain_streaks.gdshader): drops seen with motion blur, slanted by
+##    the wind, catching headlights, street lights and lightning.
 ##  * Splashes round the camera: ONE MultiMesh of COUNT splashes that reposition themselves in
 ##    the vertex shader (shaders/rain_splash.gdshader): a ring spreading on the road and a crown
 ##    of spray, at random spots within RADIUS_M, leaning with the wind. Drawn only while it
 ##    rains, faded in and out with the rain.
 ##  * Tyre spray behind the player's auto on a wet road, and a splash when a wheel drops into a
-##    rain-filled pothole (SignalBus.pothole_hit): one CPUParticles3D each, emitting only then.
+##    rain-filled pothole (SignalBus.pothole_hit): one CPUParticles3D each, emitting only then,
+##    drawn as soft round mist puffs (shaders/rain_mist.gdshader) that fade before the camera.
 ## The wet road's ripples are drawn by street_surface.gdshader itself.
-const COUNT: int = 320
-const RADIUS_M: float = 14.0
+const COUNT: int = 380
+const RADIUS_M: float = 12.0
+const STREAKS: int = 1400
+const STREAK_RADIUS_M: float = 16.0
+const STREAK_HEIGHT_M: float = 12.0
 const SPRAY_MIN_MPS: float = 4.0
 const FADE_PER_S: float = 0.35
 
 var rain: float = 0.0
 var _splashes: MultiMeshInstance3D
 var _mat: ShaderMaterial
+var _streaks: MultiMeshInstance3D
+var _streak_mat: ShaderMaterial
 var _spray: CPUParticles3D
 var _burst: CPUParticles3D
 var _player_pos: Vector3 = Vector3.ZERO
@@ -42,11 +52,34 @@ func _ready() -> void:
 	_splashes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_splashes.visible = false
 	add_child(_splashes)
-	_spray = _make_particles("TyreSpray", 36, 0.55)
-	_spray.direction = Vector3(0.0, 0.45, 1.0)
-	_spray.spread = 18.0
-	_spray.initial_velocity_min = 1.8
-	_spray.initial_velocity_max = 3.4
+	_streak_mat = ShaderMaterial.new()
+	_streak_mat.shader = preload("res://shaders/rain_streaks.gdshader")
+	_streak_mat.set_shader_parameter("radius", STREAK_RADIUS_M)
+	_streak_mat.set_shader_parameter("height", STREAK_HEIGHT_M)
+	_streaks = MultiMeshInstance3D.new()
+	_streaks.name = "Streaks"
+	_streaks.multimesh = _identity_multimesh(streak_mesh(), STREAKS)
+	_streaks.material_override = _streak_mat
+	_streaks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_streaks.visible = false
+	add_child(_streaks)
+	_spray = _make_particles("TyreSpray", 24, 0.9)
+	# Both rear wheels (1.1 m apart), puffs drifting back and up a little and spreading.
+	_spray.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	_spray.emission_box_extents = Vector3(0.55, 0.05, 0.1)
+	_spray.direction = Vector3(0.0, 0.35, 1.0)
+	_spray.spread = 25.0
+	_spray.initial_velocity_min = 0.8
+	_spray.initial_velocity_max = 1.8
+	_spray.gravity = Vector3(0.0, -0.6, 0.0)
+	_spray.damping_min = 1.5
+	_spray.damping_max = 2.5
+	_spray.scale_amount_min = 0.25
+	_spray.scale_amount_max = 0.45
+	var grow: Curve = Curve.new()
+	grow.add_point(Vector2(0.0, 0.5))
+	grow.add_point(Vector2(1.0, 1.6))
+	_spray.scale_amount_curve = grow
 	_burst = _make_particles("PotholeSplash", 28, 0.6)
 	_burst.one_shot = true
 	_burst.explosiveness = 0.95
@@ -60,6 +93,29 @@ func _ready() -> void:
 		_player_fwd = f)
 	SignalBus.speed_updated.connect(func(kmh: float) -> void: _player_speed = kmh / 3.6)
 	SignalBus.pothole_hit.connect(_on_pothole)
+
+func _identity_multimesh(m: Mesh, n: int) -> MultiMesh:
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = m
+	mm.instance_count = n
+	for i: int in n:
+		mm.set_instance_transform(i, Transform3D.IDENTITY)
+	# Placed in the shader: never cull the batch by its rest bounds.
+	mm.custom_aabb = AABB(Vector3(-8000.0, -50.0, -8000.0), Vector3(16000.0, 150.0, 16000.0))
+	return mm
+
+## One streak: a unit quad (UV.x across, UV.y along); the shader sizes and orients it.
+static func streak_mesh() -> ArrayMesh:
+	var v: PackedVector3Array = PackedVector3Array([Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(0, 0, 0), Vector3(1, 1, 0), Vector3(0, 1, 0)])
+	var uv: PackedVector2Array = PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 0), Vector2(1, 1), Vector2(0, 1)])
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = v
+	arrays[Mesh.ARRAY_TEX_UV] = uv
+	var m: ArrayMesh = ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return m
 
 ## A ground ring (UV.y 0..0.49) and two crossed upright cards for the spray (UV.y 0.5..1).
 static func splash_mesh() -> ArrayMesh:
@@ -97,12 +153,8 @@ func _make_particles(n: String, amount: int, life: float) -> CPUParticles3D:
 	p.scale_amount_max = 0.09
 	var q: QuadMesh = QuadMesh.new()
 	q.size = Vector2.ONE
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	mat.albedo_color = Color(0.85, 0.88, 0.92, 0.45)
-	mat.vertex_color_use_as_albedo = true
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = preload("res://shaders/rain_mist.gdshader")
 	q.material = mat
 	p.mesh = q
 	var fade: Gradient = Gradient.new()
@@ -116,6 +168,7 @@ func _make_particles(n: String, amount: int, life: float) -> CPUParticles3D:
 func _process(delta: float) -> void:
 	rain = move_toward(rain, 1.0 if GameState.is_raining else 0.0, delta * FADE_PER_S)
 	_splashes.visible = rain > 0.02
+	_streaks.visible = _splashes.visible
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if _splashes.visible and cam != null:
 		var c: Vector3 = cam.global_position
@@ -126,13 +179,16 @@ func _process(delta: float) -> void:
 		_mat.set_shader_parameter("centre", c)
 		_mat.set_shader_parameter("ground_y", SignalBus.surface_height(c.x, c.z, 0.06))
 		_mat.set_shader_parameter("intensity", rain)
+		_streak_mat.set_shader_parameter("centre", cam.global_position)
+		_streak_mat.set_shader_parameter("ground_y", SignalBus.surface_height(cam.global_position.x, cam.global_position.z, 0.06))
+		_streak_mat.set_shader_parameter("intensity", rain)
 	# Tyre spray: from behind the rear wheels while the auto runs on a wet road.
 	var spraying: bool = rain > 0.5 and _player_speed > SPRAY_MIN_MPS
 	if spraying:
-		_spray.global_position = _player_pos - _player_fwd.normalized() * 1.3 + Vector3(0.0, 0.15, 0.0)
+		_spray.global_position = _player_pos - _player_fwd.normalized() * 1.2 + Vector3(0.0, 0.2, 0.0)
 		var back: Vector3 = -_player_fwd.normalized()
 		_spray.global_basis = Basis.looking_at(-back, Vector3.UP) if back.length() > 0.1 else Basis.IDENTITY
-		_spray.initial_velocity_max = 2.0 + _player_speed * 0.2
+		_spray.initial_velocity_max = 1.2 + _player_speed * 0.08
 	if _spray.emitting != spraying:
 		_spray.emitting = spraying
 

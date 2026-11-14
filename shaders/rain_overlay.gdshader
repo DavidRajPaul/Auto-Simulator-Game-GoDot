@@ -27,7 +27,9 @@ void fragment() {
 	vec2 uv = UV;
 	float aspect = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
 	float s = streaks(uv, 70.0, 5.5, 0.0) * 0.8 + streaks(uv, 120.0, 7.0, 13.0) * 0.5;
-	float a = s * 0.28 * intensity;
+	// Outside the cockpit the falling rain is drawn in the world (rain_streaks.gdshader); a faint
+	// screen layer stays for the rain right in front of the lens.
+	float a = s * 0.28 * intensity * mix(0.3, 1.0, cockpit);
 	vec3 col = vec3(0.82, 0.86, 0.9);
 
 	// Windscreen drops (cockpit only).
