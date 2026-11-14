@@ -60,6 +60,12 @@ const STUMBLE_SHARE: float = 0.3
 const HIT_SPEED_MPS: float = 4.0
 const FALLEN_S: Vector2 = Vector2(2.5, 4.5)
 const GET_UP_BLEND_S: float = 0.7
+## Clips in which the body is on the ground, and how far the node is raised for each (the
+## stumble clip swings the forearms 15 cm under the node, lying puts the hands at node height).
+const DOWN_CLIPS: Array[String] = ["stumble", "fallen", "get_up"]
+const DOWN_LIFT_M: Dictionary = {"stumble": 0.17, "fallen": 0.08, "get_up": 0.05}
+const DOWN_REACH_M: float = 0.85
+const DOWN_LIFT_MPS: float = 0.5
 ## Standing people now and then do one Mixamo gesture (talking on a phone, sipping, waving at an
 ## auto). A gesture plays once, then they go back to standing; the gap is random per person.
 const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
@@ -92,6 +98,23 @@ const BUMP_HALF_LENGTH_M: float = 1.5
 const BUMP_MIN_MPS: float = 1.5
 const BUMP_COOLDOWN_S: float = 1.0
 ## How many pool slots each character gets per round (Chennai pavements are mostly men).
+## --- Time of day and weather (Nov 14 owner request: "liveliness must be realistic") ---------
+## Early morning: women draw the kolam at their doorstep (dress "kolams", PoseModifier.KOLAM).
+const KOLAM_MINUTES: Vector2 = Vector2(325.0, 455.0) # 05:25 - 07:35
+const KOLAM_MAX: int = 4
+const KOLAM_STAND_M: float = 0.85
+const WOMEN: Array[String] = ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "woman_modern", "girl_churidar"]
+## Rain: walkers run to the nearest shop front and wait there; some open an umbrella and walk
+## on; the rest hurry. Noon sun: a few women walk under an umbrella too.
+const SHELTER_REACH_M: float = 45.0
+const SHELTER_ARRIVE_M: float = 0.7
+const SHELTER_PACE_MPS: float = 2.6
+const RAIN_UMBRELLA_SHARE: float = 0.4
+const SUN_UMBRELLA_SHARE: float = 0.2
+const SUN_MINUTES: Vector2 = Vector2(660.0, 930.0) # 11:00 - 15:30
+const UMBRELLA_COLOURS: Array[Color] = [Color(0.06, 0.06, 0.07), Color(0.06, 0.06, 0.07), Color(0.08, 0.1, 0.25), Color(0.55, 0.08, 0.1),
+	Color(0.1, 0.35, 0.2), Color(0.85, 0.3, 0.5), Color(0.9, 0.75, 0.2)]
+
 const SHARE: Dictionary = {
     "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
     "woman_modern": 2, "woman_saree_violet": 2, "woman_saree_green": 2,
@@ -125,6 +148,9 @@ var _panic_burst: bool = false
 var _late_scream_in: float = 0.0
 ## id -> {clip: Vector3(local x, local z, seconds)}: where each root-motion clip leaves the body.
 var _moves: Dictionary = {}
+var _heights: Dictionary = {}
+## One MultiMesh for every open umbrella (one draw call, hidden when nobody carries one).
+var _umbrellas: MultiMeshInstance3D = null
 var _traffic: ChennaiTrafficManager
 var _prev_traffic: Dictionary = {}
 ## [position, velocity] of every moving vehicle near the player, refreshed each frame.
@@ -166,6 +192,17 @@ class Walker:
 	## Already screamed at the current fire (cleared when a new fire starts or it goes out).
 	var fire_screamed: bool = false
 	var paint: Color = Color(0, 0, 0, 0)
+	## Extra height while stumbling / lying / getting up (see _apply).
+	var lift: float = 0.0
+	## "" (walker / idler), "kolam" (drawing at a doorstep) or "shelter" (out of the rain).
+	var role: String = ""
+	var goal: Vector3 = Vector3.ZERO
+	var goal_heading: Vector3 = Vector3.FORWARD
+	var sheltered: bool = false
+	var umbrella: bool = false
+	var umbrella_colour: Color = Color(0.06, 0.06, 0.07)
+	var pose: PoseModifier = null
+	var height: float = 1.6
 
 func _ready() -> void:
 	rng.seed = 600028
@@ -195,8 +232,16 @@ func _ready() -> void:
 		if w.mesh != null:
 			w.mesh.visibility_range_end = VISIBLE_M
 			w.mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var sk: Skeleton3D = w.node.find_child("Skeleton3D", true, false) as Skeleton3D
+		if sk != null:
+			w.pose = PoseModifier.new()
+			w.pose.name = "Pose"
+			sk.add_child(w.pose)
+		w.height = float(_heights.get(w.id, 1.6))
 		w.node.visible = false
 		people.append(w)
+	_build_umbrellas()
+	SignalBus.weather_changed.connect(_on_weather)
 	SignalBus.road_graph_ready.connect(func(g: RoadGraph) -> void: graph = g)
 	if SignalBus.current_road_graph != null:
 		graph = SignalBus.current_road_graph
@@ -222,6 +267,7 @@ func _load_people() -> void:
 		_ids.append(str(id))
 		var info: Dictionary = meta[id]
 		_native_pace[str(id)] = maxf(float(info.get("walk_speed", 1.2)), 0.1)
+		_heights[str(id)] = float(info.get("height", 1.6))
 		if info.has("run_speed"):
 			_run_pace[str(id)] = maxf(float(info["run_speed"]), 0.1)
 		if info.has("flee_look_speed"):
@@ -255,6 +301,7 @@ func _process(delta: float) -> void:
 	for w: Walker in people:
 		if w.active:
 			_step(w, delta)
+	_place_umbrellas()
 
 ## Free far people and place inactive ones on pavements ahead of the player.
 func _recycle() -> void:
@@ -280,6 +327,12 @@ func _recycle() -> void:
 			w.mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func _spawn(w: Walker) -> bool:
+	w.role = ""
+	w.sheltered = false
+	w.umbrella = false
+	_set_pose(w)
+	if _kolam_time() and WOMEN.has(w.id) and _role_count("kolam") < KOLAM_MAX and rng.randf() < 0.7:
+		return _spawn_kolam(w)
 	# All around the player (not only ahead): off-screen spots are mostly to the sides / behind.
 	var cands: Array[Dictionary] = graph.spawn_candidates(_player, Vector3.ZERO, SPAWN_MIN_M, SPAWN_MAX_M)
 	if cands.is_empty():
@@ -332,6 +385,13 @@ func _spawn(w: Walker) -> bool:
 		var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
 		w.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
 		PaintSwap.set_paint(w.node, w.paint)
+	if GameState.is_raining:
+		if rng.randf() < RAIN_UMBRELLA_SHARE:
+			_open_umbrella(w)
+		elif not _seek_shelter(w):
+			_hurry(w)
+	elif _sun_time() and WOMEN.has(w.id) and rng.randf() < SUN_UMBRELLA_SHARE:
+		_open_umbrella(w)
 	_apply(w)
 	_resume(w, 0.0)
 	if w.anim != null and w.anim.current_animation != "":
@@ -365,6 +425,10 @@ func _on_pavement(p: Vector3) -> bool:
 func _deactivate(w: Walker) -> void:
 	w.active = false
 	w.react = ""
+	w.lift = 0.0
+	w.role = ""
+	w.umbrella = false
+	_set_pose(w)
 	w.node.visible = false
 	if w.anim != null:
 		w.anim.active = false
@@ -414,6 +478,15 @@ func _step(w: Walker, delta: float) -> void:
 		return
 	if w.fleeing:
 		_step_flee(w, delta)
+		return
+	if w.role == "shelter":
+		_step_shelter(w, delta)
+		return
+	if w.role == "kolam":
+		if not _kolam_time():
+			w.role = ""
+			_set_pose(w)
+		_apply(w)
 		return
 	if w.idle and w.startle <= 0.0:
 		w.gesture_in -= delta
@@ -794,9 +867,274 @@ func _apply(w: Walker) -> void:
 	# Stand on whatever is drawn there (sidewalk, road edge, park or bare ground), not at a fixed
 	# sidewalk height: most kerb spots have no sidewalk polygon and people floated 23 cm.
 	var ground_y: float = SignalBus.surface_height(w.pos.x, w.pos.z, WALK_Y)
-	w.pos.y = ground_y if ground_y > w.pos.y else move_toward(w.pos.y, ground_y, GROUND_FOLLOW_MPS * get_process_delta_time())
+	# Nov 14 device report: "people who fall down sometimes go below the road". A lying body
+	# is 1.7 m long and often straddles two drawn layers (bare ground at -0.15, road at +0.06),
+	# and the fall clips put the hands and forearms at or under the node's own height. So a
+	# body that is down rests on the HIGHEST ground under its whole length, plus a small lift
+	# for the thickness of the limbs.
+	var want_lift: float = 0.0
+	if w.react in DOWN_CLIPS:
+		want_lift = float(DOWN_LIFT_M[w.react])
+		var body: Vector3 = w.pos + w.move
+		var along: Vector3 = fwd.normalized() * DOWN_REACH_M
+		for q: Vector3 in [w.pos + w.move * 0.5, body, body + along, body - along]:
+			ground_y = maxf(ground_y, SignalBus.surface_height(q.x, q.z, WALK_Y))
+	var dt: float = get_process_delta_time()
+	w.lift = move_toward(w.lift, want_lift, DOWN_LIFT_MPS * dt)
+	w.pos.y = ground_y if ground_y > w.pos.y else move_toward(w.pos.y, ground_y, GROUND_FOLLOW_MPS * dt)
 	# Characters are authored facing +Z: looking at -fwd puts their face along fwd.
-	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP), w.pos)
+	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP), w.pos + Vector3(0.0, w.lift, 0.0))
+
+# --- Time of day and weather -------------------------------------------------
+
+func _kolam_time() -> bool:
+	var m: float = fmod(GameState.shift_minute, 1440.0)
+	return m >= KOLAM_MINUTES.x and m <= KOLAM_MINUTES.y and not GameState.is_raining
+
+func _sun_time() -> bool:
+	var m: float = fmod(GameState.shift_minute, 1440.0)
+	return m >= SUN_MINUTES.x and m <= SUN_MINUTES.y
+
+func _role_count(role: String) -> int:
+	var n: int = 0
+	for w: Walker in people:
+		if w.active and w.role == role:
+			n += 1
+	return n
+
+func _set_pose(w: Walker) -> void:
+	if w.pose == null:
+		return
+	if w.role == "kolam":
+		w.pose.mode = PoseModifier.Mode.KOLAM
+	elif w.umbrella:
+		w.pose.mode = PoseModifier.Mode.UMBRELLA
+	else:
+		w.pose.mode = PoseModifier.Mode.NONE
+
+## A woman at her doorstep, bent over the kolam she is drawing (early morning only).
+func _spawn_kolam(w: Walker) -> bool:
+	var spots: Array = SignalBus.street_spots("kolams", _player, SPAWN_MAX_M)
+	if spots.is_empty():
+		return false
+	var s: Array = spots[rng.randi() % spots.size()]
+	var at: Vector3 = (s[0] as Vector3) - Vector3(sin(float(s[1])), 0.0, cos(float(s[1]))) * KOLAM_STAND_M
+	var to_p: Vector3 = at - _player
+	to_p.y = 0.0
+	if to_p.length() < SPAWN_MIN_M:
+		return false
+	if ViewCheck.on_screen(get_viewport(), at + Vector3(0, 0.9, 0), 1.2) and to_p.length() < SPAWN_ON_SCREEN_M:
+		return false
+	return place_kolam(w, s)
+
+## Stand `w` at kolam spot `s` ([centre, yaw, record]) bent over the pattern (public for tests
+## and the dev shot scene).
+func place_kolam(w: Walker, s: Array) -> bool:
+	var centre: Vector3 = s[0]
+	var out: Vector3 = Vector3(sin(float(s[1])), 0.0, cos(float(s[1]))) # from the gate to the street
+	var across: Vector3 = Vector3(out.z, 0.0, -out.x)
+	# She stands on the gate side of the pattern; where the gate pier is in the way, beside it.
+	var at: Vector3 = Vector3.INF
+	for from: Vector3 in [-out, across, -across, out]:
+		var q: Vector3 = centre + from * KOLAM_STAND_M
+		if SignalBus.walkable(q.x, q.z):
+			at = q
+			out = -from
+			break
+	if at == Vector3.INF:
+		return false
+	for o: Walker in people:
+		if o != w and o.active and o.role == "kolam" and o.pos.distance_to(at) < 2.0:
+			return false
+	var cp: Dictionary = graph.closest_point(at)
+	if int(cp["edge"]) < 0:
+		return false
+	w.edge = int(cp["edge"])
+	w.s = float(cp["s"])
+	w.dir = 1
+	w.idle = true
+	w.running = false
+	w.startle = 0.0
+	w.dodge = Vector3.ZERO
+	w.recovery = 0.0
+	w.react = ""
+	w.role = "kolam"
+	w.pos = Vector3(at.x, SignalBus.surface_height(at.x, at.z, WALK_Y), at.z)
+	w.heading = out
+	w.active = true
+	w.node.visible = true
+	if w.paintable:
+		var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
+		w.paint = pal[rng.randi() % pal.size()]
+		PaintSwap.set_paint(w.node, w.paint)
+	_set_pose(w)
+	_apply(w)
+	_resume(w, 0.0)
+	return true
+
+func _on_weather(raining: bool) -> void:
+	for w: Walker in people:
+		if not w.active:
+			continue
+		if raining:
+			if w.role == "kolam":
+				w.role = "" # the rain washes the flour away: she goes in
+				w.idle = false
+			if rng.randf() < RAIN_UMBRELLA_SHARE:
+				_open_umbrella(w)
+			elif not _seek_shelter(w):
+				_hurry(w)
+		else:
+			w.umbrella = false
+			if w.role == "shelter":
+				w.role = ""
+				w.sheltered = false
+				w.idle = false
+				w.running = false
+				var pr: Vector2 = PACE.get(w.id, DEFAULT_PACE)
+				w.pace = rng.randf_range(pr.x, pr.y)
+			if w.react == "":
+				_resume(w, 0.3)
+		_set_pose(w)
+
+func _open_umbrella(w: Walker) -> void:
+	w.umbrella = true
+	w.umbrella_colour = UMBRELLA_COLOURS[rng.randi() % UMBRELLA_COLOURS.size()]
+	_set_pose(w)
+
+## Caught in the rain with no shop near: run for it.
+func _hurry(w: Walker) -> void:
+	if w.idle or not _run_pace.has(w.id):
+		return
+	w.running = true
+	w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y)
+	if w.react == "":
+		_resume(w, 0.2)
+
+## Head for the nearest shop front (a shopkeeper's spot) within SHELTER_REACH_M.
+func _seek_shelter(w: Walker) -> bool:
+	var best: Array = []
+	var best_d: float = INF
+	for s: Array in SignalBus.street_spots("shop_people", w.pos, SHELTER_REACH_M):
+		if int((s[2] as Array)[4]) != 0:
+			continue
+		var d: float = (s[0] as Vector3).distance_squared_to(Vector3(w.pos.x, 0.0, w.pos.z))
+		if d < best_d:
+			best_d = d
+			best = s
+	if best.is_empty():
+		return false
+	var out: Vector3 = Vector3(sin(float(best[1])), 0.0, cos(float(best[1])))
+	var along: Vector3 = Vector3(out.z, 0.0, -out.x)
+	w.goal = (best[0] as Vector3) + along * rng.randf_range(-1.6, 1.6) - out * 0.15
+	w.goal_heading = out
+	w.role = "shelter"
+	w.sheltered = false
+	w.idle = false
+	w.running = true
+	w.umbrella = false
+	w.startle = 0.0
+	if w.react == "":
+		_resume(w, 0.2)
+	return true
+
+func _step_shelter(w: Walker, delta: float) -> void:
+	var to: Vector3 = w.goal - w.pos
+	to.y = 0.0
+	if w.sheltered:
+		_apply(w)
+		return
+	if to.length() < SHELTER_ARRIVE_M:
+		# Under the shop's awning: stand and watch the rain.
+		w.sheltered = true
+		w.idle = true
+		w.running = false
+		w.heading = w.goal_heading
+		_resume(w, 0.25)
+		_apply(w)
+		return
+	var dir: Vector3 = to.normalized()
+	var pace: float = float(_run_pace.get(w.id, SHELTER_PACE_MPS))
+	var step: Vector3 = w.pos + dir * pace * delta
+	if SignalBus.walkable(step.x, step.z):
+		w.pos = step
+	else:
+		# A wall or a stall in the way: slide along it.
+		var slide: Vector3 = Vector3(dir.z, 0.0, -dir.x) * (1.0 if w.side > 0.0 else -1.0)
+		step = w.pos + slide * pace * delta
+		if SignalBus.walkable(step.x, step.z):
+			w.pos = step
+		else:
+			w.sheltered = true # boxed in under some eave: good enough
+			w.idle = true
+			w.running = false
+			_resume(w, 0.25)
+	w.heading = w.heading.slerp(dir, minf(1.0, TURN_RATE * delta)) if w.heading.length() > 0.01 else dir
+	_apply(w)
+
+func _build_umbrellas() -> void:
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var ribs: int = 8
+	var top: Vector3 = Vector3(0.0, 0.2, 0.0)
+	for k: int in ribs:
+		var a0: float = TAU * float(k) / float(ribs)
+		var a1: float = TAU * float(k + 1) / float(ribs)
+		var mid0: Vector3 = Vector3(cos(a0) * 0.3, 0.13, sin(a0) * 0.3)
+		var mid1: Vector3 = Vector3(cos(a1) * 0.3, 0.13, sin(a1) * 0.3)
+		var rim0: Vector3 = Vector3(cos(a0) * 0.56, 0.0, sin(a0) * 0.56)
+		var rim1: Vector3 = Vector3(cos(a1) * 0.56, 0.0, sin(a1) * 0.56)
+		for v: Vector3 in [top, mid1, mid0, mid0, mid1, rim1, mid0, rim1, rim0]:
+			st.set_color(Color(1, 1, 1))
+			st.add_vertex(v)
+	# Shaft and handle: a thin dark square bar from the hand to the tip.
+	for q: Array in [[Vector3(-0.008, -0.72, 0.0), Vector3(0.008, -0.72, 0.0), Vector3(0.008, 0.22, 0.0), Vector3(-0.008, 0.22, 0.0)],
+			[Vector3(0.0, -0.72, -0.008), Vector3(0.0, -0.72, 0.008), Vector3(0.0, 0.22, 0.008), Vector3(0.0, 0.22, -0.008)]]:
+		for i: int in [0, 1, 2, 0, 2, 3]:
+			st.set_color(Color(0.25, 0.25, 0.25))
+			st.add_vertex(q[i])
+	st.generate_normals()
+	var mm: MultiMesh = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = st.commit()
+	mm.instance_count = POOL
+	mm.visible_instance_count = 0
+	# Umbrellas go wherever the walkers go: never cull the batch by its rest bounds.
+	mm.custom_aabb = AABB(Vector3(-6000.0, -50.0, -6000.0), Vector3(12000.0, 250.0, 12000.0))
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 0.8
+	_umbrellas = MultiMeshInstance3D.new()
+	_umbrellas.name = "Umbrellas"
+	_umbrellas.multimesh = mm
+	_umbrellas.material_override = mat
+	_umbrellas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_umbrellas.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_umbrellas.visible = false
+	add_child(_umbrellas)
+
+## Every open umbrella sits over its walker's head, tipped a little forward (one MultiMesh).
+func _place_umbrellas() -> void:
+	if _umbrellas == null:
+		return
+	var mm: MultiMesh = _umbrellas.multimesh
+	var n: int = 0
+	for w: Walker in people:
+		if not w.active or not w.umbrella or w.role != "" or w.react in DOWN_CLIPS or not w.node.visible:
+			continue
+		var xf: Transform3D = w.node.global_transform
+		var tip: Basis = xf.basis * Basis(Vector3.RIGHT, 0.12)
+		mm.set_instance_transform(n, Transform3D(tip, xf.origin + xf.basis * Vector3(-0.13, w.height + 0.2, 0.16)))
+		mm.set_instance_color(n, w.umbrella_colour)
+		n += 1
+	mm.visible_instance_count = n
+	_umbrellas.visible = n > 0
+
+func umbrella_count() -> int:
+	return _umbrellas.multimesh.visible_instance_count if _umbrellas != null else 0
 
 func active_count() -> int:
 	var n: int = 0

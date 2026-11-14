@@ -152,6 +152,7 @@ const XFMR_GALV: Color = Color(0.72, 0.74, 0.75)
 var manifest: Dictionary = {}
 var chunk_size: float = 250.0
 var loaded: Dictionary = {} # Vector2i -> Node3D
+var shop_people: ShopPeople = null
 var _pending: Dictionary = {} # Vector2i -> task id
 var _available: Dictionary = {} # Vector2i -> true (chunks that exist in data)
 var _player: Node3D
@@ -235,6 +236,9 @@ func _ready() -> void:
 	add_child(trees)
 	if dressing_enabled:
 		add_child(BirdFlock.new()) # one draw call: crows, pigeons and kites over the street
+		shop_people = ShopPeople.new() # one draw call: shopkeepers and customers near the camera
+		shop_people.world = self
+		add_child(shop_people)
 	_load_transformer_tank()
 	_stall_kit = StreetStallKit.arrays()
 	_cart_kit = BeachCartKit.arrays()
@@ -242,6 +246,7 @@ func _ready() -> void:
 	_build_areas()
 	SignalBus.surface_height_provider = surface_height
 	SignalBus.walkable_provider = is_walkable
+	SignalBus.street_spots_provider = street_spots
 	SignalBus.ground_snap_requested.connect(request_ground_snap)
 	_build_landmarks()
 	_spawn_player()
@@ -465,6 +470,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
+		# Spots that live things use (kolam drawers, shop people, rain shelter): kept on the chunk.
+		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", [])})
 		# Street life (kolams, dogs) stands on the drawn ground of this chunk.
 		if root.has_meta("surface_heights"):
 			dress["_heights"] = root.get_meta("surface_heights")
@@ -519,9 +526,48 @@ func _surface_part(verts: PackedVector3Array, cols: PackedColorArray, kinds: Pac
 	for i: int in range(0, v.size(), 2):
 		verts.append(Vector3(float(v[i]), y, float(v[i + 1])))
 		cols.append(colour)
-		kinds.append(Vector2(kind, 0.0))
+		kinds.append(Vector2(kind, road_condition(float(v[i]), float(v[i + 1])) if kind < 2.5 and kind != 1.0 else 0.0))
 	for t: Variant in part["i"]:
 		idx.append(int(t) + offset)
+
+## Street-life spots of `kind` ("kolams", "shop_people") within `radius` of `at`, from the loaded
+## chunks: [Vector3 (x, 0, z), yaw, the dress record].
+func street_spots(kind: String, at: Vector3, radius: float) -> Array:
+	var out: Array = []
+	var r2: float = radius * radius
+	for i: int in range(floori((at.x - radius) / chunk_size), floori((at.x + radius) / chunk_size) + 1):
+		for j: int in range(floori((at.z - radius) / chunk_size), floori((at.z + radius) / chunk_size) + 1):
+			var node: Node = loaded.get(Vector2i(i, j))
+			if node == null or not node.has_meta("life"):
+				continue
+			for rec: Array in (node.get_meta("life") as Dictionary).get(kind, []):
+				var dx: float = float(rec[0]) - at.x
+				var dz: float = float(rec[1]) - at.z
+				if dx * dx + dz * dz <= r2:
+					out.append([Vector3(float(rec[0]), 0.0, float(rec[1])), float(rec[2]), rec])
+	return out
+
+## How worn a road is at (x, z), 0..1: a slow noise over the city (about 130 m across, with a
+## 45 m ripple), so whole stretches are clean, dusty (> ~0.45) or broken with potholes (> ~0.6)
+## and neighbouring chunks agree. street_surface.gdshader reads it from UV.y.
+static func road_condition(x: float, z: float) -> float:
+	return clampf(_value_noise(x / 130.0, z / 130.0, 11) * 0.78 + _value_noise(x / 45.0, z / 45.0, 29) * 0.3 - 0.04, 0.0, 1.0)
+
+static func _value_noise(x: float, z: float, salt: int) -> float:
+	var ix: int = floori(x)
+	var iz: int = floori(z)
+	var fx: float = x - float(ix)
+	var fz: float = z - float(iz)
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	var a: float = lerpf(_cell_hash(ix, iz, salt), _cell_hash(ix + 1, iz, salt), fx)
+	var b: float = lerpf(_cell_hash(ix, iz + 1, salt), _cell_hash(ix + 1, iz + 1, salt), fx)
+	return lerpf(a, b, fz)
+
+static func _cell_hash(ix: int, iz: int, salt: int) -> float:
+	var h: int = (ix * 73856093) ^ (iz * 19349663) ^ (salt * 83492791)
+	h = (h ^ (h >> 13)) * 1274126177
+	return float((h ^ (h >> 16)) & 0xFFFF) / 65535.0
 
 func _road_mesh(roads: Array) -> ArrayMesh:
 	var st: SurfaceTool = SurfaceTool.new()

@@ -237,7 +237,9 @@ func _test_collisions() -> void:
 	var v: TrafficVehicleAI = traffic.pool[3]
 	traffic.place_vehicle(v, 0, 300.0, 1, 1)
 	SignalBus.traffic_bumped.emit(v, 6.0)
-	_check("Bumped AI stops (no bulldozing)", v.bumped_timer > 1.0 and is_zero_approx(v.current_speed_mps))
+	# Nov 14: a two-wheeler hit this hard is handed to a rigid body (KnockedVehicles); heavier
+	# traffic still stops dead and honks. Either way the kinematic body no longer drives on.
+	_check("Bumped AI stops or is knocked loose (no bulldozing)", (v.knocked and not v.active) or (v.bumped_timer > 1.0 and is_zero_approx(v.current_speed_mps)))
 	main.queue_free()
 	await _physics(2)
 

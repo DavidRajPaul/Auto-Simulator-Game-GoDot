@@ -28,6 +28,8 @@ func _run() -> void:
 	_test_street_life_data()
 	_test_street_life_mesh()
 	_test_birds()
+	_test_road_condition()
+	await _test_living_city()
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
 
@@ -52,7 +54,7 @@ func _test_models() -> void:
 			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 			var cols: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
 			var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-			if idx.size() / 3 > 1500:
+			if idx.size() / 3 > 5000:
 				light = false
 				detail += "%s %d tris; " % [name, idx.size() / 3]
 			var body: int = 0
@@ -67,13 +69,13 @@ func _test_models() -> void:
 				lo = lo.min(v)
 				hi = hi.max(v)
 			var length: float = hi.z - lo.z
-			if absf(length - float(LENGTHS[name])) > 0.1 or lo.y < -0.01 or lo.y > 0.02 or hi.x - lo.x > 1.9:
+			if absf(length - float(LENGTHS[name])) > 0.1 or lo.y < -0.01 or lo.y > 0.02 or hi.x - lo.x > 2.1:
 				sizes_ok = false
 				detail += "%s %s..%s; " % [name, lo, hi]
 		one_surface = one_surface and surfaces == 1
 		inst.free()
 	_check("Every Chennai vehicle is one mesh with one surface (one draw call)", one_surface)
-	_check("Every Chennai vehicle stays light (at most 1,500 triangles)", light, detail)
+	_check("Every Chennai vehicle stays light (at most 5,000 triangles)", light, detail)
 	_check("Every Chennai vehicle is real size, nose along +Z, wheels on y = 0", sizes_ok, detail)
 	_check("Every Chennai vehicle marks its body panels for repainting", painted)
 
@@ -204,6 +206,155 @@ func _test_birds() -> void:
 	flock._process(0.1)
 	_check("Birds fly by day", flock.visible)
 	flock.queue_free()
+
+func _test_road_condition() -> void:
+	var clean: int = 0
+	var dusty: int = 0
+	var broken: int = 0
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 5
+	for i: int in 3000:
+		var c: float = WorldChunkStreamer.road_condition(rng.randf_range(-3500.0, 3300.0), rng.randf_range(-3000.0, 2900.0))
+		if c < 0.45:
+			clean += 1
+		elif c < 0.62:
+			dusty += 1
+		else:
+			broken += 1
+	_check("Roads are a mix: clean, dusty and broken stretches", clean > 600 and dusty > 600 and broken > 450, "%d clean, %d dusty, %d broken of 3000" % [clean, dusty, broken])
+	_check("Road condition is the same from either side of a chunk border", absf(WorldChunkStreamer.road_condition(249.99, 80.0) - WorldChunkStreamer.road_condition(250.01, 80.0)) < 0.01)
+	var s: WorldChunkStreamer = WorldChunkStreamer.new()
+	s._street_mat = ShaderMaterial.new()
+	var mesh: ArrayMesh = s._surface_mesh({"road": {"v": [0, 0, 10, 0, 10, 10], "i": [0, 1, 2]}, "walk": {"v": [0, 0, 5, 0, 5, 5], "i": [0, 1, 2]}}, {})
+	var kinds: PackedVector2Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+	var on_road: bool = false
+	var off_walk: bool = true
+	for k: Vector2 in kinds:
+		if k.x < 0.5 and k.y > 0.0:
+			on_road = true
+		if k.x > 0.5 and k.x < 1.5 and k.y != 0.0:
+			off_walk = false
+	_check("Road vertices carry their condition, footpaths don't", on_road and off_walk)
+	s.free()
+	var sh: String = FileAccess.get_file_as_string("res://shaders/street_surface.gdshader")
+	_check("Potholes and dust add no texture lookup", sh.count("texture(") == 2 and sh.contains("puddle"))
+
+## Moving-traffic physics, fallen bodies, shop people, kolam drawing, rain: in the real city.
+func _test_living_city() -> void:
+	GameState.reset_profile()
+	GameState.shift_minute = 630.0
+	var city: Node = (load("res://scenes/main_chennai.tscn") as PackedScene).instantiate()
+	add_child(city)
+	for i: int in 30:
+		await get_tree().physics_frame
+	var at: Vector3 = Vector3(-3069.5, 1.0, 2056.5)
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at))
+	SignalBus.player_pose_updated.emit(Vector3(at.x, 0, at.z), Vector3.FORWARD)
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	world.update_streaming(true)
+	for i: int in 120:
+		await get_tree().physics_frame
+	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
+	var peds: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
+	# --- A hit two-wheeler becomes a real rigid body and comes back afterwards.
+	var bike: TrafficVehicleAI = traffic.place_scripted_vehicle("two_wheeler", 25.0)
+	_check("A two-wheeler rides ahead of the auto", bike != null and bike.active)
+	if bike != null:
+		for i: int in 5:
+			await get_tree().physics_frame
+		var model: Node3D = bike._model
+		var where: Vector3 = bike.global_position
+		traffic._on_bumped(bike, 6.0)
+		var slot: KnockedVehicles.Slot = traffic.knocked.slots[0]
+		_check("A hard hit hands the two-wheeler to a rigid body", bike.knocked and not bike.active and traffic.knocked.busy_count() == 1 and slot.owner == bike)
+		_check("The rigid body carries the bike's own model and rider from where it was", model.get_parent() == slot.body and slot.nodes.size() == 2
+			and not slot.body.freeze and slot.body.global_position.distance_to(where) < 0.5, "%d nodes" % slot.nodes.size())
+		_check("It has the bike's real mass and the speed the hit gave it", is_equal_approx(slot.body.mass, 180.0) and slot.body.linear_velocity.length() > 1.5, "%.1f m/s" % slot.body.linear_velocity.length())
+		for i: int in 90:
+			await get_tree().physics_frame
+		var up: float = slot.body.global_basis.y.dot(Vector3.UP)
+		_check("The knocked bike is thrown and goes over on its side", slot.body.global_position.distance_to(where) > 0.6 and up < 0.75, "moved %.1f m, up %.2f" % [slot.body.global_position.distance_to(where), up])
+		_check("A knocked vehicle is never respawned while it lies there", not traffic._respawn_queue.has(bike))
+		traffic.knocked.give_back(slot)
+		_check("Handing it back returns the model to its traffic slot", not bike.knocked and model.get_parent() == bike and traffic.knocked.busy_count() == 0 and slot.body.freeze)
+	var bus: TrafficVehicleAI = null
+	for v: TrafficVehicleAI in traffic.pool:
+		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS:
+			bus = v
+	_check("An auto can't throw a bus: buses keep the stop-and-honk recoil", bus != null and not traffic.knocked.knock(bus, 9.0, Vector3.FORWARD, 365.0, Vector3.ZERO))
+	# --- A fallen body lies on top of the ground.
+	var w: PedestrianManager.Walker = peds.people[0]
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active:
+			w = o
+	if w.active:
+		w.react = "fallen"
+		w.react_t = 3.0
+		w.move = Vector3.ZERO
+		for i: int in 30:
+			await get_tree().process_frame
+		var ground: float = SignalBus.surface_height(w.pos.x, w.pos.z, 0.08)
+		_check("A fallen body rests above the ground under it", w.node.global_position.y >= ground + 0.07, "%.3f over %.3f" % [w.node.global_position.y, ground])
+		w.react = ""
+	else:
+		_check("A fallen body rests above the ground under it", false, "no active walker")
+	# --- Shopkeepers and customers: one mesh, only while shops are open.
+	var shops: ShopPeople = world.shop_people
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+	var keepers: int = 0
+	for s: Array in shops.shown:
+		if int(s[2]) == 0:
+			keepers += 1
+	_check("Open shops have a shopkeeper and customers (%d people)" % shops.shown.size(), shops.shown.size() >= 8 and shops.shown.size() <= ShopPeople.MAX_PEOPLE and keepers >= 2 and keepers < shops.shown.size())
+	_check("All of them are one mesh: one draw call", shops.mesh.get_surface_count() == 1 and shops.visible)
+	GameState.shift_minute = 150.0
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+	_check("At 2:30 am the shops are shut and nobody stands there", shops.shown.is_empty() and not shops.visible)
+	GameState.shift_minute = 630.0
+	# --- Rain: shelter, umbrellas, and back to normal after it.
+	GameState.set_rain(true, 60.0)
+	for i: int in 20:
+		await get_tree().process_frame
+	var sheltering: int = 0
+	var umbrellas: int = 0
+	var active: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active:
+			active += 1
+			sheltering += 1 if o.role == "shelter" else 0
+			umbrellas += 1 if o.umbrella else 0
+	_check("When it rains people run for the shop fronts", active > 4 and sheltering >= 2, "%d of %d" % [sheltering, active])
+	_check("Some walk on under umbrellas (one MultiMesh for all)", umbrellas >= 1 and peds.umbrella_count() >= 1 and peds.umbrella_count() <= umbrellas, "%d umbrellas" % umbrellas)
+	GameState.set_rain(false, 0.0)
+	for i: int in 10:
+		await get_tree().process_frame
+	var left: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and (o.role == "shelter" or o.umbrella):
+			left += 1
+	_check("After the rain umbrellas close and everyone walks on", left == 0 and peds.umbrella_count() == 0)
+	# --- Early morning: women draw the kolam at the doorstep.
+	GameState.shift_minute = 360.0
+	var home: Vector3 = Vector3(-2351.0, 1.0, -217.0)
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, home))
+	SignalBus.player_pose_updated.emit(Vector3(home.x, 0, home.z), Vector3.FORWARD)
+	world.update_streaming(true)
+	for i: int in 60:
+		await get_tree().physics_frame
+	var spots: Array = SignalBus.street_spots("kolams", home, 90.0)
+	_check("Kolam spots are known round the auto", spots.size() >= 5, "%d" % spots.size())
+	var lady: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in peds.people:
+		if PedestrianManager.WOMEN.has(o.id):
+			lady = o
+	var placed: bool = lady != null and not spots.is_empty() and peds.place_kolam(lady, spots[0])
+	_check("A woman bends over her kolam at dawn", placed and lady.role == "kolam" and lady.pose != null and lady.pose.mode == PoseModifier.Mode.KOLAM
+		and lady.pos.distance_to(spots[0][0] as Vector3) < 1.5)
+	GameState.shift_minute = 600.0
+	for i: int in 10:
+		await get_tree().process_frame
+	_check("By mid-morning she has finished", lady != null and lady.role == "" and lady.pose.mode == PoseModifier.Mode.NONE)
+	city.queue_free()
 
 func _check(name: String, ok: bool, detail: String = "") -> void:
 	if ok:

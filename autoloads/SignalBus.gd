@@ -52,6 +52,13 @@ var walkable_provider: Callable = Callable()
 ## Set by ServicePoints: (from: Vector3) -> {name, km, pos} of the nearest garage, {} if none.
 var garage_quote_provider: Callable = Callable()
 
+## Set by WorldChunkStreamer: (kind, at, radius) -> Array of [Vector3 position, yaw, record] from
+## the loaded chunks' street-life data ("kolams", "shop_people").
+var street_spots_provider: Callable = Callable()
+
+func street_spots(kind: String, at: Vector3, radius: float) -> Array:
+	return street_spots_provider.call(kind, at, radius) as Array if street_spots_provider.is_valid() else []
+
 ## Can a person stand at (x, z)? (not inside a building). True when no world is streaming.
 func walkable(x: float, z: float) -> bool:
 	return bool(walkable_provider.call(x, z)) if walkable_provider.is_valid() else true

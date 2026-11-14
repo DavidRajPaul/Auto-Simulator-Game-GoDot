@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the Chennai street vehicles that no free model pack offers, as tiny one-mesh GLBs.
+"""Builds the Chennai street vehicles that no free model pack offers, as small one-mesh GLBs.
 
 Nov 13 2026: "all the two wheelers that are parked are the same ... add Chennai style cars".
 The free packs that can be downloaded without an account are American or European streets
@@ -9,7 +9,12 @@ small hatchback, a tall-boy hatchback, a micro van and a mini truck loaded with 
 None of them is a copy of a real product and none carries a badge.
 
 Every vehicle is ONE primitive with ONE material and NO texture: colours are vertex colours.
-The body panels are written with alpha 0 (everything else alpha 1); shaders/vehicle_paint.gdshader
+Nov 14 device feedback: the first set was boxes ("looking very low poly"). Bodies are now
+smooth-shaded lofts: a car is ~30 cross-sections swept nose to tail with a curved roof, raked
+glass, tumblehome and rounded corners; two-wheelers have turned tyres, rounded tanks, seats and
+cowls. Still one mesh and no texture, 2-4k triangles (the downloaded scooter is 1.8k, the sedan
+3.1k), and Godot builds LODs for them on import.
+The body panels are written with alpha 0, glass 0.5, everything else 1; shaders/vehicle_paint.gdshader
 repaints exactly those vertices from a per-instance colour, so one MultiMesh (= one draw call)
 shows a kerb full of different colours. Unpainted, the body is the silver in BODY.
 
@@ -71,7 +76,7 @@ class Mesh:
             n = -n
             if normals is not None:
                 normals = (normals[0], normals[2], normals[1])
-        rgba = (col[0], col[1], col[2], 0 if col is BODY else 255)
+        rgba = (col[0], col[1], col[2], 0 if col is BODY else (128 if col is GLASS else 255))
         for i, v in enumerate((a, b, c)):
             self.p.append(tuple(v))
             if normals is None:
@@ -213,6 +218,85 @@ class Mesh:
                 self.quad((side, y + r * math.sin(t0), z + r * math.cos(t0)), (side, y + (r + thick) * math.sin(t0), z + (r + thick) * math.cos(t0)),
                     (side, y + (r + thick) * math.sin(t1), z + (r + thick) * math.cos(t1)), (side, y + r * math.sin(t1), z + r * math.cos(t1)), col, (side, 0, 0))
 
+    def grid(self, pts, colour, ref, closed_j: bool = False, inward: bool = False, ref_ij=None) -> None:
+        """Smooth-shaded surface through pts[i][j]. `colour(i, j)` paints the quad that starts at
+        (i, j); `ref(i)` is a point inside the shape at row i (normals point away from it)."""
+        ni, nj = len(pts), len(pts[0])
+        P = np.array(pts, dtype=float)
+        N = np.zeros_like(P)
+        quads = []
+        for i in range(ni - 1):
+            for j in range(nj if closed_j else nj - 1):
+                j1 = (j + 1) % nj
+                a, b, c, d = P[i, j], P[i + 1, j], P[i + 1, j1], P[i, j1]
+                n = np.cross(c - a, d - b)
+                ln = np.linalg.norm(n)
+                if ln < 1e-12:
+                    continue
+                if ref_ij is not None:
+                    out = (a + b + c + d) * 0.25 - np.asarray(ref_ij(i, j), dtype=float)
+                else:
+                    out = (a + b + c + d) * 0.25 - (np.asarray(ref(i), dtype=float) + np.asarray(ref(i + 1), dtype=float)) * 0.5
+                if (np.dot(n, out) < 0.0) != inward:
+                    n = -n
+                for (ii, jj) in ((i, j), (i + 1, j), (i + 1, j1), (i, j1)):
+                    N[ii, jj] += n
+                quads.append((i, j, j1, n / ln))
+        for i in range(ni):
+            for j in range(nj):
+                ln = np.linalg.norm(N[i, j])
+                N[i, j] = N[i, j] / ln if ln > 1e-12 else np.array([0.0, 1.0, 0.0])
+        for (i, j, j1, n) in quads:
+            col = colour(i, j)
+            self.quad(P[i, j], P[i + 1, j], P[i + 1, j1], P[i, j1], col, n, (N[i, j], N[i + 1, j], N[i + 1, j1], N[i, j1]))
+
+    def blob(self, rings, col, seg: int = 10, caps: bool = True, cols=None) -> None:
+        """Rounded part: ellipse rings [(x, y, z, rx, ry)] along a path that runs in a Y-Z plane
+        (tanks, seats, cowls, silencers). rx is the half-width across the bike."""
+        cs = [np.array(r[:3], dtype=float) for r in rings]
+        pts = []
+        for i, r in enumerate(rings):
+            t = cs[min(i + 1, len(cs) - 1)] - cs[max(i - 1, 0)]
+            t[0] = 0.0
+            t /= max(np.linalg.norm(t), 1e-9)
+            v = np.array([0.0, t[2], -t[1]])
+            row = []
+            for k in range(seg):
+                a = 2 * math.pi * k / seg
+                row.append(cs[i] + np.array([1.0, 0.0, 0.0]) * r[3] * math.cos(a) + v * r[4] * math.sin(a))
+            pts.append(row)
+        self.grid(pts, (lambda i, j: col if cols is None else cols[i]), lambda i: cs[i], closed_j=True)
+        if caps:
+            for end, sign in ((0, -1.0), (len(rings) - 1, 1.0)):
+                d = (cs[end] - cs[1 if end == 0 else end - 1])
+                for k in range(seg):
+                    self.tri(cs[end], pts[end][k], pts[end][(k + 1) % seg], col if cols is None else cols[min(end, len(cols) - 1)], d)
+
+    def lathe_x(self, profile, y: float, z: float, col, seg: int = 16, cols=None) -> None:
+        """Turned part around the X axis through (y, z): profile [(x, radius)], open or closed
+        (tyres). Faces point away from the middle of the profile's own cross-section."""
+        pts = []
+        for (x, r) in profile:
+            pts.append([(x, y + r * math.sin(2 * math.pi * k / seg), z + r * math.cos(2 * math.pi * k / seg)) for k in range(seg)])
+        xc = sum(p[0] for p in profile) / len(profile)
+        rc = sum(p[1] for p in profile) / len(profile)
+
+        def centre(_i: int, j: int):
+            a = 2 * math.pi * (j + 0.5) / seg
+            return (xc, y + rc * math.sin(a), z + rc * math.cos(a))
+
+        self.grid(pts, (lambda i, j: col if cols is None else cols[i]), None, closed_j=True, ref_ij=centre)
+
+    def panel(self, poly_zy, x_at, col, lift: float = 0.004, sides=(-1.0, 1.0)) -> None:
+        """Flat decal on the flanks: polygon in (z, y) laid at half-width x_at(z, y) + lift."""
+        pts = list(poly_zy)
+        flat = np.array(pts, dtype=np.float64)
+        idx = earcut.triangulate_float64(flat, np.array([len(pts)], dtype=np.uint32))
+        for t in range(0, len(idx), 3):
+            tri = [pts[int(idx[t + k])] for k in range(3)]
+            for side in sides:
+                self.tri(*[(side * (x_at(z, y) + lift), y, z) for (z, y) in tri], col, (side, 0, 0))
+
     def write(self, path: Path, name: str) -> int:
         pos = np.array(self.p, dtype=np.float32)
         nor = np.array(self.n, dtype=np.float32)
@@ -251,101 +335,141 @@ class Mesh:
         return len(idx) // 3
 
 
-# ---------------------------------------------------------------- two-wheelers
+# ---------------------------------------------------------------- shared parts
 
-def _wheel(m: Mesh, z: float, r: float, tw: float, rim=CHROME, spokes: int = 3, hub: float = 0.05) -> None:
-    m.ring_x(-tw, tw, r, z, r, r * 0.76, TYRE, rim)
-    for i in range(spokes):
-        a = math.pi * i / spokes
-        dy, dz = math.sin(a) * r * 0.77, math.cos(a) * r * 0.77
-        m.tube((0, r - dy, z - dz), (0, r + dy, z + dz), 0.011, rim, 4)
-    m.disc_x(-tw - 0.012, tw + 0.012, r, z, hub, ENGINE, 8)
+def _tyre(m: Mesh, z: float, r: float, t: float, rim=CHROME, x: float = 0.0, seg: int = 18) -> None:
+    """Round-shouldered tyre (half-width t) centred at lateral x; the inside band is the rim."""
+    prof = [(x - t, r * 0.74), (x - t, r * 0.9), (x - t * 0.55, r), (x + t * 0.55, r), (x + t, r * 0.9), (x + t, r * 0.74), (x - t, r * 0.74)]
+    m.lathe_x(prof, r, z, TYRE, seg, cols=[TYRE, TYRE, TYRE, TYRE, TYRE, rim, rim])
+
+
+def _bike_wheel(m: Mesh, z: float, r: float, t: float, rim=CHROME, spokes: int = 6, alloy: bool = False, hub: float = 0.05, disc: bool = False) -> None:
+    _tyre(m, z, r, t, rim)
+    n = 5 if alloy else spokes
+    for i in range(n):
+        a = 2 * math.pi * i / n + 0.3
+        end = (0, r + math.sin(a) * r * 0.75, z + math.cos(a) * r * 0.75)
+        if alloy:
+            m.tube((0, r, z), end, 0.02, rim, 4)
+        else:
+            m.tube((0.03, r, z), end, 0.006, rim, 3)
+            m.tube((-0.03, r, z), end, 0.006, rim, 3)
+    m.disc_x(-t - 0.02, t + 0.02, r, z, hub, ENGINE, 10)
+    if disc:
+        m.disc_x(t + 0.012, t + 0.02, r, z, r * 0.46, CHROME, 14)
 
 
 def _bars(m: Mesh, z: float, y: float, half: float, rise: float = 0.0, mirrors: bool = True) -> None:
-    m.tube((-half, y + rise, z - 0.04), (0, y, z), 0.014, CHROME, 4)
-    m.tube((half, y + rise, z - 0.04), (0, y, z), 0.014, CHROME, 4)
     for s in (-1.0, 1.0):
-        m.tube((s * half, y + rise, z - 0.04), (s * (half - 0.11), y + rise * 0.6, z - 0.03), 0.02, BLACK, 5, True)
+        m.tube((s * half, y + rise, z - 0.04), (0, y, z), 0.014, CHROME, 6)
+        m.tube((s * half, y + rise, z - 0.04), (s * (half - 0.12), y + rise * 0.6, z - 0.03), 0.021, BLACK, 7, True)
+        m.tube((s * (half - 0.13), y + rise * 0.6, z + 0.0), (s * (half - 0.03), y + rise * 0.8, z + 0.035), 0.006, CHROME, 3)   # lever
         if mirrors:
-            m.tube((s * (half - 0.07), y + rise, z - 0.03), (s * (half - 0.04), y + rise + 0.16, z - 0.01), 0.007, BLACK, 3)
-            m.box((s * (half - 0.04) - 0.05, y + rise + 0.14, z - 0.02), (s * (half - 0.04) + 0.05, y + rise + 0.21, z - 0.005), BLACK)
+            mx, my = s * (half - 0.05), y + rise + 0.19
+            m.tube((s * (half - 0.09), y + rise, z - 0.03), (mx, my - 0.03, z - 0.01), 0.007, BLACK, 4)
+            m.blob([(mx, my, z - 0.03, 0.03, 0.022), (mx, my, z - 0.012, 0.055, 0.038), (mx, my, z - 0.002, 0.05, 0.034)], BLACK, 8)
 
 
-def _fork(m: Mesh, axle_z: float, r: float, head, col=CHROME, spread: float = 0.075) -> None:
+def _fork(m: Mesh, axle_z: float, r: float, head, col=CHROME, spread: float = 0.075, lower=PLASTIC) -> None:
     for s in (-spread, spread):
-        m.tube((s, r, axle_z), (s, head[1], head[0]), 0.019, col, 5)
+        mid = (s, r + (head[1] - r) * 0.45, axle_z + (head[0] - axle_z) * 0.45)
+        m.tube((s, r, axle_z), mid, 0.026, lower, 7)
+        m.tube(mid, (s, head[1], head[0]), 0.019, col, 7)
 
 
 def _plate(m: Mesh, z: float, y: float, half: float = 0.09) -> None:
     m.box((-half, y, z - 0.008), (half, y + 0.11, z), PLATE)
 
 
+def _blinker(m: Mesh, x: float, y: float, z: float) -> None:
+    m.blob([(x, y, z - 0.022, 0.012, 0.012), (x, y, z, 0.024, 0.024), (x, y, z + 0.022, 0.012, 0.012)], AMBER, 6)
+
+
+def _shocks(m: Mesh, lower, upper, spread: float) -> None:
+    for s in (-spread, spread):
+        mid = (s, (lower[1] + upper[1]) * 0.5, (lower[0] + upper[0]) * 0.5)
+        m.tube((s, lower[1], lower[0]), mid, 0.028, PLASTIC, 6)
+        m.tube(mid, (s, upper[1], upper[0]), 0.017, CHROME, 6)
+
+
+# ---------------------------------------------------------------- two-wheelers
+
 def moped() -> Mesh:
     """Step-through moped: thin 16 inch spoked wheels, flat seat, load carrier (1.83 m)."""
     m = Mesh()
     r, rz, fz = 0.28, -0.60, 0.63
-    _wheel(m, rz, r, 0.034, CHROME, 4)
-    _wheel(m, fz, r, 0.034, CHROME, 4)
-    m.arc_x(r, fz, r + 0.02, 40, 150, 0.05, 0.012, BODY)
-    m.arc_x(r, rz, r + 0.02, 50, 175, 0.055, 0.012, BODY)
+    _bike_wheel(m, rz, r, 0.034, CHROME, 7)
+    _bike_wheel(m, fz, r, 0.034, CHROME, 7)
+    m.arc_x(r, fz, r + 0.02, 30, 155, 0.05, 0.012, BODY, 9)
+    m.arc_x(r, rz, r + 0.02, 45, 180, 0.055, 0.012, BODY, 9)
     head = (0.44, 0.88)
     _fork(m, fz, r, head)
-    m.tube((0, 0.88, 0.44), (0, 1.00, 0.40), 0.022, BLACK, 5)
+    m.tube((0, 0.88, 0.44), (0, 1.00, 0.40), 0.022, BLACK, 7)
     _bars(m, 0.40, 1.00, 0.30, 0.03)
-    m.box((-0.07, 0.80, 0.44), (0.07, 0.95, 0.54), BODY)                      # headlamp cowl
-    m.disc_z(0.54, 0.56, 0.0, 0.875, 0.06, CHROME, 8, LAMP)
-    m.tube((0, 0.86, 0.42), (0, 0.38, 0.14), 0.04, BODY, 6)                   # underbone spine
-    m.box((-0.13, 0.30, -0.02), (0.13, 0.36, 0.24), PLASTIC)                  # footboard
-    m.box((-0.09, 0.22, -0.34), (0.09, 0.44, -0.02), ENGINE)                  # engine
-    m.loft([(-0.58, 0.50, 0.10), (-0.04, 0.46, 0.11), (0.02, 0.62, 0.10), (-0.10, 0.70, 0.10), (-0.56, 0.70, 0.09)], BODY)   # tank / side body
-    m.loft([(-0.50, 0.70, 0.12), (-0.02, 0.70, 0.11), (0.0, 0.775, 0.10), (-0.48, 0.79, 0.12)], SEAT)
-    m.box((-0.12, 0.705, -0.88), (0.12, 0.725, -0.52), CHROME)                # carrier
+    m.blob([(0, 0.87, 0.42, 0.06, 0.07), (0, 0.875, 0.49, 0.088, 0.088), (0, 0.875, 0.55, 0.07, 0.07)], BODY, 10)   # headlamp cowl
+    m.disc_z(0.55, 0.566, 0.0, 0.875, 0.06, CHROME, 12, LAMP)
     for s in (-0.11, 0.11):
-        m.tube((s, 0.71, -0.86), (s, 0.30, -0.62), 0.009, CHROME, 3)
-    m.tube((0.12, 0.30, 0.0), (0.12, 0.33, -0.66), 0.03, CHROME, 6, True)     # silencer
-    m.box((-0.045, 0.60, -0.90), (0.045, 0.67, -0.87), TAIL)
-    _plate(m, -0.885, 0.47, 0.08)
+        _blinker(m, s, 0.86, 0.47)
+        _blinker(m, s, 0.64, -0.84)
+    m.tube((0, 0.86, 0.42), (0, 0.40, 0.12), 0.042, BODY, 8)                  # underbone spine
+    m.box((-0.13, 0.30, -0.02), (0.13, 0.345, 0.24), PLASTIC)                 # footboard
+    m.blob([(0, 0.33, -0.38, 0.06, 0.07), (0, 0.33, -0.24, 0.095, 0.11), (0, 0.33, -0.06, 0.09, 0.10), (0, 0.34, 0.02, 0.05, 0.06)], ENGINE, 9)
+    m.blob([(0, 0.58, -0.60, 0.06, 0.06), (0, 0.59, -0.44, 0.105, 0.11), (0, 0.59, -0.12, 0.11, 0.12), (0, 0.57, 0.02, 0.06, 0.07)], BODY, 10)   # tank / side body
+    m.blob([(0, 0.735, -0.54, 0.08, 0.025), (0, 0.745, -0.36, 0.125, 0.04), (0, 0.745, -0.12, 0.115, 0.04), (0, 0.735, 0.0, 0.07, 0.028)], SEAT, 10)
+    m.box((-0.12, 0.705, -0.90), (0.12, 0.72, -0.56), CHROME)                 # carrier
+    for s in (-0.11, 0.11):
+        m.tube((s, 0.71, -0.88), (s, 0.30, -0.62), 0.009, CHROME, 4)
+    m.tube((0.10, 0.34, 0.02), (0.12, 0.30, -0.04), 0.016, CHROME, 5)
+    m.blob([(0.12, 0.30, -0.02, 0.018, 0.018), (0.12, 0.31, -0.2, 0.036, 0.036), (0.12, 0.33, -0.62, 0.04, 0.04), (0.12, 0.33, -0.7, 0.02, 0.02)], CHROME, 8)
+    m.blob([(0, 0.63, -0.885, 0.045, 0.035), (0, 0.63, -0.905, 0.035, 0.026)], TAIL, 8)
+    _plate(m, -0.89, 0.46, 0.08)
     return m
 
 
 def commuter() -> Mesh:
     """100 cc commuter motorcycle: tank, long seat, saree guard, upswept silencer (2.0 m)."""
     m = Mesh()
-    r, rz, fz = 0.31, -0.62, 0.64
-    _wheel(m, rz, r, 0.045, PLASTIC, 3, 0.06)
-    _wheel(m, fz, r, 0.04, PLASTIC, 3, 0.05)
-    m.arc_x(r, fz, r + 0.025, 35, 150, 0.055, 0.012, BODY)
-    m.arc_x(r, rz, r + 0.03, 60, 185, 0.06, 0.012, BLACK)
-    head = (0.44, 0.92)
+    r, rz, fz = 0.31, -0.63, 0.65
+    _bike_wheel(m, rz, r, 0.045, PLASTIC, alloy=True, hub=0.065)
+    _bike_wheel(m, fz, r, 0.04, PLASTIC, alloy=True, hub=0.05, disc=True)
+    m.arc_x(r, fz, r + 0.025, 30, 150, 0.055, 0.012, BODY, 9)
+    m.arc_x(r, rz, r + 0.03, 55, 185, 0.06, 0.012, BLACK, 9)
+    head = (0.44, 0.94)
     _fork(m, fz, r, head)
-    m.tube((0, 0.90, 0.42), (0, 0.42, 0.26), 0.022, BLACK, 5)                 # down tube
-    m.box((-0.10, 0.84, 0.44), (0.10, 1.02, 0.55), BODY)                      # headlamp cowl
-    m.box((-0.075, 0.87, 0.55), (0.075, 0.98, 0.565), LAMP)
-    m.box((-0.09, 1.02, 0.42), (0.09, 1.09, 0.50), GLASS)                     # visor
-    _bars(m, 0.40, 1.02, 0.33, 0.03)
-    for s in (-0.115, 0.115):
-        m.box((s - 0.012, 0.90, 0.46), (s + 0.012, 0.93, 0.50), AMBER)
-    m.loft([(0.02, 0.72, 0.12), (0.40, 0.72, 0.10), (0.44, 0.84, 0.10), (0.30, 0.93, 0.12), (0.04, 0.88, 0.13)], BODY)     # tank
-    m.loft([(-0.62, 0.80, 0.11), (0.04, 0.78, 0.13), (0.05, 0.87, 0.12), (-0.24, 0.85, 0.13), (-0.62, 0.88, 0.11)], SEAT)
-    m.loft([(-0.36, 0.54, 0.115), (0.02, 0.54, 0.115), (0.02, 0.76, 0.125), (-0.42, 0.79, 0.11)], BODY)                    # side panels
-    m.loft([(-0.84, 0.76, 0.05), (-0.60, 0.68, 0.10), (-0.60, 0.80, 0.105), (-0.84, 0.84, 0.05)], BODY)                    # tail cowl
-    m.box((-0.05, 0.76, -0.865), (0.05, 0.83, -0.84), TAIL)
-    m.box((-0.13, 0.26, -0.12), (0.13, 0.56, 0.26), ENGINE)                   # engine
-    m.box((-0.10, 0.50, 0.02), (0.10, 0.70, 0.22), PLASTIC)                   # cylinder head
-    m.tube((0.15, 0.30, 0.16), (0.16, 0.34, -0.20), 0.022, CHROME, 5)         # exhaust pipe
-    m.tube((0.16, 0.34, -0.20), (0.17, 0.44, -0.82), 0.048, CHROME, 6, True)  # silencer
-    for s in (-0.12, 0.12):
-        m.tube((s, 0.36, -0.56), (s, 0.72, -0.40), 0.018, CHROME, 4)          # shocks
+    m.tube((0, 0.92, 0.42), (0, 0.44, 0.28), 0.022, BLACK, 6)                 # down tube
+    m.blob([(0, 0.93, 0.44, 0.085, 0.09), (0, 0.935, 0.50, 0.108, 0.108), (0, 0.925, 0.565, 0.09, 0.085)], BODY, 10)   # headlamp cowl
+    m.disc_z(0.565, 0.58, 0.0, 0.925, 0.072, CHROME, 12, LAMP)
+    m.blob([(0, 1.02, 0.46, 0.085, 0.012), (0, 1.075, 0.51, 0.06, 0.01)], GLASS, 8)   # visor
+    _bars(m, 0.40, 1.03, 0.33, 0.03)
+    for s in (-0.13, 0.13):
+        _blinker(m, s, 0.91, 0.47)
+        _blinker(m, s * 0.85, 0.74, -0.80)
+    m.blob([(0, 0.80, 0.02, 0.07, 0.05), (0, 0.84, 0.10, 0.125, 0.085), (0, 0.85, 0.24, 0.13, 0.095), (0, 0.83, 0.36, 0.105, 0.08), (0, 0.80, 0.44, 0.05, 0.04)], BODY, 12)   # tank
+    m.disc_x(-0.02, 0.02, 0.945, 0.26, 0.028, CHROME, 8)                      # filler cap
+    m.blob([(0, 0.80, -0.66, 0.07, 0.025), (0, 0.81, -0.55, 0.115, 0.04), (0, 0.80, -0.25, 0.13, 0.045), (0, 0.80, -0.02, 0.115, 0.04), (0, 0.81, 0.05, 0.07, 0.03)], SEAT, 12)
+    m.blob([(0, 0.66, -0.42, 0.08, 0.07), (0, 0.66, -0.30, 0.118, 0.11), (0, 0.66, -0.08, 0.12, 0.11), (0, 0.66, 0.02, 0.09, 0.08)], BODY, 10)   # side panels
+    m.blob([(0, 0.75, -0.60, 0.10, 0.05), (0, 0.77, -0.76, 0.085, 0.045), (0, 0.78, -0.88, 0.045, 0.03)], BODY, 10)   # tail cowl
+    m.blob([(0, 0.78, -0.885, 0.04, 0.028), (0, 0.78, -0.91, 0.03, 0.02)], TAIL, 8)
+    m.blob([(0, 0.36, -0.14, 0.10, 0.09), (0, 0.36, -0.02, 0.135, 0.12), (0, 0.36, 0.16, 0.135, 0.12), (0, 0.38, 0.26, 0.09, 0.08)], ENGINE, 10)   # crank case
+    m.blob([(0, 0.44, 0.13, 0.07, 0.07), (0, 0.55, 0.17, 0.078, 0.078), (0, 0.66, 0.21, 0.07, 0.07)], PLASTIC, 8)   # cylinder
+    for k in range(4):
+        y = 0.47 + k * 0.05
+        m.box((-0.092, y, 0.06 + k * 0.016), (0.092, y + 0.012, 0.25 + k * 0.016), ENGINE)   # cooling fins
+    for s in (-0.09, 0.09):
+        m.tube((s, 0.34, -0.12), (s, r, rz), 0.02, ENGINE, 5)                 # swing arm
+        m.tube((s, 0.72, -0.10), (s, 0.76, -0.70), 0.014, BLACK, 5)           # sub frame
+    m.tube((0.10, 0.42, 0.22), (0.16, 0.33, -0.10), 0.018, CHROME, 6)         # exhaust pipe
+    m.blob([(0.16, 0.33, -0.10, 0.03, 0.03), (0.17, 0.35, -0.30, 0.05, 0.05), (0.17, 0.42, -0.70, 0.055, 0.055), (0.17, 0.45, -0.86, 0.035, 0.035)], CHROME, 9)
+    _shocks(m, (-0.56, 0.36), (-0.40, 0.72), 0.125)
     for y in (0.34, 0.46, 0.58):                                              # saree guard (left)
-        m.tube((-0.13, y, -0.86), (-0.13, y, -0.40), 0.006, CHROME, 3)
-    m.tube((-0.13, 0.30, -0.86), (-0.13, 0.62, -0.86), 0.006, CHROME, 3)
-    m.tube((-0.11, 0.84, -0.86), (0.11, 0.84, -0.86), 0.011, CHROME, 4)       # grab rail
+        m.tube((-0.135, y, -0.88), (-0.135, y, -0.40), 0.006, CHROME, 4)
+    m.tube((-0.135, 0.30, -0.88), (-0.135, 0.62, -0.88), 0.006, CHROME, 4)
+    m.tube((-0.11, 0.84, -0.88), (0.11, 0.84, -0.88), 0.011, CHROME, 5)       # grab rail
     for s in (-0.11, 0.11):
-        m.tube((s, 0.84, -0.86), (s, 0.82, -0.56), 0.011, CHROME, 4)
-    for s in (-0.16, 0.16):                                                   # leg guard
-        m.tube((s, 0.34, 0.30), (s * 0.5, 0.62, 0.30), 0.011, CHROME, 4)
-    _plate(m, -0.87, 0.60)
+        m.tube((s, 0.84, -0.88), (s, 0.82, -0.56), 0.011, CHROME, 5)
+        m.tube((s * 1.5, 0.34, 0.30), (s * 0.7, 0.62, 0.30), 0.011, CHROME, 5)   # leg guard
+        m.tube((s * 0.9, 0.30, 0.02), (s * 1.7, 0.30, 0.02), 0.012, BLACK, 4)    # foot pegs
+    _plate(m, -0.89, 0.60)
     return m
 
 
@@ -353,33 +477,43 @@ def cruiser() -> Mesh:
     """Classic 350 cc cruiser: teardrop tank, round lamp, deep mudguards, long silencer (2.14 m)."""
     m = Mesh()
     r, rz, fz = 0.33, -0.70, 0.70
-    _wheel(m, rz, r, 0.055, CHROME, 4, 0.07)
-    _wheel(m, fz, r, 0.045, CHROME, 4, 0.06)
-    m.arc_x(r, fz, r + 0.02, 20, 160, 0.065, 0.014, BODY)
-    m.arc_x(r, rz, r + 0.025, 40, 200, 0.075, 0.014, BODY)
-    head = (0.48, 0.94)
-    _fork(m, fz, r, head, CHROME, 0.085)
-    for s in (-0.085, 0.085):
-        m.tube((s, 0.62, 0.59), (s, 0.94, 0.48), 0.028, BODY, 6)              # fork shrouds
-    m.disc_z(0.50, 0.62, 0.0, 0.90, 0.092, BODY, 10, LAMP)                    # headlamp nacelle
-    m.disc_z(0.615, 0.63, 0.0, 0.90, 0.098, CHROME, 10, LAMP)
-    _bars(m, 0.44, 1.04, 0.37, 0.02)
-    m.loft([(0.00, 0.74, 0.11), (0.44, 0.76, 0.09), (0.46, 0.88, 0.11), (0.30, 0.97, 0.15), (0.04, 0.92, 0.14), (-0.04, 0.82, 0.11)], BODY)  # tank
-    m.loft([(-0.36, 0.80, 0.14), (0.00, 0.80, 0.13), (0.00, 0.88, 0.12), (-0.34, 0.90, 0.15)], SEAT_TAN)                   # rider seat
-    m.loft([(-0.72, 0.80, 0.11), (-0.40, 0.80, 0.12), (-0.40, 0.87, 0.12), (-0.70, 0.88, 0.10)], SEAT_TAN)                 # pillion
-    m.loft([(-0.34, 0.50, 0.14), (-0.04, 0.50, 0.14), (-0.02, 0.76, 0.14), (-0.30, 0.76, 0.14)], BODY)                     # tool boxes
-    m.box((-0.15, 0.24, -0.04), (0.15, 0.60, 0.30), ENGINE)                   # engine
-    m.disc_x(-0.17, 0.17, 0.36, 0.04, 0.13, CHROME, 10)                       # crank case
-    m.box((-0.10, 0.56, 0.06), (0.10, 0.76, 0.26), PLASTIC)                   # barrel
-    m.tube((0, 0.92, 0.46), (0, 0.42, 0.34), 0.024, BLACK, 5)
-    m.tube((0.17, 0.34, 0.24), (0.18, 0.30, -0.10), 0.026, CHROME, 5)
-    m.tube((0.18, 0.30, -0.10), (0.19, 0.33, -0.96), 0.05, CHROME, 7, True)   # long silencer
-    for s in (-0.14, 0.14):
-        m.tube((s, 0.36, -0.62), (s, 0.78, -0.44), 0.02, CHROME, 4)
-    m.box((-0.05, 0.62, -1.06), (0.05, 0.70, -1.02), TAIL)
-    _plate(m, -1.04, 0.46, 0.10)
-    for s in (-0.19, 0.19):                                                   # crash bar
-        m.tube((s, 0.30, 0.36), (s * 0.4, 0.66, 0.36), 0.013, CHROME, 4)
+    _bike_wheel(m, rz, r, 0.055, CHROME, 8, hub=0.075)
+    _bike_wheel(m, fz, r, 0.045, CHROME, 8, hub=0.06, disc=True)
+    m.arc_x(r, fz, r + 0.02, 15, 160, 0.068, 0.014, BODY, 10)
+    m.arc_x(r, rz, r + 0.025, 35, 200, 0.078, 0.014, BODY, 10)
+    head = (0.50, 0.96)
+    _fork(m, fz, r, head, CHROME, 0.088)
+    for s in (-0.088, 0.088):
+        m.tube((s, 0.66, 0.60), (s, 0.96, 0.50), 0.03, BODY, 8)               # fork shrouds
+    m.disc_z(0.52, 0.64, 0.0, 0.92, 0.095, BODY, 14)                          # headlamp nacelle
+    m.disc_z(0.64, 0.655, 0.0, 0.92, 0.102, CHROME, 14, LAMP)
+    _bars(m, 0.46, 1.06, 0.37, 0.02)
+    for s in (-0.15, 0.15):
+        _blinker(m, s, 0.90, 0.56)
+        _blinker(m, s * 0.9, 0.70, -0.92)
+    m.blob([(0, 0.82, -0.04, 0.06, 0.04), (0, 0.87, 0.06, 0.13, 0.09), (0, 0.89, 0.22, 0.155, 0.105), (0, 0.87, 0.38, 0.13, 0.09), (0, 0.83, 0.48, 0.06, 0.045)], BODY, 12)   # tank
+    m.disc_x(-0.022, 0.022, 0.995, 0.24, 0.03, CHROME, 8)
+    m.blob([(0, 0.82, -0.40, 0.11, 0.04), (0, 0.83, -0.25, 0.15, 0.05), (0, 0.83, -0.08, 0.14, 0.045), (0, 0.84, 0.0, 0.08, 0.035)], SEAT_TAN, 10)   # rider seat
+    m.blob([(0, 0.83, -0.74, 0.08, 0.035), (0, 0.84, -0.62, 0.12, 0.045), (0, 0.84, -0.46, 0.11, 0.04)], SEAT_TAN, 10)   # pillion
+    m.blob([(0, 0.62, -0.36, 0.10, 0.09), (0, 0.62, -0.25, 0.152, 0.13), (0, 0.62, -0.08, 0.152, 0.13), (0, 0.62, 0.0, 0.11, 0.10)], BODY, 10)   # tool boxes
+    m.blob([(0, 0.38, -0.10, 0.11, 0.10), (0, 0.38, 0.02, 0.16, 0.14), (0, 0.38, 0.20, 0.16, 0.14), (0, 0.40, 0.32, 0.10, 0.09)], ENGINE, 10)   # crank case
+    m.disc_x(-0.175, 0.175, 0.38, 0.06, 0.115, CHROME, 14)
+    m.blob([(0, 0.50, 0.16, 0.09, 0.09), (0, 0.62, 0.17, 0.097, 0.097), (0, 0.75, 0.18, 0.085, 0.085)], PLASTIC, 9)   # barrel
+    for k in range(5):
+        y = 0.52 + k * 0.045
+        m.box((-0.11, y, 0.06), (0.11, y + 0.012, 0.29), ENGINE)
+    m.tube((0, 0.94, 0.48), (0, 0.44, 0.36), 0.024, BLACK, 6)
+    for s in (-0.10, 0.10):
+        m.tube((s, 0.36, -0.10), (s, r, rz), 0.022, BLACK, 5)
+        m.tube((s, 0.74, -0.10), (s, 0.74, -0.80), 0.015, BLACK, 5)
+    m.tube((0.12, 0.60, 0.26), (0.18, 0.32, 0.20), 0.024, CHROME, 6)
+    m.blob([(0.18, 0.32, 0.20, 0.03, 0.03), (0.19, 0.31, -0.10, 0.045, 0.045), (0.19, 0.33, -0.80, 0.056, 0.056), (0.19, 0.34, -1.0, 0.04, 0.04)], CHROME, 10)
+    _shocks(m, (-0.64, 0.36), (-0.46, 0.76), 0.145)
+    m.blob([(0, 0.66, -1.03, 0.05, 0.04), (0, 0.66, -1.06, 0.035, 0.028)], TAIL, 8)
+    _plate(m, -1.045, 0.48, 0.10)
+    for s in (-0.19, 0.19):                                                   # crash bar, pegs
+        m.tube((s, 0.30, 0.38), (s * 0.4, 0.66, 0.38), 0.013, CHROME, 5)
+        m.tube((s * 0.5, 0.30, 0.0), (s * 1.0, 0.30, 0.0), 0.012, BLACK, 4)
     return m
 
 
@@ -388,156 +522,217 @@ def bicycle() -> Mesh:
     m = Mesh()
     r, rz, fz = 0.34, -0.54, 0.56
     for z in (rz, fz):
-        m.ring_x(-0.016, 0.016, r, z, r, r * 0.9, TYRE, CHROME, 14)
-        for i in range(4):
-            a = math.pi * i / 4
-            m.tube((0, r - math.sin(a) * r * 0.9, z - math.cos(a) * r * 0.9), (0, r + math.sin(a) * r * 0.9, z + math.cos(a) * r * 0.9), 0.004, CHROME, 3)
-    m.arc_x(r, fz, r + 0.015, 30, 150, 0.022, 0.006, BODY, 4)
-    m.arc_x(r, rz, r + 0.015, 30, 190, 0.022, 0.006, BODY, 5)
+        _tyre(m, z, r, 0.017, CHROME, 0.0, 20)
+        for i in range(8):
+            a = math.pi * i / 8
+            m.tube((0, r - math.sin(a) * r * 0.76, z - math.cos(a) * r * 0.76), (0, r + math.sin(a) * r * 0.76, z + math.cos(a) * r * 0.76), 0.004, CHROME, 3)
+        m.disc_x(-0.03, 0.03, r, z, 0.018, CHROME, 6)
+    m.arc_x(r, fz, r + 0.015, 30, 150, 0.022, 0.006, BODY, 8)
+    m.arc_x(r, rz, r + 0.015, 30, 190, 0.022, 0.006, BODY, 9)
     seat, bb, head_t, head_b = (-0.20, 0.92), (-0.06, 0.30), (0.34, 0.90), (0.37, 0.72)
-    m.tube((0, seat[1], seat[0]), (0, bb[1], bb[0]), 0.016, BODY, 5)          # seat tube
-    m.tube((0, seat[1] - 0.10, seat[0] + 0.02), (0, head_t[1], head_t[0]), 0.015, BODY, 5)   # top tube
-    m.tube((0, bb[1], bb[0]), (0, head_b[1], head_b[0]), 0.017, BODY, 5)      # down tube
-    m.tube((0, head_b[1], head_b[0]), (0, 1.02, 0.31), 0.017, BODY, 5)        # head tube
+    m.tube((0, seat[1], seat[0]), (0, bb[1], bb[0]), 0.016, BODY, 7)          # seat tube
+    m.tube((0, seat[1] - 0.10, seat[0] + 0.02), (0, head_t[1], head_t[0]), 0.015, BODY, 7)   # top tube
+    m.tube((0, bb[1], bb[0]), (0, head_b[1], head_b[0]), 0.017, BODY, 7)      # down tube
+    m.tube((0, head_b[1], head_b[0]), (0, 1.02, 0.31), 0.017, BODY, 7)        # head tube
     for s in (-0.035, 0.035):
-        m.tube((s, r, fz), (s, head_b[1], head_b[0]), 0.011, BODY, 4)         # fork
-        m.tube((s, r, rz), (0, bb[1], bb[0]), 0.010, BODY, 4)                 # chain stays
-        m.tube((s, r, rz), (0, seat[1] - 0.12, seat[0] + 0.02), 0.009, BODY, 4)   # seat stays
-        m.tube((s * 2.4, 0.70, rz - 0.30), (s, r, rz), 0.006, CHROME, 3)      # carrier stays
+        m.tube((s, r, fz), (s, head_b[1], head_b[0]), 0.011, BODY, 5)         # fork
+        m.tube((s, r, rz), (0, bb[1], bb[0]), 0.010, BODY, 5)                 # chain stays
+        m.tube((s, r, rz), (0, seat[1] - 0.12, seat[0] + 0.02), 0.009, BODY, 5)   # seat stays
+        m.tube((s * 2.4, 0.70, rz - 0.30), (s, r, rz), 0.006, CHROME, 4)      # carrier stays
     m.box((-0.07, 0.69, rz - 0.32), (0.07, 0.705, rz + 0.20), CHROME)         # carrier
-    m.loft([(-0.34, 0.93, 0.07), (-0.08, 0.92, 0.035), (-0.08, 0.97, 0.03), (-0.33, 0.99, 0.075)], SEAT_TAN)   # saddle
-    m.tube((-0.26, 1.03, 0.24), (0.26, 1.03, 0.24), 0.011, CHROME, 4)         # handlebar
+    m.blob([(0, 0.955, -0.36, 0.06, 0.02), (0, 0.96, -0.28, 0.085, 0.03), (0, 0.955, -0.14, 0.05, 0.026), (0, 0.95, -0.07, 0.022, 0.018)], SEAT_TAN, 8)   # saddle
+    m.tube((-0.26, 1.03, 0.24), (0.26, 1.03, 0.24), 0.011, CHROME, 6)         # handlebar
     for s in (-1.0, 1.0):
-        m.tube((s * 0.26, 1.03, 0.24), (s * 0.26, 1.03, 0.10), 0.014, BLACK, 4, True)
+        m.tube((s * 0.26, 1.03, 0.24), (s * 0.26, 1.03, 0.10), 0.015, BLACK, 6, True)
     m.box((0.035, 0.26, -0.50), (0.045, 0.40, 0.02), BLACK)                   # chain guard
-    m.disc_x(0.03, 0.05, 0.30, -0.06, 0.09, CHROME, 8)                        # chain wheel
-    m.tube((-0.10, 0.30, -0.06), (0.10, 0.30, -0.06), 0.008, BLACK, 3)        # pedals
+    m.disc_x(0.03, 0.05, 0.30, -0.06, 0.09, CHROME, 12)                       # chain wheel
+    m.tube((-0.10, 0.30, -0.06), (0.10, 0.30, -0.06), 0.008, BLACK, 4)        # pedals
     m.box((-0.15, 0.37, -0.10), (-0.09, 0.39, -0.02), BLACK)
     m.box((0.09, 0.21, -0.10), (0.15, 0.23, -0.02), BLACK)
-    m.tube((-0.04, r, rz), (-0.13, 0.01, rz + 0.06), 0.007, BLACK, 3)         # stand
-    m.box((-0.03, 0.98, 0.34), (0.03, 1.04, 0.40), CHROME)                    # dynamo lamp
+    m.tube((-0.04, r, rz), (-0.13, 0.01, rz + 0.06), 0.007, BLACK, 4)         # stand
+    m.blob([(0, 1.01, 0.33, 0.03, 0.03), (0, 1.01, 0.37, 0.04, 0.04), (0, 1.01, 0.40, 0.03, 0.03)], CHROME, 8)   # dynamo lamp
     return m
 
 
 # ---------------------------------------------------------------- cars
 
-def _car_wheels(m: Mesh, half_w: float, r: float, front_z: float, rear_z: float, tw: float = 0.17) -> None:
-    for z in (front_z, rear_z):
+def _car_wheels(m: Mesh, w_at, r: float, zs, t: float = 0.09) -> None:
+    for z in zs:
         for s in (-1.0, 1.0):
-            x_out = s * (half_w + 0.004)
-            x_in = s * (half_w - tw)
-            m.disc_x(min(x_in, x_out), max(x_in, x_out), r, z, r, TYRE, 12)
-            m.disc_x(min(x_out, x_out + s * 0.008), max(x_out, x_out + s * 0.008), r, z, r * 0.62, CHROME, 10)
-            m.disc_x(min(x_out, x_out + s * 0.014), max(x_out, x_out + s * 0.014), r, z, r * 0.2, PLASTIC, 6)
+            xc = s * (w_at(z) - t - 0.012)
+            _tyre(m, z, r, t, PLASTIC, xc, 18)
+            xo = xc + s * t * 0.82
+            m.disc_x(min(xc - s * t * 0.8, xo), max(xc - s * t * 0.8, xo), r, z, r * 0.745, PLASTIC, 18, CHROME)
+            for k in range(5):                                                # the gaps between the alloy's spokes
+                a = 2 * math.pi * k / 5
+                poly = [(z + r * rr * math.cos(a + da), r + r * rr * math.sin(a + da)) for (rr, da) in ((0.30, -0.25), (0.64, -0.42), (0.64, 0.42), (0.30, 0.25))]
+                m.panel(poly, lambda _z, _y, xo=xo: abs(xo), PLASTIC, 0.003, (s,))
+            m.panel([(z + r * 0.16 * math.cos(a), r + r * 0.16 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 9)[:-1]], lambda _z, _y, xo=xo: abs(xo), CHROME, 0.005, (s,))
 
 
-def _arch(m: Mesh, half_w: float, r: float, z: float, floor: float) -> None:
-    pts = [(z + (r + 0.06) * math.cos(math.radians(a)), max(floor, r + (r + 0.06) * math.sin(math.radians(a)))) for a in range(0, 181, 20)]
-    m.side_panel(pts, lambda _y: half_w, BLACK, 0.0, 0.002)
-
-
-def _car(length: float, width: float, height: float, wheel_r: float, front_z: float, rear_z: float,
-        hood_y: float, belt_y: float, cowl_z: float, a_top_z: float, roof_end_z: float, tail_belt_z: float,
-        boxy: float = 0.0) -> tuple[Mesh, callable]:
-    """Shared two-box car: lower body shell + greenhouse with glass, lamps, bumpers, mirrors."""
+def _car(P: dict) -> Mesh:
+    """Smooth car body between z0 (tail) and z1 (nose): ~30 cross-sections of 10 points, glass
+    and pillars by region, then wheels, arches, lamps, grille, seams, handles, mirrors, plates."""
     m = Mesh()
-    hl, hw, floor = length * 0.5, width * 0.5, 0.20
-    nose_w, tail_w = hw - 0.07 + boxy * 0.05, hw - 0.06 + boxy * 0.05
-    lower = [
-        (-hl + 0.05, floor, tail_w), (-hl, 0.36, tail_w), (-hl + 0.01, belt_y - 0.10, tail_w), (tail_belt_z, belt_y, hw - 0.02),
-        (cowl_z, belt_y, hw - 0.02), (hl - 0.20, hood_y, hw - 0.03), (hl - 0.03, hood_y - 0.10, nose_w), (hl, 0.40, nose_w), (hl - 0.05, floor, nose_w),
-        (front_z + wheel_r + 0.10, floor, hw), (rear_z - wheel_r - 0.10, floor, hw),
-    ]
-    m.loft(lower, BODY)
-    roof_w, belt_w = hw - 0.15 + boxy * 0.07, hw - 0.035
-    green = [(tail_belt_z + 0.01, belt_y, belt_w), (roof_end_z, height, roof_w), (a_top_z, height, roof_w), (cowl_z - 0.02, belt_y, belt_w)]
-    m.loft(green, BODY)
+    z0, z1 = P["z0"], P["z1"]
+    hw, H, belt, floor = P["W"] * 0.5, P["H"], P["belt"], P.get("floor", 0.2)
+    cowl, atop, rend, rbase = P["cowl"], P["a_top"], P["roof_end"], P["rear_base"]
+    hood_y, deck_y = P["hood_y"], P.get("deck_y", belt)
+    tuck, crown = P.get("tuck", 0.15), P.get("crown", 0.04)
+    taper_f, taper_r = P.get("taper", 0.10), P.get("taper_rear", P.get("taper", 0.10))
+    pillars = P.get("pillars", [])
+    glass_rear = P.get("glass_rear", rend)
+    rear_glass = P.get("rear_glass", True)
+    length = z1 - z0
+    mid = (z0 + z1) * 0.5
 
-    def w_at(y: float) -> float:
-        return belt_w + (roof_w - belt_w) * (y - belt_y) / (height - belt_y)
+    def ease(t: float) -> float:
+        return math.sin(max(0.0, min(1.0, t)) * math.pi * 0.5)
 
-    side = [(p[0], p[1]) for p in green]
-    m.side_panel(side, w_at, GLASS, 0.055, 0.004)
-    mid = (a_top_z + roof_end_z) * 0.5 - 0.05                                  # B pillar
-    m.side_panel([(mid - 0.035, belt_y + 0.02), (mid + 0.035, belt_y + 0.02), (mid + 0.035, height - 0.03), (mid - 0.035, height - 0.03)], w_at, BODY, 0.0, 0.008)
-    # Windscreen and rear glass: quads laid on the sloped faces.
-    for (z0, z1) in ((cowl_z - 0.02, a_top_z), (tail_belt_z + 0.01, roof_end_z)):
-        t0, t1 = 0.12, 0.90
-        za, ya = z0 + (z1 - z0) * t0, belt_y + (height - belt_y) * t0
-        zb, yb = z0 + (z1 - z0) * t1, belt_y + (height - belt_y) * t1
-        slope = np.array([0.0, z1 - z0, -(height - belt_y)]) * (1.0 if z0 > 0 else -1.0)
-        slope = slope / np.linalg.norm(slope) * 0.006
-        wa, wb = w_at(ya) - 0.07, w_at(yb) - 0.07
-        m.quad((-wa, ya + slope[1], za + slope[2]), (wa, ya + slope[1], za + slope[2]), (wb, yb + slope[1], zb + slope[2]), (-wb, yb + slope[1], zb + slope[2]), GLASS, slope)
-    _car_wheels(m, hw, wheel_r, front_z, rear_z)
-    for z in (front_z, rear_z):
-        _arch(m, hw, wheel_r, z, floor)
-    # Nose: lamps, grille, bumper, plate. Tail: lamps, bumper, plate.
-    zf, zr = hl + 0.004, -hl - 0.004
-    lamp_y = hood_y - 0.20
+    def beltline(z: float) -> float:
+        if z > cowl:
+            return belt - 0.03 + (hood_y - (belt - 0.03)) * ((z - cowl) / max(z1 - cowl, 1e-6)) ** 1.3
+        if z < rbase:
+            return belt + (deck_y - belt) * (rbase - z) / max(rbase - z0, 1e-6)
+        return belt
+
+    def top(z: float) -> float:
+        b = beltline(z)
+        if rend <= z <= atop:
+            return H
+        if atop < z < cowl:
+            return b + 0.012 + (H - b - 0.012) * ease((cowl - z) / (cowl - atop))
+        if rbase < z < rend:
+            return b + 0.012 + (H - b - 0.012) * ease((z - rbase) / (rend - rbase))
+        return b + 0.012
+
+    def w_at(z: float) -> float:
+        s_f = max(0.0, min(1.0, (z - (mid + 0.3 * length)) / (0.2 * length)))
+        s_r = max(0.0, min(1.0, ((mid - 0.3 * length) - z) / (0.2 * length)))
+        return hw * (1.0 - taper_f * s_f * s_f - taper_r * s_r * s_r)
+
+    def ring(z: float, end: bool) -> list:
+        w, b, t = w_at(z), beltline(z), top(z)
+        s_end = max(0.0, (abs(z - mid) - 0.3 * length) / (0.2 * length))
+        yb = floor + 0.07 * s_end * s_end
+        f = max(0.0, min(1.0, (t - b) / (H - belt)))
+        wt = (w - 0.05) - (tuck - 0.05) * f
+        y5 = b + min(0.035, 0.3 * (t - b))
+        y6 = max(y5, t - 0.075)
+
+        def xg(y: float) -> float:
+            return (w - 0.015) + (wt - (w - 0.015)) * ((y - b) / max(t - b, 1e-6))
+
+        c = crown * (0.4 + 0.6 * f)
+        pts = [(0.0, yb), (w * 0.8, yb), (w, yb + 0.07), (w, b - 0.05), (w - 0.015, b), (xg(y5), y5), (xg(y6), y6), (wt, t - 0.012), (wt * 0.55, t + c * 0.8), (0.0, t + c)]
+        if end:
+            ym = (yb + t) * 0.5
+            pts = [(x * 0.9, ym + (y - ym) * 0.86) for (x, y) in pts]
+        return pts
+
+    zs = {z0, z0 + 0.10, z1 - 0.10, z1, rbase + 0.07, rend - 0.05, atop + 0.05, cowl - 0.06, cowl - 0.03, glass_rear,
+        mid + 0.3 * length, mid + 0.4 * length, mid - 0.3 * length, mid - 0.4 * length}
+    zs |= set(np.linspace(rbase, rend, 5)) | set(np.linspace(atop, cowl, 6)) | set(np.linspace(cowl, z1 - 0.10, 4))
+    zs |= set(np.linspace(z0 + 0.10, rbase, 3)) | set(np.linspace(rend, atop, 4))
+    for pz in pillars:
+        zs |= {pz - 0.04, pz + 0.04}
+    stations = []
+    for z in sorted(float(v) for v in zs if z0 <= v <= z1):
+        if not stations or z - stations[-1] > 0.012:
+            stations.append(z)
+        elif z in (z0, z1):
+            stations[-1] = z
+    rings = [ring(z, z in (z0, z1) and ((z == z1 and taper_f > 0.0) or (z == z0 and taper_r > 0.0))) for z in stations]
+
+    def colour(i: int, j: int):
+        zm = (stations[i] + stations[i + 1]) * 0.5
+        if j <= 1:
+            return PLASTIC
+        tall = top(zm) - beltline(zm) > 0.14
+        if j == 5 and tall and glass_rear - 0.005 <= zm <= cowl - 0.03 and not any(abs(zm - pz) < 0.04 for pz in pillars):
+            return GLASS
+        if j >= 7 and (atop + 0.05 < zm < cowl - 0.06 or (rear_glass and rbase + 0.07 < zm < rend - 0.05)):
+            return GLASS
+        return BODY
+
+    for side in (1.0, -1.0):
+        pts = [[(side * x, y, z) for (x, y) in rings[i]] for i, z in enumerate(stations)]
+        m.grid(pts, colour, lambda i: (0.0, (floor + beltline(stations[i])) * 0.5, stations[i]))
+        for end, hint in ((0, -1.0), (len(stations) - 1, 1.0)):
+            row = pts[end]
+            cy = (row[0][1] + row[-1][1]) * 0.5
+            for j in range(len(row) - 1):
+                m.tri((0.0, cy, stations[end]), row[j], row[j + 1], PLASTIC if j <= 1 else BODY, (0, 0, hint))
+    # Wheels and dark wheel wells on the flat of the flank.
+    r = P["wheel_r"]
+    _car_wheels(m, w_at, r, P["wheels"])
+    for wz in P["wheels"]:
+        arch = [(wz + (r + 0.065) * math.cos(math.radians(a)), max(floor + 0.07, r + (r + 0.065) * math.sin(math.radians(a)))) for a in range(0, 181, 15)]
+        m.panel(arch, lambda z, _y: w_at(z), BLACK, 0.003)
+    # Door seams, handles and mirrors.
+    for dz in P.get("seams", []):
+        m.panel([(dz - 0.006, floor + 0.09), (dz + 0.006, floor + 0.09), (dz + 0.006, belt - 0.05), (dz - 0.006, belt - 0.05)], lambda z, _y: w_at(z), PLASTIC, 0.003)
+    for hz in P.get("handles", []):
+        for s in (-1.0, 1.0):
+            m.box((s * (w_at(hz) + 0.012) - 0.012, belt - 0.13, hz - 0.07), (s * (w_at(hz) + 0.012) + 0.012, belt - 0.10, hz + 0.07), PLASTIC)
     for s in (-1.0, 1.0):
-        m.quad((s * (nose_w - 0.30), lamp_y, zf - 0.02), (s * (nose_w - 0.04), lamp_y, zf - 0.03), (s * (nose_w - 0.04), lamp_y + 0.11, zf - 0.035), (s * (nose_w - 0.30), lamp_y + 0.11, zf - 0.025), LAMP, (0, 0, 1))
-        m.quad((s * (tail_w - 0.22), belt_y - 0.26, zr + 0.012), (s * (tail_w - 0.03), belt_y - 0.26, zr + 0.012), (s * (tail_w - 0.03), belt_y - 0.10, zr + 0.016), (s * (tail_w - 0.22), belt_y - 0.10, zr + 0.016), TAIL, (0, 0, -1))
-        m.box((s * (hw + 0.01) - 0.05, belt_y + 0.01, cowl_z - 0.20), (s * (hw + 0.01) + 0.05, belt_y + 0.10, cowl_z - 0.12), PLASTIC)   # mirrors
-        m.box((s * (hw - 0.015) - 0.012, belt_y - 0.12, mid + 0.10), (s * (hw - 0.015) + 0.012, belt_y - 0.09, mid + 0.24), PLASTIC)     # door handles
-        m.box((s * (hw - 0.015) - 0.012, belt_y - 0.12, mid - 0.62), (s * (hw - 0.015) + 0.012, belt_y - 0.09, mid - 0.48), PLASTIC)
-    m.quad((-nose_w + 0.34, lamp_y + 0.01, zf - 0.02), (nose_w - 0.34, lamp_y + 0.01, zf - 0.02), (nose_w - 0.34, lamp_y + 0.09, zf - 0.025), (-nose_w + 0.34, lamp_y + 0.09, zf - 0.025), BLACK, (0, 0, 1))
-    m.box((-nose_w - 0.005, floor + 0.02, hl - 0.06), (nose_w + 0.005, 0.40, hl + 0.012), PLASTIC, "-z")       # bumpers
-    m.box((-tail_w - 0.005, floor + 0.02, -hl - 0.012), (tail_w + 0.005, 0.38, -hl + 0.06), PLASTIC, "+z")
-    m.box((-0.24, 0.43, zf - 0.004), (0.24, 0.53, zf + 0.004), PLATE)
-    m.box((-0.24, 0.44, zr - 0.004), (0.24, 0.54, zr + 0.012), PLATE)
-    return m, w_at
+        mx, my, mz = s * (w_at(cowl) + 0.085), belt + 0.06, cowl - 0.20
+        m.blob([(mx, my, mz - 0.05, 0.03, 0.03), (mx, my, mz, 0.075, 0.055), (mx, my, mz + 0.04, 0.06, 0.045)], BODY if P.get("body_mirrors", True) else PLASTIC, 8)
+        m.box((min(mx, s * w_at(cowl)), my - 0.02, mz - 0.02), (max(mx, s * w_at(cowl)), my, mz + 0.02), PLASTIC)
+    # Nose: lamps, grille, lower intake, plate.  Tail: lamps, plate, reflector strip.
+    nose, tail = rings[-1], rings[0]
+    nw, n_top, n_bot = nose[3][0], nose[7][1], nose[0][1]
+    zf, zr = z1 + 0.004, z0 - 0.004
+    lamp_lo, lamp_hi = n_top - P.get("lamp_drop", 0.2), n_top - 0.06
+    for s in (-1.0, 1.0):
+        m.quad((s * nw * 0.42, lamp_lo, zf), (s * nw * 0.93, lamp_lo + 0.02, zf), (s * nw * 0.93, lamp_hi, zf), (s * nw * 0.42, lamp_hi - 0.02, zf), LAMP, (0, 0, 1))
+        m.quad((s * nw * 0.80, lamp_lo + 0.02, zf + 0.002), (s * nw * 0.93, lamp_lo + 0.02, zf + 0.002), (s * nw * 0.93, lamp_hi, zf + 0.002), (s * nw * 0.80, lamp_hi - 0.01, zf + 0.002), AMBER, (0, 0, 1))
+    m.quad((-nw * 0.38, lamp_lo + 0.01, zf), (nw * 0.38, lamp_lo + 0.01, zf), (nw * 0.38, lamp_hi - 0.03, zf), (-nw * 0.38, lamp_hi - 0.03, zf), BLACK, (0, 0, 1))
+    m.quad((-nw * 0.34, (lamp_lo + lamp_hi) * 0.5 - 0.012, zf + 0.002), (nw * 0.34, (lamp_lo + lamp_hi) * 0.5 - 0.012, zf + 0.002), (nw * 0.34, (lamp_lo + lamp_hi) * 0.5 + 0.004, zf + 0.002), (-nw * 0.34, (lamp_lo + lamp_hi) * 0.5 + 0.004, zf + 0.002), CHROME, (0, 0, 1))
+    m.quad((-nw * 0.72, n_bot + 0.05, zf), (nw * 0.72, n_bot + 0.05, zf), (nw * 0.62, n_bot + 0.19, zf), (-nw * 0.62, n_bot + 0.19, zf), BLACK, (0, 0, 1))
+    m.box((-0.24, n_bot + 0.215, zf - 0.004), (0.24, n_bot + 0.315, zf + 0.004), PLATE)
+    tw, t_top, t_bot = tail[3][0], tail[4][1], tail[0][1]
+    for s in (-1.0, 1.0):
+        m.quad((s * tw * 0.62, t_top - 0.30, zr), (s * tw * 0.95, t_top - 0.30, zr), (s * tw * 0.95, t_top - 0.07, zr), (s * tw * 0.62, t_top - 0.10, zr), TAIL, (0, 0, -1))
+        m.quad((s * tw * 0.62, t_top - 0.30, zr - 0.002), (s * tw * 0.95, t_top - 0.30, zr - 0.002), (s * tw * 0.95, t_top - 0.25, zr - 0.002), (s * tw * 0.62, t_top - 0.25, zr - 0.002), LAMP, (0, 0, -1))
+    m.box((-0.24, t_top - 0.36, zr - 0.004), (0.24, t_top - 0.26, zr + 0.004), PLATE)
+    m.quad((-tw * 0.7, t_bot + 0.05, zr), (tw * 0.7, t_bot + 0.05, zr), (tw * 0.7, t_bot + 0.15, zr), (-tw * 0.7, t_bot + 0.15, zr), BLACK, (0, 0, -1))
+    return m
 
 
 def hatchback() -> Mesh:
     """Small hatchback, the commonest car on a Chennai street (3.85 x 1.70 x 1.52 m)."""
-    m, _ = _car(3.85, 1.70, 1.52, 0.30, 1.22, -1.23, 0.98, 0.93, 0.78, 0.22, -1.30, -1.80)
-    return m
+    return _car({"z0": -1.925, "z1": 1.925, "W": 1.70, "H": 1.50, "belt": 0.92, "hood_y": 0.78, "cowl": 0.82, "a_top": 0.12,
+        "roof_end": -1.22, "rear_base": -1.80, "deck_y": 0.9, "pillars": [-0.42], "wheel_r": 0.30, "wheels": (1.22, -1.24),
+        "seams": [0.62, -0.42, -1.02], "handles": [-0.30, -0.92]})
 
 
 def tallboy() -> Mesh:
     """Tall-boy city hatchback: short bonnet, upright sides, high roof (3.60 x 1.52 x 1.68 m)."""
-    m, _ = _car(3.60, 1.52, 1.68, 0.28, 1.16, -1.22, 0.98, 0.96, 0.92, 0.50, -1.50, -1.74, 1.0)
-    m.box((-0.50, 1.68, -1.20), (-0.44, 1.71, 0.30), PLASTIC)                # roof rails
-    m.box((0.44, 1.68, -1.20), (0.50, 1.71, 0.30), PLASTIC)
+    m = _car({"z0": -1.80, "z1": 1.80, "W": 1.52, "H": 1.64, "belt": 0.97, "hood_y": 0.86, "cowl": 0.95, "a_top": 0.46,
+        "roof_end": -1.48, "rear_base": -1.72, "deck_y": 0.95, "taper": 0.07, "tuck": 0.10, "glass_rear": -1.36,
+        "pillars": [-0.24, -1.0], "wheel_r": 0.28, "wheels": (1.16, -1.22), "seams": [0.70, -0.24, -1.0], "handles": [-0.12, -0.88]})
+    for s in (-0.52, 0.52):
+        m.tube((s, 1.675, -1.2), (s, 1.675, 0.25), 0.014, PLASTIC, 5, True)   # roof rails
     return m
 
 
 def van() -> Mesh:
     """One-box micro van: flat nose, sliding-door sides (3.37 x 1.41 x 1.64 m)."""
-    m, _ = _car(3.37, 1.41, 1.64, 0.26, 1.02, -0.86, 1.00, 0.98, 1.50, 1.26, -1.56, -1.66, 1.0)
-    return m
+    return _car({"z0": -1.685, "z1": 1.685, "W": 1.41, "H": 1.62, "belt": 0.98, "hood_y": 0.92, "cowl": 1.50, "a_top": 1.16,
+        "roof_end": -1.56, "rear_base": -1.66, "deck_y": 0.97, "taper": 0.05, "tuck": 0.08, "crown": 0.03, "glass_rear": -1.44,
+        "pillars": [0.40, -0.55], "wheel_r": 0.26, "wheels": (1.05, -0.86), "seams": [0.40, -0.55], "handles": [0.52, -0.42],
+        "body_mirrors": False, "lamp_drop": 0.24})
 
 
 def mini_truck() -> Mesh:
     """Mini truck with a load of 20 litre water cans (3.80 x 1.50 x 1.85 m)."""
-    m = Mesh()
-    hl, hw, floor, r = 1.90, 0.75, 0.30, 0.27
-    front_z, rear_z = 1.22, -0.92
-    # Cab: lower shell + upright greenhouse.
-    cab_back, belt_y, roof = 0.62, 1.06, 1.85
-    lower = [(cab_back, floor, hw), (cab_back, belt_y, hw - 0.01), (hl - 0.10, belt_y, hw - 0.02), (hl, belt_y - 0.14, hw - 0.06), (hl, 0.46, hw - 0.06), (hl - 0.05, floor, hw - 0.06)]
-    m.loft(lower, BODY)
-    belt_w, roof_w = hw - 0.03, hw - 0.10
-    green = [(cab_back + 0.01, belt_y, belt_w), (cab_back + 0.03, roof, roof_w), (hl - 0.42, roof, roof_w), (hl - 0.12, belt_y, belt_w)]
-    m.loft(green, BODY)
-
-    def w_at(y: float) -> float:
-        return belt_w + (roof_w - belt_w) * (y - belt_y) / (roof - belt_y)
-
-    door = [(cab_back + 0.14, belt_y + 0.03), (cab_back + 0.14, roof - 0.07), (hl - 0.46, roof - 0.07), (hl - 0.22, belt_y + 0.03)]
-    m.side_panel(door, w_at, GLASS, 0.0, 0.004)
-    t0, t1 = 0.12, 0.90
-    z0, z1 = hl - 0.12, hl - 0.42
-    za, ya, zb, yb = z0 + (z1 - z0) * t0, belt_y + (roof - belt_y) * t0, z0 + (z1 - z0) * t1, belt_y + (roof - belt_y) * t1
-    m.quad((-w_at(ya) + 0.07, ya, za + 0.008), (w_at(ya) - 0.07, ya, za + 0.008), (w_at(yb) - 0.07, yb, zb + 0.008), (-w_at(yb) + 0.07, yb, zb + 0.008), GLASS, (0, 0.4, 1))
-    zf = hl + 0.004
-    for s in (-1.0, 1.0):
-        m.quad((s * 0.36, 0.72, zf), (s * 0.64, 0.72, zf), (s * 0.64, 0.86, zf), (s * 0.36, 0.86, zf), LAMP, (0, 0, 1))
-        m.box((s * (hw + 0.02) - 0.05, belt_y + 0.10, hl - 0.34), (s * (hw + 0.02) + 0.05, belt_y + 0.30, hl - 0.28), PLASTIC)
-    m.quad((-0.30, 0.74, zf), (0.30, 0.74, zf), (0.30, 0.84, zf), (-0.30, 0.84, zf), BLACK, (0, 0, 1))
-    m.box((-hw + 0.04, floor, hl - 0.05), (hw - 0.04, 0.50, hl + 0.014), PLASTIC, "-z")
-    m.box((-0.24, 0.54, zf - 0.004), (0.24, 0.64, zf + 0.004), PLATE)
+    hl, hw, r = 1.90, 0.75, 0.27
+    cab_back = 0.62
+    m = _car({"z0": cab_back, "z1": hl, "W": 1.50, "H": 1.82, "belt": 1.06, "hood_y": 0.98, "cowl": 1.78, "a_top": 1.50,
+        "roof_end": cab_back + 0.08, "rear_base": cab_back + 0.01, "floor": 0.30, "taper": 0.16, "taper_rear": 0.0, "tuck": 0.09,
+        "crown": 0.03, "rear_glass": False, "pillars": [], "wheel_r": r, "wheels": (1.22,), "seams": [0.80],
+        "handles": [0.92], "body_mirrors": False, "lamp_drop": 0.26})
     # Load bed: chassis, deck, drop sides (open top) and the cans.
     deck = 0.74
     m.box((-0.30, 0.34, -hl + 0.10), (0.30, deck - 0.06, cab_back), BLACK)
@@ -556,13 +751,17 @@ def mini_truck() -> Mesh:
             for iz in range(nz):
                 if layer == 1 and (iz == 0 or (ix + iz) % 5 == 0):
                     continue
-                x = x_start + ix * (can + gap)
-                z = -hl + 0.08 + iz * (can + gap)
+                x = x_start + ix * (can + gap) + can * 0.5
+                z = -hl + 0.08 + iz * (can + gap) + can * 0.5
                 y = deck + layer * 0.40
-                m.box((x, y, z), (x + can, y + 0.36, z + can), CAN_BLUE, "-y")
-                if layer == 1 or iz == 0 or (ix + iz) % 5 == 0:
-                    m.box((x + 0.09, y + 0.36, z + 0.09), (x + can - 0.09, y + 0.40, z + can - 0.09), CAN_CAP, "-y")
-    _car_wheels(m, hw, r, front_z, rear_z, 0.15)
+                # A can: round drum with a shoulder and a white cap.
+                seg = 6
+                rings = [(y, can * 0.5), (y + 0.30, can * 0.5), (y + 0.36, can * 0.2), (y + 0.40, can * 0.2)]
+                pts = [[(x + rr * math.cos(2 * math.pi * k / seg), yy, z + rr * math.sin(2 * math.pi * k / seg)) for k in range(seg)] for (yy, rr) in rings]
+                m.grid(pts, lambda i, j: CAN_CAP if i == 2 else CAN_BLUE, lambda i, x=x, z=z, rings=rings: (x, rings[i][0], z), closed_j=True)
+                for k in range(1, seg - 1):
+                    m.tri(pts[3][0], pts[3][k], pts[3][k + 1], CAN_CAP, (0, 1, 0))
+    _car_wheels(m, lambda _z: hw, r, (-0.92,))
     return m
 
 

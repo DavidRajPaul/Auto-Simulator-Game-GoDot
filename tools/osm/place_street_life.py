@@ -28,7 +28,12 @@ ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "data" / "world"
 CHUNK = 250.0
 
-KOLAM_TYPES = {"hs": 0.75, "ah": 0.85, "kp": 0.6, "tn": 0.45, "fl": 0.35}
+KOLAM_TYPES = {"hs": 0.75, "ah": 0.85, "kp": 0.6, "tn": 0.45, "fl": 0.35, "tp": 1.0}
+# Building types with a shop front on their street walls, and how many figure models exist
+# (tools/assets/bake_shop_people.py).
+SHOP_TYPES = {"sh", "sr", "ht", "bk", "ml"}
+SHOP_MODELS = 8
+SHOP_BAY_M = 7.0
 KOLAM_OUT_M = 1.5          # kolam centre in front of the gate
 DOG_SHARE = 0.4            # of kerb stalls
 BUNTING_REACH_M = 160.0    # wires this close to a temple / church get flags
@@ -69,7 +74,7 @@ def on_pave(p, pave: dict) -> bool:
 def main() -> None:
     spots = json.loads((WORLD / "sound_spots.json").read_text())
     holy = [tuple(p) for p in spots.get("temples", []) + spots.get("churches", [])]
-    totals = {"kolams": 0, "dogs": 0, "bunting": 0}
+    totals = {"kolams": 0, "dogs": 0, "bunting": 0, "shop_people": 0}
     for dress_path in sorted((WORLD / "dress").glob("c_*.json")):
         key = dress_path.stem
         dress = json.loads(dress_path.read_text())
@@ -80,6 +85,7 @@ def main() -> None:
         blds = json.loads(chunk_path.read_text()).get("blds", []) if chunk_path.exists() else []
         plot = json.loads(plot_path.read_text()) if plot_path.exists() else {}
         polys = []
+        shops = []
         for b in blds:
             pts = b["p"]
             ring = [(pts[i], pts[i + 1]) for i in range(0, len(pts), 2)]
@@ -87,6 +93,8 @@ def main() -> None:
                 poly = Polygon(ring)
                 if poly.is_valid and poly.area > 1.0:
                     polys.append(poly)
+                    if b.get("t") in SHOP_TYPES:
+                        shops.append((ring, poly, b.get("fw", [])))
         tree = STRtree(polys) if polys else None
         occupied = [Point(float(s[0]), float(s[1])).buffer(1.6) for s in dress.get("stalls", []) + dress.get("carts", [])]
         occupied += [Point(float(p[0]), float(p[1])).buffer(0.6) for p in dress.get("poles", []) + dress.get("trees", [])]
@@ -146,6 +154,42 @@ def main() -> None:
             mx, mz = (float(w[0]) + float(w[2])) * 0.5, (float(w[1]) + float(w[3])) * 0.5
             if any(math.hypot(mx - hx, mz - hz) < BUNTING_REACH_M for hx, hz in holy):
                 bunting.append([float(w[0]), float(w[1]), float(w[2]), float(w[3]), int(h01(mx, mz, 12.0) * 1000)])
+        # A shopkeeper at every shop front, and one or two customers facing the shop:
+        # [x, z, yaw, model, kind] (kind 0 shopkeeper, 1 customer, 2 stall vendor).
+        people = []
+        for ring, poly, fw in shops:
+            for wall in fw:
+                i = int(wall[0])
+                (ax, az), (bx, bz) = ring[i % len(ring)], ring[(i + 1) % len(ring)]
+                ln = math.hypot(bx - ax, bz - az)
+                if ln < 3.0:
+                    continue
+                tx, tz = (bx - ax) / ln, (bz - az) / ln
+                nx, nz = -tz, tx
+                if poly.contains(Point((ax + bx) * 0.5 + nx * 0.6, (az + bz) * 0.5 + nz * 0.6)):
+                    nx, nz = -nx, -nz
+                bays = max(1, int(round(ln / SHOP_BAY_M)))
+                for k in range(bays):
+                    c = (k + 0.5) / bays * ln
+                    cx, cz = ax + tx * c, az + tz * c
+                    out_yaw = math.atan2(nx, nz)
+                    spots = [(0.35 * (h01(cx, cz, 20.0) - 0.5), 0.8, out_yaw, 0)]
+                    for q in range(1 + int(h01(cx, cz, 21.0) * 2.2)):
+                        side = (h01(cx, cz, 22.0 + q) - 0.5) * 2.6
+                        spots.append((side, 1.55 + 0.6 * h01(cx, cz, 25.0 + q), out_yaw + math.pi + (h01(cx, cz, 28.0 + q) - 0.5) * 0.9, 1))
+                    for (along, out, yaw, kind) in spots:
+                        p = Point(cx + tx * along + nx * out, cz + tz * along + nz * out)
+                        if not clear(p) or any(p.distance(Point(q[0], q[1])) < 0.6 for q in people[-6:]):
+                            continue
+                        people.append([round(p.x, 2), round(p.y, 2), round(yaw, 2), int(h01(p.x, p.y, 31.0) * SHOP_MODELS), kind])
+        for st in dress.get("stalls", []):
+            x, z, yaw = float(st[0]), float(st[1]), float(st[2])
+            lx, lz = 0.35, -0.55
+            people.append([round(x + lx * math.cos(yaw) + lz * math.sin(yaw), 2), round(z - lx * math.sin(yaw) + lz * math.cos(yaw), 2),
+                round(yaw, 2), int(h01(x, z, 32.0) * SHOP_MODELS), 2])
+        if people:
+            dress["shop_people"] = people
+        totals["shop_people"] += len(people)
         if kolams:
             dress["kolams"] = kolams
         if dogs:
