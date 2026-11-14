@@ -747,9 +747,10 @@ func _test_dressing(s: WorldChunkStreamer) -> void:
 ## (one near model per species + one impostor batch), never a mesh or node per chunk.
 func _test_street_trees(s: WorldChunkStreamer) -> void:
 	var t: StreetTrees = s.trees
-	_check("StreetTrees exists with 5 species", t != null and t.species.size() == 5 and t.near_mmis.size() == 5)
+	_check("StreetTrees exists with 5 Tripo + 10 CC BY species", t != null and t.species.size() == 15 and t.near_mmis.size() == 15)
 	if t == null:
 		return
+	_test_tree_mix(s, t)
 	var cam: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
 	t._dirty = true
 	t.update(cam)
@@ -765,7 +766,8 @@ func _test_street_trees(s: WorldChunkStreamer) -> void:
 			in_range += 1 if d <= StreetTrees.FAR_M else 0
 			var lo: float = StreetTrees.NEAR_M - StreetTrees.FADE_M - StreetTrees.FAR_REBUILD_M
 			var hi: float = StreetTrees.NEAR_M + StreetTrees.FADE_M + StreetTrees.REBUILD_M
-			in_band += 1 if d > lo and d < hi else 0
+			# A species over the MAX_NEAR_SPECIES cap is drawn as a card only.
+			in_band += 1 if d > lo and d < hi and t._is_model(arr[i + 3]) else 0
 	# Nov 3: trees around the fade band are in BOTH sets (the shaders cross-fade them; the far set
 	# reaches FAR_REBUILD_M further in because it refills less often); everyone else once.
 	_check("Every tree in range drawn once, fade band in both levels",
@@ -804,6 +806,50 @@ func _test_street_trees(s: WorldChunkStreamer) -> void:
 	_check("Unloading a chunk drops its trees", t.tree_count() == tc - saved.size() / StreetTrees.PRE)
 	if not saved.is_empty():
 		t.add_chunk(some, saved)
+
+## Nov 14: the owner's CC BY trees join WITHOUT adding trees: every dress tree is still one tree,
+## palms stay palms, each BLOCK_M block swaps two broadleaf species for two new ones, and no more
+## than MAX_NEAR_SPECIES species draw as models at once (draw calls stay flat).
+func _test_tree_mix(s: WorldChunkStreamer, t: StreetTrees) -> void:
+	var dressed: int = 0
+	var counted: int = 0
+	for k: Vector2i in t._chunks:
+		var df: FileAccess = FileAccess.open(s.world_dir.path_join("dress/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
+		if df == null:
+			continue
+		var dress: Dictionary = JSON.parse_string(df.get_as_text()) as Dictionary
+		dressed += (dress.get("trees", []) as Array).size()
+		counted += (t._chunks[k] as PackedFloat32Array).size() / StreetTrees.PRE
+	_check("Tree count unchanged by the new species", dressed > 100 and counted == dressed, "%d dress, %d drawn" % [dressed, counted])
+	var cutout_ok: bool = true
+	for code: int in t.species:
+		var cut: bool = bool((t.species[code] as Dictionary).get("cutout", false))
+		var mat: ShaderMaterial = (t.near_mmis[code] as MultiMeshInstance3D).material_override as ShaderMaterial
+		cutout_ok = cutout_ok and bool(mat.get_shader_parameter("cutout")) == cut
+	_check("CC BY trees draw with alpha-cut leaves, Tripo trees solid", cutout_ok)
+	var palms_kept: bool = true
+	var broadleaf: int = 0
+	var swapped: int = 0
+	var seen: Dictionary = {}
+	for i: int in 4000:
+		var x: float = -3000.0 + float(i % 80) * 77.0
+		var z: float = -3000.0 + float(i / 80) * 121.0
+		palms_kept = palms_kept and t.remap_code(x, z, StreetTrees.PALM_CODE) == StreetTrees.PALM_CODE
+		var c: int = t.remap_code(x, z, t._old_codes[i % t._old_codes.size()])
+		broadleaf += 1
+		if t._new_codes.has(c):
+			swapped += 1
+			seen[c] = true
+	var share: float = float(swapped) / float(broadleaf)
+	_check("Palms stay palms, about half the broadleaf trees become new species, all of them used",
+		palms_kept and share > 0.4 and share < 0.6 and seen.size() == t._new_codes.size(), "%.2f, %d species" % [share, seen.size()])
+	var cam: Vector3 = (get_tree().get_first_node_in_group("player_auto") as Node3D).global_position
+	var worst: int = 0
+	for step: int in 24:
+		t.update(cam + Vector3(float(step) * 90.0, 0.0, float(step % 5) * 140.0))
+		worst = maxi(worst, t.near_species.size())
+	t.update(cam)
+	_check("At most MAX_NEAR_SPECIES tree species drawn as models", worst > 0 and worst <= StreetTrees.MAX_NEAR_SPECIES, "worst %d" % worst)
 
 func _test_ambience(a: AmbienceAudio) -> void:
 	_check("City traffic bed is playing", a.players.has("city"))

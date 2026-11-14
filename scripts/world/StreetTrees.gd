@@ -9,7 +9,8 @@ extends Node3D
 ##   near: the full textured model, one MultiMesh per species, casts shadows (tree_near.gdshader)
 ##   far : one camera-facing card per tree from the VIEWS baked views, ALL species in one MultiMesh,
 ##         no shadows (tree_impostor)
-## So the whole forest is SPECIES + 1 draw calls (+ SPECIES in the shadow pass), whatever the count.
+## So the whole forest is at most MAX_NEAR_SPECIES + 1 draw calls (+ MAX_NEAR_SPECIES in the shadow
+## pass), whatever the count and however many species there are.
 ## Between NEAR_M - FADE_M and NEAR_M + FADE_M a tree is in BOTH sets and the two shaders dither
 ## complementary pixels, so it cross-fades instead of popping (Nov 3 device test).
 ## Near models refill after the camera moves REBUILD_M (only chunks within reach are scanned), the
@@ -35,6 +36,16 @@ const NEAR_STRIDE: int = 16 # transform 12 + colour 4
 const FAR_STRIDE: int = 20 # transform 12 + colour 4 + custom 4
 ## Unknown codes in older dress data (retired procedural species 5-7) draw as neem.
 const FALLBACK_CODE: int = 0
+## Mixing in the owner's CC BY trees (Nov 14, bake_cc_trees.py; trees.json "cutout": true) without
+## adding a single tree: the map is cut into BLOCK_M squares, and each block keeps 2 of the 4
+## broadleaf Tripo species and grows 2 of the new species instead of the other two. Palms stay.
+## So a street shows about as many species at once as before (draw calls stay flat), and the city
+## changes character block by block, the way avenues are planted.
+const BLOCK_M: float = 500.0
+const PALM_CODE: int = 1
+## At most this many species draw as full models at once; if the near ring straddles block corners
+## and holds more, the furthest species stay cards (custom.y = 1 keeps their card solid).
+const MAX_NEAR_SPECIES: int = 6
 
 var species: Dictionary = {} # code -> {"height", "radius", "row"}
 var views: int = 4
@@ -55,6 +66,14 @@ var far_count: int = 0
 ## Where the near models stand after the last rebuild (tests; the headless renderer keeps no
 ## MultiMesh data to read back).
 var near_positions: PackedVector3Array = PackedVector3Array()
+## Species codes drawn as models at the last near rebuild (tests, debug).
+var near_species: PackedInt32Array = PackedInt32Array()
+var _old_codes: PackedInt32Array = PackedInt32Array() # broadleaf Tripo species (not the palm)
+var _new_codes: PackedInt32Array = PackedInt32Array() # cutout species
+var _code_of_slot: PackedInt32Array = PackedInt32Array()
+var _active: PackedByteArray = PackedByteArray() # per slot: 1 = drawn as a model this rebuild
+## Off only for the tree renders (tests/shot_trees.tscn), which stand every species in a row.
+var remap_enabled: bool = true
 
 func _ready() -> void:
 	# Static trees change buffer slots when camera-relative batches are rebuilt.
@@ -74,18 +93,27 @@ func _ready() -> void:
 		var sp: Dictionary = sp_all[key]
 		var code: int = int(key)
 		species[code] = sp
+		if bool(sp.get("cutout", false)):
+			_new_codes.append(code)
+		elif code != PALM_CODE:
+			_old_codes.append(code)
 		var mesh: Mesh = _load_mesh(DIR + str(sp["name"]) + ".glb")
 		if mesh == null:
 			continue
 		var mmi: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		mmi.name = "Near_" + str(sp["name"])
 		mmi.multimesh = _new_multimesh(mesh, false)
-		mmi.material_override = _near_material(mesh, near_shader)
+		mmi.material_override = _near_material(mesh, near_shader, bool(sp.get("cutout", false)))
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(mmi)
 		near_mmis[code] = mmi
 		_slot_of[code] = _slot_mmis.size()
 		_slot_mmis.append(mmi)
+		_code_of_slot.append(code)
+	_active.resize(_slot_mmis.size())
+	_active.fill(1)
+	_old_codes.sort()
+	_new_codes.sort()
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = load("res://shaders/tree_impostor.gdshader") as Shader
 	mat.set_shader_parameter("atlas", load(DIR + "tree_impostors.png") as Texture2D)
@@ -123,6 +151,7 @@ func add_chunk(k: Vector2i, trees: PackedFloat32Array) -> void:
 		var code: int = int(trees[i + 3])
 		if not species.has(code):
 			code = FALLBACK_CODE
+		code = remap_code(trees[i], trees[i + 2], code)
 		var sp: Dictionary = species[code]
 		var s: float = trees[i + 4]
 		var c: float = cos(trees[i + 5])
@@ -146,6 +175,25 @@ func add_chunk(k: Vector2i, trees: PackedFloat32Array) -> void:
 	_chunks[k] = out
 	_bounds[k] = rect
 	_dirty = true
+
+## The species a dress tree draws as: its own code, or one of its block's new species (see
+## BLOCK_M). Pure maths on the position, so any caller gets the same answer.
+func remap_code(x: float, z: float, code: int) -> int:
+	if not remap_enabled or code == PALM_CODE or _new_codes.is_empty() or _old_codes.size() < 3 or _old_codes.find(code) < 0:
+		return code
+	var h: int = absi((floori(x / BLOCK_M) * 73856093) ^ (floori(z / BLOCK_M) * 19349663) ^ 0x5bd1e995)
+	var no: int = _old_codes.size()
+	var first: int = h % no
+	var keep_a: int = _old_codes[first]
+	var keep_b: int = _old_codes[(first + 1 + (h / 7) % (no - 1)) % no]
+	if code == keep_a or code == keep_b:
+		return code
+	var nn: int = _new_codes.size()
+	var new_a: int = (h / 31) % nn
+	var new_b: int = (new_a + 1 + (h / 977) % maxi(nn - 1, 1)) % nn
+	# Which of the two: a hash of the tree's own spot, so neighbours mix.
+	var t: int = absi((roundi(x * 7.0) * 92821) ^ (roundi(z * 7.0) * 68917))
+	return _new_codes[new_a if t % 2 == 0 else new_b]
 
 func remove_chunk(k: Vector2i) -> void:
 	_bounds.erase(k)
@@ -191,14 +239,41 @@ func _rebuild_near(cam: Vector3) -> void:
 	var counts: PackedInt32Array = PackedInt32Array()
 	counts.resize(slots)
 	counts.fill(0)
+	var nearest: PackedFloat32Array = PackedFloat32Array()
+	nearest.resize(slots)
+	nearest.fill(INF)
 	for k: Vector2i in keys:
 		var t: PackedFloat32Array = _chunks[k]
 		for i: int in range(0, t.size(), PRE):
 			var dx: float = t[i] - cam.x
 			var dz: float = t[i + 2] - cam.z
 			var slot: int = int(t[i + 3])
-			if dx * dx + dz * dz < lim2 and slot >= 0:
+			var d2: float = dx * dx + dz * dz
+			if d2 < lim2 and slot >= 0:
 				counts[slot] += 1
+				nearest[slot] = minf(nearest[slot], d2)
+	# Keep the draw calls flat: only the MAX_NEAR_SPECIES species with the closest trees draw as
+	# models; the rest stay cards this time (rare: only where the ring crosses block corners).
+	var order: Array[int] = []
+	for sl: int in slots:
+		if counts[sl] > 0:
+			order.append(sl)
+	order.sort_custom(func(a: int, b: int) -> bool: return nearest[a] < nearest[b])
+	var active: PackedByteArray = PackedByteArray()
+	active.resize(slots)
+	active.fill(0)
+	near_species.clear()
+	for j: int in mini(order.size(), MAX_NEAR_SPECIES):
+		active[order[j]] = 1
+		near_species.append(_code_of_slot[order[j]])
+	var changed: bool = false
+	for sl: int in slots:
+		if active[sl] == 0:
+			counts[sl] = 0
+		# A species pushed out while it still has trees in the ring needs its cards back now.
+		if _active[sl] != active[sl] and (active[sl] == 1 or nearest[sl] < INF):
+			changed = true
+	_active = active
 	var offsets: PackedInt32Array = PackedInt32Array()
 	offsets.resize(slots + 1)
 	offsets[0] = 0
@@ -214,7 +289,7 @@ func _rebuild_near(cam: Vector3) -> void:
 			var dx: float = t[i] - cam.x
 			var dz: float = t[i + 2] - cam.z
 			var slot: int = int(t[i + 3])
-			if dx * dx + dz * dz >= lim2 or slot < 0:
+			if dx * dx + dz * dz >= lim2 or slot < 0 or active[slot] == 0:
 				continue
 			var idx: int = cursor[slot]
 			cursor[slot] = idx + 1
@@ -241,6 +316,9 @@ func _rebuild_near(cam: Vector3) -> void:
 	for sl: int in slots:
 		var part: PackedFloat32Array = buf.slice(offsets[sl] * NEAR_STRIDE, offsets[sl + 1] * NEAR_STRIDE)
 		near_count += _upload(_slot_mmis[sl].multimesh, part, NEAR_STRIDE)
+	if changed:
+		_last_far = cam
+		_rebuild_far(cam)
 
 ## Far set: from the near edge of the fade band minus FAR_REBUILD_M out to FAR_M.
 func _rebuild_far(cam: Vector3) -> void:
@@ -254,7 +332,7 @@ func _rebuild_far(cam: Vector3) -> void:
 			var dx: float = t[i] - cam.x
 			var dz: float = t[i + 2] - cam.z
 			var d2: float = dx * dx + dz * dz
-			if d2 <= out2 and (d2 > in2 or t[i + 3] < 0.0):
+			if d2 <= out2 and (d2 > in2 or not _is_model(t[i + 3])):
 				n += 1
 	var buf: PackedFloat32Array = PackedFloat32Array()
 	buf.resize(n * FAR_STRIDE)
@@ -265,7 +343,8 @@ func _rebuild_far(cam: Vector3) -> void:
 			var dx: float = t[i] - cam.x
 			var dz: float = t[i + 2] - cam.z
 			var d2: float = dx * dx + dz * dz
-			if d2 > out2 or (d2 <= in2 and t[i + 3] >= 0.0):
+			var model: bool = _is_model(t[i + 3])
+			if d2 > out2 or (d2 <= in2 and model):
 				continue
 			buf[p] = t[i + 7]
 			buf[p + 1] = 0.0
@@ -284,11 +363,15 @@ func _rebuild_far(cam: Vector3) -> void:
 			buf[p + 14] = t[i + 12]
 			buf[p + 15] = 1.0
 			buf[p + 16] = t[i + 13]
-			buf[p + 17] = 0.0
+			# 1 = no model stands in for this card up close: keep it solid in the fade band.
+			buf[p + 17] = 0.0 if model else 1.0
 			buf[p + 18] = 0.0
 			buf[p + 19] = 0.0
 			p += FAR_STRIDE
 	far_count = _upload(far_mmi.multimesh, buf, FAR_STRIDE)
+
+func _is_model(slot: float) -> bool:
+	return slot >= 0.0 and _active[int(slot)] == 1
 
 ## Writes `buf` into `mm`, growing its capacity when needed. Returns the instance count.
 func _upload(mm: MultiMesh, buf: PackedFloat32Array, stride: int) -> int:
@@ -326,13 +409,15 @@ func _load_mesh(path: String) -> Mesh:
 	return mesh
 
 ## The baked texture, matte, both leaf faces, instance colour as a tint, distance cross-fade.
-func _near_material(mesh: Mesh, shader: Shader) -> ShaderMaterial:
+func _near_material(mesh: Mesh, shader: Shader, cutout: bool) -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = shader
 	var src: BaseMaterial3D = mesh.surface_get_material(0) as BaseMaterial3D
 	if src != null:
 		mat.set_shader_parameter("albedo_tex", src.albedo_texture)
 	mat.set_shader_parameter("model_height", maxf(mesh.get_aabb().end.y, 0.5))
+	# The CC BY trees' leaves are alpha-cut cards (the Tripo trees are solid meshes).
+	mat.set_shader_parameter("cutout", cutout)
 	_materials.append(mat)
 	return mat
 

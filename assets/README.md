@@ -134,6 +134,14 @@ Street trees `trees/neem.glb`, `trees/coconut_palm.glb`, `trees/ashoka_a.glb`, `
 and the far impostor atlas `trees/tree_impostors.png` (+ `trees/trees.json`): the owner's own Tripo models (sources in
 `assets_src/models/trees/`), baked to real height with the origin at the trunk base by `tools/assets/bake_trees.py`.
 Used by `scripts/world/StreetTrees.gd` (placements in `data/world/dress`).
+More street trees (Nov 14, codes 10–19 in `trees.json`, `"cutout": true`): `trees/jj_large_0`, `jj_medium010_0`,
+`jj_medium011_0`, `jj_large001_1`, `jj_large009_1`, `jj_medium002_1` ("Realistic Trees Collection" by Jungle Jim),
+`trees/mango` ("Mango Tree" by stealth86) and `trees/poplar_a/b/c` ("Tree Animate" by RandyGF, a kit of three trees
+split apart) — all Sketchfab, CC BY 4.0, sources kept (gitignored) in `assets_src/incoming/models/trees_cc/`. Baked by
+`tools/assets/bake_cc_trees.py` into one primitive + one 1024² atlas each (`<name>_atlas.png`, imported VRAM-compressed
+with mipmaps; leaf cards thinned and enlarged, bark simplified: 4.2–10.9k triangles) and impostor rows 5–14. The
+collection's Bush006 is a 14 m wide shrub, not a street tree, and is not baked. They replace about half the broadleaf
+trees block by block (`StreetTrees.remap_code`); the tree count is unchanged.
 The Marina lighthouse and Kapaleeshwarar-style gopuram are **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
 
 Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/people/CREDITS_people.md`, `models/people/CREDITS_static.md`, `models/traffic/CREDITS_static.md`.

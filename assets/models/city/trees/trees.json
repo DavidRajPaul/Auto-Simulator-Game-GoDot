@@ -1,6 +1,6 @@
 {
  "views": 4,
- "rows": 5,
+ "rows": 15,
  "species": {
   "0": {
    "name": "neem",
@@ -36,6 +36,86 @@
    "radius": 4.76,
    "row": 4,
    "tris": 5786
+  },
+  "10": {
+   "name": "jj_large_0",
+   "height": 10.5,
+   "radius": 5.81,
+   "row": 5,
+   "tris": 5517,
+   "cutout": true
+  },
+  "11": {
+   "name": "jj_medium010_0",
+   "height": 8.0,
+   "radius": 4.26,
+   "row": 6,
+   "tris": 6999,
+   "cutout": true
+  },
+  "12": {
+   "name": "jj_medium011_0",
+   "height": 7.0,
+   "radius": 3.84,
+   "row": 7,
+   "tris": 5600,
+   "cutout": true
+  },
+  "13": {
+   "name": "jj_large001_1",
+   "height": 10.0,
+   "radius": 5.71,
+   "row": 8,
+   "tris": 6997,
+   "cutout": true
+  },
+  "14": {
+   "name": "jj_large009_1",
+   "height": 11.0,
+   "radius": 6.66,
+   "row": 9,
+   "tris": 7000,
+   "cutout": true
+  },
+  "15": {
+   "name": "jj_medium002_1",
+   "height": 7.5,
+   "radius": 3.9,
+   "row": 10,
+   "tris": 6999,
+   "cutout": true
+  },
+  "16": {
+   "name": "mango",
+   "height": 9.0,
+   "radius": 4.96,
+   "row": 11,
+   "tris": 10854,
+   "cutout": true
+  },
+  "17": {
+   "name": "poplar_a",
+   "height": 9.5,
+   "radius": 6.62,
+   "row": 12,
+   "tris": 6104,
+   "cutout": true
+  },
+  "18": {
+   "name": "poplar_b",
+   "height": 11.0,
+   "radius": 5.53,
+   "row": 13,
+   "tris": 5981,
+   "cutout": true
+  },
+  "19": {
+   "name": "poplar_c",
+   "height": 8.5,
+   "radius": 4.09,
+   "row": 14,
+   "tris": 4234,
+   "cutout": true
   }
  }
 }
