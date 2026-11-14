@@ -41,9 +41,9 @@ func _ready() -> void:
 			k += 1
 	var cam: Camera3D = Camera3D.new()
 	add_child(cam)
-	cam.position = Vector3(6.0, 5.5, -10.5)
-	cam.look_at(Vector3(6.0, 0.4, 2.6))
-	cam.fov = 66.0
+	cam.position = Vector3(float(OS.get_environment("CAM_X")) if OS.has_environment("CAM_X") else 6.0, float(OS.get_environment("CAM_Y")) if OS.has_environment("CAM_Y") else 5.5, float(OS.get_environment("CAM_Z")) if OS.has_environment("CAM_Z") else -10.5)
+	cam.look_at(Vector3(float(OS.get_environment("LOOK_X")) if OS.has_environment("LOOK_X") else 6.0, 0.5, float(OS.get_environment("LOOK_Z")) if OS.has_environment("LOOK_Z") else 2.6))
+	cam.fov = float(OS.get_environment("CAM_FOV")) if OS.has_environment("CAM_FOV") else 66.0
 	cam.make_current()
 	for i: int in 10:
 		await get_tree().process_frame

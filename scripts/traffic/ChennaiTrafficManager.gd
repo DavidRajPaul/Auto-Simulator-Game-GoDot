@@ -41,6 +41,8 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _player: Node3D
 var _honk: AudioStreamPlayer3D
 var _respawn_queue: Array[TrafficVehicleAI] = []
+## Rigid bodies that take over a moving vehicle the player hits hard (KnockedVehicles.gd).
+var knocked: KnockedVehicles
 var _quest_ambulance: TrafficVehicleAI
 var _market_zones: Array[Vector3] = [] # x, z, radius
 var _cow_retry_timer: float = 0.0
@@ -126,6 +128,8 @@ func _ready() -> void:
 		var kind: TrafficVehicleAI.Archetype = mix as TrafficVehicleAI.Archetype
 		v.setup(self, kind, materials[kind])
 		pool.append(v)
+	knocked = KnockedVehicles.new()
+	add_child(knocked)
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
 	SignalBus.traffic_bumped.connect(_on_bumped)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
@@ -276,7 +280,7 @@ func _physics_process(delta: float) -> void:
 			for v: TrafficVehicleAI in pool:
 				if active_vehicle_count() + _respawn_queue.size() >= target_active or woken >= 2:
 					break
-				if not v.active and v.archetype != TrafficVehicleAI.Archetype.STRAY_COW and not _respawn_queue.has(v):
+				if not v.active and not v.knocked and v.archetype != TrafficVehicleAI.Archetype.STRAY_COW and not _respawn_queue.has(v):
 					_respawn_queue.append(v)
 					woken += 1
 	# Parked cattle retry every few seconds (they only appear in market zones).
@@ -290,6 +294,8 @@ func _physics_process(delta: float) -> void:
 	var n: int = 0
 	while not _respawn_queue.is_empty() and n < 2:
 		var rv: TrafficVehicleAI = _respawn_queue.pop_front()
+		if rv.knocked:
+			continue # its model is still lying where the player knocked it
 		# Traffic thinning out after the rush: recycled vehicles park instead of respawning.
 		if dynamic_density and graph_path != "" and rv.archetype != TrafficVehicleAI.Archetype.STRAY_COW \
 				and active_vehicle_count() > target_active:
@@ -614,7 +620,7 @@ func place_scripted_vehicle(kind: String, ahead_m: float) -> TrafficVehicleAI:
 	var pick: TrafficVehicleAI = null
 	var pick_rank: int = 99
 	for v: TrafficVehicleAI in pool:
-		if v.archetype != want:
+		if v.archetype != want or v.knocked:
 			continue
 		var rank: int = 0 if not v.active else (1 if not ViewCheck.on_screen(get_viewport(), v.global_position + Vector3(0, 1, 0), v.half_length() + 1.0) else 2)
 		if rank < pick_rank:
@@ -727,7 +733,10 @@ func _on_bumped(v: Node3D, impact_mps: float) -> void:
 		return
 	var push: Vector3 = (tv.global_position - _player.global_position).normalized() if _player != null else Vector3.ZERO
 	var player_mass: float = (_player as RigidBody3D).mass if _player is RigidBody3D else 365.0
-	tv.bumped(impact_mps, push, player_mass)
+	if _player != null and knocked.knock(tv, impact_mps, push, player_mass, _player.global_position):
+		_respawn_queue.erase(tv)
+	else:
+		tv.bumped(impact_mps, push, player_mass)
 	if _honk != null and tv.archetype != TrafficVehicleAI.Archetype.STRAY_COW:
 		_honk.global_position = tv.global_position
 		_honk.pitch_scale = 0.8 if tv.archetype in [TrafficVehicleAI.Archetype.MTC_BUS, TrafficVehicleAI.Archetype.LORRY] else rng.randf_range(1.15, 1.45)

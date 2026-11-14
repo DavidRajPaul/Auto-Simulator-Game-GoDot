@@ -1,6 +1,6 @@
 shader_type spatial;
 // Chennai street vehicles from tools/art/make_chennai_vehicles.py: no texture, colours are
-// vertex colours (linear), and the body panels carry vertex alpha 0. Each instance repaints
+// vertex colours (linear); body panels carry vertex alpha 0, glass 0.5, the rest 1. Each instance repaints
 // exactly those panels: from INSTANCE_CUSTOM in a MultiMesh (parked rows, use_custom) or from
 // the `paint` instance uniform (traffic). paint.a < 0.5 keeps the model's own silver.
 // One material for every model and every colour, so a kerb of mixed colours is one draw call.
@@ -20,13 +20,15 @@ void vertex() {
 }
 
 void fragment() {
-	float body = 1.0 - step(0.5, COLOR.a);
+	float body = 1.0 - step(0.25, COLOR.a);
+	float glass = step(0.25, COLOR.a) * (1.0 - step(0.75, COLOR.a));
 	vec3 c = COLOR.rgb;
 	if (v_paint.a > 0.5) {
 		c = mix(c, to_linear(v_paint.rgb), body);
 	}
 	ALBEDO = c;
-	ROUGHNESS = mix(0.7, 0.42, body);
+	// Paint is a soft gloss, glass a dark mirror, everything else matte.
+	ROUGHNESS = mix(mix(0.7, 0.36, body), 0.08, glass);
 	METALLIC = 0.0;
-	SPECULAR = mix(0.5, 0.6, body);
+	SPECULAR = mix(mix(0.5, 0.6, body), 0.9, glass);
 }

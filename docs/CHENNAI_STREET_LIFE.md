@@ -15,20 +15,29 @@ primitives by `tools/art/make_chennai_vehicles.py`, at real size, with no brand 
 
 | File | What it is | Tris | Size (w × h × l) |
 |---|---|---|---|
-| `moped.glb` | Step-through moped, thin spoked wheels, load carrier | ~700 | 0.62 × 1.23 × 1.82 m |
-| `commuter_bike.glb` | 100 cc commuter bike, saree guard, grab rail | ~800 | 0.68 × 1.25 × 1.92 m |
-| `cruiser_bike.glb` | Classic 350 cc cruiser, round lamp, tan seats, long silencer | ~860 | 0.76 × 1.26 × 2.10 m |
-| `bicycle.glb` | Roadster bicycle with carrier and chain guard (parked only) | ~590 | 0.55 × 1.04 × 1.80 m |
-| `hatchback.glb` | Small hatchback, the commonest Chennai car | ~670 | 1.82 × 1.52 × 3.87 m |
-| `tallboy.glb` | Tall-boy city hatchback with roof rails | ~690 | 1.64 × 1.71 × 3.62 m |
-| `micro_van.glb` | One-box micro van | ~670 | 1.53 × 1.64 × 3.39 m |
-| `mini_truck.glb` | Mini truck loaded with 20 L water cans | ~1400 | 1.64 × 1.85 × 3.82 m |
+| `moped.glb` | Step-through moped, thin spoked wheels, load carrier | ~1,750 | 0.61 × 1.25 × 1.82 m |
+| `commuter_bike.glb` | 100 cc commuter bike, alloy wheels, saree guard, grab rail | ~2,240 | 0.67 × 1.28 × 1.94 m |
+| `cruiser_bike.glb` | Classic 350 cc cruiser, round lamp, tan seats, long silencer | ~2,350 | 0.75 × 1.30 × 2.12 m |
+| `bicycle.glb` | Roadster bicycle with carrier and chain guard (parked only) | ~1,170 | 0.55 × 1.05 × 1.80 m |
+| `hatchback.glb` | Small hatchback, the commonest Chennai car | ~2,520 | 1.70 (2.02 with mirrors) × 1.54 × 3.87 m |
+| `tallboy.glb` | Tall-boy city hatchback with roof rails | ~2,560 | 1.52 × 1.68 × 3.62 m |
+| `micro_van.glb` | One-box micro van | ~2,530 | 1.41 × 1.65 × 3.39 m |
+| `mini_truck.glb` | Mini truck loaded with 20 L water cans | ~4,190 | 1.50 × 1.85 × 3.82 m |
 
-Each is one mesh, one material, no texture. Body panels carry vertex alpha 0;
+Nov 14 device feedback on the first set ("looking very low poly"): bodies are now smooth-shaded
+lofts. A car is ~30 cross-sections of 10 points swept nose to tail (curved roof and windscreen,
+tumblehome, rounded corners, glass and pillars by region), with turned tyres, alloy wheels, wheel
+wells, door seams, handles, mirrors, lamps, grille and plates. Two-wheelers have turned tyres,
+rounded tanks, seats, cowls, engines with fins, forks, shocks and indicators. They are still
+built shapes, not scans: for photo-real vehicles the owner can generate models (Tripo, like the
+Bolero and the buses) and they bake through the same one-mesh pipeline.
+
+Each is one mesh, one material, no texture. Body panels carry vertex alpha 0, glass 0.5;
 `shaders/vehicle_paint.gdshader` repaints exactly those panels per instance (MultiMesh custom data
 for parked rows, the `paint` instance uniform for traffic), so a kerb of mixed colours is still
 one draw call per model. Palettes: `PaintSwap.TWO_WHEELER_PAINTS`, `PaintSwap.CAR_PAINTS`.
-`tests/shot_chennai_vehicles.tscn` renders the line-up (`docs/images/chennai_vehicles_lineup.png`).
+`tests/shot_chennai_vehicles.tscn` renders the line-up (`docs/images/chennai_vehicles_cars.png`,
+`chennai_vehicles_bikes.png`).
 
 ## Parked vehicles at the same draw budget
 
@@ -64,6 +73,42 @@ draw calls, no colliders.
 * **Birds** (`BirdFlock.gd`, `shaders/bird_flock.gdshader`): 32 crows and pigeons wheeling over the
   roofs and 2 black kites soaring high, flown entirely on the GPU in ONE MultiMesh (+1 draw call),
   re-centred round the camera every 110 m, roosting at night.
+
+## The living city (Nov 14)
+
+Owner: "collision physics for moving vehicles too", "fallen people go below the road", "some
+roads clean, some dusty or full of potholes", "every open shop must have a shopkeeper and a few
+customers", "ladies drawing kolams in the early morning", "rain must make people run for
+shelter, some with umbrellas in rain and summer".
+
+* **Moving traffic physics** (`KnockedVehicles.gd`): traffic still drives as 18 pooled kinematic
+  bodies. When the auto hits a two-wheeler (≥ 2.2 m/s closing), an NPC auto (≥ 3.8) or a car
+  (≥ 4.5), the vehicle is handed to one of 3 pre-built `RigidBody3D`s: same place, size and real
+  mass, its own speed plus the momentum of the hit. A scooter goes over and slides with its
+  rider; a car is shoved and spun; both can be hit again. The traffic slot stays out of the pool
+  until the body is handed back (after 9 s, once off screen or 75 m away). Buses, lorries,
+  service vehicles and cattle keep the stop-honk-recoil. Nothing is instanced while driving.
+* **Fallen bodies**: the fall clips put hands and forearms at or below the node, and a lying body
+  often straddles bare ground (-0.15) and road (+0.06). A body that is down now rests on the
+  highest ground under its whole length plus a small lift (`PedestrianManager.DOWN_LIFT_M`).
+* **Road condition** (`WorldChunkStreamer.road_condition`, `street_surface.gdshader`): a slow
+  world noise in UV.y makes ~39 % of road length clean, ~33 % dusty (sand drifted over the
+  asphalt) and ~28 % broken (potholes with crumbled rims, puddles in rain). Potholes are a small
+  procedural noise evaluated only on broken stretches: still two texture lookups per pixel.
+* **Shop people** (`ShopPeople.gd`, `tools/assets/bake_shop_people.py`): dress `"shop_people"`
+  holds ~63,600 spots (a shopkeeper at each shop bay and kerb stall, one or two customers facing
+  the shop). The eight standing figures share one 1024 × 512 atlas, so the nearest 40 open spots
+  within 62 m merge into ONE mesh (one draw call) at each figure's ~900-triangle import LOD.
+  Shops 08:00–22:00, stalls 06:00–21:00; nobody stands on a carriageway or inside a wall.
+* **Kolam drawing** (05:25–07:35, dry weather): up to 4 pooled women stand at kolam spots bent
+  over the pattern, right hand tracing it (`PoseModifier.KOLAM`, a procedural pose on the idle
+  clip: no kolam mocap exists in the project). Temple gates always get a kolam.
+* **Rain**: on `weather_changed`, 40 % of walkers open an umbrella and walk on, the rest run to
+  the nearest shop front within 45 m and wait there (or just run if none is near). Umbrellas are
+  ONE MultiMesh (one draw call, only while any is open); 20 % of women also carry one in the
+  11:00–15:30 sun. After the rain everyone walks on.
+
+Perf probe on `main_chennai`: 140 / 150 draw calls, 660k primitives.
 
 Tests: `tests/run_street_life_tests` (models, paint, parking mix, traffic variants, street life
 data and mesh, birds).

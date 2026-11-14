@@ -156,6 +156,9 @@ var _variant_paint: Array[bool] = []
 var vehicle_variant: int = -1
 var _model: Node3D = null
 var _rider: Node3D = null
+## True while a KnockedVehicles rigid body carries this slot's model (the slot stays out of
+## the pool until it is handed back).
+var knocked: bool = false
 var _route_board: Label3D = null
 var _dwell: float = 0.0
 var _served_edge: int = -1
@@ -574,6 +577,8 @@ static func two_wheeler_variant(n: int) -> Array:
 	return TWO_WHEELER_VARIANTS[order[slot]]
 
 func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
+	if knocked and manager != null and manager.knocked != null:
+		manager.knocked.reclaim(self)
 	_shape.disabled = true
 	bumped_timer = 0.0
 	recoil_mps = 0.0
@@ -618,6 +623,20 @@ func deactivate() -> void:
 	global_position = Vector3(0.0, -200.0, float(get_index()) * 15.0)
 	if is_inside_tree():
 		reset_physics_interpolation()
+
+## The nodes a knock hands to the rigid body: the model shown now and the rider.
+func knock_visuals() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	if _model != null and _model.visible and _model.get_parent() == self:
+		out.append(_model)
+		if _rider != null and _rider.get_parent() == self:
+			out.append(_rider)
+	return out
+
+## Leave the road graph for a rigid body: off the pool, no respawn until handed back.
+func release_for_knock() -> void:
+	deactivate()
+	knocked = true
 
 func half_width() -> float:
 	return body.x * 0.5
