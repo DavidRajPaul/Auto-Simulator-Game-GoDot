@@ -5,7 +5,7 @@ SETTINGS,Settings,செட்டிங்ஸ்
 GARAGE,Garage,கேரேஜ்
 CLOSE,Close,மூடு
 DAY,Day,நாள்
-FINE_TITLE,Traffic violation,டிராஃபிக் ஃபைன்
+FINE_TITLE,Traffic violation,போக்குவரத்து விதிமீறல்
 FINE_CHALLAN,Challan no.,சலான் எண்
 FINE_OFFENCE,Offence,என்ன தப்பு
 FINE_REASON_RED_LIGHT,Jumped a red signal,ரெட் சிக்னலைத் தாண்டிட்டே
@@ -75,7 +75,7 @@ OFF,Off,ஆஃப்
 MAIN_MENU,Main menu,மெயின் மெனு
 SAVED_AUTOMATICALLY,Your progress saves automatically.,உங்கள் முன்னேற்றம் தானாகச் சேமிக்கப்படும்.
 CONTINUE,Continue,தொடர்
-NEW_GAME,New career,புது கேரியர்
+NEW_GAME,New career,புதிய பயணம்
 NEW_GAME_CONFIRM,Start again from ₹500? Your current career will be replaced.,₹500-ல இருந்து திரும்ப ஆரம்பிக்கலாமா? இப்போ இருக்குற ப்ரோக்ரஸ் போயிடும்.
 YES_START,"Yes, start again","ஆமா, ஆரம்பிக்கலாம்"
 CREDITS,Credits,கிரெடிட்ஸ்
@@ -168,7 +168,7 @@ TUT_GPS,Follow the green line on the road and the map. Drive smooth: the tea cup
 TUT_GPS_HINT,Turn where the banner shows. Hard braking spills the tea cup.,பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக் டீயைக் கொட்டும்.
 TUT_DROP_OFF,Almost there. Stop inside the green ring to drop her off.,வந்தாச்சு. பச்சை வட்டத்துக்குள் நிறுத்தி இறக்கு.
 TUT_DROP_OFF_HINT,Come to a full stop inside the green ring.,பச்சை வட்டத்துக்குள் முழுசா நிறுத்து.
-TUT_FREE_ROAM,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.",இப்போ நீ தான் பாஸ்! முதல் சவாரிக்கு +₹100 போனஸ். மினி மேப்பை தட்டு. தங்க நிற ! மார்க்கர் சைடு குவெஸ்ட். ஒண்ணை செலக்ட் பண்ணி அங்க போய் நிறுத்து.
+TUT_FREE_ROAM,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.",இப்போ நீ தான் பாஸ்! முதல் சவாரிக்கு +₹100 போனஸ். மினி மேப்பை தட்டு. தங்க நிற ! மார்க்கர் கூடுதல் சவாலைக் காட்டும். ஒண்ணை செலக்ட் பண்ணி அங்க போய் நிறுத்து.
 TUT_ALL_DONE,"All the best, thambi. The road is yours.",சூப்பர் தம்பி! இனி ரோடு உன்னோடது.
 TUT_KICK_TASK,"Tap KICK 3 times, steady",கிக்-ஐ 3 முறை நிதானமா அழுத்து
 TUT_PULL_OUT_TASK,Hold ACCEL until 15 km/h,15 கி.மீ வரை ஆக்சல்-ஐ பிடி
@@ -183,20 +183,20 @@ TUT_FREE_ROAM_TASK,Free roam! Tap the mini-map,சுதந்திரமா �
 TUT_SKIP,SKIP,தவிர்
 TUT_TAP,TAP,அழுத்து
 TUT_HOLD,HOLD,பிடி
-QUEST_JOURNAL,Side quests,சைடு குவெஸ்ட்ஸ்
-QUEST_EMPTY,New side quests are coming soon.,புது சைடு குவெஸ்ட்ஸ் சீக்கிரம் வரும்!
+QUEST_JOURNAL,Side quests,கூடுதல் சவால்கள்
+QUEST_EMPTY,New side quests are coming soon.,புது சவால்கள் சீக்கிரம் வரும்!
 QUEST_DONE,Done,முடிஞ்சிடுச்சு
 QUEST_LOCKED,Locked,இன்னும் அன்லாக் ஆகல
 QUEST_TRACKED,On route,ரூட்ல இருக்கு
 QUEST_AVAILABLE,Available,ரெடியா இருக்கு
 QUEST_LEVEL,Reach level %d,%d-ஆம் நிலையை எட்டிடு
-QUEST_PREREQUISITE,Finish earlier quests to unlock,முன்னாடி இருந்த குவெஸ்ட்ஸை முடித்து திறக்கவும்
+QUEST_PREREQUISITE,Finish earlier quests to unlock,முன்னாடி இருந்த சவால்களை முடித்து திறக்கவும்
 QUEST_TRACK,Go there,அங்க போ
 QUEST_UNTRACK,Clear route,ரூட்டை கிளியர் பண்ணு
 QUEST_START,Start,ஆரம்பி
 QUEST_STOP_AT_KERB,Stop at the quest's gold marker to begin.,"தொடங்க, தங்கக் குறியில் நிறுத்து."
-QUEST_NEARBY,Side quest: %s,பக்கக் கதை: %s
-QUEST_LESSON,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,ரோட்டுல தங்க கலர் மார்க்கர் தெரிஞ்சா அது சைடு குவெஸ்ட். அங்க நிறுத்தி என்ன வேலைன்னு பார்த்துட்டு ஆரம்பி என்பதைத் தட்டு.
+QUEST_NEARBY,Side quest: %s,கூடுதல் சவால்: %s
+QUEST_LESSON,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,ரோட்டுல தங்க கலர் மார்க்கர் தெரிஞ்சா அது கூடுதல் சவால். அங்க நிறுத்தி என்ன வேலைன்னு பார்த்துட்டு ஆரம்பி என்பதைத் தட்டு.
 QUEST_DONE_CHOICE,Finish,முடிச்சிடு
 QUEST_TAKE_PHOTO,Take photo,ஃபோட்டோ எடு
 QUEST_INSPECT,Look,பார்
