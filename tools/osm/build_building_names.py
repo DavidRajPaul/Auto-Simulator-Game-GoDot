@@ -360,6 +360,11 @@ def main() -> int:
             kind = "shop"
         px = a[0] + (c[0] - a[0]) * t_mid + nx * 0.1
         pz = a[1] + (c[1] - a[1]) * t_mid + nz * 0.1
+        # The edge's midpoint faced the street, but check the board's own spot too: on a long,
+        # angled facade one end can be nearer a road behind it (phase 10 "Boards face the street").
+        if road_dist(px + nx * 2.0, pz + nz * 2.0) > road_dist(px - nx * 2.0, pz - nz * 2.0) + 0.6:
+            stats["no_street"] += 1
+            continue
         boards.append([round(px, 2), round(pz, 2), round(math.atan2(nx, nz), 3), round(width, 2), round(y, 2),
                        kind, game, ta, style])
         row["placed"] = kind

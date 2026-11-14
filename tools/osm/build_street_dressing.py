@@ -26,6 +26,9 @@ import math
 import random
 from pathlib import Path
 
+import numpy as np
+from PIL import Image, ImageDraw
+
 ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "data" / "world"
 OUT = WORLD / "dress"
@@ -74,12 +77,49 @@ def point_in(px, pz, poly) -> bool:
     return inside
 
 
+ROAD_RES = 0.5  # m per cell of the carriageway mask
+
+
+def road_raster(manifest: dict) -> tuple[np.ndarray, tuple[float, float]]:
+    """ROAD_RES mask of every drawn carriageway triangle (road, lane, junction) and its origin."""
+    size = float(manifest["chunk_size"])
+    ci = [c[0] for c in manifest["chunks"]]
+    cj = [c[1] for c in manifest["chunks"]]
+    ox, oz = min(ci) * size, min(cj) * size
+    w, h = int(((max(ci) + 1) * size - ox) / ROAD_RES), int(((max(cj) + 1) * size - oz) / ROAD_RES)
+    img = Image.new("L", (w, h), 0)
+    draw = ImageDraw.Draw(img)
+    for c in manifest["chunks"]:
+        d = json.loads((WORLD / "chunks" / f"c_{c[0]}_{c[1]}.json").read_text())
+        for kind in ("road", "lane", "junction"):
+            surf = d.get("surf", {}).get(kind)
+            if not surf:
+                continue
+            v, idx = surf["v"], surf["i"]
+            for t in range(0, len(idx) - 2, 3):
+                draw.polygon([((v[2 * idx[t + k]] - ox) / ROAD_RES, (v[2 * idx[t + k] + 1] - oz) / ROAD_RES) for k in range(3)], fill=1)
+    return np.asarray(img, dtype=bool), (ox, oz)
+
+
 def main() -> int:
     manifest = json.loads((WORLD / "manifest.json").read_text())
     size = float(manifest["chunk_size"])
     zones = manifest["zones"]
     # Building footprints in a coarse grid for "is this spot inside a building" checks.
     grid: dict = {}
+    # The DRAWN carriageway (osm2streets road, lane and junction surfaces) at ROAD_RES. Kerb spots
+    # are offsets from the graph centre-line, but the real surface is often wider (divided
+    # roads, junction mouths, side roads): Nov 14, after the arterials got their real lane
+    # counts, ~940 trees stood in the road. Nothing is placed where this raster is set.
+    carriage, origin = road_raster(manifest)
+
+    def on_road(x: float, z: float, r: float) -> bool:
+        i0, j0 = int((x - r - origin[0]) / ROAD_RES), int((z - r - origin[1]) / ROAD_RES)
+        i1, j1 = int((x + r - origin[0]) / ROAD_RES) + 1, int((z + r - origin[1]) / ROAD_RES) + 1
+        if i1 <= 0 or j1 <= 0 or i0 >= carriage.shape[1] or j0 >= carriage.shape[0]:
+            return False
+        return bool(carriage[max(j0, 0):j1, max(i0, 0):i1].any())
+
     for c in manifest["chunks"]:
         d = json.loads((WORLD / "chunks" / f"c_{c[0]}_{c[1]}.json").read_text())
         for b in d.get("blds", []):
@@ -195,7 +235,7 @@ def main() -> int:
             x, z, dx, dz = at(s)
             lx, lz = dz * side, -dx * side
             px, pz = x + lx * (half + POLE_KERB), z + lz * (half + POLE_KERB)
-            if not blocked(px, pz, 0.3):
+            if not blocked(px, pz, 0.3) and not on_road(px, pz, 0.0):
                 yaw = math.atan2(dx, dz)
                 item = [round(px, 2), round(pz, 2), round(yaw, 3)]
                 put("poles", px, pz, item)
@@ -222,7 +262,7 @@ def main() -> int:
                 tx, tz = x + lx * off, z + lz * off
                 if blocked(tx, tz, 1.4):
                     tx, tz = tx - lx * FOOTPATH_PULL, tz - lz * FOOTPATH_PULL
-                if (trng.random() < TREE_CHANCE and not blocked(tx, tz, 0.9)
+                if (trng.random() < TREE_CHANCE and not blocked(tx, tz, 0.9) and not on_road(tx, tz, 0.3)
                         and (tside == -side or not near_pole(tx, tz))):
                     put("trees", tx, tz, tree_item(tx, tz))
                 s += step * trng.uniform(0.75, 1.25)
@@ -239,6 +279,7 @@ def main() -> int:
                 tx = gx + trng.uniform(-0.35, 0.35) * PARK_STEP
                 tz = gz + trng.uniform(-0.35, 0.35) * PARK_STEP
                 if (trng.random() < PARK_CHANCE and point_in(tx, tz, poly) and not blocked(tx, tz, 2.0)
+                        and not on_road(tx, tz, 1.0)
                         and road_gap(tx, tz) > PARK_ROAD_CLEAR):
                     put("trees", tx, tz, tree_item(tx, tz))
                     park_trees += 1

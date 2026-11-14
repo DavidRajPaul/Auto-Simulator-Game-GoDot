@@ -546,15 +546,31 @@ func _test_living_city() -> void:
 	_check("They come back once the fire is long over", not shops.clearing())
 	# --- Two people chatting at the kerb.
 	var chats: int = 0
+	# Nearest first: a walker past ANIMATE_M has its AnimationPlayer off (and shop people near the
+	# auto now take some of the pool, so the first idle walker in the list may be far away).
+	var idlers: Array[PedestrianManager.Walker] = []
 	for o: PedestrianManager.Walker in peds.people:
-		if o.active and o.idle and o.role == "" and not o.fleeing and o.react == "":
-			if peds._start_chat(o):
-				chats += 1
-				break
+		if o.active and o.role == "" and not o.fleeing and o.react == "":
+			idlers.append(o)
+	idlers.sort_custom(func(a: PedestrianManager.Walker, b: PedestrianManager.Walker) -> bool: return a.pos.distance_to(peds._player) < b.pos.distance_to(peds._player))
+	var started: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in idlers:
+		var was_idle: bool = o.idle
+		var was_active: bool = o.anim != null and o.anim.active
+		o.idle = true
+		if o.anim != null:
+			o.anim.active = true
+		if peds._start_chat(o):
+			chats += 1
+			started = o
+			break
+		o.idle = was_idle
+		if o.anim != null:
+			o.anim.active = was_active
 	for i: int in 10:
 		await get_tree().process_frame
 	var pair_ok: bool = false
-	for o: PedestrianManager.Walker in peds.people:
+	for o: PedestrianManager.Walker in [started] if started != null else []:
 		if o.active and o.role == "chat" and o.partner != null:
 			var p: PedestrianManager.Walker = o.partner
 			var facing: float = o.heading.dot((p.pos - o.pos).normalized())
@@ -568,9 +584,8 @@ func _test_living_city() -> void:
 			break
 	_check("Two people stop to chat face to face, one talking at a time", chats == 1 and pair_ok and peds.chat_count() >= 2, dbg)
 	var talker: PedestrianManager.Walker = null
-	for o: PedestrianManager.Walker in peds.people:
-		if o.active and o.role == "chat" and o.talking:
-			talker = o
+	if started != null and started.role == "chat":
+		talker = started if started.talking else started.partner
 	var playing: String = talker.anim.current_animation if talker != null and talker.anim != null else ""
 	_check("The talker plays one of the talking clips", playing in PedestrianManager.CHAT_CLIPS, playing)
 	if talker != null:

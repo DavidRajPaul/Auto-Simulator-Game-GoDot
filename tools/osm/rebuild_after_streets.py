@@ -7,7 +7,8 @@ lanes, new widths) all of them must run again, in this order (see AGENTS.md less
   -> empty lots -> signal posts, street signs -> barricades -> beach carts -> beach fence
   -> medians -> road works -> compounds -> building names -> lodges/eateries
   -> building types (classify) -> plots (walls, gates) -> street life -> density audit.
-Usage: python3 tools/osm/rebuild_after_streets.py   (needs data/osm/streets from run_osm2streets.py)
+Usage: python3 tools/osm/rebuild_after_streets.py [--from build_street_dressing.py]
+       (needs data/osm/streets from run_osm2streets.py; --from resumes the chain at a step)
 """
 from __future__ import annotations
 
@@ -43,7 +44,10 @@ ORDER = [
 
 
 def main() -> int:
-    for step in ORDER:
+    start = 0
+    if "--from" in sys.argv:
+        start = ORDER.index(sys.argv[sys.argv.index("--from") + 1])
+    for step in ORDER[start:]:
         print(f"=== {step}", flush=True)
         r = subprocess.run([sys.executable, str(HERE / step)], cwd=HERE.parents[1])
         if r.returncode != 0:
