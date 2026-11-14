@@ -1,0 +1,810 @@
+key,classification,proposed_speaker,english,tamil,suggested_ogg_pattern
+PAUSE,other_ui,,Pause,பாஸ்,voice/pause_{en|ta}.ogg
+RESUME,other_ui,,Resume,தொடரு,voice/resume_{en|ta}.ogg
+SETTINGS,other_ui,,Settings,செட்டிங்ஸ்,voice/settings_{en|ta}.ogg
+GARAGE,other_ui,,Garage,கேரேஜ்,voice/garage_{en|ta}.ogg
+CLOSE,other_ui,,Close,மூடு,voice/close_{en|ta}.ogg
+DAY,other_ui,,Day,நாள்,voice/day_{en|ta}.ogg
+FINE_TITLE,other_ui,,Traffic violation,போக்குவரத்து விதிமீறல்,voice/fine_title_{en|ta}.ogg
+FINE_CHALLAN,other_ui,,Challan no.,சலான் எண்,voice/fine_challan_{en|ta}.ogg
+FINE_OFFENCE,other_ui,,Offence,என்ன தப்பு,voice/fine_offence_{en|ta}.ogg
+FINE_REASON_RED_LIGHT,other_ui,,Jumped a red signal,ரெட் சிக்னலைத் தாண்டிட்டே,voice/fine_reason_red_light_{en|ta}.ogg
+FINE_WHERE,other_ui,,Where,எங்க,voice/fine_where_{en|ta}.ogg
+FINE_WHERE_UNKNOWN,other_ui,,A signal junction,சிக்னல் சந்திப்பு,voice/fine_where_unknown_{en|ta}.ogg
+FINE_WHEN,other_ui,,When,எப்போ,voice/fine_when_{en|ta}.ogg
+FINE_AMOUNT,other_ui,,Fine,ஃபைன்,voice/fine_amount_{en|ta}.ogg
+FINE_PAID_NOW,other_ui,,Paid now,இப்போ கட்டினது,voice/fine_paid_now_{en|ta}.ogg
+FINE_STILL_DUE,other_ui,,Still due,இன்னும் பாக்கி,voice/fine_still_due_{en|ta}.ogg
+FINE_DUE_NOTE,other_ui,,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. இன்னும் %s பாக்கி இருக்கு. அடுத்து சம்பாதிக்கிற காசுல இருந்து பிடிச்சிடுவாங்க.,voice/fine_due_note_{en|ta}.ogg
+FINE_BALANCE,other_ui,,Wallet now,வாலெட்டில் மீதி,voice/fine_balance_{en|ta}.ogg
+FINE_TIP_RED_LIGHT,other_ui,,Stop behind the line when your signal is red. Amber is never fined.,ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கு ஃபைன் கிடையாது.,voice/fine_tip_red_light_{en|ta}.ogg
+FINE_RECOVERED_PART,other_ui,,₹%d taken for your pending fine. ₹%d still due.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி.,voice/fine_recovered_part_{en|ta}.ogg
+FINE_RECOVERED_DONE,other_ui,,₹%d taken for your pending fine. Fine paid off.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. ஃபைன் முழுதும் கட்டியாச்சு.,voice/fine_recovered_done_{en|ta}.ogg
+OK,other_ui,,OK,சரி,voice/ok_{en|ta}.ogg
+CONTROLS,other_ui,,Controls,கன்ட்ரோல்ஸ்,voice/controls_{en|ta}.ogg
+CTRL_WHEEL,other_ui,,Handlebar drag,ஹேண்டிலை டிராக் பண்ணு,voice/ctrl_wheel_{en|ta}.ogg
+CTRL_ARCADE,other_ui,,Arrow buttons,அம்பு பட்டன்ஸ்,voice/ctrl_arcade_{en|ta}.ogg
+CTRL_TILT,other_ui,,Tilt phone,போனை சாய்ச்சு,voice/ctrl_tilt_{en|ta}.ogg
+GRAPHICS,other_ui,,Graphics,கிராஃபிக்ஸ்,voice/graphics_{en|ta}.ogg
+GFX_LOW,other_ui,,Low,லோ,voice/gfx_low_{en|ta}.ogg
+GFX_MED,other_ui,,Medium,மீடியம்,voice/gfx_med_{en|ta}.ogg
+GFX_HIGH,other_ui,,High,ஹை,voice/gfx_high_{en|ta}.ogg
+LANGUAGE,other_ui,,Language,லாங்குவேஜ்,voice/language_{en|ta}.ogg
+VOLUME,other_ui,,Volume,வால்யூம்,voice/volume_{en|ta}.ogg
+FILL_LPG,other_ui,,Fill LPG,எல்பிஜி ஃபில் பண்ணு,voice/fill_lpg_{en|ta}.ogg
+CHARGE_EV,other_ui,,Charge battery,பேட்டரி சார்ஜ் பண்ணு,voice/charge_ev_{en|ta}.ogg
+OPEN_GARAGE,other_ui,,Open garage,கேரேஜைத் திற,voice/open_garage_{en|ta}.ogg
+WRONG_FUEL_EV,other_ui,,EV kiosk — your auto runs on LPG,இது ஈவி சார்ஜிங் ஸ்டேஷன் — உன் ஆட்டோ எல்பிஜி,voice/wrong_fuel_ev_{en|ta}.ogg
+WRONG_FUEL_LPG,other_ui,,LPG bunk — your auto is electric,இது எல்பிஜி பங்க் — உன் ஆட்டோ எலக்ட்ரிக்,voice/wrong_fuel_lpg_{en|ta}.ogg
+TANK_FULL,other_ui,,Tank already full,டேங்க் ஏற்கனவே நிரம்பியுள்ளது,voice/tank_full_{en|ta}.ogg
+TOW,other_ui,,Tow to nearest station,பக்கத்துல இருக்குற நிலையத்துக்கு இழு,voice/tow_{en|ta}.ogg
+OUT_OF_FUEL,other_ui,,Out of fuel!,ஃப்யூயல் காலியாயிடுச்சு!,voice/out_of_fuel_{en|ta}.ogg
+TAB_REPAIR,other_ui,,Repair,ரிப்பேர்,voice/tab_repair_{en|ta}.ogg
+TAB_UPGRADES,other_ui,,Upgrades,அப்கிரேட்ஸ்,voice/tab_upgrades_{en|ta}.ogg
+TAB_HORN,other_ui,,Horn,ஹாரன்,voice/tab_horn_{en|ta}.ogg
+TAB_PAINT,other_ui,,Paint,பெயிண்ட்,voice/tab_paint_{en|ta}.ogg
+TAB_AUTOS,other_ui,,Autos,ஆட்டோக்கள்,voice/tab_autos_{en|ta}.ogg
+CONDITION,other_ui,,Condition,வண்டி கண்டிஷன்,voice/condition_{en|ta}.ogg
+REPAIR_ALL,other_ui,,Repair,ரிப்பேர் பண்ணு,voice/repair_all_{en|ta}.ogg
+NOTHING_TO_REPAIR,other_ui,,Good as new!,புதுசு மாதிரி இருக்கு!,voice/nothing_to_repair_{en|ta}.ogg
+LEVEL,other_ui,,Level,லெவல்,voice/level_{en|ta}.ogg
+MAXED,other_ui,,Maxed,மேக்ஸ்,voice/maxed_{en|ta}.ogg
+BUY,other_ui,,Buy,வாங்கு,voice/buy_{en|ta}.ogg
+EQUIP,other_ui,,Use,யூஸ் பண்ணு,voice/equip_{en|ta}.ogg
+EQUIPPED,other_ui,,In use,யூஸ்ல இருக்கு,voice/equipped_{en|ta}.ogg
+OWNED,other_ui,,Owned,உன்கிட்ட இருக்கு,voice/owned_{en|ta}.ogg
+DRIVE,other_ui,,Drive,ஓட்டு,voice/drive_{en|ta}.ogg
+DRIVING,other_ui,,Driving,ஓட்டிட்டு இருக்கே,voice/driving_{en|ta}.ogg
+NOT_ENOUGH,other_ui,,Not enough money,காசு பத்தல,voice/not_enough_{en|ta}.ogg
+SHIFT_OVER,other_ui,,Shift over!,ஷிஃப்ட் முடிஞ்சிடுச்சு!,voice/shift_over_{en|ta}.ogg
+EARNED,other_ui,,Earned,சம்பாத்தியம்,voice/earned_{en|ta}.ogg
+RIDES,other_ui,,Rides,சவாரிகள்,voice/rides_{en|ta}.ogg
+FUEL_SPENT,other_ui,,Fuel,ஃப்யூயல்,voice/fuel_spent_{en|ta}.ogg
+REPAIRS,other_ui,,Repairs,பழுது,voice/repairs_{en|ta}.ogg
+WALLET,other_ui,,Wallet,வாலெட்,voice/wallet_{en|ta}.ogg
+RATING,other_ui,,Rating,ரேட்டிங்,voice/rating_{en|ta}.ogg
+NEXT_DAY,other_ui,,Start next day,அடுத்த நாளை ஆரம்பி,voice/next_day_{en|ta}.ogg
+RESET_PROGRESS,other_ui,,Reset progress,ப்ரோக்ரஸை ரீசெட் பண்ணு,voice/reset_progress_{en|ta}.ogg
+RESET_AUTO,other_ui,,Reset auto,ஆட்டோவை ரீசெட் பண்ணு,voice/reset_auto_{en|ta}.ogg
+VIBRATION,other_ui,,Vibration,அதிர்வு,voice/vibration_{en|ta}.ogg
+GUIDE_ARROW,other_ui,,Guide arrow,வழிகாட்டி அம்பு,voice/guide_arrow_{en|ta}.ogg
+GUIDE_RIDER,other_ui,,Rider,பாசஞ்சர்,voice/guide_rider_{en|ta}.ogg
+GUIDE_DROP,other_ui,,Drop,டிராப்,voice/guide_drop_{en|ta}.ogg
+ON,other_ui,,On,ஆன்,voice/on_{en|ta}.ogg
+OFF,other_ui,,Off,ஆஃப்,voice/off_{en|ta}.ogg
+MAIN_MENU,other_ui,,Main menu,மெயின் மெனு,voice/main_menu_{en|ta}.ogg
+SAVED_AUTOMATICALLY,other_ui,,Your progress saves automatically.,உங்கள் முன்னேற்றம் தானாகச் சேமிக்கப்படும்.,voice/saved_automatically_{en|ta}.ogg
+CONTINUE,other_ui,,Continue,தொடர்,voice/continue_{en|ta}.ogg
+NEW_GAME,other_ui,,New career,புதிய பயணம்,voice/new_game_{en|ta}.ogg
+NEW_GAME_CONFIRM,other_ui,,Start again from ₹500? Your current career will be replaced.,₹500-ல இருந்து திரும்ப ஆரம்பிக்கலாமா? இப்போ இருக்குற ப்ரோக்ரஸ் போயிடும்.,voice/new_game_confirm_{en|ta}.ogg
+YES_START,other_ui,,"Yes, start again","ஆமா, ஆரம்பிக்கலாம்",voice/yes_start_{en|ta}.ogg
+CREDITS,other_ui,,Credits,கிரெடிட்ஸ்,voice/credits_{en|ta}.ogg
+BACK,other_ui,,Back,பேக்,voice/back_{en|ta}.ogg
+QUIT,other_ui,,Quit,வெளியே போ,voice/quit_{en|ta}.ogg
+TAGLINE,other_ui,,Chennai Rickshaw Simulator,சென்னை ஆட்டோ சிமுலேட்டர்,voice/tagline_{en|ta}.ogg
+MENU_HINT,other_ui,,Real Chennai streets from OpenStreetMap. Drive on the left!,நிஜ சென்னை ரோடுகள்! இடது பக்கம் ஓட்ட மறந்துடாதே.,voice/menu_hint_{en|ta}.ogg
+STOP_TO_SHIFT,other_ui,,Stop first to change gear,கியர் மாத்துறதுக்கு முன்னாடி வண்டியை நிறுத்து,voice/stop_to_shift_{en|ta}.ogg
+GEAR_REVERSE,other_ui,,Reverse gear,ரிவர்ஸ் கியர்,voice/gear_reverse_{en|ta}.ogg
+GEAR_DRIVE,other_ui,,Drive,டிரைவ்,voice/gear_drive_{en|ta}.ogg
+SIGNAL_SIR,other_ui,,Signal pottu turn! +2 Respect,சிக்னல் போட்டு திருப்பம்! +2 ரெஸ்பெக்ட்,voice/signal_sir_{en|ta}.ogg
+AUTO_REVERSE,other_ui,,Brake to reverse,பிரேக் மூலம் ரிவர்ஸ்,voice/auto_reverse_{en|ta}.ogg
+LV,other_ui,,Lv,நிலை,voice/lv_{en|ta}.ogg
+LEVEL_UP,other_ui,,Level up! Lv,நிலை உயர்வு! நிலை,voice/level_up_{en|ta}.ogg
+UNLOCKS_AT_LV,other_ui,,Unlocks at Lv,திறக்கும் நிலை,voice/unlocks_at_lv_{en|ta}.ogg
+GOAL_DONE,other_ui,,Goal done,டார்கெட் முடிஞ்சிடுச்சு!,voice/goal_done_{en|ta}.ogg
+ALL_GOALS_DONE,other_ui,,All shift goals done!,இன்னைக்கு எல்லா டார்கெட்டும் முடிஞ்சிடுச்சு!,voice/all_goals_done_{en|ta}.ogg
+GOAL_RIDES,other_ui,,Complete %d rides,%d சவாரிகளை முடிச்சிடு,voice/goal_rides_{en|ta}.ogg
+GOAL_SMOOTH,other_ui,,%d smooth rides (comfort 80%%+),%d மென்மையான சவாரிகள் (வசதி 80%%+),voice/goal_smooth_{en|ta}.ogg
+GOAL_EARN,other_ui,,Earn ₹%d today,இன்று ₹%d சம்பாதிக்கவும்,voice/goal_earn_{en|ta}.ogg
+GOAL_METER,other_ui,,%d Correct Meter rides,%d சரியான மீட்டர் சவாரிகள்,voice/goal_meter_{en|ta}.ogg
+GOAL_GETHU,other_ui,,%d Gap-la Gethu near misses,%d கேப்-ல கெத்து,voice/goal_gethu_{en|ta}.ogg
+GOAL_SIGNAL,other_ui,,Signal %d turns,%d திருப்பங்களில் சிக்னல் போடவும்,voice/goal_signal_{en|ta}.ogg
+UNLOCK_DISPATCH_TEASER,other_ui,,Ride-app bookings are coming to your dashboard soon,சவாரி செயலி முன்பதிவுகள் சீக்கிரமே,voice/unlock_dispatch_teaser_{en|ta}.ogg
+UNLOCK_AIR_HORN,other_ui,,Unlocked: Madras Musical Air-Horn in the garage,திறக்கப்பட்டது: மியூசிக்கல் ஏர்-ஹார்ன்,voice/unlock_air_horn_{en|ta}.ogg
+UNLOCK_EV,other_ui,,Unlocked: Namma Green EV in the garage,திறக்கப்பட்டது: நம்ம கிரீன் ஈவி,voice/unlock_ev_{en|ta}.ogg
+UNLOCK_NEON,other_ui,,Unlocked: Neon Night paint,திறக்கப்பட்டது: நியான் நைட் பெயிண்ட்,voice/unlock_neon_{en|ta}.ogg
+UNLOCK_GOLD_METER,other_ui,,Stand Leader: the stand salutes you,ஸ்டாண்ட் லீடர்: ஸ்டாண்ட் உங்களை வணங்குகிறது,voice/unlock_gold_meter_{en|ta}.ogg
+LOADING_CITY,other_ui,,Loading Chennai…,சென்னை லோட் ஆகுது…,voice/loading_city_{en|ta}.ogg
+LOADING_STREETS,other_ui,,Building the streets…,ரோடுகள் ரெடி ஆகுது…,voice/loading_streets_{en|ta}.ogg
+LOADING_READY,other_ui,,"Vaanga, let's go!","வாங்க, கிளம்பலாம்!",voice/loading_ready_{en|ta}.ogg
+TIP_1,other_ui,,Tip: Chennai drives on the left. Keep to the left lane.,டிப்: சென்னையில இடது பக்கம்தான் ஓட்டணும்.,voice/tip_1_{en|ta}.ogg
+TIP_2,other_ui,,Tip: Slide your thumb from gas to brake without lifting it.,குறிப்பு: விரலை எடுக்காமல் ஆக்சிலரேட்டரிலிருந்து பிரேக்குக்கு நகர்த்தலாம்.,voice/tip_2_{en|ta}.ogg
+TIP_3,other_ui,,Tip: Yellow beams are riders waving you down. Stop right beside one.,டிப்: மஞ்சள் லைட் தெரிஞ்சா பாசஞ்சர் கூப்பிடுறாங்க. பக்கத்துல நிறுத்து.,voice/tip_3_{en|ta}.ogg
+TIP_4,other_ui,,Tip: Honk to move cows and slow traffic out of your lane.,டிப்: மாடுகளும் மெதுவா போற வண்டிகளும் ஒதுங்க ஹாரன் அடி.,voice/tip_4_{en|ta}.ogg
+TIP_5,other_ui,,Tip: Fill LPG at a bunk before the gauge turns red.,டிப்: எல்பிஜி மீட்டர் ரெட் ஆகுறதுக்குள்ள பங்க்ல ஃபில் பண்ணிடு.,voice/tip_5_{en|ta}.ogg
+TIP_6,other_ui,,Tip: Stop fully before shifting between D and R.,"டிப்: டி, ஆர் கியர் மாத்துற முன்னாடி வண்டியை முழுசா நிறுத்து.",voice/tip_6_{en|ta}.ogg
+STAT_SPEED,other_ui,,Top speed,அதிக வேகம்,voice/stat_speed_{en|ta}.ogg
+STAT_COMFORT,other_ui,,Comfort,கம்ஃபர்ட்,voice/stat_comfort_{en|ta}.ogg
+STAT_TANK,other_ui,,LPG tank,எல்பிஜி டேங்க்,voice/stat_tank_{en|ta}.ogg
+GAME_PAUSED,other_ui,,Game paused,கேம் பாஸ்ல இருக்கு,voice/game_paused_{en|ta}.ogg
+COMFORT_CUP,other_ui,,Tea cup,டீ கப்,voice/comfort_cup_{en|ta}.ogg
+FARE_NEGOTIATION,other_ui,,Bargain,பேரம்,voice/fare_negotiation_{en|ta}.ogg
+CHANCE,other_ui,,chance,வாய்ப்பு,voice/chance_{en|ta}.ogg
+SAVARI_COMPLETE,other_ui,,SAVARI COMPLETE!,சவாரி முடிஞ்சிடுச்சு!,voice/savari_complete_{en|ta}.ogg
+TOTAL_EARNED,other_ui,,TOTAL EARNED,மொத்த சம்பாத்தியம்,voice/total_earned_{en|ta}.ogg
+DRIVER_XP,other_ui,,DRIVER XP,டிரைவர் எக்ஸ்பி,voice/driver_xp_{en|ta}.ogg
+NEXT_SAVARI,other_ui,,NEXT SAVARI,அடுத்த சவாரி,voice/next_savari_{en|ta}.ogg
+LEVEL_UP_TITLE,other_ui,,Level up!,லெவல் அப்!,voice/level_up_title_{en|ta}.ogg
+COLLECT,other_ui,,COLLECT,கலெக்ட் பண்ணு,voice/collect_{en|ta}.ogg
+FARE_BILL,other_ui,,NAMMA METER RECEIPT,நம்ம மீட்டர் ரசீது,voice/fare_bill_{en|ta}.ogg
+METER_FARE,other_ui,,Meter fare,மீட்டர் கட்டணம்,voice/meter_fare_{en|ta}.ogg
+COMFORT_TIP,other_ui,,Comfort tip,சௌகரிய டிப்ஸ்,voice/comfort_tip_{en|ta}.ogg
+GETHU_BONUS,other_ui,,Close-pass bonus,நெருக்க ஓட்ட போனஸ்,voice/gethu_bonus_{en|ta}.ogg
+ON_TIME,other_ui,,On time,சரியான நேரம்,voice/on_time_{en|ta}.ogg
+LATE,other_ui,,Late!,லேட்!,voice/late_{en|ta}.ogg
+AD_DOUBLE_FARE,other_ui,,2× fare,இரட்டிப்பு கட்டணம்,voice/ad_double_fare_{en|ta}.ogg
+AD_FUEL_RESCUE,other_ui,,Free half tank,ஃப்ரீ அரை டேங்க்,voice/ad_fuel_rescue_{en|ta}.ogg
+AD_FREE_TOW,other_ui,,Free tow,ஃப்ரீ இழுப்பு,voice/ad_free_tow_{en|ta}.ogg
+AD_TEST_DRIVE,other_ui,,Test drive,டெஸ்ட் டிரைவ்,voice/ad_test_drive_{en|ta}.ogg
+DAILY_REWARD,other_ui,,Daily stand bonus,டெய்லி ஸ்டாண்ட் போனஸ்,voice/daily_reward_{en|ta}.ogg
+CLAIM,other_ui,,Claim,க்ளெய்ம் பண்ணு,voice/claim_{en|ta}.ogg
+DAY_N,other_ui,,Day %d,நாள் %d,voice/day_n_{en|ta}.ogg
+ACHIEVEMENTS,other_ui,,Achievements,அச்சீவ்மென்ட்ஸ்,voice/achievements_{en|ta}.ogg
+DOUBLE_FARE,other_ui,,2× FARE,இரட்டிப்பு கட்டணம்,voice/double_fare_{en|ta}.ogg
+DAILY_COME_BACK,other_ui,,Come back tomorrow — streak: %d day(s).,நாளை வாங்க — தொடர்: %d நாள்,voice/daily_come_back_{en|ta}.ogg
+WATCH_OUT,ambient_voice_candidate,pedestrian_or_warning,Paathu po! Watch out!,பார்த்துப் போ!,voice/watch_out_{en|ta}.ogg
+WATCH_OUT_2,ambient_voice_candidate,pedestrian_or_warning,Konjam gavanama! Take care!,கொஞ்சம் கவனமா!,voice/watch_out_2_{en|ta}.ogg
+WATCH_OUT_3,ambient_voice_candidate,pedestrian_or_warning,Road-a paathu ottunga! Eyes on the road!,ரோட்டைப் பார்த்து ஓட்டுங்க!,voice/watch_out_3_{en|ta}.ogg
+WATCH_OUT_4,ambient_voice_candidate,pedestrian_or_warning,Slow-a ponga! Easy does it!,மெதுவா போங்க!,voice/watch_out_4_{en|ta}.ogg
+WATCH_OUT_5,ambient_voice_candidate,pedestrian_or_warning,Pedestrian nearby! Watch your side!,பாதசாரி அருகில் இருக்காங்க! கவனமா!,voice/watch_out_5_{en|ta}.ogg
+WATCH_OUT_6,ambient_voice_candidate,pedestrian_or_warning,Gap kudunga! Give them room!,வழி விடுங்க!,voice/watch_out_6_{en|ta}.ogg
+TUT_MENTOR,tutorial_ui,murugan_anna,Murugan Anna · Mylapore stand,முருகன் அண்ணா · மயிலாப்பூர் ஸ்டாண்ட்,voice/tut_mentor_{en|ta}.ogg
+TUT_KICK,mentor_voice_candidate,murugan_anna,"Vaa thambi! Engine is off. Pull the KICK lever: kick... kick... kick, nice and steady.",வா தம்பி! இன்ஜின் ஆஃப். கிக்-ஐ நிதானமா இழு: கிக்... கிக்... கிக்.,voice/tut_kick_{en|ta}.ogg
+TUT_KICK_HINT,mentor_voice_candidate,murugan_anna,"Not too fast! One kick every second, three times.","வேகமா வேண்டாம்! ஒரு நொடிக்கு ஒரு கிக், மூணு தடவை.",voice/tut_kick_hint_{en|ta}.ogg
+TUT_PULL_OUT,mentor_voice_candidate,murugan_anna,Super! Now hold ACCEL and pull out onto the road.,"சூப்பர்! ஆக்சல்-ஐ அழுத்திப் பிடி, ரோட்டுக்கு வா.",voice/tut_pull_out_{en|ta}.ogg
+TUT_PULL_OUT_HINT,mentor_voice_candidate,murugan_anna,Keep your thumb on ACCEL until you pass 15 km/h.,15 கி.மீ தாண்டும் வரை ஆக்சல்-ஐ விடாதே.,voice/tut_pull_out_hint_{en|ta}.ogg
+TUT_STOP_LINE,mentor_voice_candidate,murugan_anna,Steer with the arrows. See the yellow STOP line ahead? Brake and stop right on it.,அம்புக்குறியால திருப்பு. முன்னாடி மஞ்சள் ஸ்டாப் கோடு தெரியுதா? பிரேக் போட்டு அதுல நிறுத்து.,voice/tut_stop_line_{en|ta}.ogg
+TUT_STOP_LINE_HINT,mentor_voice_candidate,murugan_anna,Slow down early. Stop within 3 metres of the yellow line.,முன்னாடியே வேகம் குறை. மஞ்சள் கோட்டுக்கு 3 மீட்டருக்குள் நிறுத்து.,voice/tut_stop_line_hint_{en|ta}.ogg
+TUT_STOP_LINE_MISSED,mentor_voice_candidate,murugan_anna,Missed it! There's another line ahead. Brake earlier this time.,தவறிடுச்சு! முன்னாடி இன்னொரு கோடு இருக்கு. இந்த தடவை சீக்கிரம் பிரேக்.,voice/tut_stop_line_missed_{en|ta}.ogg
+TUT_INDICATE,mentor_voice_candidate,murugan_anna,"Before you turn, show the indicator. Tap the left arrow lamp, then take the next turn.",திரும்பும் முன் இண்டிகேட்டர் போடு. இடது விளக்கை அழுத்திட்டு அடுத்த திருப்பத்தில் திரும்பு.,voice/tut_indicate_{en|ta}.ogg
+TUT_INDICATE_HINT,mentor_voice_candidate,murugan_anna,"Indicator on, then turn at the next junction. Chennai drivers respect that.",இண்டிகேட்டர் போட்டு அடுத்த சந்திப்பில் திரும்பு. சென்னை டிரைவர்கள் மதிப்பாங்க.,voice/tut_indicate_hint_{en|ta}.ogg
+TUT_HORN,mentor_voice_candidate,murugan_anna,"Scooter blocking you? Give one horn, he'll move over.","ஸ்கூட்டர் வழி மறைக்குதா? ஒரு ஹார்ன் அடி, அவர் ஒதுங்குவார்.",voice/tut_horn_{en|ta}.ogg
+TUT_HORN_HINT,mentor_voice_candidate,murugan_anna,Tap the yellow HORN button.,மஞ்சள் ஹாரன் பொத்தானை அழுத்து.,voice/tut_horn_hint_{en|ta}.ogg
+TUT_PICK_UP,mentor_voice_candidate,murugan_anna,See the lady waving on the left? She's going to office. Stop right beside her.,இடது பக்கம் கை காட்டுறாங்களா? அவங்க ஆபீஸ் போறாங்க. அவங்க பக்கத்துல நிறுத்து.,voice/tut_pick_up_{en|ta}.ogg
+TUT_PICK_UP_HINT,mentor_voice_candidate,murugan_anna,Follow the green arrow to her and stop next to the yellow beam.,பச்சை அம்பைப் பின்தொடர்ந்து மஞ்சள் ஒளி அருகில் நிறுத்து.,voice/tut_pick_up_hint_{en|ta}.ogg
+TUT_HAGGLE,mentor_voice_candidate,murugan_anna,"Now the bargain! The rider offers a price. You can accept, or ask for more. Ask too much and they walk away. Tap Accept for now.","இப்போ பேரம்! பயணி ஒரு விலை சொல்வார். ஏற்கலாம், அல்லது அதிகம் கேட்கலாம். ரொம்ப அதிகம் கேட்டால் போய்விடுவார். இப்போ ஏற்றுக்கொள் என்பதைத் தட்டு.",voice/tut_haggle_{en|ta}.ogg
+TUT_HAGGLE_HINT,mentor_voice_candidate,murugan_anna,Tap Accept on the card.,கார்டில் ஏற்றுக்கொள் என்பதைத் தட்டு.,voice/tut_haggle_hint_{en|ta}.ogg
+TUT_GPS,mentor_voice_candidate,murugan_anna,Follow the green line on the road and the map. Drive smooth: the tea cup shows her comfort.,ரோட்டுலயும் மேப்லயும் பச்சை கோட்டைப் பின்தொடர். மெதுவா ஓட்டு: டீ கப் அவங்க வசதியைக் காட்டுது.,voice/tut_gps_{en|ta}.ogg
+TUT_GPS_HINT,mentor_voice_candidate,murugan_anna,Turn where the banner shows. Hard braking spills the tea cup.,பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக் டீயைக் கொட்டும்.,voice/tut_gps_hint_{en|ta}.ogg
+TUT_DROP_OFF,mentor_voice_candidate,murugan_anna,Almost there. Stop inside the green ring to drop her off.,வந்தாச்சு. பச்சை வட்டத்துக்குள் நிறுத்தி இறக்கு.,voice/tut_drop_off_{en|ta}.ogg
+TUT_DROP_OFF_HINT,mentor_voice_candidate,murugan_anna,Come to a full stop inside the green ring.,பச்சை வட்டத்துக்குள் முழுசா நிறுத்து.,voice/tut_drop_off_hint_{en|ta}.ogg
+TUT_FREE_ROAM,mentor_voice_candidate,murugan_anna,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.",இப்போ நீ தான் பாஸ்! முதல் சவாரிக்கு +₹100 போனஸ். மினி மேப்பை தட்டு. தங்க நிற ! மார்க்கர் கூடுதல் சவாலைக் காட்டும். ஒண்ணை செலக்ட் பண்ணி அங்க போய் நிறுத்து.,voice/tut_free_roam_{en|ta}.ogg
+TUT_ALL_DONE,mentor_voice_candidate,murugan_anna,"All the best, thambi. The road is yours.",சூப்பர் தம்பி! இனி ரோடு உன்னோடது.,voice/tut_all_done_{en|ta}.ogg
+TUT_KICK_TASK,tutorial_ui,murugan_anna,"Tap KICK 3 times, steady",கிக்-ஐ 3 முறை நிதானமா அழுத்து,voice/tut_kick_task_{en|ta}.ogg
+TUT_PULL_OUT_TASK,tutorial_ui,murugan_anna,Hold ACCEL until 15 km/h,15 கி.மீ வரை ஆக்சல்-ஐ பிடி,voice/tut_pull_out_task_{en|ta}.ogg
+TUT_STOP_LINE_TASK,tutorial_ui,murugan_anna,Brake and stop on the yellow STOP line,மஞ்சள் ஸ்டாப் கோட்டில் நிறுத்து,voice/tut_stop_line_task_{en|ta}.ogg
+TUT_INDICATE_TASK,tutorial_ui,murugan_anna,"Tap the left indicator, then turn",இடது இண்டிகேட்டர் போட்டு திரும்பு,voice/tut_indicate_task_{en|ta}.ogg
+TUT_HORN_TASK,tutorial_ui,murugan_anna,Tap HORN once,ஒரு முறை ஹாரன் அடி,voice/tut_horn_task_{en|ta}.ogg
+TUT_PICK_UP_TASK,tutorial_ui,murugan_anna,Stop beside the waving rider,கை காட்டுபவர் அருகில் நிறுத்து,voice/tut_pick_up_task_{en|ta}.ogg
+TUT_HAGGLE_TASK,tutorial_ui,murugan_anna,Tap Accept on the card,கார்டில் ஏற்றுக்கொள் தட்டு,voice/tut_haggle_task_{en|ta}.ogg
+TUT_GPS_TASK,tutorial_ui,murugan_anna,"Follow the green line, drive smooth","பச்சை கோட்டைப் பின்தொடர், மெதுவா",voice/tut_gps_task_{en|ta}.ogg
+TUT_DROP_OFF_TASK,tutorial_ui,murugan_anna,Stop inside the green ring,பச்சை வட்டத்துக்குள் நிறுத்து,voice/tut_drop_off_task_{en|ta}.ogg
+TUT_FREE_ROAM_TASK,tutorial_ui,murugan_anna,Free roam! Tap the mini-map,சுதந்திரமா ஓட்டு! மினி-மேப் அழுத்து,voice/tut_free_roam_task_{en|ta}.ogg
+TUT_SKIP,tutorial_ui,murugan_anna,SKIP,தவிர்,voice/tut_skip_{en|ta}.ogg
+TUT_TAP,tutorial_ui,murugan_anna,TAP,அழுத்து,voice/tut_tap_{en|ta}.ogg
+TUT_HOLD,tutorial_ui,murugan_anna,HOLD,பிடி,voice/tut_hold_{en|ta}.ogg
+QUEST_JOURNAL,quest_system_ui,,Side quests,கூடுதல் சவால்கள்,voice/quest_journal_{en|ta}.ogg
+QUEST_EMPTY,quest_system_ui,,New side quests are coming soon.,புது சவால்கள் சீக்கிரம் வரும்!,voice/quest_empty_{en|ta}.ogg
+QUEST_DONE,quest_system_ui,,Done,முடிஞ்சிடுச்சு,voice/quest_done_{en|ta}.ogg
+QUEST_LOCKED,quest_system_ui,,Locked,இன்னும் அன்லாக் ஆகல,voice/quest_locked_{en|ta}.ogg
+QUEST_TRACKED,quest_system_ui,,On route,ரூட்ல இருக்கு,voice/quest_tracked_{en|ta}.ogg
+QUEST_AVAILABLE,quest_system_ui,,Available,ரெடியா இருக்கு,voice/quest_available_{en|ta}.ogg
+QUEST_LEVEL,quest_system_ui,,Reach level %d,%d-ஆம் நிலையை எட்டிடு,voice/quest_level_{en|ta}.ogg
+QUEST_PREREQUISITE,quest_system_ui,,Finish earlier quests to unlock,முன்னாடி இருந்த சவால்களை முடித்து திறக்கவும்,voice/quest_prerequisite_{en|ta}.ogg
+QUEST_TRACK,quest_system_ui,,Go there,அங்க போ,voice/quest_track_{en|ta}.ogg
+QUEST_UNTRACK,quest_system_ui,,Clear route,ரூட்டை கிளியர் பண்ணு,voice/quest_untrack_{en|ta}.ogg
+QUEST_START,quest_system_ui,,Start,ஆரம்பி,voice/quest_start_{en|ta}.ogg
+QUEST_STOP_AT_KERB,quest_system_ui,,Stop at the quest's gold marker to begin.,"தொடங்க, தங்கக் குறியில் நிறுத்து.",voice/quest_stop_at_kerb_{en|ta}.ogg
+QUEST_NEARBY,quest_system_ui,,Side quest: %s,கூடுதல் சவால்: %s,voice/quest_nearby_{en|ta}.ogg
+QUEST_LESSON,quest_system_ui,,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,ரோட்டுல தங்க கலர் மார்க்கர் தெரிஞ்சா அது கூடுதல் சவால். அங்க நிறுத்தி என்ன வேலைன்னு பார்த்துட்டு ஆரம்பி என்பதைத் தட்டு.,voice/quest_lesson_{en|ta}.ogg
+QUEST_DONE_CHOICE,quest_system_ui,,Finish,முடிச்சிடு,voice/quest_done_choice_{en|ta}.ogg
+QUEST_TAKE_PHOTO,quest_system_ui,,Take photo,ஃபோட்டோ எடு,voice/quest_take_photo_{en|ta}.ogg
+QUEST_INSPECT,quest_system_ui,,Look,பார்,voice/quest_inspect_{en|ta}.ogg
+QUEST_CALM,quest_system_ui,,Calm him,அமைதிப்படுத்து,voice/quest_calm_{en|ta}.ogg
+QUEST_PARK,quest_system_ui,,Done,முடிஞ்சிடுச்சு,voice/quest_park_{en|ta}.ogg
+QUEST_REVERSE_FIRST,quest_system_ui,,"Shift to R, roll back a little, stop, then tap Done.","ஆர்-க்கு மாற்றி, சற்று பின்னால் நகர்த்தி, நிறுத்தி, முடிஞ்சிடுச்சு என்பதைத் தட்டு.",voice/quest_reverse_first_{en|ta}.ogg
+QUEST_QUALITY_COFFEE,quest_system_ui,,Coffee left: %d%%,மீதி காபி: %d%%,voice/quest_quality_coffee_{en|ta}.ogg
+QUEST_QUALITY_COMFORT,quest_system_ui,,Calm and happy: %d%%,அமைதியும் மகிழ்ச்சியும்: %d%%,voice/quest_quality_comfort_{en|ta}.ogg
+QUEST_RETRY,quest_system_ui,,Try again,திரும்ப ட்ரை பண்ணு,voice/quest_retry_{en|ta}.ogg
+QUEST_LEAVE,quest_system_ui,,Leave,வெளியே போ,voice/quest_leave_{en|ta}.ogg
+QUEST_FACE_VIEW,quest_system_ui,,Turn the auto toward the marked view and stop.,குறித்த காட்சியை நோக்கி ஆட்டோவைத் திருப்பி நிறுத்துங்க.,voice/quest_face_view_{en|ta}.ogg
+QUEST_TIME_LEFT,quest_system_ui,,%d s left,இன்னும் %d நொடி,voice/quest_time_left_{en|ta}.ogg
+QUEST_SPEED_LIMIT,quest_system_ui,,Under %d km/h,%d கி.மீ/மணிக்குள்,voice/quest_speed_limit_{en|ta}.ogg
+QUEST_DAMAGE_LIMIT,quest_system_ui,,Don't crash,மோதாதே,voice/quest_damage_limit_{en|ta}.ogg
+QUEST_FAILED,quest_system_ui,,Job stopped: %s,வேலை நின்னுடுச்சு: %s,voice/quest_failed_{en|ta}.ogg
+QUEST_FAIL_DEADLINE,quest_system_ui,,you ran out of time.,நேரம் முடிஞ்சிடுச்சு.,voice/quest_fail_deadline_{en|ta}.ogg
+QUEST_FAIL_WRECK_STRANDED,quest_system_ui,,the auto is wrecked and there's no money or ad for a repair.,ஆட்டோ முழுதும் சேதம்; பழுதுக்கு பணமும் விளம்பரமும் இல்லை.,voice/quest_fail_wreck_stranded_{en|ta}.ogg
+QUEST_RESET_WRECK,quest_system_ui,,Auto wrecked: the timed job is called off. Start it again from the beginning.,ஆட்டோ சேதமானது: நேர வேலை ரத்து. மீண்டும் முதலிலிருந்து ஆரம்பி.,voice/quest_reset_wreck_{en|ta}.ogg
+QUEST_FAIL_SPEED,quest_system_ui,,you drove too fast.,மிக வேகமா ஓட்டினாய்.,voice/quest_fail_speed_{en|ta}.ogg
+QUEST_FAIL_DAMAGE,quest_system_ui,,the auto got too much damage.,ஆட்டோ அதிகம் சேதமானது.,voice/quest_fail_damage_{en|ta}.ogg
+QUEST_FAIL_QUALITY,quest_system_ui,,too many bumps. Drive more gently.,அதிகக் குலுக்கல். மெதுவா ஓட்டு.,voice/quest_fail_quality_{en|ta}.ogg
+QUEST_FAIL_UNREACHABLE,quest_system_ui,,no road goes there now.,அங்கே இப்போ சாலை இல்லை.,voice/quest_fail_unreachable_{en|ta}.ogg
+QUEST_COMPLETED,quest_system_ui,,Job done! You earned ₹%s.,வேலை முடிஞ்சிடுச்சு! ₹%s சம்பாதிச்சாச்சு.,voice/quest_completed_{en|ta}.ogg
+SQ02_TITLE,quest_objective_or_ui,quest_character_tbd,"Filter Coffee, No Spill",சிந்தாத ஃபில்டர் காபி,voice/sq02_title_{en|ta}.ogg
+SQ02_DESC,quest_voice_review,quest_character_tbd,Deliver hot filter coffee to three shops without spilling it.,சூடான ஃபில்டர் காபி சிந்தாம மூணு கடைக்கும் டெலிவரி பண்ணணும்.,voice/sq02_desc_{en|ta}.ogg
+SQ02_ORDER,quest_voice_review,quest_character_tbd,Which shop first?,முதலில் எந்தக் கடை?,voice/sq02_order_{en|ta}.ogg
+SQ02_LUZ_FIRST,quest_objective_or_ui,quest_character_tbd,Tailor shop,தையல் கடை,voice/sq02_luz_first_{en|ta}.ogg
+SQ02_GARDEN_FIRST,quest_objective_or_ui,quest_character_tbd,Book shop,புத்தகக் கடை,voice/sq02_garden_first_{en|ta}.ogg
+SQ02_FIRST,quest_objective_or_ui,quest_character_tbd,Take coffee to the first shop. Drive smoothly!,முதல் கடைக்குக் காபி கொண்டு போ. மெதுவா ஓட்டு!,voice/sq02_first_{en|ta}.ogg
+SQ02_SECOND,quest_objective_or_ui,quest_character_tbd,Now the second shop. Don't spill!,இப்போ இரண்டாவது கடை. சிந்தாதே!,voice/sq02_second_{en|ta}.ogg
+SQ02_THIRD,quest_objective_or_ui,quest_character_tbd,Last one: take it to the tea shop.,கடைசி: டீக்கடைக்குக் கொண்டு போ.,voice/sq02_third_{en|ta}.ogg
+SQ04_TITLE,quest_objective_or_ui,quest_character_tbd,Paati Knows the Way,பாட்டிக்கு வழி தெரியும்!,voice/sq04_title_{en|ta}.ogg
+SQ04_RIDER,quest_objective_or_ui,quest_character_tbd,Paati,பாட்டி,voice/sq04_rider_{en|ta}.ogg
+RIDER_IN,rider_system_ui,in,%s is in the auto.,%s ஆட்டோவில் ஏறிவிட்டார்.,voice/rider_in_{en|ta}.ogg
+QUEST_NOT_ON_FIRE,quest_system_ui,,Put the fire out before starting a quest.,தீயை அணைத்த பிறகு வேலையைத் ஆரம்பி.,voice/quest_not_on_fire_{en|ta}.ogg
+SQ03_RIDER,quest_objective_or_ui,quest_character_tbd,Musician,இசைக்கலைஞர்,voice/sq03_rider_{en|ta}.ogg
+SQ09_RIDER,quest_objective_or_ui,quest_character_tbd,Kutty,குட்டி,voice/sq09_rider_{en|ta}.ogg
+SQ14_RIDER,quest_objective_or_ui,quest_character_tbd,Student,மாணவி,voice/sq14_rider_{en|ta}.ogg
+SQ21_RIDER,quest_objective_or_ui,quest_character_tbd,Job seeker,வேலை தேடுபவர்,voice/sq21_rider_{en|ta}.ogg
+RIDER_OUT_FIRE,rider_system_ui,out_fire,"%s got out of the burning auto. Put the fire out, then pick her up.","%s எரியும் ஆட்டோவிலிருந்து இறங்கிவிட்டார். தீயை அணைத்து, பிறகு அவரை ஏற்றிக்கொள்.",voice/rider_out_fire_{en|ta}.ogg
+RIDER_LEFT_BEHIND,rider_system_ui,left_behind,%s is waiting. Stop next to her to pick her up.,%s காத்திருக்கிறார். அவர் அருகில் நிறுத்தி ஏற்றிக்கொள்.,voice/rider_left_behind_{en|ta}.ogg
+SQ04_DESC,quest_voice_review,quest_character_tbd,An old grandmother is lost. Use her memories to find her family's home.,ஒரு பாட்டிக்கு வீட்டுக்குப் போற வழி மறந்திடுச்சு. அவங்க சொல்லுற அடையாளத்தை வச்சு வீட்டைக் கண்டுபிடி.,voice/sq04_desc_{en|ta}.ogg
+SQ04_CLUE_1,quest_objective_or_ui,quest_character_tbd,Paati remembers a flower stall. Drive there and look around.,பாட்டிக்குப் பூக்கடை நினைவிருக்கிறது. அங்கே போய்ப் பார்.,voice/sq04_clue_1_{en|ta}.ogg
+SQ04_GUESS,quest_voice_review,quest_character_tbd,The seller says to go by the temple tank steps. Where next?,குளத்துப் படிகள் வழியாகப் போகச் சொல்கிறார் கடைக்காரர். அடுத்து எங்கே?,voice/sq04_guess_{en|ta}.ogg
+SQ04_TANK,quest_objective_or_ui,quest_character_tbd,Tank steps,குளத்துப் படிகள்,voice/sq04_tank_{en|ta}.ogg
+SQ04_MARKET,quest_objective_or_ui,quest_character_tbd,The market,சந்தை,voice/sq04_market_{en|ta}.ogg
+SQ04_HINT,quest_voice_review,quest_character_tbd,Paati shakes her head. She wants the tank steps.,பாட்டி தலையசைக்கிறார். அவர் குளத்துப் படிகளைச் சொல்கிறார்.,voice/sq04_hint_{en|ta}.ogg
+SQ04_LISTEN,quest_objective_or_ui,quest_character_tbd,Go to the tank steps,குளத்துப் படிகளுக்குப் போ,voice/sq04_listen_{en|ta}.ogg
+SQ04_CLUE_2,quest_objective_or_ui,quest_character_tbd,Drive to the tank steps and look around.,குளத்துப் படிகளுக்குப் போய்ப் பார்.,voice/sq04_clue_2_{en|ta}.ogg
+SQ04_REVEAL,quest_voice_review,quest_character_tbd,Paati smiles. She knows this place. The house is close!,பாட்டி சிரிக்கிறார். இந்த இடம் அவருக்குத் தெரியும். வீடு அருகில்தான்!,voice/sq04_reveal_{en|ta}.ogg
+SQ04_READY,quest_voice_review,quest_character_tbd,Take her home,வீட்டில் சேர்,voice/sq04_ready_{en|ta}.ogg
+SQ04_HOME,quest_objective_or_ui,quest_character_tbd,Take Paati to her granddaughter's home.,பாட்டியைப் பேத்தியின் வீட்டில் சேர்.,voice/sq04_home_{en|ta}.ogg
+SQ09_TITLE,quest_objective_or_ui,quest_character_tbd,A Quiet Ride for Kutty,குட்டிக்கு ஒரு அமைதியான சவாரி,voice/sq09_title_{en|ta}.ogg
+SQ09_DESC,quest_voice_review,quest_character_tbd,A scared puppy needs a gentle ride to the animal clinic.,பயந்துபோன நாய்க்குட்டியை வெட்னரி ஹாஸ்பிட்டலுக்கு மெதுவா கூட்டிட்டு போ.,voice/sq09_desc_{en|ta}.ogg
+SQ09_BRIEF,quest_voice_review,quest_character_tbd,"Kutty is shaking with fear. Go straight to the clinic, or stop first to calm him?","குட்டி பயத்தில் நடுங்குகிறது. நேராக மருத்துவமனையா, அல்லது நிறுத்தி அமைதிப்படுத்தவா?",voice/sq09_brief_{en|ta}.ogg
+SQ09_DIRECT,quest_objective_or_ui,quest_character_tbd,Go straight there,நேராகப் போ,voice/sq09_direct_{en|ta}.ogg
+SQ09_CALM_FIRST,quest_objective_or_ui,quest_character_tbd,Stop and calm him,நிறுத்தி அமைதிப்படுத்து,voice/sq09_calm_first_{en|ta}.ogg
+SQ09_CALM,quest_objective_or_ui,quest_character_tbd,Stop at the quiet corner and calm Kutty.,அமைதியான முனையில் நிறுத்திக் குட்டியை அமைதிப்படுத்து.,voice/sq09_calm_{en|ta}.ogg
+SQ09_CARE,quest_objective_or_ui,quest_character_tbd,"Drive to the animal clinic. No horn, no bumps!","விலங்கு மருத்துவமனைக்குப் போ. ஹாரன் வேண்டாம், குலுக்கல் வேண்டாம்!",voice/sq09_care_{en|ta}.ogg
+SQ09_THANKS,quest_voice_review,quest_character_tbd,Kutty is safe now. The doctor says thank you!,குட்டி இப்போ பாதுகாப்பாக உள்ளது. மருத்துவர் நன்றி சொல்கிறார்!,voice/sq09_thanks_{en|ta}.ogg
+SQ19_TITLE,quest_objective_or_ui,quest_character_tbd,That Is Not My Parcel,இது என் பார்சல் இல்லை,voice/sq19_title_{en|ta}.ogg
+SQ19_DESC,quest_voice_review,quest_character_tbd,Two parcels got mixed up. Take each one to the right shop.,இரண்டு பொட்டலங்கள் மாறிவிட்டன. சரியான கடைக்குக் கொண்டு போ.,voice/sq19_desc_{en|ta}.ogg
+SQ19_LABELS,quest_objective_or_ui,quest_character_tbd,The blue parcel says Tailor. The red parcel says Printer. Which goes to the tailor?,"நீலத்தில் தையல்காரர், சிவப்பில் அச்சகம் என்று உள்ளது. தையல்காரருக்கு எது?",voice/sq19_labels_{en|ta}.ogg
+SQ19_BLUE,quest_objective_or_ui,quest_character_tbd,Blue parcel,நீலப் பொட்டலம்,voice/sq19_blue_{en|ta}.ogg
+SQ19_RED,quest_objective_or_ui,quest_character_tbd,Red parcel,சிவப்பு பொட்டலம்,voice/sq19_red_{en|ta}.ogg
+SQ19_VERIFY,quest_voice_review,quest_character_tbd,Look again! Stop at the courier office and read the receipt.,மீண்டும் பார்! கூரியர் அலுவலகத்தில் ரசீதைப் படி.,voice/sq19_verify_{en|ta}.ogg
+SQ19_SHOP_1,quest_objective_or_ui,quest_character_tbd,Take the blue parcel to the tailor.,நீலப் பொட்டலத்தைத் தையல்காரரிடம் கொடு.,voice/sq19_shop_1_{en|ta}.ogg
+SQ19_SHOP_2,quest_objective_or_ui,quest_character_tbd,Take the red parcel to the printer.,சிவப்பு பொட்டலத்தை அச்சகத்தில் கொடு.,voice/sq19_shop_2_{en|ta}.ogg
+SQ19_RECEIPT,quest_objective_or_ui,quest_character_tbd,Both shops have their parcels. Thank you!,இரண்டு கடைகளுக்கும் பொட்டலம் கிடைச்சிடுச்சு. நன்றி!,voice/sq19_receipt_{en|ta}.ogg
+SQ24_TITLE,quest_objective_or_ui,quest_character_tbd,Midnight Mechanic,மிட்நைட் மெக்கானிக்,voice/sq24_title_{en|ta}.ogg
+SQ24_DESC,quest_voice_review,quest_character_tbd,An auto driver is stuck at night. Find the right part for his engine.,நைட்ல ஒரு ஆட்டோ டிரைவர் நடுரோட்ல மாட்டிக்கிட்டாரு. இன்ஜினுக்கு சரியான பார்ட் வாங்கிக் கொடு.,voice/sq24_desc_{en|ta}.ogg
+SQ24_DIAGNOSE,quest_objective_or_ui,quest_character_tbd,The driver says the engine makes a loud squeal. What does he need?,என்ஜினில் உரத்த சத்தம் என்கிறார். என்ன வேண்டும்?,voice/sq24_diagnose_{en|ta}.ogg
+SQ24_BELT,quest_objective_or_ui,quest_character_tbd,A new belt,புதிய பெல்ட்,voice/sq24_belt_{en|ta}.ogg
+SQ24_FUSE,quest_objective_or_ui,quest_character_tbd,A new fuse,புதிய ஃபியூஸ்,voice/sq24_fuse_{en|ta}.ogg
+SQ24_VERIFY,quest_voice_review,quest_character_tbd,Not sure? Read the electrician's board.,சந்தேகமா? எலக்ட்ரீஷியன் பலகையைப் படி.,voice/sq24_verify_{en|ta}.ogg
+SQ24_WORKSHOP,quest_objective_or_ui,quest_character_tbd,Go to the night workshop and buy a belt.,இரவுப் பட்டறையில் பெல்ட் வாங்கு.,voice/sq24_workshop_{en|ta}.ogg
+SQ24_STRANDED,quest_objective_or_ui,quest_character_tbd,Take the belt back to the stuck auto.,பெல்ட்டை ஆட்டோவிடம் கொண்டு போ.,voice/sq24_stranded_{en|ta}.ogg
+SQ24_FINISH,quest_voice_review,quest_character_tbd,The driver fits the belt. His engine runs fine!,ஓட்டுநர் பெல்ட் பொருத்தினார். என்ஜின் நல்லா ஓடுகிறது!,voice/sq24_finish_{en|ta}.ogg
+SQ27_TITLE,quest_objective_or_ui,quest_character_tbd,Narrow-Lane Promise,குறுகிய தெரு வாக்குறுதி,voice/sq27_title_{en|ta}.ogg
+SQ27_DESC,quest_voice_review,quest_character_tbd,Deliver a parcel to a house in a small T Nagar lane and park neatly.,தி.நகர் சிறிய சந்தில் உள்ள வீட்டுக்குப் பொட்டலம் கொடுத்து நீட்டா நிறுத்து.,voice/sq27_desc_{en|ta}.ogg
+SQ27_APPROACH,quest_objective_or_ui,quest_character_tbd,The small lane is quick. The wide road is easier. Which way?,சிறிய சந்து விரைவு. அகலச் சாலை எளிது. எந்த வழி?,voice/sq27_approach_{en|ta}.ogg
+SQ27_NARROW,quest_objective_or_ui,quest_character_tbd,Small lane,சிறிய சந்து,voice/sq27_narrow_{en|ta}.ogg
+SQ27_WIDE,quest_objective_or_ui,quest_character_tbd,Wide road,அகலச் சாலை,voice/sq27_wide_{en|ta}.ogg
+SQ27_LANE,quest_objective_or_ui,quest_character_tbd,Drive slowly along your road. Don't hit anything.,உன் சாலையில் மெதுவாப் போ. எதிலும் மோதாதே.,voice/sq27_lane_{en|ta}.ogg
+SQ27_PARK,quest_objective_or_ui,quest_character_tbd,"At the house: stop at the marker, shift to R, roll back a little, stop and tap Done.","வீட்டில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு.",voice/sq27_park_{en|ta}.ogg
+SQ27_HANDOVER,quest_objective_or_ui,quest_character_tbd,Well parked! The neighbour takes the parcel.,நல்லா நிறுத்தினாய்! பக்கத்து வீட்டார் பொட்டலத்தை வாங்கினார்.,voice/sq27_handover_{en|ta}.ogg
+SQ01_TITLE,quest_objective_or_ui,quest_character_tbd,The Wedding Gold,திருமண நகை,voice/sq01_title_{en|ta}.ogg
+SQ01_DESC,quest_voice_review,quest_character_tbd,Someone lost a gold pouch at a wedding. Find the real owner.,கல்யாணத்துல ஒரு தங்கப் பை தொலைஞ்சிடுச்சு. அது யாரோடதுன்னு கண்டுபிடி.,voice/sq01_desc_{en|ta}.ogg
+SQ01_RECEIPT,quest_objective_or_ui,quest_character_tbd,Go to the wedding hall and stop at the marker.,திருமண மண்டபத்துக்குப் போய்க் குறியில் நிறுத்து.,voice/sq01_receipt_{en|ta}.ogg
+SQ01_CLAIMANT,quest_objective_or_ui,quest_character_tbd,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?",ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?,voice/sq01_claimant_{en|ta}.ogg
+SQ01_OWNER,quest_objective_or_ui,quest_character_tbd,"Meena, she knows the stamp","மீனா, முத்திரை தெரியும்",voice/sq01_owner_{en|ta}.ogg
+SQ01_OTHER,quest_objective_or_ui,quest_character_tbd,The other woman,மற்றொரு பெண்,voice/sq01_other_{en|ta}.ogg
+SQ01_VERIFY,quest_voice_review,quest_character_tbd,She doesn't know the stamp. Ask the flower seller.,அவருக்கு முத்திரை தெரியல. பூக்காரரிடம் கேள்.,voice/sq01_verify_{en|ta}.ogg
+SQ01_ASK,quest_objective_or_ui,quest_character_tbd,The flower seller knows Meena. It is her pouch.,பூக்காரருக்கு மீனாவைத் தெரியும். பை அவருடையதே.,voice/sq01_ask_{en|ta}.ogg
+SQ01_CHECK_RECEIPT,quest_objective_or_ui,quest_character_tbd,Go to the help desk,உதவி மேசைக்குப் போ,voice/sq01_check_receipt_{en|ta}.ogg
+SQ01_HANDOVER,quest_objective_or_ui,quest_character_tbd,Take the pouch to the help desk.,பையை உதவி மேசைக்குக் கொண்டு போ.,voice/sq01_handover_{en|ta}.ogg
+SQ01_THANKS,quest_voice_review,quest_character_tbd,Meena has her gold back. Her family says thank you!,மீனாவுக்குத் தங்கம் கிடைச்சிடுச்சு. குடும்பம் நன்றி சொல்கிறது!,voice/sq01_thanks_{en|ta}.ogg
+SQ06_TITLE,quest_objective_or_ui,quest_character_tbd,Before the Last Light,கடைசி வெளிச்சத்திற்கு முன்,voice/sq06_title_{en|ta}.ogg
+SQ06_DESC,quest_voice_review,quest_character_tbd,A photographer wants two beach photos before the sun sets.,சூரியன் மறையுறதுக்குள்ள ஃபோட்டோகிராஃபருக்கு பீச்சுல ரெண்டு ஃபோட்டோ வேணும்.,voice/sq06_desc_{en|ta}.ogg
+SQ06_BRIEF,quest_voice_review,quest_character_tbd,The sun is going down. Stop at each photo spot and take a picture.,சூரியன் மறைகிறது. ஒவ்வொரு இடத்திலும் நிறுத்திப் படம் எடு.,voice/sq06_brief_{en|ta}.ogg
+SQ06_READY,quest_voice_review,quest_character_tbd,Let's go,போகலாம்,voice/sq06_ready_{en|ta}.ogg
+SQ06_PHOTO_1,quest_objective_or_ui,quest_character_tbd,"Drive to the first photo spot, stop and take a photo.",முதல் இடத்துக்குப் போய் நிறுத்திப் படம் எடு.,voice/sq06_photo_1_{en|ta}.ogg
+SQ06_PHOTO_2,quest_objective_or_ui,quest_character_tbd,Now the second photo spot. Hurry!,இப்போ இரண்டாவது இடம். வேகமா!,voice/sq06_photo_2_{en|ta}.ogg
+SQ12_TITLE,quest_objective_or_ui,quest_character_tbd,Match-Day Mix-Up,போட்டி நாள் குழப்பம்,voice/sq12_title_{en|ta}.ogg
+SQ12_DESC,quest_voice_review,quest_character_tbd,The cricket team's kit bag got mixed up. Bring the right one before the match.,கிரிக்கெட் டீமோட கிட் பேக் மாறிடுச்சு. மேட்ச் ஆரம்பிக்குறதுக்குள்ள சரியான பேக்கை கொண்டு போ.,voice/sq12_desc_{en|ta}.ogg
+SQ12_STALL,quest_objective_or_ui,quest_character_tbd,Go to the sports shop to check the bags.,பைகளைப் பார்க்க விளையாட்டுக் கடைக்குப் போ.,voice/sq12_stall_{en|ta}.ogg
+SQ12_KIT,quest_objective_or_ui,quest_character_tbd,The team's note says: blue with a white stripe. Which bag?,குழுவின் குறிப்பு: வெள்ளைக் கோடு உள்ள நீலப் பை. எந்தப் பை?,voice/sq12_kit_{en|ta}.ogg
+SQ12_BLUE,quest_objective_or_ui,quest_character_tbd,"Blue, white stripe","நீலம், வெள்ளைக் கோடு",voice/sq12_blue_{en|ta}.ogg
+SQ12_RED,quest_objective_or_ui,quest_character_tbd,"Red, white stripe","சிவப்பு, வெள்ளைக் கோடு",voice/sq12_red_{en|ta}.ogg
+SQ12_VERIFY,quest_voice_review,quest_character_tbd,That's the wrong bag. Swap it at the ticket counter.,அது தப்பான பை. டிக்கெட் கவுன்டரில் மாற்று.,voice/sq12_verify_{en|ta}.ogg
+SQ12_SWAP,quest_objective_or_ui,quest_character_tbd,The clerk swaps the bag and shows you the gate.,ஊழியர் பையை மாற்றி வாசலைக் காட்டுகிறார்.,voice/sq12_swap_{en|ta}.ogg
+SQ12_SWAP_CHOICE,quest_objective_or_ui,quest_character_tbd,Take the blue bag,நீலப் பையை எடு,voice/sq12_swap_choice_{en|ta}.ogg
+SQ12_GATE,quest_objective_or_ui,quest_character_tbd,Take the bag to the stadium gate.,பையை மைதான வாசலுக்குக் கொண்டு போ.,voice/sq12_gate_{en|ta}.ogg
+SQ12_FINISH,quest_voice_review,quest_character_tbd,"The players have their kit, just in time!","வீரர்களுக்குப் பை கிடைச்சிடுச்சு, சரியான நேரத்தில்!",voice/sq12_finish_{en|ta}.ogg
+SQ16_TITLE,quest_objective_or_ui,quest_character_tbd,Room for an Ambulance,ஆம்புலன்ஸுக்கு வழி விடு,voice/sq16_title_{en|ta}.ogg
+SQ16_DESC,quest_voice_review,quest_character_tbd,An ambulance is coming through. Pull over and let it pass.,ஆம்புலன்ஸ் வருது! வண்டியை ஓரமா நிறுத்தி வழி விடு.,voice/sq16_desc_{en|ta}.ogg
+SQ16_BRIEF,quest_voice_review,quest_character_tbd,"An ambulance is coming! At each stop: turn on your indicator, then stop on the marker.",ஆம்புலன்ஸ் வருது! ஒவ்வொரு இடத்திலும் இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.,voice/sq16_brief_{en|ta}.ogg
+SQ16_READY,quest_voice_review,quest_character_tbd,I'll make way,வழி விடுகிறேன்,voice/sq16_ready_{en|ta}.ogg
+SQ16_YIELD_1,quest_objective_or_ui,quest_character_tbd,Stop 1: turn on your indicator and stop on the marker.,இடம் 1: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.,voice/sq16_yield_1_{en|ta}.ogg
+SQ16_YIELD_2,quest_objective_or_ui,quest_character_tbd,"Stop 2: indicator on, then stop on the marker.",இடம் 2: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.,voice/sq16_yield_2_{en|ta}.ogg
+SQ16_YIELD_3,quest_objective_or_ui,quest_character_tbd,"Last stop: indicator on, then stop on the marker.",கடைசி இடம்: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.,voice/sq16_yield_3_{en|ta}.ogg
+SQ21_TITLE,quest_objective_or_ui,quest_character_tbd,The Interview Folder,இன்டர்வியூ ஃபைல்,voice/sq21_title_{en|ta}.ogg
+SQ21_DESC,quest_voice_review,quest_character_tbd,A job seeker lost his papers. Help him get to his interview on time.,வேலை தேடுபவரின் காகிதங்கள் தொலைந்தன. நேர்காணலுக்கு நேரத்தில் கொண்டு சேர்.,voice/sq21_desc_{en|ta}.ogg
+SQ21_PLAN,quest_objective_or_ui,quest_character_tbd,His folder is at home. A print shop can make new copies. Which one?,கோப்பு வீட்டில் உள்ளது. அச்சுக் கடையில் புதிய நகல் எடுக்கலாம். எது?,voice/sq21_plan_{en|ta}.ogg
+SQ21_RECOVER,quest_objective_or_ui,quest_character_tbd,Get the folder,கோப்பை எடு,voice/sq21_recover_{en|ta}.ogg
+SQ21_PRINT,quest_objective_or_ui,quest_character_tbd,Print new copies,புதிய நகல் எடு,voice/sq21_print_{en|ta}.ogg
+SQ21_FOLDER,quest_objective_or_ui,quest_character_tbd,Drive there and stop to collect the papers.,அங்கே போய் நிறுத்திக் காகிதங்களை வாங்கு.,voice/sq21_folder_{en|ta}.ogg
+SQ21_INTERVIEW,quest_objective_or_ui,quest_character_tbd,Hurry to the interview office!,இன்டர்வியூ அலுவலகத்துக்கு சீக்கிரமா போ!,voice/sq21_interview_{en|ta}.ogg
+SQ26_TITLE,quest_objective_or_ui,quest_character_tbd,The Garland Deadline,மாலை சேரும் நேரம்,voice/sq26_title_{en|ta}.ogg
+SQ26_DESC,quest_voice_review,quest_character_tbd,A wedding needs two flower garlands. Bring them fresh and on time.,"திருமணத்துக்கு இரண்டு மாலைகள் வேண்டும். புதிதாக, நேரத்தில் கொண்டு வா.",voice/sq26_desc_{en|ta}.ogg
+SQ26_ORDER,quest_voice_review,quest_character_tbd,The jasmine and roses are at different shops. Which first?,மல்லிகையும் ரோஜாவும் வெவ்வேறு கடைகளில். முதலில் எது?,voice/sq26_order_{en|ta}.ogg
+SQ26_JASMINE_FIRST,quest_objective_or_ui,quest_character_tbd,Jasmine,மல்லிகை,voice/sq26_jasmine_first_{en|ta}.ogg
+SQ26_ROSES_FIRST,quest_objective_or_ui,quest_character_tbd,Roses,ரோஜா,voice/sq26_roses_first_{en|ta}.ogg
+SQ26_SUPPLIER_1,quest_objective_or_ui,quest_character_tbd,Go to the flower shop and stop to collect the garland.,பூக்கடைக்குப் போய் நிறுத்தி மாலையை வாங்கு.,voice/sq26_supplier_1_{en|ta}.ogg
+SQ26_SUPPLIER_2,quest_objective_or_ui,quest_character_tbd,Now collect the other garland.,இப்போ மற்ற மாலையை வாங்கு.,voice/sq26_supplier_2_{en|ta}.ogg
+SQ26_HALL,quest_objective_or_ui,quest_character_tbd,Take both garlands to the wedding hall.,இரண்டு மாலைகளையும் மண்டபத்துக்குக் கொண்டு போ.,voice/sq26_hall_{en|ta}.ogg
+ENGINE_OFF_KICK,other_ui,,Engine off. Tap KICK in a steady rhythm.,இன்ஜின் ஆஃப். கிக்-ஐ நிதானமா அழுத்து.,voice/engine_off_kick_{en|ta}.ogg
+SKIP_TUTORIAL,other_ui,,Skip tutorial,பயிற்சியைத் தவிர்,voice/skip_tutorial_{en|ta}.ogg
+REPLAY_TUTORIAL,other_ui,,Replay tutorial,பயிற்சியை மீண்டும் செய்,voice/replay_tutorial_{en|ta}.ogg
+REPLAY,other_ui,,Replay,மீண்டும்,voice/replay_{en|ta}.ogg
+TUTORIAL_QUEUED,other_ui,,Tutorial on next drive,அடுத்த ஓட்டத்தில் பயிற்சி,voice/tutorial_queued_{en|ta}.ogg
+WRECKED_MSG,other_ui,,Auto wrecked! The engine is on fire.,ஆட்டோ நொறுங்கியது! இன்ஜின் தீப்பிடித்தது.,voice/wrecked_msg_{en|ta}.ogg
+AD_WRECK_REPAIR,other_ui,,Free repair,ஃப்ரீ ரிப்பேர்,voice/ad_wreck_repair_{en|ta}.ogg
+ROADSIDE_REPAIR,other_ui,,Repair here,இங்கேயே சரி செய்,voice/roadside_repair_{en|ta}.ogg
+PATCH_UP,other_ui,,"Patch up (free, still smoking)",தற்காலிகமாக சரி செய் (ஃப்ரீம்),voice/patch_up_{en|ta}.ogg
+WRECK_DETAIL,other_ui,,Condition 0%% · Full repair ₹%s · You have ₹%s,நிலை 0%% · முழு ரிப்பேர் ₹%s · உங்களிடம் ₹%s,voice/wreck_detail_{en|ta}.ogg
+WRECK_AD_BTN,other_ui,,Watch ad,விளம்பரம் பார்,voice/wreck_ad_btn_{en|ta}.ogg
+WRECK_AD_REPAIR_DESC,other_ui,,"Full repair, like new (%d left today)","முழு ரிப்பேர், புதிது போல (இன்று இன்னும் %d)",voice/wreck_ad_repair_desc_{en|ta}.ogg
+WRECK_PAY_BTN,other_ui,,Pay ₹%s,₹%s செலுத்து,voice/wreck_pay_btn_{en|ta}.ogg
+WRECK_PAY_DESC,other_ui,,Repair to %d%%,%d%% வரை சரி செய்,voice/wreck_pay_desc_{en|ta}.ogg
+WRECK_PAY_FULL_DESC,other_ui,,"Full repair, like new","முழு ரிப்பேர், புதிது போல",voice/wreck_pay_full_desc_{en|ta}.ogg
+WRECK_GARAGE_DESC,other_ui,,Repairs and upgrades at this garage,"இந்த கேரேஜில் ரிப்பேர், அப்கிரேட்ஸ்",voice/wreck_garage_desc_{en|ta}.ogg
+WRECK_TOW_BTN,other_ui,,Tow ₹%s,இழுவை ₹%s,voice/wreck_tow_btn_{en|ta}.ogg
+WRECK_TOW_FREE_BTN,other_ui,,Free tow,ஃப்ரீ இழுவை,voice/wreck_tow_free_btn_{en|ta}.ogg
+WRECK_TOW_DESC,other_ui,,"To %s, %.1f km away","%s-க்கு, %.1f கி.மீ. தூரம்",voice/wreck_tow_desc_{en|ta}.ogg
+WRECK_AD_TOW_DESC,other_ui,,Free tow to %s,%s-க்கு ஃப்ரீ இழுவை,voice/wreck_ad_tow_desc_{en|ta}.ogg
+WRECK_PATCH_BTN,other_ui,,Patch up,தற்காலிகமாக சரி செய்,voice/wreck_patch_btn_{en|ta}.ogg
+WRECK_PATCH_DESC,other_ui,,"Free: runs again at %d%%, still smoking","ஃப்ரீம்: %d%%-ல் மீண்டும் ஓடும், புகை தொடரும்",voice/wreck_patch_desc_{en|ta}.ogg
+RIDER_FLED_FIRE,rider_system_ui,fled_fire,Your rider jumped out and ran from the fire. No fare for this ride.,பயணி தீயைக் கண்டு குதித்து ஓடிவிட்டார். இந்தப் பயணத்துக்குக் கட்டணம் இல்லை.,voice/rider_fled_fire_{en|ta}.ogg
+AD_NOT_READY,other_ui,,No ad right now. Try again soon.,இப்போ விளம்பரம் இல்லை. சிறிது நேரத்தில் முயற்சிக்கவும்.,voice/ad_not_ready_{en|ta}.ogg
+ENGINE_SMOKING,other_ui,,Engine smoking! Get it repaired.,இன்ஜினில் புகை! பழுது பார்க்கவும்.,voice/engine_smoking_{en|ta}.ogg
+ENGINE_FIRE,other_ui,,Engine on fire! It's losing power. Get to a garage now.,இன்ஜினில் தீ! சக்தி குறைகிறது. உடனே கேரேஜுக்கு போ.,voice/engine_fire_{en|ta}.ogg
+NO_FUEL_ON_FIRE,other_ui,,Not with flames showing. Put the fire out at a garage first.,தீ எரியும்போது ஃப்யூயல் இல்லை. முதலில் கேரேஜில் தீயை அணை.,voice/no_fuel_on_fire_{en|ta}.ogg
+ACH_FIRST_SAVARI,other_ui,,Muthal Savari,முதல் சவாரி,voice/ach_first_savari_{en|ta}.ogg
+ACH_FIRST_SAVARI_DESC,other_ui,,Complete your first ride,உங்கள் முதல் சவாரியை முடியுங்கள்,voice/ach_first_savari_desc_{en|ta}.ogg
+ACH_SAVARI_25,other_ui,,Stand Regular,ஸ்டாண்ட் ரெகுலர்,voice/ach_savari_25_{en|ta}.ogg
+ACH_SAVARI_25_DESC,other_ui,,Complete 25 rides,25 சவாரிகளை முடியுங்கள்,voice/ach_savari_25_desc_{en|ta}.ogg
+ACH_SAVARI_100,other_ui,,100 Savaris,100 சவாரிகள்,voice/ach_savari_100_{en|ta}.ogg
+ACH_SAVARI_100_DESC,other_ui,,Complete 100 rides,100 சவாரிகளை முடியுங்கள்,voice/ach_savari_100_desc_{en|ta}.ogg
+ACH_SAVARI_250,other_ui,,Route Expert,ரூட் நிபுணர்,voice/ach_savari_250_{en|ta}.ogg
+ACH_SAVARI_250_DESC,other_ui,,Complete 250 rides,250 சவாரிகளை முடியுங்கள்,voice/ach_savari_250_desc_{en|ta}.ogg
+ACH_SAVARI_500,other_ui,,Auto Anna,ஆட்டோ அண்ணா,voice/ach_savari_500_{en|ta}.ogg
+ACH_SAVARI_500_DESC,other_ui,,Complete 500 rides,500 சவாரிகளை முடியுங்கள்,voice/ach_savari_500_desc_{en|ta}.ogg
+ACH_KM_50,other_ui,,City Rounds,நகர வலம்,voice/ach_km_50_{en|ta}.ogg
+ACH_KM_50_DESC,other_ui,,Carry riders for 50 km,பயணிகளை 50 கி.மீ. ஏற்றிச் செல்லுங்கள்,voice/ach_km_50_desc_{en|ta}.ogg
+ACH_KM_250,other_ui,,Every Street Known,எல்லா தெருவும் தெரியும்,voice/ach_km_250_{en|ta}.ogg
+ACH_KM_250_DESC,other_ui,,Carry riders for 250 km,பயணிகளை 250 கி.மீ. ஏற்றிச் செல்லுங்கள்,voice/ach_km_250_desc_{en|ta}.ogg
+ACH_HONEST_METER_20,other_ui,,Meter Podu!,மீட்டர் போடு!,voice/ach_honest_meter_20_{en|ta}.ogg
+ACH_HONEST_METER_20_DESC,other_ui,,Charge the correct meter 20 times,சரியான மீட்டர் கட்டணத்தை 20 முறை வாங்குங்கள்,voice/ach_honest_meter_20_desc_{en|ta}.ogg
+ACH_HONEST_METER_100,other_ui,,Meter Mannan,மீட்டர் மன்னன்,voice/ach_honest_meter_100_{en|ta}.ogg
+ACH_HONEST_METER_100_DESC,other_ui,,Charge the correct meter 100 times,சரியான மீட்டர் கட்டணத்தை 100 முறை வாங்குங்கள்,voice/ach_honest_meter_100_desc_{en|ta}.ogg
+ACH_MELA_25,other_ui,,Meter Mela Master,மீட்டர் மேலா மாஸ்டர்,voice/ach_mela_25_{en|ta}.ogg
+ACH_MELA_25_DESC,other_ui,,Win 25 Meter Mela bargains,25 மீட்டர் மேலா பேரங்களில் வெல்லுங்கள்,voice/ach_mela_25_desc_{en|ta}.ogg
+ACH_ON_TIME_25,other_ui,,Right on Time,சரியான நேரம்,voice/ach_on_time_25_{en|ta}.ogg
+ACH_ON_TIME_25_DESC,other_ui,,Finish 25 rides on time,25 சவாரிகளை நேரத்தில் முடியுங்கள்,voice/ach_on_time_25_desc_{en|ta}.ogg
+ACH_RIDER_TYPES_5,other_ui,,Everyone's Auto,எல்லோரின் ஆட்டோ,voice/ach_rider_types_5_{en|ta}.ogg
+ACH_RIDER_TYPES_5_DESC,other_ui,,Carry all 5 kinds of rider,5 வகை பயணிகளையும் ஏற்றிச் செல்லுங்கள்,voice/ach_rider_types_5_desc_{en|ta}.ogg
+ACH_SMOOTH_10,other_ui,,Tea Didn't Spill,டீ சிந்தவில்லை,voice/ach_smooth_10_{en|ta}.ogg
+ACH_SMOOTH_10_DESC,other_ui,,10 rides with a full tea cup,நிறைந்த டீ கப்புடன் 10 சவாரிகள்,voice/ach_smooth_10_desc_{en|ta}.ogg
+ACH_SMOOTH_50,other_ui,,Tea Master,டீ மாஸ்டர்,voice/ach_smooth_50_{en|ta}.ogg
+ACH_SMOOTH_50_DESC,other_ui,,50 rides with a full tea cup,நிறைந்த டீ கப்புடன் 50 சவாரிகள்,voice/ach_smooth_50_desc_{en|ta}.ogg
+ACH_STARS_25,other_ui,,Five-Star Savari,ஐந்து நட்சத்திர சவாரி,voice/ach_stars_25_{en|ta}.ogg
+ACH_STARS_25_DESC,other_ui,,Earn 5 stars on 25 rides,25 சவாரிகளில் 5 நட்சத்திரங்கள் பெறுங்கள்,voice/ach_stars_25_desc_{en|ta}.ogg
+ACH_NO_CRASH_5,other_ui,,Clean Hands,சுத்தமான கை,voice/ach_no_crash_5_{en|ta}.ogg
+ACH_NO_CRASH_5_DESC,other_ui,,5 rides in a row without a crash,மோதல் இல்லாமல் தொடர்ந்து 5 சவாரிகள்,voice/ach_no_crash_5_desc_{en|ta}.ogg
+ACH_NO_CRASH_20,other_ui,,Not a Scratch,ஒரு கீறல் கூட இல்லை,voice/ach_no_crash_20_{en|ta}.ogg
+ACH_NO_CRASH_20_DESC,other_ui,,20 rides in a row without a crash,மோதல் இல்லாமல் தொடர்ந்து 20 சவாரிகள்,voice/ach_no_crash_20_desc_{en|ta}.ogg
+ACH_GETHU_50,other_ui,,Gap-la Guru,கேப்-ல குரு,voice/ach_gethu_50_{en|ta}.ogg
+ACH_GETHU_50_DESC,other_ui,,50 Gap-la Gethu near misses,50 கேப்-ல கெத்து நூலிழை தப்பல்கள்,voice/ach_gethu_50_desc_{en|ta}.ogg
+ACH_GETHU_250,other_ui,,Gap Thalaivar,கேப் தலைவர்,voice/ach_gethu_250_{en|ta}.ogg
+ACH_GETHU_250_DESC,other_ui,,250 Gap-la Gethu near misses,250 கேப்-ல கெத்து நூலிழை தப்பல்கள்,voice/ach_gethu_250_desc_{en|ta}.ogg
+ACH_SIGNALS_100,other_ui,,Indicator Podu,இண்டிகேட்டர் போடு,voice/ach_signals_100_{en|ta}.ogg
+ACH_SIGNALS_100_DESC,other_ui,,Signal 100 turns,100 திருப்பங்களில் இண்டிகேட்டர் போடுங்கள்,voice/ach_signals_100_desc_{en|ta}.ogg
+ACH_MONSOON_10,other_ui,,Monsoon Warrior,மழைக்கால வீரர்,voice/ach_monsoon_10_{en|ta}.ogg
+ACH_MONSOON_10_DESC,other_ui,,10 rides in the rain,மழையில் 10 சவாரிகள்,voice/ach_monsoon_10_desc_{en|ta}.ogg
+ACH_MONSOON_50,other_ui,,Mazhai Raja,மழை ராஜா,voice/ach_monsoon_50_{en|ta}.ogg
+ACH_MONSOON_50_DESC,other_ui,,50 rides in the rain,மழையில் 50 சவாரிகள்,voice/ach_monsoon_50_desc_{en|ta}.ogg
+ACH_NIGHT_10,other_ui,,Marina Night Rider,மெரினா இரவு ஓட்டுநர்,voice/ach_night_10_{en|ta}.ogg
+ACH_NIGHT_10_DESC,other_ui,,10 rides after 7 PM,இரவு 7 மணிக்கு பின் 10 சவாரிகள்,voice/ach_night_10_desc_{en|ta}.ogg
+ACH_NIGHT_50,other_ui,,Night Shift Legend,இரவு ஷிப்ட் ஜாம்பவான்,voice/ach_night_50_{en|ta}.ogg
+ACH_NIGHT_50_DESC,other_ui,,50 rides after 7 PM,இரவு 7 மணிக்கு பின் 50 சவாரிகள்,voice/ach_night_50_desc_{en|ta}.ogg
+ACH_EARN_10K,other_ui,,Pocket Full of Rupees,பாக்கெட் நிறைய ரூபாய்,voice/ach_earn_10k_{en|ta}.ogg
+ACH_EARN_10K_DESC,other_ui,,"Earn ₹10,000 in fares","கட்டணமாக ₹10,000 சம்பாதியுங்கள்",voice/ach_earn_10k_desc_{en|ta}.ogg
+ACH_EARN_50K,other_ui,,Stand Owner Material,ஸ்டாண்ட் ஓனர் தகுதி,voice/ach_earn_50k_{en|ta}.ogg
+ACH_EARN_50K_DESC,other_ui,,"Earn ₹50,000 in fares","கட்டணமாக ₹50,000 சம்பாதியுங்கள்",voice/ach_earn_50k_desc_{en|ta}.ogg
+ACH_EARN_100K,other_ui,,Lakhpati Auto,லட்சாதிபதி ஆட்டோ,voice/ach_earn_100k_{en|ta}.ogg
+ACH_EARN_100K_DESC,other_ui,,"Earn ₹1,00,000 in fares","கட்டணமாக ₹1,00,000 சம்பாதியுங்கள்",voice/ach_earn_100k_desc_{en|ta}.ogg
+ACH_BEST_FARE_200,other_ui,,Long Trip Jackpot,நீண்ட பயண ஜாக்பாட்,voice/ach_best_fare_200_{en|ta}.ogg
+ACH_BEST_FARE_200_DESC,other_ui,,Earn ₹200 or more from one ride,ஒரே சவாரியில் ₹200 அல்லது அதற்கு மேல் சம்பாதியுங்கள்,voice/ach_best_fare_200_desc_{en|ta}.ogg
+ACH_STREAK_7,other_ui,,Every Day at the Stand,டெய்லி ஸ்டாண்டில்,voice/ach_streak_7_{en|ta}.ogg
+ACH_STREAK_7_DESC,other_ui,,Log in 7 days in a row,தொடர்ந்து 7 நாட்கள் வாங்க,voice/ach_streak_7_desc_{en|ta}.ogg
+ACH_STREAK_30,other_ui,,Stand Pillar,ஸ்டாண்டின் தூண்,voice/ach_streak_30_{en|ta}.ogg
+ACH_STREAK_30_DESC,other_ui,,Log in 30 days in a row,தொடர்ந்து 30 நாட்கள் வாங்க,voice/ach_streak_30_desc_{en|ta}.ogg
+ACH_SHIFTS_7,other_ui,,Full Week,முழு வாரம்,voice/ach_shifts_7_{en|ta}.ogg
+ACH_SHIFTS_7_DESC,other_ui,,Finish 7 shifts,7 ஷிப்டுகளை முடியுங்கள்,voice/ach_shifts_7_desc_{en|ta}.ogg
+ACH_GOALS_10,other_ui,,Goal Getter,இலக்கு வீரர்,voice/ach_goals_10_{en|ta}.ogg
+ACH_GOALS_10_DESC,other_ui,,Finish all 3 shift goals on 10 days,10 நாட்கள் 3 ஷிப்ட் இலக்குகளையும் முடியுங்கள்,voice/ach_goals_10_desc_{en|ta}.ogg
+ACH_LEVEL_5,other_ui,,Mylapore Regular,மயிலாப்பூர் ரெகுலர்,voice/ach_level_5_{en|ta}.ogg
+ACH_LEVEL_5_DESC,other_ui,,Reach Driver Level 5,டிரைவர் நிலை 5-ஐ எட்டிடு,voice/ach_level_5_desc_{en|ta}.ogg
+ACH_LEVEL_10,other_ui,,Stand Leader,ஸ்டாண்ட் தலைவர்,voice/ach_level_10_{en|ta}.ogg
+ACH_LEVEL_10_DESC,other_ui,,Reach Driver Level 10,டிரைவர் நிலை 10-ஐ எட்டிடு,voice/ach_level_10_desc_{en|ta}.ogg
+ACH_LEVEL_20,other_ui,,Madras Legend,மெட்ராஸ் ஜாம்பவான்,voice/ach_level_20_{en|ta}.ogg
+ACH_LEVEL_20_DESC,other_ui,,Reach Driver Level 20,டிரைவர் நிலை 20-ஐ எட்டிடு,voice/ach_level_20_desc_{en|ta}.ogg
+ACH_PAINT_FIRST,other_ui,,Alangaram,அலங்காரம்,voice/ach_paint_first_{en|ta}.ogg
+ACH_PAINT_FIRST_DESC,other_ui,,Buy your first paint job,உங்கள் முதல் பெயிண்டை வாங்குங்கள்,voice/ach_paint_first_desc_{en|ta}.ogg
+ACH_TUNED_9,other_ui,,Fully Tuned,முழு டியூனிங்,voice/ach_tuned_9_{en|ta}.ogg
+ACH_TUNED_9_DESC,other_ui,,Buy 9 garage upgrades,9 கேரேஜ் மேம்பாடுகளை வாங்குங்கள்,voice/ach_tuned_9_desc_{en|ta}.ogg
+ACH_OWN_AUTOS_3,other_ui,,Full Stand,முழு ஸ்டாண்ட்,voice/ach_own_autos_3_{en|ta}.ogg
+ACH_OWN_AUTOS_3_DESC,other_ui,,Own all 3 autos,3 ஆட்டோக்களையும் சொந்தமாக்குங்கள்,voice/ach_own_autos_3_desc_{en|ta}.ogg
+ACHIEVEMENTS_UNLOCKED,other_ui,,%d of %d unlocked,%d / %d பெற்றவை,voice/achievements_unlocked_{en|ta}.ogg
+ACH_NEXT_UP,other_ui,,Almost there,கிட்டத்தட்ட முடிஞ்சிடுச்சு,voice/ach_next_up_{en|ta}.ogg
+ACH_CAT_RIDES,other_ui,,Rides,சவாரிகள்,voice/ach_cat_rides_{en|ta}.ogg
+ACH_CAT_HONEST,other_ui,,Riders & fares,பயணிகள் & கட்டணம்,voice/ach_cat_honest_{en|ta}.ogg
+ACH_CAT_COMFORT,other_ui,,Smooth driving,மென்மையான ஓட்டம்,voice/ach_cat_comfort_{en|ta}.ogg
+ACH_CAT_SKILL,other_ui,,Street skills,தெரு திறமை,voice/ach_cat_skill_{en|ta}.ogg
+ACH_CAT_CITY,other_ui,,Rain & night,மழை & இரவு,voice/ach_cat_city_{en|ta}.ogg
+ACH_CAT_MONEY,other_ui,,Earnings,வருமானம்,voice/ach_cat_money_{en|ta}.ogg
+ACH_CAT_CAREER,other_ui,,Career,பணி வாழ்க்கை,voice/ach_cat_career_{en|ta}.ogg
+DAILY_SHORT,other_ui,,Daily bonus,டெய்லி போனஸ்,voice/daily_short_{en|ta}.ogg
+STAT_BATTERY,other_ui,,Battery,பேட்டரி,voice/stat_battery_{en|ta}.ogg
+VEHICLE_N_OF,other_ui,,%d of %d,%d / %d,voice/vehicle_n_of_{en|ta}.ogg
+AUTO_REPAIR_HINT,other_ui,,Fix the damage at any garage in the city,நகரில் எந்த கேரேஜிலும் பழுது பார்க்கலாம்,voice/auto_repair_hint_{en|ta}.ogg
+DRIVER_PROFILE,other_ui,,Driver profile,டிரைவர் விவரம்,voice/driver_profile_{en|ta}.ogg
+PROFILE_XP,other_ui,,%s / %s XP,%s / %s எக்ஸ்பி,voice/profile_xp_{en|ta}.ogg
+PROFILE_NEXT_RANK,other_ui,,Next rank: %s,அடுத்த பட்டம்: %s,voice/profile_next_rank_{en|ta}.ogg
+PROFILE_MAX_RANK,other_ui,,Top rank reached,உச்ச பட்டம் பெற்றீர்கள்,voice/profile_max_rank_{en|ta}.ogg
+PROFILE_RANK_TITLE,other_ui,,Driver rank,டிரைவர் பட்டம்,voice/profile_rank_title_{en|ta}.ogg
+PROFILE_RANK_HELP,other_ui,,"Your rank is your name at the stand. Every ride, shift goal and turn signal earns XP, and each new rank pays a cash bonus.","பட்டம் என்பது ஸ்டாண்டில் உங்கள் பெயர். ஒவ்வொரு சவாரி, ஷிப்ட் இலக்கு, இண்டிகேட்டருக்கும் எக்ஸ்பி கிடைக்கும்; புதிய பட்டத்திற்கு பண போனஸ் உண்டு.",voice/profile_rank_help_{en|ta}.ogg
+PROFILE_RATING_TITLE,other_ui,,Stand rating,ஸ்டாண்ட் ரேட்டிங்,voice/profile_rating_title_{en|ta}.ogg
+PROFILE_RATING_HELP,other_ui,,"Every new driver starts at 4.5. Each rider's stars move it up or down: a comfortable, on-time ride raises it, a rough or late one lowers it. Riders agree to Meter Mela and fixed fares less often when it drops.","புதிய டிரைவர் 4.5-இல் ஆரம்பிவார். ஒவ்வொரு பயணியின் நட்சத்திரமும் இதை மாற்றும்: சௌகரியமான, நேரத்தில் முடிந்த சவாரி உயர்த்தும்; கரடுமுரடான அல்லது தாமதமான சவாரி குறைக்கும். ரேட்டிங் குறைந்தால் பயணிகள் கூடுதல் கட்டணத்திற்கு குறைவாகவே சம்மதிப்பார்கள்.",voice/profile_rating_help_{en|ta}.ogg
+PROFILE_CAREER_TITLE,other_ui,,Career so far,இதுவரை,voice/profile_career_title_{en|ta}.ogg
+PROFILE_LEVEL_BONUS,other_ui,,+₹%d,+₹%d,voice/profile_level_bonus_{en|ta}.ogg
+EARNED_TOTAL,other_ui,,Total earned,மொத்த சம்பாத்தியம்,voice/earned_total_{en|ta}.ogg
+DISTANCE_TOTAL,other_ui,,Distance,தூரம்,voice/distance_total_{en|ta}.ogg
+RIDES_DONE,other_ui,,Rides,சவாரிகள்,voice/rides_done_{en|ta}.ogg
+PROFILE_ALL_RANKS,other_ui,,All ranks,எல்லா பட்டங்களும்,voice/profile_all_ranks_{en|ta}.ogg
+QUEST_TRANSFER,quest_system_ui,,Load / unload,ஏற்று / இறக்கு,voice/quest_transfer_{en|ta}.ogg
+QUEST_CARGO_CAPACITY,quest_system_ui,,The auto is full. Unload first.,ஆட்டோ நிறைந்துவிட்டது. முதலில் இறக்கு.,voice/quest_cargo_capacity_{en|ta}.ogg
+QUEST_FAIL_DIVERSION,quest_system_ui,,that road is closed.,அந்தச் ரோடு மூடியிருக்கு.,voice/quest_fail_diversion_{en|ta}.ogg
+SQ03_TITLE,quest_objective_or_ui,quest_character_tbd,Margazhi Missing Beat,மார்கழியின் தவறிய தாளம்,voice/sq03_title_{en|ta}.ogg
+SQ03_DESC,quest_voice_review,quest_character_tbd,A musician forgot his mridangam drum. Bring it to the music hall before the concert.,மியூசிக் அண்ணா மிருதங்கத்தை மறந்துட்டாரு. கச்சேரி ஆரம்பிக்குறதுக்குள்ள சபாவுக்கு எடுத்துட்டு போ.,voice/sq03_desc_{en|ta}.ogg
+SQ03_BRIEF,quest_voice_review,quest_character_tbd,The drum is at the music shop. Remember: the hall wants it at the back gate.,மிருதங்கம் இசைக் கடையில் உள்ளது. ஞாபகம் வச்சுக்கோ: சபாவின் பின் வாசலில் கொடுக்கணும்.,voice/sq03_brief_{en|ta}.ogg
+SQ03_READY,quest_voice_review,quest_character_tbd,Let's go,போகலாம்,voice/sq03_ready_{en|ta}.ogg
+SQ03_CASE,quest_objective_or_ui,quest_character_tbd,Go to the music shop and load the drum.,இசைக் கடைக்குப் போய் மிருதங்கத்தை ஏற்று.,voice/sq03_case_{en|ta}.ogg
+SQ03_APPROACH,quest_objective_or_ui,quest_character_tbd,Drive slowly to the music hall. Don't shake the drum!,சபாவுக்கு மெதுவா ஓட்டு. மிருதங்கத்தைக் குலுக்காதே!,voice/sq03_approach_{en|ta}.ogg
+SQ03_GATE,quest_objective_or_ui,quest_character_tbd,There is a long queue at the front. Which gate takes the drum?,முன்னால் நீண்ட வரிசை. மிருதங்கம் எந்த வாசல் வழியாகச் செல்லும்?,voice/sq03_gate_{en|ta}.ogg
+SQ03_REAR,quest_objective_or_ui,quest_character_tbd,Back gate,பின்னாடி கேட்,voice/sq03_rear_{en|ta}.ogg
+SQ03_FRONT,quest_objective_or_ui,quest_character_tbd,Front gate,முன்னாடி கேட்,voice/sq03_front_{en|ta}.ogg
+SQ03_VERIFY,quest_voice_review,quest_character_tbd,Not the front. Read the notice board to be sure.,முன்னாடி கேட் இல்லை. உறுதி செய்ய அறிவிப்புப் பலகையைப் படி.,voice/sq03_verify_{en|ta}.ogg
+SQ03_HANDOVER,quest_objective_or_ui,quest_character_tbd,Go to the back gate and unload the drum.,பின் வாசலுக்குப் போய் மிருதங்கத்தை இறக்கு.,voice/sq03_handover_{en|ta}.ogg
+SQ05_TITLE,quest_objective_or_ui,quest_character_tbd,Festival Detour,திருவிழா மாற்றுப் பாதை,voice/sq05_title_{en|ta}.ogg
+SQ05_DESC,quest_voice_review,quest_character_tbd,A temple procession has closed the road. Take festival lamps around it.,ஊர்வலத்தால் ரோடு மூடியிருக்கு. திருவிழா விளக்குகளைச் சுற்றி எடுத்துச் செல்.,voice/sq05_desc_{en|ta}.ogg
+SQ05_LAMPS,quest_objective_or_ui,quest_character_tbd,Stop at the lamp shop and load the lamps.,விளக்குக் கடையில் நிறுத்தி விளக்குகளை ஏற்று.,voice/sq05_lamps_{en|ta}.ogg
+SQ05_SIGN,quest_objective_or_ui,quest_character_tbd,The temple road is closed for the procession. Which way?,ஊர்வலத்தால் கோயில் ரோடு மூடியிருக்கு. எந்த வழி?,voice/sq05_sign_{en|ta}.ogg
+SQ05_OUTER,quest_objective_or_ui,quest_character_tbd,Open outer road,திறந்த வெளிச் சாலை,voice/sq05_outer_{en|ta}.ogg
+SQ05_TEMPLE,quest_objective_or_ui,quest_character_tbd,Temple road,கோயில் சாலை,voice/sq05_temple_{en|ta}.ogg
+SQ05_WRONG,quest_objective_or_ui,quest_character_tbd,That road is closed! Read the sign.,அந்தச் ரோடு மூடியிருக்கு! பலகையைப் படி.,voice/sq05_wrong_{en|ta}.ogg
+SQ05_BAY,quest_objective_or_ui,quest_character_tbd,"At the store: stop at the marker, shift to R, roll back a little, stop and tap Done.","கிடங்கில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு.",voice/sq05_bay_{en|ta}.ogg
+SQ05_UNLOAD,quest_objective_or_ui,quest_character_tbd,Unload the lamps here.,விளக்குகளை இங்கே இறக்கு.,voice/sq05_unload_{en|ta}.ogg
+SQ07_TITLE,quest_objective_or_ui,quest_character_tbd,The Little Red Kite,சின்னச் சிவப்பு பட்டம்,voice/sq07_title_{en|ta}.ogg
+SQ07_DESC,quest_voice_review,quest_character_tbd,A child with a red kite is lost on the beach. Help the family find him.,சிவப்பு பட்டம் வச்சிருந்த ஒரு பையன் பீச்சுல காணாம போயிட்டான். அவனைக் கண்டுபிடிக்க வீட்டுக்காரங்களுக்கு ஹெல்ப் பண்ணு.,voice/sq07_desc_{en|ta}.ogg
+SQ07_BRIEF,quest_voice_review,quest_character_tbd,The boy has a red kite and a striped shirt. Let's look from the beach road.,"பையனிடம் சிவப்பு பட்டம், கோடு போட்ட சட்டை. கடற்கரைச் சாலையிலிருந்து தேடுவோம்.",voice/sq07_brief_{en|ta}.ogg
+SQ07_LOOK,quest_objective_or_ui,quest_character_tbd,Start looking,தேடத் ஆரம்பி,voice/sq07_look_{en|ta}.ogg
+SQ07_SCAN,quest_objective_or_ui,quest_character_tbd,Stop at the beach entrance and look at the crowd.,கடற்கரை நுழைவில் நிறுத்திக் கூட்டத்தைப் பார்.,voice/sq07_scan_{en|ta}.ogg
+SQ07_GUESS,quest_voice_review,quest_character_tbd,You see two groups of children. Which one?,இரண்டு குழந்தைகள் கூட்டம் தெரிகிறது. எது?,voice/sq07_guess_{en|ta}.ogg
+SQ07_STRIPED,quest_objective_or_ui,quest_character_tbd,"Red kite, striped shirt","சிவப்பு பட்டம், கோடு சட்டை",voice/sq07_striped_{en|ta}.ogg
+SQ07_BLUE,quest_objective_or_ui,quest_character_tbd,Blue kite group,நீலப் பட்டக் கூட்டம்,voice/sq07_blue_{en|ta}.ogg
+SQ07_VERIFY,quest_voice_review,quest_character_tbd,Wrong group! Look near the next entrance.,தப்பான கூட்டம்! அடுத்த நுழைவில் பார்.,voice/sq07_verify_{en|ta}.ogg
+SQ07_CONFIRM,quest_voice_review,quest_character_tbd,Drive to the south entrance and look for the boy.,தெற்கு நுழைவுக்குப் போய்ப் பையனைத் தேடு.,voice/sq07_confirm_{en|ta}.ogg
+SQ07_REUNITE,quest_voice_review,quest_character_tbd,You found him! Drive to the help point.,கண்டுபிடித்துவிட்டாய்! உதவி மையத்துக்குப் போ.,voice/sq07_reunite_{en|ta}.ogg
+SQ08_TITLE,quest_objective_or_ui,quest_character_tbd,Rain Before Pack-Up,மழைக்கு முன் கடை மூடல்,voice/sq08_title_{en|ta}.ogg
+SQ08_DESC,quest_voice_review,quest_character_tbd,Rain is coming! Help two beach sellers save their goods.,மழை வருது! இரண்டு கடைக்காரர்களின் பொருட்களைக் காப்பாற்று.,voice/sq08_desc_{en|ta}.ogg
+SQ08_ORDER,quest_voice_review,quest_character_tbd,One seller has paper goods. The other has sealed boxes. Who first?,ஒருவரிடம் காகிதப் பொருட்கள். மற்றவரிடம் மூடிய பெட்டிகள். முதலில் யார்?,voice/sq08_order_{en|ta}.ogg
+SQ08_PAPER,quest_objective_or_ui,quest_character_tbd,Paper seller,காகிதக் கடைக்காரர்,voice/sq08_paper_{en|ta}.ogg
+SQ08_BOXES,quest_objective_or_ui,quest_character_tbd,Box seller,பெட்டிக் கடைக்காரர்,voice/sq08_boxes_{en|ta}.ogg
+SQ08_FIRST,quest_objective_or_ui,quest_character_tbd,Go to the first seller and load the goods.,முதல் கடைக்காரரிடம் போய் ஏற்று.,voice/sq08_first_{en|ta}.ogg
+SQ08_SECOND,quest_objective_or_ui,quest_character_tbd,Now go to the other seller and load up.,இப்போ மற்றவரிடம் போய் ஏற்று.,voice/sq08_second_{en|ta}.ogg
+SQ08_SHELTER,quest_objective_or_ui,quest_character_tbd,Take everything to the shelter and unload.,எல்லாவற்றையும் கூடாரத்தில் இறக்கு.,voice/sq08_shelter_{en|ta}.ogg
+SQ10_TITLE,quest_objective_or_ui,quest_character_tbd,Beach Clean-Up Relay,கடற்கரைச் சுத்தம்,voice/sq10_title_{en|ta}.ogg
+SQ10_DESC,quest_voice_review,quest_character_tbd,Help the beach clean-up team carry rubbish bags to the sorting point.,கடற்கரை சுத்தம் செய்யும் குழுவின் குப்பைப் பைகளைப் பிரிப்பு மையத்துக்குக் கொண்டு போ.,voice/sq10_desc_{en|ta}.ogg
+SQ10_SORT,quest_objective_or_ui,quest_character_tbd,Blue bags are for recycling. Red bags are for rubbish. Keep them apart.,நீலப் பைகள் ரீசைக்கிளிங்க்கு. சிவப்பு பைகள் குப்பைக்கு. தனித்தனியாக வை.,voice/sq10_sort_{en|ta}.ogg
+SQ10_START,quest_objective_or_ui,quest_character_tbd,Let's start,ஆரம்பிக்கலாம்,voice/sq10_start_{en|ta}.ogg
+SQ10_BLUE,quest_objective_or_ui,quest_character_tbd,Go to the north entrance and load two blue bags.,வடக்கு நுழைவில் இரண்டு நீலப் பைகளை ஏற்று.,voice/sq10_blue_{en|ta}.ogg
+SQ10_RED,quest_objective_or_ui,quest_character_tbd,Go to the south entrance and load one red bag.,தெற்கு நுழைவில் ஒரு சிவப்பு பையை ஏற்று.,voice/sq10_red_{en|ta}.ogg
+SQ10_FIRST_DUMP,quest_objective_or_ui,quest_character_tbd,Unload all three bags at the sorting point.,மூன்று பைகளையும் பிரிப்பு மையத்தில் இறக்கு.,voice/sq10_first_dump_{en|ta}.ogg
+SQ10_SECOND_LOAD,quest_objective_or_ui,quest_character_tbd,Go to the west entrance and load two more bags.,மேற்கு நுழைவில் மேலும் இரண்டு பைகளை ஏற்று.,voice/sq10_second_load_{en|ta}.ogg
+SQ10_CATEGORY,quest_objective_or_ui,quest_character_tbd,These bags have a blue label. Where do they go?,இந்தப் பைகளில் நீல அடையாளம் உள்ளது. எங்கே போகும்?,voice/sq10_category_{en|ta}.ogg
+SQ10_RECYCLING,quest_objective_or_ui,quest_character_tbd,Recycling,ரீசைக்கிளிங்,voice/sq10_recycling_{en|ta}.ogg
+SQ10_GENERAL,quest_objective_or_ui,quest_character_tbd,Rubbish,குப்பை,voice/sq10_general_{en|ta}.ogg
+SQ10_CORRECTION,quest_objective_or_ui,quest_character_tbd,Blue means recycling! Ask the helper at the south entrance.,நீலம் என்றால் ரீசைக்கிளிங்! தெற்கு நுழைவில் உதவியாளரிடம் கேள்.,voice/sq10_correction_{en|ta}.ogg
+SQ10_LAST_DUMP,quest_objective_or_ui,quest_character_tbd,Unload the last two bags at the sorting point.,கடைசி இரண்டு பைகளையும் பிரிப்பு மையத்தில் இறக்கு.,voice/sq10_last_dump_{en|ta}.ogg
+SQ14_TITLE,quest_objective_or_ui,quest_character_tbd,"Exam Hall, Wrong Gate","எக்ஸாம் ஹால், தப்பான கேட்",voice/sq14_title_{en|ta}.ogg
+SQ14_DESC,quest_voice_review,quest_character_tbd,A student is late for an exam and needs a copy of her ID.,எக்ஸாமுக்கு லேட்டாகுற ஒரு பொண்ணுக்கு அவளோட ஐடி காப்பி வேணும்.,voice/sq14_desc_{en|ta}.ogg
+SQ14_NOTICE,quest_objective_or_ui,quest_character_tbd,Stop at the school and read the notice.,பள்ளியில் நிறுத்தி அறிவிப்பைப் படி.,voice/sq14_notice_{en|ta}.ogg
+SQ14_COPY,quest_objective_or_ui,quest_character_tbd,The notice says: use the east gate and bring a copy of your ID. What now?,"அறிவிப்பு: கிழக்கு வாசல் வழியாக வா, அடையாள நகல் கொண்டு வா. இப்போ என்ன?",voice/sq14_copy_{en|ta}.ogg
+SQ14_PRINT,quest_objective_or_ui,quest_character_tbd,Get the ID copy,நகல் எடு,voice/sq14_print_{en|ta}.ogg
+SQ14_SKIP,quest_objective_or_ui,quest_character_tbd,Go without it,நகல் இல்லாமல் போ,voice/sq14_skip_{en|ta}.ogg
+SQ14_VERIFY,quest_voice_review,quest_character_tbd,"The guard says no copy, no entry. Look at the notice in the print shop window.",நகல் இல்லாமல் அனுமதி இல்லை என்கிறார் காவலர். அச்சுக் கடை அறிவிப்பைப் பார்.,voice/sq14_verify_{en|ta}.ogg
+SQ14_PRINTER,quest_objective_or_ui,quest_character_tbd,Go to the print shop and collect the ID copy.,அச்சுக் கடையில் நகலை வாங்கு.,voice/sq14_printer_{en|ta}.ogg
+SQ14_GATE,quest_objective_or_ui,quest_character_tbd,Hurry to the east gate!,கிழக்கு வாசலுக்கு சீக்கிரமா போ!,voice/sq14_gate_{en|ta}.ogg
+SQ14_HANDOVER,quest_objective_or_ui,quest_character_tbd,Give the copy to the student.,நகலை மாணவியிடம் கொடு.,voice/sq14_handover_{en|ta}.ogg
+SQ15_TITLE,quest_objective_or_ui,quest_character_tbd,"Last Stop, Extra Help",லாஸ்ட் ஸ்டாப்ல ஒரு உதவி,voice/sq15_title_{en|ta}.ogg
+SQ15_DESC,quest_voice_review,quest_character_tbd,The bus broke down. Take two passengers where they need to go.,பஸ் பிரேக்டவுன் ஆயிடுச்சு. ரெண்டு பாசஞ்சர்களையும் அவங்க போக வேண்டிய இடத்துல இறக்கிவிடு.,voice/sq15_desc_{en|ta}.ogg
+SQ15_BOARD,quest_objective_or_ui,quest_character_tbd,Stop at the bus stop and let both passengers in.,பஸ் நிறுத்தத்தில் நிறுத்தி இருவரையும் ஏற்று.,voice/sq15_board_{en|ta}.ogg
+SQ15_ORDER,quest_voice_review,quest_character_tbd,One needs the clinic. One needs the library. Who first?,"ஒருவருக்கு மருத்துவமனை, ஒருவருக்கு நூலகம். முதலில் யார்?",voice/sq15_order_{en|ta}.ogg
+SQ15_CLINIC,quest_objective_or_ui,quest_character_tbd,Clinic first,மருத்துவமனை முதலில்,voice/sq15_clinic_{en|ta}.ogg
+SQ15_LIBRARY,quest_objective_or_ui,quest_character_tbd,Library first,நூலகம் முதலில்,voice/sq15_library_{en|ta}.ogg
+SQ15_FIRST,quest_objective_or_ui,quest_character_tbd,Drive to the first stop and drop your passenger.,முதல் இடத்துக்குப் போய்ப் பயணியை இறக்கு.,voice/sq15_first_{en|ta}.ogg
+SQ15_SECOND,quest_objective_or_ui,quest_character_tbd,Now drop the last passenger.,இப்போ கடைசிப் பயணியை இறக்கு.,voice/sq15_second_{en|ta}.ogg
+SQ17_TITLE,quest_objective_or_ui,quest_character_tbd,The Monsoon Supply Run,மழைக்கால சப்ளை ரன்,voice/sq17_title_{en|ta}.ogg
+SQ17_DESC,quest_voice_review,quest_character_tbd,Floods have closed a road. Carry food and water to people who need it.,வெள்ளத்தால ரோடு மூடியிருக்கு. தேவைப்படுறவங்களுக்கு சாப்பாடும் தண்ணியும் கொண்டு போ.,voice/sq17_desc_{en|ta}.ogg
+SQ17_LOAD,quest_objective_or_ui,quest_character_tbd,Load the food and water.,உணவையும் நீரையும் ஏற்று.,voice/sq17_load_{en|ta}.ogg
+SQ17_WARNING,quest_voice_review,quest_character_tbd,Stop and read the flood sign.,நிறுத்தி வெள்ளப் பலகையைப் படி.,voice/sq17_warning_{en|ta}.ogg
+SQ17_ORDER,quest_voice_review,quest_character_tbd,The shelter needs two bundles. The relief desk needs one. Who first?,"முகாமுக்கு இரண்டு மூட்டைகள், உதவி மேசைக்கு ஒன்று. முதலில் யார்?",voice/sq17_order_{en|ta}.ogg
+SQ17_SHELTER,quest_objective_or_ui,quest_character_tbd,Shelter,முகாம்,voice/sq17_shelter_{en|ta}.ogg
+SQ17_DESK,quest_objective_or_ui,quest_character_tbd,Relief desk,உதவி மேசை,voice/sq17_desk_{en|ta}.ogg
+SQ17_FIRST,quest_objective_or_ui,quest_character_tbd,Follow the route and deliver. Avoid the flood!,வழியைப் பின்பற்றிக் கொடு. வெள்ளத்தைத் தவிர்!,voice/sq17_first_{en|ta}.ogg
+SQ17_SECOND,quest_objective_or_ui,quest_character_tbd,Deliver the rest.,மீதியைக் கொடு.,voice/sq17_second_{en|ta}.ogg
+SQ18_TITLE,quest_objective_or_ui,quest_character_tbd,Five-Star Auto Anna,ஃபைவ் ஸ்டார் ஆட்டோ அண்ணா,voice/sq18_title_{en|ta}.ogg
+SQ18_DESC,quest_voice_review,quest_character_tbd,Three neighbours need help in one trip. Keep them all happy.,ஒரே சவாரியில மூணு பேருக்கு ஹெல்ப் பண்ணணும். எல்லாரையும் சந்தோஷமா பார்த்துக்கோ.,voice/sq18_desc_{en|ta}.ogg
+SQ18_PREP,quest_objective_or_ui,quest_character_tbd,What do you do first?,முதலில் என்ன செய்வாய்?,voice/sq18_prep_{en|ta}.ogg
+SQ18_QUIET,quest_objective_or_ui,quest_character_tbd,Clean the seat,இருக்கையைச் சுத்தம் செய்,voice/sq18_quiet_{en|ta}.ogg
+SQ18_CHARGER,quest_objective_or_ui,quest_character_tbd,Buy a charger,சார்ஜர் வாங்கு,voice/sq18_charger_{en|ta}.ogg
+SQ18_SUPPLY,quest_objective_or_ui,quest_character_tbd,Stop at the shop and get ready.,கடையில் நிறுத்தித் ரெடி செய்.,voice/sq18_supply_{en|ta}.ogg
+SQ18_LUGGAGE,quest_objective_or_ui,quest_character_tbd,Stop here and load the suitcase.,இங்கே நிறுத்திப் பெட்டியை ஏற்று.,voice/sq18_luggage_{en|ta}.ogg
+SQ18_DROP,quest_objective_or_ui,quest_character_tbd,Take the suitcase to its owner's house.,பெட்டியை உரிமையாளரின் வீட்டில் சேர்.,voice/sq18_drop_{en|ta}.ogg
+SQ18_CHARGE,quest_objective_or_ui,quest_character_tbd,Finish at the charging stop.,சார்ஜிங் இடத்தில் முடி.,voice/sq18_charge_{en|ta}.ogg
+SQ20_TITLE,quest_objective_or_ui,quest_character_tbd,Blackout on the Corner,தெரு முனையில கரன்ட் கட்,voice/sq20_title_{en|ta}.ogg
+SQ20_DESC,quest_voice_review,quest_character_tbd,The street lights are out. Take an electrician and his tools to fix them.,தெரு லைட்டெல்லாம் அணைஞ்சிடுச்சு. எலக்ட்ரீஷியனையும் அவரோட டூல்ஸையும் அங்க கூட்டிட்டு போ.,voice/sq20_desc_{en|ta}.ogg
+SQ20_PICKUP,quest_objective_or_ui,quest_character_tbd,Stop at the night market and load the tools.,இரவுச் சந்தையில் நிறுத்திக் கருவிகளை ஏற்று.,voice/sq20_pickup_{en|ta}.ogg
+SQ20_MARKER,quest_objective_or_ui,quest_character_tbd,Stop and read the warning sign.,நிறுத்தி எச்சரிக்கைப் பலகையைப் படி.,voice/sq20_marker_{en|ta}.ogg
+SQ20_BAY,quest_objective_or_ui,quest_character_tbd,Take the lit road. The dark corner is closed.,விளக்குள்ள சாலையில் போ. இருண்ட முனை மூடப்பட்டுள்ளது.,voice/sq20_bay_{en|ta}.ogg
+SQ20_REPAIR,quest_objective_or_ui,quest_character_tbd,Stop at the power box and unload the tools.,மின் பெட்டியில் நிறுத்திக் கருவிகளை இறக்கு.,voice/sq20_repair_{en|ta}.ogg
+SQ20_FINISH,quest_voice_review,quest_character_tbd,The electrician fixes it. The lights are back on!,எலக்ட்ரீஷியன் சரிசெய்தார். விளக்குகள் எரிகின்றன!,voice/sq20_finish_{en|ta}.ogg
+SQ20_THANKS,quest_voice_review,quest_character_tbd,Thank you!,நன்றி!,voice/sq20_thanks_{en|ta}.ogg
+SQ23_TITLE,quest_objective_or_ui,quest_character_tbd,A Mirror Through Mount Road,மவுண்ட் ரோடுல ஒரு கண்ணாடி,voice/sq23_title_{en|ta}.ogg
+SQ23_DESC,quest_voice_review,quest_character_tbd,Deliver a big glass mirror along Mount Road without breaking it.,மவுண்ட் ரோடு வழியா பெரிய கண்ணாடியை உடைக்காம டெலிவரி பண்ணு.,voice/sq23_desc_{en|ta}.ogg
+SQ23_MIRROR,quest_objective_or_ui,quest_character_tbd,Stop at the glass shop and load the mirror.,கண்ணாடிக் கடையில் நிறுத்தி ஏற்று.,voice/sq23_mirror_{en|ta}.ogg
+SQ23_ROUTE,quest_objective_or_ui,quest_character_tbd,The small lane has sharp turns. The wide road is safer. Which way?,சிறிய சந்தில் கூர்மையான திருப்பங்கள். அகலச் சாலை பாதுகாப்பு. எந்த வழி?,voice/sq23_route_{en|ta}.ogg
+SQ23_WIDE,quest_objective_or_ui,quest_character_tbd,Wide road,அகலச் சாலை,voice/sq23_wide_{en|ta}.ogg
+SQ23_NARROW,quest_objective_or_ui,quest_character_tbd,Small lane,சிறிய சந்து,voice/sq23_narrow_{en|ta}.ogg
+SQ23_WARNING,quest_voice_review,quest_character_tbd,The lane is too tight for the mirror! Read the road sign.,சந்து கண்ணாடிக்குக் குறுகலாக உள்ளது! சாலைப் பலகையைப் படி.,voice/sq23_warning_{en|ta}.ogg
+SQ23_PARK,quest_objective_or_ui,quest_character_tbd,"At the office: stop at the marker, shift to R, roll back a little, stop and tap Done.","அலுவலகத்தில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு.",voice/sq23_park_{en|ta}.ogg
+SQ23_UNLOAD,quest_objective_or_ui,quest_character_tbd,Unload the mirror here.,கண்ணாடியை இங்கே இறக்கு.,voice/sq23_unload_{en|ta}.ogg
+SQ25_TITLE,quest_objective_or_ui,quest_character_tbd,Three Clues to Madras,மெட்ராஸோட மூணு க்ளூஸ்,voice/sq25_title_{en|ta}.ogg
+SQ25_DESC,quest_voice_review,quest_character_tbd,An old postcard shows a Madras landmark. Follow the clues to find the spot.,ஒரு பழைய போஸ்ட் கார்டுல மெட்ராஸோட ஒரு இடம் இருக்கு. க்ளூஸை ஃபாலோ பண்ணி அந்த இடத்தைக் கண்டுபிடி.,voice/sq25_desc_{en|ta}.ogg
+SQ25_CLUE_1,quest_objective_or_ui,quest_character_tbd,Drive to the old stone building and read the plaque.,பழைய கல் கட்டடத்துக்குப் போய்க் கல்வெட்டைப் படி.,voice/sq25_clue_1_{en|ta}.ogg
+SQ25_GUESS,quest_voice_review,quest_character_tbd,The plaque shows an old clock. The postcard shows the same thing. Which one?,கல்வெட்டில் பழைய கடிகாரம். அஞ்சலட்டையிலும் அதே. எது?,voice/sq25_guess_{en|ta}.ogg
+SQ25_CLOCK,quest_objective_or_ui,quest_character_tbd,The old clock,பழைய கடிகாரம்,voice/sq25_clock_{en|ta}.ogg
+SQ25_ARCH,quest_objective_or_ui,quest_character_tbd,The market arch,சந்தை வளைவு,voice/sq25_arch_{en|ta}.ogg
+SQ25_HINT,quest_voice_review,quest_character_tbd,That arch is new. Read the clock tower sign.,அந்த வளைவு புதியது. கடிகாரக் கோபுரப் பலகையைப் படி.,voice/sq25_hint_{en|ta}.ogg
+SQ25_CLUE_2,quest_objective_or_ui,quest_character_tbd,Find the second clue on the painted wall.,வர்ணச் சுவரில் இரண்டாவது குறிப்பைத் தேடு.,voice/sq25_clue_2_{en|ta}.ogg
+SQ25_REVEAL,quest_voice_review,quest_character_tbd,The wall points to the photo spot!,சுவர் படம் எடுக்கும் இடத்தைக் காட்டுகிறது!,voice/sq25_reveal_{en|ta}.ogg
+SQ25_READY,quest_voice_review,quest_character_tbd,Go there,அங்கே போ,voice/sq25_ready_{en|ta}.ogg
+SQ25_VIEW,quest_objective_or_ui,quest_character_tbd,Stop at the photo spot and take a picture.,படம் எடுக்கும் இடத்தில் நிறுத்திப் படம் எடு.,voice/sq25_view_{en|ta}.ogg
+QUEST_QUALITY_INSTRUMENT,quest_system_ui,,Drum safe: %d%%,மிருதங்கம் பாதுகாப்பு: %d%%,voice/quest_quality_instrument_{en|ta}.ogg
+QUEST_QUALITY_LAMPS,quest_system_ui,,Lamps safe: %d%%,விளக்குகள் பாதுகாப்பு: %d%%,voice/quest_quality_lamps_{en|ta}.ogg
+QUEST_QUALITY_PAPER,quest_system_ui,,Goods dry: %d%%,பொருட்கள் உலர்வு: %d%%,voice/quest_quality_paper_{en|ta}.ogg
+QUEST_QUALITY_SUPPLIES,quest_system_ui,,Supplies dry: %d%%,பொருட்கள் உலர்வு: %d%%,voice/quest_quality_supplies_{en|ta}.ogg
+QUEST_QUALITY_TOOLS,quest_system_ui,,Tools safe: %d%%,கருவிகள் பாதுகாப்பு: %d%%,voice/quest_quality_tools_{en|ta}.ogg
+QUEST_QUALITY_MIRROR,quest_system_ui,,Mirror safe: %d%%,கண்ணாடி பாதுகாப்பு: %d%%,voice/quest_quality_mirror_{en|ta}.ogg
+SQ01_JOB,quest_objective_or_ui,quest_character_tbd,1. Go to the wedding hall.\n2. Find out whose pouch it is.\n3. Give it back at the help desk.,1. திருமண மண்டபத்துக்குப் போ.\n2. பை யாருடையது என்று கண்டுபிடி.\n3. உதவி மேசையில் ஒப்படை.,voice/sq01_job_{en|ta}.ogg
+SQ01_P_HALL,quest_objective_or_ui,quest_character_tbd,Wedding Hall,திருமண மண்டபம்,voice/sq01_p_hall_{en|ta}.ogg
+SQ01_P_FLOWER,quest_objective_or_ui,quest_character_tbd,Flower Seller,பூக்காரர்,voice/sq01_p_flower_{en|ta}.ogg
+SQ01_P_DESK,quest_objective_or_ui,quest_character_tbd,Help Desk,உதவி மேசை,voice/sq01_p_desk_{en|ta}.ogg
+SQ02_JOB,quest_objective_or_ui,quest_character_tbd,"1. Pick which shop gets coffee first.\n2. Deliver to all three shops.\n3. Bumps and hard braking spill the coffee, so drive smoothly.",1. முதலில் எந்தக் கடை என்று தேர்வு செய்.\n2. மூன்று கடைகளுக்கும் கொடு.\n3. குலுக்கலும் திடீர் பிரேக்கும் காபியைச் சிந்தும். மெதுவா ஓட்டு.,voice/sq02_job_{en|ta}.ogg
+SQ02_P_TAILOR,quest_objective_or_ui,quest_character_tbd,Tailor Shop,தையல் கடை,voice/sq02_p_tailor_{en|ta}.ogg
+SQ02_P_BOOKS,quest_objective_or_ui,quest_character_tbd,Book Shop,புத்தகக் கடை,voice/sq02_p_books_{en|ta}.ogg
+SQ02_P_TEA,quest_objective_or_ui,quest_character_tbd,Tea Shop,டீக்கடை,voice/sq02_p_tea_{en|ta}.ogg
+SQ03_JOB,quest_objective_or_ui,quest_character_tbd,1. Load the drum at the music shop.\n2. Drive to the music hall. Stay under 32 km/h.\n3. Bumps and crashes damage the drum.\nThe drum goes in by the back gate.,1. இசைக் கடையில் மிருதங்கத்தை ஏற்று.\n2. சபாவுக்குப் போ. 32 கி.மீ/மணிக்குள் ஓட்டு.\n3. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\nமிருதங்கம் பின்னாடி கேட் வழியாகச் செல்லும்.,voice/sq03_job_{en|ta}.ogg
+SQ03_P_SHOP,quest_objective_or_ui,quest_character_tbd,Music Shop,இசைக் கடை,voice/sq03_p_shop_{en|ta}.ogg
+SQ03_P_HALL,quest_objective_or_ui,quest_character_tbd,Music Hall,சபா மண்டபம்,voice/sq03_p_hall_{en|ta}.ogg
+SQ03_P_NOTICE,quest_objective_or_ui,quest_character_tbd,Notice Board,அறிவிப்புப் பலகை,voice/sq03_p_notice_{en|ta}.ogg
+SQ03_P_BACK,quest_objective_or_ui,quest_character_tbd,Hall Back Gate,சபா பின்னாடி கேட்,voice/sq03_p_back_{en|ta}.ogg
+SQ04_JOB,quest_objective_or_ui,quest_character_tbd,1. Drive Paati to the places she remembers.\n2. Stop and look around at each one.\n3. Take her to her granddaughter's home.,1. பாட்டிக்கு நினைவிருக்கும் இடங்களுக்கு ஓட்டு.\n2. ஒவ்வொரு இடத்திலும் நிறுத்திப் பார்.\n3. பேத்தியின் வீட்டில் சேர்.,voice/sq04_job_{en|ta}.ogg
+SQ04_P_STALL,quest_objective_or_ui,quest_character_tbd,Flower Stall,பூக்கடை,voice/sq04_p_stall_{en|ta}.ogg
+SQ04_P_STEPS,quest_objective_or_ui,quest_character_tbd,Tank Steps Corner,குளத்துப் படி முனை,voice/sq04_p_steps_{en|ta}.ogg
+SQ04_P_HOME,quest_objective_or_ui,quest_character_tbd,Granddaughter's Home,பேத்தியின் வீடு,voice/sq04_p_home_{en|ta}.ogg
+SQ05_JOB,quest_objective_or_ui,quest_character_tbd,1. Load the lamps.\n2. Take the open road around the procession. Stay under 25 km/h.\n3. Back up at the store and unload.\nBumps and crashes can break the lamps.,1. விளக்குகளை ஏற்று.\n2. திறந்த சாலையில் சுற்றிப் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. கிடங்கில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் விளக்குகளை உடைக்கும்.,voice/sq05_job_{en|ta}.ogg
+SQ05_OUTER_GO,quest_objective_or_ui,quest_character_tbd,Take the outer road. Drive slowly.,வெளிச் சாலையில் மெதுவாப் போ.,voice/sq05_outer_go_{en|ta}.ogg
+SQ05_P_SHOP,quest_objective_or_ui,quest_character_tbd,Lamp Shop,விளக்குக் கடை,voice/sq05_p_shop_{en|ta}.ogg
+SQ05_P_SIGN,quest_objective_or_ui,quest_character_tbd,Road Closed Sign,சாலை மூடல் பலகை,voice/sq05_p_sign_{en|ta}.ogg
+SQ05_P_OUTER,quest_objective_or_ui,quest_character_tbd,Outer Road Corner,வெளிச் சாலை முனை,voice/sq05_p_outer_{en|ta}.ogg
+SQ05_P_STORE,quest_objective_or_ui,quest_character_tbd,Temple Store,கோயில் கிடங்கு,voice/sq05_p_store_{en|ta}.ogg
+SQ06_JOB,quest_objective_or_ui,quest_character_tbd,"1. Drive to the first photo spot and stop.\n2. Drive to the second photo spot and stop.\n3. Tap Take photo at each spot.\nBe quick, the light is going!","1. முதல் இடத்துக்குப் போய் நிறுத்து.\n2. இரண்டாவது இடத்துக்குப் போய் நிறுத்து.\n3. ஒவ்வொரு இடத்திலும் படம் எடு என்பதைத் தட்டு.\nவேகமா, வெளிச்சம் குறைகிறது!",voice/sq06_job_{en|ta}.ogg
+SQ06_P_SPOT1,quest_objective_or_ui,quest_character_tbd,Beach Photo Spot,கடற்கரைப் பட இடம்,voice/sq06_p_spot1_{en|ta}.ogg
+SQ06_P_SPOT2,quest_objective_or_ui,quest_character_tbd,Lighthouse Photo Spot,கலங்கரை விளக்கப் பட இடம்,voice/sq06_p_spot2_{en|ta}.ogg
+SQ07_JOB,quest_objective_or_ui,quest_character_tbd,1. Drive along the beach road and look for him.\n2. Find the boy with the red kite.\n3. Bring the family to the help point in time.,1. கடற்கரைச் சாலையில் தேடு.\n2. சிவப்பு பட்டம் வைத்திருக்கும் பையனைக் கண்டுபிடி.\n3. குடும்பத்தை உதவி மையத்துக்கு நேரத்தில் கொண்டு வா.,voice/sq07_job_{en|ta}.ogg
+SQ07_P_GATE1,quest_objective_or_ui,quest_character_tbd,Beach Entrance,கடற்கரை நுழைவு,voice/sq07_p_gate1_{en|ta}.ogg
+SQ07_P_GATE2,quest_objective_or_ui,quest_character_tbd,Next Beach Entrance,அடுத்த கடற்கரை நுழைவு,voice/sq07_p_gate2_{en|ta}.ogg
+SQ07_P_GATE3,quest_objective_or_ui,quest_character_tbd,South Beach Entrance,தெற்கு கடற்கரை நுழைவு,voice/sq07_p_gate3_{en|ta}.ogg
+SQ07_P_HELP,quest_objective_or_ui,quest_character_tbd,Beach Help Point,கடற்கரை உதவி மையம்,voice/sq07_p_help_{en|ta}.ogg
+SQ08_JOB,quest_objective_or_ui,quest_character_tbd,"1. Load goods from both sellers.\n2. Take everything to the shelter.\n3. Paper goods get wet in the rain, so be quick.",1. இருவரின் பொருட்களையும் ஏற்று.\n2. எல்லாவற்றையும் கூடாரத்துக்குக் கொண்டு போ.\n3. மழையில் காகிதம் நனையும். வேகமாச் செய்.,voice/sq08_job_{en|ta}.ogg
+SQ08_P_PAPER,quest_objective_or_ui,quest_character_tbd,Paper Seller,காகிதக் கடைக்காரர்,voice/sq08_p_paper_{en|ta}.ogg
+SQ08_P_BOXES,quest_objective_or_ui,quest_character_tbd,Box Seller,பெட்டிக் கடைக்காரர்,voice/sq08_p_boxes_{en|ta}.ogg
+SQ08_P_SHELTER,quest_objective_or_ui,quest_character_tbd,Rain Shelter,மழைக் கூடாரம்,voice/sq08_p_shelter_{en|ta}.ogg
+SQ09_JOB,quest_objective_or_ui,quest_character_tbd,1. Take Kutty to the animal clinic.\n2. Don't use the horn.\n3. Bumps and hard braking scare him.\nYou can stop on the way to calm him.,1. குட்டியை விலங்கு மருத்துவமனைக்குக் கொண்டு போ.\n2. ஹாரன் அடிக்காதே.\n3. குலுக்கலும் திடீர் பிரேக்கும் அதைப் பயமுறுத்தும்.\nவழியில் நிறுத்தி அமைதிப்படுத்தலாம்.,voice/sq09_job_{en|ta}.ogg
+SQ09_P_CORNER,quest_objective_or_ui,quest_character_tbd,Quiet Corner,அமைதியான முனை,voice/sq09_p_corner_{en|ta}.ogg
+SQ09_P_CLINIC,quest_objective_or_ui,quest_character_tbd,Animal Clinic,விலங்கு மருத்துவமனை,voice/sq09_p_clinic_{en|ta}.ogg
+SQ10_JOB,quest_objective_or_ui,quest_character_tbd,1. Collect the blue and red bags.\n2. Unload them at the sorting point.\n3. Collect two more bags and unload them.\nYour auto holds three bags at a time.,"1. நீல, சிவப்பு பைகளைச் சேகரி.\n2. பிரிப்பு மையத்தில் இறக்கு.\n3. மேலும் இரண்டு பைகளைச் சேகரித்து இறக்கு.\nஒரு முறை மூன்று பைகள் மட்டுமே.",voice/sq10_job_{en|ta}.ogg
+SQ10_P_NORTH,quest_objective_or_ui,quest_character_tbd,North Beach Entrance,வடக்கு கடற்கரை நுழைவு,voice/sq10_p_north_{en|ta}.ogg
+SQ10_P_SOUTH,quest_objective_or_ui,quest_character_tbd,South Beach Entrance,தெற்கு கடற்கரை நுழைவு,voice/sq10_p_south_{en|ta}.ogg
+SQ10_P_SORT,quest_objective_or_ui,quest_character_tbd,Sorting Point,பிரிப்பு மையம்,voice/sq10_p_sort_{en|ta}.ogg
+SQ10_P_WEST,quest_objective_or_ui,quest_character_tbd,West Beach Entrance,மேற்கு கடற்கரை நுழைவு,voice/sq10_p_west_{en|ta}.ogg
+SQ12_JOB,quest_objective_or_ui,quest_character_tbd,1. Go to the sports shop.\n2. Pick the blue bag with the white stripe.\n3. Take it to the stadium gate.,1. விளையாட்டுக் கடைக்குப் போ.\n2. வெள்ளைக் கோடு உள்ள நீலப் பையை எடு.\n3. மைதான வாசலுக்குக் கொண்டு போ.,voice/sq12_job_{en|ta}.ogg
+SQ12_P_SHOP,quest_objective_or_ui,quest_character_tbd,Sports Shop,விளையாட்டுக் கடை,voice/sq12_p_shop_{en|ta}.ogg
+SQ12_P_DESK,quest_objective_or_ui,quest_character_tbd,Ticket Counter,டிக்கெட் கவுன்டர்,voice/sq12_p_desk_{en|ta}.ogg
+SQ12_P_GATE,quest_objective_or_ui,quest_character_tbd,Stadium Gate,மைதான வாசல்,voice/sq12_p_gate_{en|ta}.ogg
+SQ14_JOB,quest_objective_or_ui,quest_character_tbd,1. Read the notice at the school.\n2. Get the ID copy from the print shop.\n3. Reach the east gate before time runs out.,1. பள்ளியில் அறிவிப்பைப் படி.\n2. அச்சுக் கடையில் நகல் எடு.\n3. நேரம் முடியும் முன் கிழக்கு வாசலை அடை.,voice/sq14_job_{en|ta}.ogg
+SQ14_P_SCHOOL,quest_objective_or_ui,quest_character_tbd,School Notice Board,பள்ளி அறிவிப்புப் பலகை,voice/sq14_p_school_{en|ta}.ogg
+SQ14_P_PRINT,quest_objective_or_ui,quest_character_tbd,Print Shop,அச்சுக் கடை,voice/sq14_p_print_{en|ta}.ogg
+SQ14_P_GATE,quest_objective_or_ui,quest_character_tbd,School East Gate,பள்ளி கிழக்கு வாசல்,voice/sq14_p_gate_{en|ta}.ogg
+SQ15_JOB,quest_objective_or_ui,quest_character_tbd,1. Pick up both passengers.\n2. Choose who to drop first.\n3. Drop one at the clinic and one at the library.,"1. இரண்டு பயணிகளையும் ஏற்று.\n2. முதலில் யாரை இறக்குவது என்று தேர்வு செய்.\n3. ஒருவரை மருத்துவமனையிலும், மற்றவரை நூலகத்திலும் இறக்கு.",voice/sq15_job_{en|ta}.ogg
+SQ15_P_STOP,quest_objective_or_ui,quest_character_tbd,Bus Stop,பஸ் ஸ்டாப்,voice/sq15_p_stop_{en|ta}.ogg
+SQ15_P_CLINIC,quest_objective_or_ui,quest_character_tbd,Clinic,மருத்துவமனை,voice/sq15_p_clinic_{en|ta}.ogg
+SQ15_P_LIBRARY,quest_objective_or_ui,quest_character_tbd,Library,நூலகம்,voice/sq15_p_library_{en|ta}.ogg
+SQ16_JOB,quest_objective_or_ui,quest_character_tbd,At each of the three stops:\n1. Turn on your indicator.\n2. Stop on the marker.,மூன்று இடங்களிலும்:\n1. இண்டிகேட்டரைப் போடு.\n2. குறியில் நிறுத்து.,voice/sq16_job_{en|ta}.ogg
+SQ16_P_A,quest_objective_or_ui,quest_character_tbd,Pull Over Here,இங்கே ஓரமாக நிறுத்து,voice/sq16_p_a_{en|ta}.ogg
+SQ16_P_B,quest_objective_or_ui,quest_character_tbd,Pull Over Here,இங்கே ஓரமாக நிறுத்து,voice/sq16_p_b_{en|ta}.ogg
+SQ16_P_C,quest_objective_or_ui,quest_character_tbd,Pull Over Here,இங்கே ஓரமாக நிறுத்து,voice/sq16_p_c_{en|ta}.ogg
+SQ17_JOB,quest_objective_or_ui,quest_character_tbd,1. Load the food and water.\n2. Read the flood sign.\n3. Deliver to the shelter and the relief desk.\nStay away from the flooded road.,1. உணவையும் நீரையும் ஏற்று.\n2. வெள்ளப் பலகையைப் படி.\n3. முகாமுக்கும் உதவி மேசைக்கும் கொடு.\nவெள்ளச் சாலைக்குப் போகாதே.,voice/sq17_job_{en|ta}.ogg
+SQ17_P_STORE,quest_objective_or_ui,quest_character_tbd,Relief Store,நிவாரணக் கிடங்கு,voice/sq17_p_store_{en|ta}.ogg
+SQ17_P_SIGN,quest_objective_or_ui,quest_character_tbd,Flood Sign,வெள்ளப் பலகை,voice/sq17_p_sign_{en|ta}.ogg
+SQ17_P_SHELTER,quest_objective_or_ui,quest_character_tbd,Shelter,முகாம்,voice/sq17_p_shelter_{en|ta}.ogg
+SQ17_P_DESK,quest_objective_or_ui,quest_character_tbd,Relief Desk,உதவி மேசை,voice/sq17_p_desk_{en|ta}.ogg
+SQ18_JOB,quest_objective_or_ui,quest_character_tbd,"1. Get ready: clean the seat or buy a charger.\n2. Give the quiet ride, then carry the suitcase.\n3. Finish at the charging stop.\nBumps, crashes and the horn upset passengers.","1. ரெடி செய்: இருக்கையைச் சுத்தம் செய், அல்லது சார்ஜர் வாங்கு.\n2. அமைதியான பயணம், பிறகு பெட்டி.\n3. சார்ஜிங் இடத்தில் முடி.\nகுலுக்கல், மோதல், ஹாரன் பயணிகளை வருத்தும்.",voice/sq18_job_{en|ta}.ogg
+SQ18_QUIET_GO,quest_objective_or_ui,quest_character_tbd,Drive your first neighbour home. Keep it quiet and smooth.,"முதல் நபரை வீட்டில் சேர். அமைதியா, மெதுவா ஓட்டு.",voice/sq18_quiet_go_{en|ta}.ogg
+SQ18_P_SHOP,quest_objective_or_ui,quest_character_tbd,Corner Shop,முனைக் கடை,voice/sq18_p_shop_{en|ta}.ogg
+SQ18_P_CHARGER,quest_objective_or_ui,quest_character_tbd,Phone Shop,கைபேசிக் கடை,voice/sq18_p_charger_{en|ta}.ogg
+SQ18_P_HOME1,quest_objective_or_ui,quest_character_tbd,Neighbour's House,அண்டை வீடு,voice/sq18_p_home1_{en|ta}.ogg
+SQ18_P_HOME2,quest_objective_or_ui,quest_character_tbd,Suitcase Owner's House,பெட்டி உரிமையாளர் வீடு,voice/sq18_p_home2_{en|ta}.ogg
+SQ19_JOB,quest_objective_or_ui,quest_character_tbd,1. Check which parcel is for which shop.\n2. Deliver the blue parcel to the tailor.\n3. Deliver the red parcel to the printer.,1. எந்தப் பொட்டலம் எந்தக் கடைக்கு என்று பார்.\n2. நீலப் பொட்டலத்தைத் தையல் கடைக்குக் கொடு.\n3. சிவப்பு பொட்டலத்தை அச்சுக் கடைக்குக் கொடு.,voice/sq19_job_{en|ta}.ogg
+SQ19_P_OFFICE,quest_objective_or_ui,quest_character_tbd,Courier Office,கூரியர் அலுவலகம்,voice/sq19_p_office_{en|ta}.ogg
+SQ19_P_TAILOR,quest_objective_or_ui,quest_character_tbd,Tailor Shop,தையல் கடை,voice/sq19_p_tailor_{en|ta}.ogg
+SQ19_P_PRINTER,quest_objective_or_ui,quest_character_tbd,Print Shop,அச்சுக் கடை,voice/sq19_p_printer_{en|ta}.ogg
+SQ20_JOB,quest_objective_or_ui,quest_character_tbd,1. Load his tools.\n2. Read the warning sign.\n3. Take the lit road. Stay under 25 km/h.\n4. Unload at the power box.\nBumps and crashes damage the tools.,1. கருவிகளை ஏற்று.\n2. எச்சரிக்கைப் பலகையைப் படி.\n3. விளக்குள்ள சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n4. மின் பெட்டியில் இறக்கு.\nகுலுக்கலும் மோதலும் கருவிகளைச் சேதப்படுத்தும்.,voice/sq20_job_{en|ta}.ogg
+SQ20_P_MARKET,quest_objective_or_ui,quest_character_tbd,Night Market,இரவுச் சந்தை,voice/sq20_p_market_{en|ta}.ogg
+SQ20_P_SIGN,quest_objective_or_ui,quest_character_tbd,Warning Sign,எச்சரிக்கைப் பலகை,voice/sq20_p_sign_{en|ta}.ogg
+SQ20_P_ROAD,quest_objective_or_ui,quest_character_tbd,Lit Road,விளக்குள்ள சாலை,voice/sq20_p_road_{en|ta}.ogg
+SQ20_P_BOX,quest_objective_or_ui,quest_character_tbd,Power Box,மின் பெட்டி,voice/sq20_p_box_{en|ta}.ogg
+SQ21_JOB,quest_objective_or_ui,quest_character_tbd,1. Choose: get the old folder or print new copies.\n2. Stop there to collect the papers.\n3. Reach the interview office in time.,"1. தேர்வு செய்: பழைய கோப்பு, அல்லது புதிய நகல்.\n2. அங்கே நிறுத்திக் காகிதங்களை வாங்கு.\n3. நேரத்தில் இன்டர்வியூ அலுவலகம் சேர்.",voice/sq21_job_{en|ta}.ogg
+SQ21_P_HOME,quest_objective_or_ui,quest_character_tbd,His Home,அவர் வீடு,voice/sq21_p_home_{en|ta}.ogg
+SQ21_P_PRINT,quest_objective_or_ui,quest_character_tbd,Print Shop,அச்சுக் கடை,voice/sq21_p_print_{en|ta}.ogg
+SQ21_P_OFFICE,quest_objective_or_ui,quest_character_tbd,Interview Office,இன்டர்வியூ அலுவலகம்,voice/sq21_p_office_{en|ta}.ogg
+SQ23_JOB,quest_objective_or_ui,quest_character_tbd,1. Load the mirror.\n2. Take the wide road. Stay under 25 km/h.\n3. Back up at the office and unload.\nBumps and crashes can crack the mirror.,1. கண்ணாடியை ஏற்று.\n2. அகலச் சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. அலுவலகத்தில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் கண்ணாடியை உடைக்கும்.,voice/sq23_job_{en|ta}.ogg
+SQ23_WIDE_GO,quest_objective_or_ui,quest_character_tbd,Take the wide road. Drive slowly.,அகலச் சாலையில் மெதுவாப் போ.,voice/sq23_wide_go_{en|ta}.ogg
+SQ23_P_SHOP,quest_objective_or_ui,quest_character_tbd,Glass Shop,கண்ணாடிக் கடை,voice/sq23_p_shop_{en|ta}.ogg
+SQ23_P_SIGN,quest_objective_or_ui,quest_character_tbd,Road Sign,சாலைப் பலகை,voice/sq23_p_sign_{en|ta}.ogg
+SQ23_P_ROAD,quest_objective_or_ui,quest_character_tbd,Wide Road Corner,அகலச் சாலை முனை,voice/sq23_p_road_{en|ta}.ogg
+SQ23_P_OFFICE,quest_objective_or_ui,quest_character_tbd,Mount Road Office,மவுண்ட் ரோடு அலுவலகம்,voice/sq23_p_office_{en|ta}.ogg
+SQ24_JOB,quest_objective_or_ui,quest_character_tbd,1. Guess what is broken.\n2. Buy the part at the night workshop.\n3. Bring it back to the stuck auto in time.,1. என்ன பழுது என்று கண்டுபிடி.\n2. இரவுப் பட்டறையில் பாகம் வாங்கு.\n3. நேரத்தில் ஆட்டோவிடம் கொண்டு வா.,voice/sq24_job_{en|ta}.ogg
+SQ24_P_BOARD,quest_objective_or_ui,quest_character_tbd,Electrician's Board,எலக்ட்ரீஷியன் பலகை,voice/sq24_p_board_{en|ta}.ogg
+SQ24_P_SHOP,quest_objective_or_ui,quest_character_tbd,Night Workshop,இரவுப் பட்டறை,voice/sq24_p_shop_{en|ta}.ogg
+SQ24_P_AUTO,quest_objective_or_ui,quest_character_tbd,Stuck Auto,நின்ற ஆட்டோ,voice/sq24_p_auto_{en|ta}.ogg
+SQ25_JOB,quest_objective_or_ui,quest_character_tbd,1. Stop at each clue on the map.\n2. Pick the right answer.\n3. Take a photo at the last spot.,1. வரைபடத்தில் உள்ள ஒவ்வொரு குறிப்பிலும் நிறுத்து.\n2. சரியான பதிலைத் தேர்வு செய்.\n3. கடைசி இடத்தில் படம் எடு.,voice/sq25_job_{en|ta}.ogg
+SQ25_P_STONE,quest_objective_or_ui,quest_character_tbd,Old Stone Building,பழைய கல் கட்டடம்,voice/sq25_p_stone_{en|ta}.ogg
+SQ25_P_CLOCK,quest_objective_or_ui,quest_character_tbd,Clock Tower Sign,கடிகாரக் கோபுரப் பலகை,voice/sq25_p_clock_{en|ta}.ogg
+SQ25_P_WALL,quest_objective_or_ui,quest_character_tbd,Painted Wall,வர்ணச் சுவர்,voice/sq25_p_wall_{en|ta}.ogg
+SQ25_P_VIEW,quest_objective_or_ui,quest_character_tbd,Postcard Photo Spot,அஞ்சலட்டை பட இடம்,voice/sq25_p_view_{en|ta}.ogg
+SQ26_JOB,quest_objective_or_ui,quest_character_tbd,1. Pick up jasmine and rose garlands.\n2. Bring both to the wedding hall.\n3. Stay under 38 km/h and don't crash.,"1. மல்லிகை, ரோஜா மாலைகளை வாங்கு.\n2. இரண்டையும் மண்டபத்துக்குக் கொண்டு போ.\n3. 38 கி.மீ/மணிக்குள் ஓட்டு, மோதாதே.",voice/sq26_job_{en|ta}.ogg
+SQ26_P_JASMINE,quest_objective_or_ui,quest_character_tbd,Jasmine Flower Shop,மல்லிகைப் பூக்கடை,voice/sq26_p_jasmine_{en|ta}.ogg
+SQ26_P_ROSE,quest_objective_or_ui,quest_character_tbd,Rose Flower Shop,ரோஜாப் பூக்கடை,voice/sq26_p_rose_{en|ta}.ogg
+SQ26_P_HALL,quest_objective_or_ui,quest_character_tbd,Wedding Hall,திருமண மண்டபம்,voice/sq26_p_hall_{en|ta}.ogg
+SQ27_JOB,quest_objective_or_ui,quest_character_tbd,"1. Choose the quick lane or the wide road.\n2. Stay under 25 km/h and don't crash.\n3. At the house, back up and park.","1. விரைவுச் சந்து அல்லது அகலச் சாலையைத் தேர்வு செய்.\n2. 25 கி.மீ/மணிக்குள் ஓட்டு, மோதாதே.\n3. வீட்டில் பின்னால் நகர்த்தி நிறுத்து.",voice/sq27_job_{en|ta}.ogg
+SQ27_P_LANE,quest_objective_or_ui,quest_character_tbd,Small Lane,சிறிய சந்து,voice/sq27_p_lane_{en|ta}.ogg
+SQ27_P_ROAD,quest_objective_or_ui,quest_character_tbd,Wide Road,அகலச் சாலை,voice/sq27_p_road_{en|ta}.ogg
+SQ27_P_HOUSE,quest_objective_or_ui,quest_character_tbd,Customer's House,வாடிக்கையாளர் வீடு,voice/sq27_p_house_{en|ta}.ogg
+QUEST_ACT_LOAD,quest_system_ui,,Load,ஏற்று,voice/quest_act_load_{en|ta}.ogg
+QUEST_ACT_UNLOAD,quest_system_ui,,Unload,இறக்கு,voice/quest_act_unload_{en|ta}.ogg
+QUEST_ACT_READ,quest_system_ui,,Read it,படி,voice/quest_act_read_{en|ta}.ogg
+QUEST_ACT_LOOK,quest_system_ui,,Look around,சுற்றிப் பார்,voice/quest_act_look_{en|ta}.ogg
+QUEST_ACT_COLLECT,quest_system_ui,,Collect,வாங்கு,voice/quest_act_collect_{en|ta}.ogg
+QUEST_ACT_GIVE,quest_system_ui,,Hand over,ஒப்படை,voice/quest_act_give_{en|ta}.ogg
+QUEST_ACT_BOARD,quest_system_ui,,Let them in,ஏற்று,voice/quest_act_board_{en|ta}.ogg
+QUEST_ACT_DROP,quest_system_ui,,Drop off,இறக்கிவிடு,voice/quest_act_drop_{en|ta}.ogg
+QUEST_ACT_READY,quest_system_ui,,Get ready,ரெடி செய்,voice/quest_act_ready_{en|ta}.ogg
+QUEST_NOT_NOW,quest_system_ui,,Not now,இப்போ வேண்டாம்,voice/quest_not_now_{en|ta}.ogg
+QUEST_NEARBY_TITLE,quest_system_ui,,SIDE QUEST,பக்கக் கதை,voice/quest_nearby_title_{en|ta}.ogg
+QUEST_REWARD,quest_system_ui,,Reward: ₹%s  ·  about %d min,பரிசு: ₹%s  ·  சுமார் %d நிமிடம்,voice/quest_reward_{en|ta}.ogg
+QUEST_STOP_HERE,quest_system_ui,,You're here! Stop the auto.,வந்துவிட்டாய்! ஆட்டோவை நிறுத்து.,voice/quest_stop_here_{en|ta}.ogg
+QUEST_SLOW_DOWN,quest_system_ui,,Too fast! Slow down in %d s,மிக வேகம்! %d நொடிக்குள் குறை,voice/quest_slow_down_{en|ta}.ogg
+QUEST_LEAVE_SURE,quest_system_ui,,Sure?,உறுதியா?,voice/quest_leave_sure_{en|ta}.ogg
+QUEST_KNOCK,quest_system_ui,,Careful! That hit did some damage.,கவனம்! அந்த மோதலில் சேதம் ஆனது.,voice/quest_knock_{en|ta}.ogg
+RIDER_IT_COMMUTER_NAME,rider_system_ui,it_commuter_name,Office Worker,அலுவலக ஊழியர்,voice/rider_it_commuter_name_{en|ta}.ogg
+RIDER_IT_COMMUTER_HAIL,rider_voice_candidate,it_commuter,"Anna, I need to reach the office. Can you go?","அண்ணா, ஆபீஸ் போகணும். வருவீங்களா?",voice/rider_it_commuter_hail_{en|ta}.ogg
+RIDER_IT_COMMUTER_ACCEPT,rider_voice_candidate,it_commuter,"Okay, let's go fast.","சரி, சீக்கிரம் போகலாம்.",voice/rider_it_commuter_accept_{en|ta}.ogg
+RIDER_IT_COMMUTER_REJECT,rider_voice_candidate,it_commuter,The app is cheaper. Leave it.,ஆப்ல கம்மி. விடுங்க.,voice/rider_it_commuter_reject_{en|ta}.ogg
+RIDER_IT_COMMUTER_HAPPY,rider_voice_candidate,it_commuter,"Perfect timing, thank you!","சரியான நேரம், நன்றி!",voice/rider_it_commuter_happy_{en|ta}.ogg
+RIDER_IT_COMMUTER_UPSET,rider_voice_candidate,it_commuter,"Careful, I have a laptop!","மெதுவா, லேப்டாப் இருக்கு!",voice/rider_it_commuter_upset_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_NAME,rider_system_ui,college_student_name,College Student,கல்லூரி மாணவர்,voice/rider_college_student_name_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_HAIL,rider_voice_candidate,college_student,"Anna, I'm late for class. Will you come?","அண்ணா, கிளாஸுக்கு லேட். வருவீங்களா?",voice/rider_college_student_hail_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_ACCEPT,rider_voice_candidate,college_student,"Done, let's go!","சரி, போகலாம்!",voice/rider_college_student_accept_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_REJECT,rider_voice_candidate,college_student,Too much. I'll take the bus.,ரொம்ப அதிகம். பஸ்ல போறேன்.,voice/rider_college_student_reject_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_HAPPY,rider_voice_candidate,college_student,"Superb driving, anna!",சூப்பர் ஓட்டம் அண்ணா!,voice/rider_college_student_happy_{en|ta}.ogg
+RIDER_COLLEGE_STUDENT_UPSET,rider_voice_candidate,college_student,"I said go, not crash!","வேகம் சரி, மோதாதீங்க!",voice/rider_college_student_upset_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_NAME,rider_system_ui,tnagar_shopper_name,Silk Shopper,பட்டுக் கடை வாடிக்கையாளர்,voice/rider_tnagar_shopper_name_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_HAIL,rider_voice_candidate,tnagar_shopper,Auto! I have bags. Will you come?,ஆட்டோ! பைகள் இருக்கு. வருவீங்களா?,voice/rider_tnagar_shopper_hail_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_ACCEPT,rider_voice_candidate,tnagar_shopper,"Fine, load the bags.","சரி, பைகளை வையுங்க.",voice/rider_tnagar_shopper_accept_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_REJECT,rider_voice_candidate,tnagar_shopper,For that price I'll find another auto.,அந்த விலைக்கு வேற ஆட்டோ பாக்கறேன்.,voice/rider_tnagar_shopper_reject_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_HAPPY,rider_voice_candidate,tnagar_shopper,"Nice and smooth, thank you.","நல்லா ஓட்டினீங்க, நன்றி.",voice/rider_tnagar_shopper_happy_{en|ta}.ogg
+RIDER_TNAGAR_SHOPPER_UPSET,rider_voice_candidate,tnagar_shopper,"Slowly, my bags are falling!","மெதுவா, பைகள் விழுது!",voice/rider_tnagar_shopper_upset_{en|ta}.ogg
+RIDER_TOURIST_NAME,rider_system_ui,tourist_name,Tourist,சுற்றுலாப் பயணி,voice/rider_tourist_name_{en|ta}.ogg
+RIDER_TOURIST_HAIL,rider_voice_candidate,tourist,"Excuse me, can you take me there?","சாரி, அங்கே கொண்டு போவீங்களா?",voice/rider_tourist_hail_{en|ta}.ogg
+RIDER_TOURIST_ACCEPT,rider_voice_candidate,tourist,"Great, let's go.","சரி, போகலாம்.",voice/rider_tourist_accept_{en|ta}.ogg
+RIDER_TOURIST_REJECT,rider_voice_candidate,tourist,"That is too much, sorry.","அது அதிகம், சாரி.",voice/rider_tourist_reject_{en|ta}.ogg
+RIDER_TOURIST_HAPPY,rider_voice_candidate,tourist,"What a lovely ride, thank you!","அருமையான பயணம், நன்றி!",voice/rider_tourist_happy_{en|ta}.ogg
+RIDER_TOURIST_UPSET,rider_voice_candidate,tourist,Please slow down a little.,கொஞ்சம் மெதுவா போங்க.,voice/rider_tourist_upset_{en|ta}.ogg
+RIDER_MONSOON_RIDER_NAME,rider_system_ui,monsoon_rider_name,Stranded Rider,சிக்கிய பயணி,voice/rider_monsoon_rider_name_{en|ta}.ogg
+RIDER_MONSOON_RIDER_HAIL,rider_voice_candidate,monsoon_rider,"Anna, I'm stuck here. Please come!","அண்ணா, இங்க மாட்டிக்கிட்டேன். வாங்க!",voice/rider_monsoon_rider_hail_{en|ta}.ogg
+RIDER_MONSOON_RIDER_ACCEPT,rider_voice_candidate,monsoon_rider,"Thank you, let's go.","நன்றி, போகலாம்.",voice/rider_monsoon_rider_accept_{en|ta}.ogg
+RIDER_MONSOON_RIDER_REJECT,rider_voice_candidate,monsoon_rider,"No, that is too much even today.",இன்னைக்கும் அது ரொம்ப அதிகம்.,voice/rider_monsoon_rider_reject_{en|ta}.ogg
+RIDER_MONSOON_RIDER_HAPPY,rider_voice_candidate,monsoon_rider,"You saved me, thank you!","காப்பாத்திட்டீங்க, நன்றி!",voice/rider_monsoon_rider_happy_{en|ta}.ogg
+RIDER_MONSOON_RIDER_UPSET,rider_voice_candidate,monsoon_rider,"Careful, the road is bad!","கவனம், ரோடு மோசம்!",voice/rider_monsoon_rider_upset_{en|ta}.ogg
+HAGGLE_METER,other_ui,,Meter: ₹%d,மீட்டர்: ₹%d,voice/haggle_meter_{en|ta}.ogg
+HAGGLE_PATIENCE,other_ui,,Patience,பொறுமை,voice/haggle_patience_{en|ta}.ogg
+HAGGLE_ACCEPT,other_ui,,Accept,ஏற்றுக்கொள்,voice/haggle_accept_{en|ta}.ogg
+HAGGLE_THEIR_OFFER,other_ui,,Rider's offer,பயணி சொன்ன விலை,voice/haggle_their_offer_{en|ta}.ogg
+HAGGLE_ASK_METER,other_ui,,Ask the meter fare,மீட்டர் கட்டணம் கேள்,voice/haggle_ask_meter_{en|ta}.ogg
+HAGGLE_ASK_MORE,other_ui,,Ask a bit more,கொஞ்சம் அதிகம் கேள்,voice/haggle_ask_more_{en|ta}.ogg
+HAGGLE_ASK_HIGH,other_ui,,Ask high,நிறைய கேள்,voice/haggle_ask_high_{en|ta}.ogg
+HAGGLE_PLUS,other_ui,,₹%d more,₹%d கூட,voice/haggle_plus_{en|ta}.ogg
+HAGGLE_LET_GO,other_ui,,Let this ride go,இந்தச் சவாரி வேண்டாம்,voice/haggle_let_go_{en|ta}.ogg
+HAGGLE_COUNTER,other_ui,,"No no. ₹%d, okay?","இல்லை இல்லை. ₹%d, சரியா?",voice/haggle_counter_{en|ta}.ogg
+HAGGLE_COUNTER_ANGRY,other_ui,,"Are you joking? ₹%d, last offer!","விளையாடுறீங்களா? ₹%d, அவ்வளவுதான்!",voice/haggle_counter_angry_{en|ta}.ogg
+HAGGLE_DEAL,other_ui,,“%s”  Deal at ₹%d,“%s”  ₹%d-க்கு ஒப்பந்தம்,voice/haggle_deal_{en|ta}.ogg
+HAGGLE_STREAK,other_ui,,%d good deals in a row! Bonus at the drop.,தொடர்ந்து %d நல்ல பேரம்! இறக்கும்போது போனஸ்.,voice/haggle_streak_{en|ta}.ogg
+GOOD_DEAL_BONUS,other_ui,,Good deal bonus,நல்ல பேர போனஸ்,voice/good_deal_bonus_{en|ta}.ogg
+CLUE_LATE,other_ui,,Looks in a hurry,அவசரத்தில் இருக்காங்க,voice/clue_late_{en|ta}.ogg
+CLUE_BAGS,other_ui,,Carrying heavy bags,கனமான பைகள்,voice/clue_bags_{en|ta}.ogg
+CLUE_RAIN,other_ui,,It is raining,மழை பெய்கிறது,voice/clue_rain_{en|ta}.ogg
+CLUE_NIGHT,other_ui,,"It is late, few autos","நேரமாகிவிட்டது, ஆட்டோ குறைவு",voice/clue_night_{en|ta}.ogg
+CLUE_NEW,other_ui,,New to the city,நகரத்துக்குப் புதியவர்,voice/clue_new_{en|ta}.ogg
+CLUE_FAMILY,other_ui,,With family,குடும்பத்துடன்,voice/clue_family_{en|ta}.ogg
+CLUE_APP,other_ui,,Checking a cab app,கேப் ஆப் பார்க்கிறார்,voice/clue_app_{en|ta}.ogg
+CLUE_BROKE,other_ui,,Counting small change,சில்லறை எண்ணுகிறார்,voice/clue_broke_{en|ta}.ogg
+CLUE_BUS,other_ui,,A bus stop is close,பஸ் நிறுத்தம் அருகில்,voice/clue_bus_{en|ta}.ogg
+MAP_LEGEND,other_ui,,Legend,குறியீடுகள்,voice/map_legend_{en|ta}.ogg
+MAP_LEGEND_TITLE,other_ui,,What the map shows,வரைபடத்தில் உள்ளவை,voice/map_legend_title_{en|ta}.ogg
+MAP_KEY_PLAYER,other_ui,,Your auto,உன் ஆட்டோ,voice/map_key_player_{en|ta}.ogg
+MAP_KEY_ROUTE,other_ui,,GPS route,ஜிபிஎஸ் வழி,voice/map_key_route_{en|ta}.ogg
+MAP_KEY_DESTINATION,other_ui,,Route end,வழியின் முடிவு,voice/map_key_destination_{en|ta}.ogg
+MAP_KEY_PIN,other_ui,,Your pin,உன் குறி,voice/map_key_pin_{en|ta}.ogg
+MAP_KEY_HAIL,other_ui,,Passenger waiting,காத்திருக்கும் பயணி,voice/map_key_hail_{en|ta}.ogg
+MAP_KEY_QUEST,other_ui,,Side quest,பக்கக் கதை,voice/map_key_quest_{en|ta}.ogg
+MAP_KEY_QUEST_GROUP,other_ui,,Quests close together,அருகருகே கதைகள்,voice/map_key_quest_group_{en|ta}.ogg
+MAP_KEY_QUEST_DONE,other_ui,,Quest finished,முடிந்த கதை,voice/map_key_quest_done_{en|ta}.ogg
+MAP_KEY_LANDMARK,other_ui,,Landmark,அடையாளச் சின்னம்,voice/map_key_landmark_{en|ta}.ogg
+MAP_KEY_STAND,other_ui,,Auto stand,ஆட்டோ ஸ்டாண்ட்,voice/map_key_stand_{en|ta}.ogg
+MAP_KEY_LPG,other_ui,,LPG bunk,எல்பிஜி பங்க்,voice/map_key_lpg_{en|ta}.ogg
+MAP_KEY_EV,other_ui,,EV charging,மின் சார்ஜிங்,voice/map_key_ev_{en|ta}.ogg
+MAP_KEY_GARAGE,other_ui,,Garage,கேரேஜ்,voice/map_key_garage_{en|ta}.ogg
+MAP_KEY_MAIN_ROAD,other_ui,,Main road,முக்கிய சாலை,voice/map_key_main_road_{en|ta}.ogg
+MAP_KEY_CLOSED,other_ui,,Road closed,சாலை மூடல்,voice/map_key_closed_{en|ta}.ogg
+MAP_KEY_WATER,other_ui,,Canal / tank,கால்வாய் / குளம்,voice/map_key_water_{en|ta}.ogg
+MAP_KEY_PARK,other_ui,,Park,பூங்கா,voice/map_key_park_{en|ta}.ogg
+MAP_KEY_SEA,other_ui,,Sea,கடல்,voice/map_key_sea_{en|ta}.ogg
+MAP_PIN_AFTER_RIDE,other_ui,,After drop-off,இறக்கிய பிறகு,voice/map_pin_after_ride_{en|ta}.ogg
+MAP_PIN_HELP,other_ui,,Tap or drag to place the pin,குறியை வைக்கத் தொடு அல்லது இழு,voice/map_pin_help_{en|ta}.ogg
+MAP_DROP_PIN_FIRST,other_ui,,Drop a pin on the map first,முதலில் வரைபடத்தில் குறி வை,voice/map_drop_pin_first_{en|ta}.ogg
+NAV_QUEUED_RIDE,other_ui,,Rider on board. Your route starts after the drop-off.,பயணி உள்ளார். இறக்கிய பிறகு உன் வழி ஆரம்பிம்.,voice/nav_queued_ride_{en|ta}.ogg
+NAV_BLOCKED_MISSION,other_ui,,Finish the side quest first.,முதலில் பக்கக் கதையை முடி.,voice/nav_blocked_mission_{en|ta}.ogg
+DAILY_REMINDER,other_ui,,Daily reminder,டெய்லி நினைவூட்டல்,voice/daily_reminder_{en|ta}.ogg
+REMINDER_TEST,other_ui,,Test reminder in 1 min,1 நிமிடத்தில் சோதனை நினைவூட்டல்,voice/reminder_test_{en|ta}.ogg
+REMINDER_ASK_TITLE,other_ui,,Daily reminder?,டெய்லி நினைவூட்டல் வேணுமா?,voice/reminder_ask_title_{en|ta}.ogg
+REMINDER_ASK_BODY,other_ui,,One reminder a day at 7 PM so you never miss your daily bonus. It stops by itself if you take a break.,"டெய்லி போனஸைத் தவறவிடாமல் இருக்க, டெய்லி மாலை 7 மணிக்கு ஒரு நினைவூட்டல். நீ இடைவெளி எடுத்தால் தானாக நின்றுவிடும்.",voice/reminder_ask_body_{en|ta}.ogg
+REMINDER_YES,other_ui,,"Yes, remind me","சரி, நினைவூட்டு",voice/reminder_yes_{en|ta}.ogg
+REMINDER_NO,other_ui,,Not now,இப்போ வேண்டாம்,voice/reminder_no_{en|ta}.ogg
+REM_T_STREAK,other_ui,,Keep your %d-day streak!,உன் %d நாள் தொடரைத் தொடரு!,voice/rem_t_streak_{en|ta}.ogg
+REM_B_STREAK,other_ui,,Day %d bonus ₹%d is waiting at the stand 🛺,நாள் %d போனஸ் ₹%d ஸ்டாண்டில் காத்திருக்கு 🛺,voice/rem_b_streak_{en|ta}.ogg
+REM_T_JACKPOT,other_ui,,Jackpot day!,ஜாக்பாட் நாள்!,voice/rem_t_jackpot_{en|ta}.ogg
+REM_B_JACKPOT,other_ui,,Day 7 bonus ₹%d is ready. Don't break your streak now!,நாள் 7 போனஸ் ₹%d ரெடி. இப்போ தொடரை உடைக்காதே!,voice/rem_b_jackpot_{en|ta}.ogg
+REM_T_BONUS,other_ui,,Daily bonus ready,டெய்லி போனஸ் ரெடி,voice/rem_t_bonus_{en|ta}.ogg
+REM_B_BONUS,other_ui,,Your ₹%d daily bonus is waiting. Start a new streak today!,உன் ₹%d டெய்லி போனஸ் காத்திருக்கு. இன்றே புதிய தொடரைத் ஆரம்பி!,voice/rem_b_bonus_{en|ta}.ogg
+REM_T_PASSENGERS,other_ui,,Passengers waiting!,பயணிகள் காத்திருக்காங்க!,voice/rem_t_passengers_{en|ta}.ogg
+REM_B_PASSENGERS,other_ui,,"Mylapore is busy today. Meter podu, let's go! 🛺","இன்று மயிலாப்பூர் பரபரப்பா இருக்கு. மீட்டர் போடு, கிளம்பலாம்! 🛺",voice/rem_b_passengers_{en|ta}.ogg
+REM_T_AUTO,other_ui,,Your auto misses you,உன் ஆட்டோ உன்னைத் தேடுது,voice/rem_t_auto_{en|ta}.ogg
+REM_B_AUTO,other_ui,,Engine's warm and the tea kadai is open. One quick savari?,"எஞ்சின் ரெடி, டீ கடை திறந்திருக்கு. ஒரு சின்ன சவாரி போகலாமா?",voice/rem_b_auto_{en|ta}.ogg
+REM_T_MARINA,other_ui,,Evening rush at Marina,மெரினாவில் மாலை கூட்டம்,voice/rem_t_marina_{en|ta}.ogg
+REM_B_MARINA,other_ui,,The beach crowd needs rides home. Good fares tonight!,கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!,voice/rem_b_marina_{en|ta}.ogg
+REM_T_LAST,other_ui,,Last reminder this week,இந்த வாரத்தின் கடைசி நினைவூட்டல்,voice/rem_t_last_{en|ta}.ogg
+REM_B_LAST,other_ui,,We'll stop here. Your auto will be at the stand whenever you're ready.,இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்.,voice/rem_b_last_{en|ta}.ogg
