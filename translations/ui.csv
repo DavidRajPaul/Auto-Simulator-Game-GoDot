@@ -15,9 +15,9 @@ FINE_WHEN,When,எப்போ
 FINE_AMOUNT,Fine,ஃபைன்
 FINE_PAID_NOW,Paid now,இப்போ கட்டினது
 FINE_STILL_DUE,Still due,இன்னும் பாக்கி
-FINE_DUE_NOTE,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. %s இன்னும் பாக்கி; அடுத்து வரும் வருமானத்திலிருந்து எடுக்கப்படும்.
+FINE_DUE_NOTE,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. இன்னும் %s பாக்கி இருக்கு. அடுத்து சம்பாதிக்கிற காசுல இருந்து பிடிச்சிடுவாங்க.
 FINE_BALANCE,Wallet now,வாலெட்டில் மீதி
-FINE_TIP_RED_LIGHT,Stop behind the line when your signal is red. Amber is never fined.,உன் சிக்னல் சிவப்பாக இருக்கும்போது கோட்டுக்குப் பின் நில். மஞ்சளுக்கு ஃபைன் இல்லை.
+FINE_TIP_RED_LIGHT,Stop behind the line when your signal is red. Amber is never fined.,ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கு ஃபைன் கிடையாது.
 FINE_RECOVERED_PART,₹%d taken for your pending fine. ₹%d still due.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி.
 FINE_RECOVERED_DONE,₹%d taken for your pending fine. Fine paid off.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. ஃபைன் முழுதும் கட்டியாச்சு.
 OK,OK,சரி
@@ -196,7 +196,7 @@ QUEST_UNTRACK,Clear route,ரூட்டை கிளியர் பண்ண�
 QUEST_START,Start,ஆரம்பி
 QUEST_STOP_AT_KERB,Stop at the quest's gold marker to begin.,"தொடங்க, தங்கக் குறியில் நிறுத்து."
 QUEST_NEARBY,Side quest: %s,பக்கக் கதை: %s
-QUEST_LESSON,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,சாலையில் தங்கக் குறிகள் பக்கக் கதைகளைக் காட்டும். அங்கே நிறுத்தி வேலையைப் பார்த்துத் ஆரம்பி என்பதைத் தட்டு.
+QUEST_LESSON,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,ரோட்டுல தங்க கலர் மார்க்கர் தெரிஞ்சா அது சைடு குவெஸ்ட். அங்க நிறுத்தி என்ன வேலைன்னு பார்த்துட்டு ஆரம்பி என்பதைத் தட்டு.
 QUEST_DONE_CHOICE,Finish,முடிச்சிடு
 QUEST_TAKE_PHOTO,Take photo,ஃபோட்டோ எடு
 QUEST_INSPECT,Look,பார்
@@ -221,7 +221,7 @@ QUEST_FAIL_QUALITY,too many bumps. Drive more gently.,அதிகக் கு�
 QUEST_FAIL_UNREACHABLE,no road goes there now.,அங்கே இப்போ சாலை இல்லை.
 QUEST_COMPLETED,Job done! You earned ₹%s.,வேலை முடிஞ்சிடுச்சு! ₹%s சம்பாதிச்சாச்சு.
 SQ02_TITLE,"Filter Coffee, No Spill",சிந்தாத ஃபில்டர் காபி
-SQ02_DESC,Deliver hot filter coffee to three shops without spilling it.,சூடான ஃபில்டர் காபியைச் சிந்தாமல் மூன்று கடைகளுக்குக் கொடு.
+SQ02_DESC,Deliver hot filter coffee to three shops without spilling it.,சூடான ஃபில்டர் காபி சிந்தாம மூணு கடைக்கும் டெலிவரி பண்ணணும்.
 SQ02_ORDER,Which shop first?,முதலில் எந்தக் கடை?
 SQ02_LUZ_FIRST,Tailor shop,தையல் கடை
 SQ02_GARDEN_FIRST,Book shop,புத்தகக் கடை
@@ -238,7 +238,7 @@ SQ14_RIDER,Student,மாணவி
 SQ21_RIDER,Job seeker,வேலை தேடுபவர்
 RIDER_OUT_FIRE,"%s got out of the burning auto. Put the fire out, then pick her up.","%s எரியும் ஆட்டோவிலிருந்து இறங்கிவிட்டார். தீயை அணைத்து, பிறகு அவரை ஏற்றிக்கொள்."
 RIDER_LEFT_BEHIND,%s is waiting. Stop next to her to pick her up.,%s காத்திருக்கிறார். அவர் அருகில் நிறுத்தி ஏற்றிக்கொள்.
-SQ04_DESC,An old grandmother is lost. Use her memories to find her family's home.,ஒரு பாட்டிக்கு வழி தெரியல. அவரின் நினைவுகளை வைத்து வீட்டைக் கண்டுபிடி.
+SQ04_DESC,An old grandmother is lost. Use her memories to find her family's home.,ஒரு பாட்டிக்கு வீட்டுக்குப் போற வழி மறந்திடுச்சு. அவங்க சொல்லுற அடையாளத்தை வச்சு வீட்டைக் கண்டுபிடி.
 SQ04_CLUE_1,Paati remembers a flower stall. Drive there and look around.,பாட்டிக்குப் பூக்கடை நினைவிருக்கிறது. அங்கே போய்ப் பார்.
 SQ04_GUESS,The seller says to go by the temple tank steps. Where next?,குளத்துப் படிகள் வழியாகப் போகச் சொல்கிறார் கடைக்காரர். அடுத்து எங்கே?
 SQ04_TANK,Tank steps,குளத்துப் படிகள்
@@ -250,7 +250,7 @@ SQ04_REVEAL,Paati smiles. She knows this place. The house is close!,பாட்
 SQ04_READY,Take her home,வீட்டில் சேர்
 SQ04_HOME,Take Paati to her granddaughter's home.,பாட்டியைப் பேத்தியின் வீட்டில் சேர்.
 SQ09_TITLE,A Quiet Ride for Kutty,குட்டிக்கு ஒரு அமைதியான சவாரி
-SQ09_DESC,A scared puppy needs a gentle ride to the animal clinic.,பயந்த நாய்க்குட்டியை மெதுவா விலங்கு மருத்துவமனைக்குக் கொண்டு போ.
+SQ09_DESC,A scared puppy needs a gentle ride to the animal clinic.,பயந்துபோன நாய்க்குட்டியை வெட்னரி ஹாஸ்பிட்டலுக்கு மெதுவா கூட்டிட்டு போ.
 SQ09_BRIEF,"Kutty is shaking with fear. Go straight to the clinic, or stop first to calm him?","குட்டி பயத்தில் நடுங்குகிறது. நேராக மருத்துவமனையா, அல்லது நிறுத்தி அமைதிப்படுத்தவா?"
 SQ09_DIRECT,Go straight there,நேராகப் போ
 SQ09_CALM_FIRST,Stop and calm him,நிறுத்தி அமைதிப்படுத்து
@@ -267,7 +267,7 @@ SQ19_SHOP_1,Take the blue parcel to the tailor.,நீலப் பொட்ட�
 SQ19_SHOP_2,Take the red parcel to the printer.,சிவப்பு பொட்டலத்தை அச்சகத்தில் கொடு.
 SQ19_RECEIPT,Both shops have their parcels. Thank you!,இரண்டு கடைகளுக்கும் பொட்டலம் கிடைச்சிடுச்சு. நன்றி!
 SQ24_TITLE,Midnight Mechanic,மிட்நைட் மெக்கானிக்
-SQ24_DESC,An auto driver is stuck at night. Find the right part for his engine.,ஒரு ஆட்டோ ஓட்டுநர் இரவில் சிக்கிக்கொண்டார். சரியான உதிரிபாகம் கண்டுபிடி.
+SQ24_DESC,An auto driver is stuck at night. Find the right part for his engine.,நைட்ல ஒரு ஆட்டோ டிரைவர் நடுரோட்ல மாட்டிக்கிட்டாரு. இன்ஜினுக்கு சரியான பார்ட் வாங்கிக் கொடு.
 SQ24_DIAGNOSE,The driver says the engine makes a loud squeal. What does he need?,என்ஜினில் உரத்த சத்தம் என்கிறார். என்ன வேண்டும்?
 SQ24_BELT,A new belt,புதிய பெல்ட்
 SQ24_FUSE,A new fuse,புதிய ஃபியூஸ்
@@ -284,7 +284,7 @@ SQ27_LANE,Drive slowly along your road. Don't hit anything.,உன் சால�
 SQ27_PARK,"At the house: stop at the marker, shift to R, roll back a little, stop and tap Done.","வீட்டில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
 SQ27_HANDOVER,Well parked! The neighbour takes the parcel.,நல்லா நிறுத்தினாய்! பக்கத்து வீட்டார் பொட்டலத்தை வாங்கினார்.
 SQ01_TITLE,The Wedding Gold,திருமண நகை
-SQ01_DESC,Someone lost a gold pouch at a wedding. Find the real owner.,திருமணத்தில் ஒருவரின் தங்கப் பை தொலைந்தது. உண்மையான உரிமையாளரைக் கண்டுபிடி.
+SQ01_DESC,Someone lost a gold pouch at a wedding. Find the real owner.,கல்யாணத்துல ஒரு தங்கப் பை தொலைஞ்சிடுச்சு. அது யாரோடதுன்னு கண்டுபிடி.
 SQ01_RECEIPT,Go to the wedding hall and stop at the marker.,திருமண மண்டபத்துக்குப் போய்க் குறியில் நிறுத்து.
 SQ01_CLAIMANT,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?",ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?
 SQ01_OWNER,"Meena, she knows the stamp","மீனா, முத்திரை தெரியும்"
@@ -295,13 +295,13 @@ SQ01_CHECK_RECEIPT,Go to the help desk,உதவி மேசைக்குப�
 SQ01_HANDOVER,Take the pouch to the help desk.,பையை உதவி மேசைக்குக் கொண்டு போ.
 SQ01_THANKS,Meena has her gold back. Her family says thank you!,மீனாவுக்குத் தங்கம் கிடைச்சிடுச்சு. குடும்பம் நன்றி சொல்கிறது!
 SQ06_TITLE,Before the Last Light,கடைசி வெளிச்சத்திற்கு முன்
-SQ06_DESC,A photographer wants two beach photos before the sun sets.,சூரியன் மறைவதற்குள் புகைப்படக்காரருக்கு இரண்டு கடற்கரைப் படங்கள் வேண்டும்.
+SQ06_DESC,A photographer wants two beach photos before the sun sets.,சூரியன் மறையுறதுக்குள்ள ஃபோட்டோகிராஃபருக்கு பீச்சுல ரெண்டு ஃபோட்டோ வேணும்.
 SQ06_BRIEF,The sun is going down. Stop at each photo spot and take a picture.,சூரியன் மறைகிறது. ஒவ்வொரு இடத்திலும் நிறுத்திப் படம் எடு.
 SQ06_READY,Let's go,போகலாம்
 SQ06_PHOTO_1,"Drive to the first photo spot, stop and take a photo.",முதல் இடத்துக்குப் போய் நிறுத்திப் படம் எடு.
 SQ06_PHOTO_2,Now the second photo spot. Hurry!,இப்போ இரண்டாவது இடம். வேகமா!
 SQ12_TITLE,Match-Day Mix-Up,போட்டி நாள் குழப்பம்
-SQ12_DESC,The cricket team's kit bag got mixed up. Bring the right one before the match.,கிரிக்கெட் குழுவின் பை மாறிவிட்டது. போட்டிக்கு முன் சரியான பையைக் கொண்டு வா.
+SQ12_DESC,The cricket team's kit bag got mixed up. Bring the right one before the match.,கிரிக்கெட் டீமோட கிட் பேக் மாறிடுச்சு. மேட்ச் ஆரம்பிக்குறதுக்குள்ள சரியான பேக்கை கொண்டு போ.
 SQ12_STALL,Go to the sports shop to check the bags.,பைகளைப் பார்க்க விளையாட்டுக் கடைக்குப் போ.
 SQ12_KIT,The team's note says: blue with a white stripe. Which bag?,குழுவின் குறிப்பு: வெள்ளைக் கோடு உள்ள நீலப் பை. எந்தப் பை?
 SQ12_BLUE,"Blue, white stripe","நீலம், வெள்ளைக் கோடு"
@@ -312,7 +312,7 @@ SQ12_SWAP_CHOICE,Take the blue bag,நீலப் பையை எடு
 SQ12_GATE,Take the bag to the stadium gate.,பையை மைதான வாசலுக்குக் கொண்டு போ.
 SQ12_FINISH,"The players have their kit, just in time!","வீரர்களுக்குப் பை கிடைச்சிடுச்சு, சரியான நேரத்தில்!"
 SQ16_TITLE,Room for an Ambulance,ஆம்புலன்ஸுக்கு வழி விடு
-SQ16_DESC,An ambulance is coming through. Pull over and let it pass.,ஆம்புலன்ஸ் வருது. ஓரமாக நிறுத்தி வழி விடு.
+SQ16_DESC,An ambulance is coming through. Pull over and let it pass.,ஆம்புலன்ஸ் வருது! வண்டியை ஓரமா நிறுத்தி வழி விடு.
 SQ16_BRIEF,"An ambulance is coming! At each stop: turn on your indicator, then stop on the marker.",ஆம்புலன்ஸ் வருது! ஒவ்வொரு இடத்திலும் இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
 SQ16_READY,I'll make way,வழி விடுகிறேன்
 SQ16_YIELD_1,Stop 1: turn on your indicator and stop on the marker.,இடம் 1: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
@@ -467,7 +467,7 @@ QUEST_TRANSFER,Load / unload,ஏற்று / இறக்கு
 QUEST_CARGO_CAPACITY,The auto is full. Unload first.,ஆட்டோ நிறைந்துவிட்டது. முதலில் இறக்கு.
 QUEST_FAIL_DIVERSION,that road is closed.,அந்தச் ரோடு மூடியிருக்கு.
 SQ03_TITLE,Margazhi Missing Beat,மார்கழியின் தவறிய தாளம்
-SQ03_DESC,A musician forgot his mridangam drum. Bring it to the music hall before the concert.,இசைக்கலைஞர் மிருதங்கத்தை மறந்துவிட்டார். கச்சேரிக்கு முன் சபாவுக்குக் கொண்டு வா.
+SQ03_DESC,A musician forgot his mridangam drum. Bring it to the music hall before the concert.,மியூசிக் அண்ணா மிருதங்கத்தை மறந்துட்டாரு. கச்சேரி ஆரம்பிக்குறதுக்குள்ள சபாவுக்கு எடுத்துட்டு போ.
 SQ03_BRIEF,The drum is at the music shop. Remember: the hall wants it at the back gate.,மிருதங்கம் இசைக் கடையில் உள்ளது. ஞாபகம் வச்சுக்கோ: சபாவின் பின் வாசலில் கொடுக்கணும்.
 SQ03_READY,Let's go,போகலாம்
 SQ03_CASE,Go to the music shop and load the drum.,இசைக் கடைக்குப் போய் மிருதங்கத்தை ஏற்று.
@@ -487,7 +487,7 @@ SQ05_WRONG,That road is closed! Read the sign.,அந்தச் ரோடு �
 SQ05_BAY,"At the store: stop at the marker, shift to R, roll back a little, stop and tap Done.","கிடங்கில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
 SQ05_UNLOAD,Unload the lamps here.,விளக்குகளை இங்கே இறக்கு.
 SQ07_TITLE,The Little Red Kite,சின்னச் சிவப்பு பட்டம்
-SQ07_DESC,A child with a red kite is lost on the beach. Help the family find him.,சிவப்பு பட்டத்துடன் ஒரு குழந்தை கடற்கரையில் தொலைந்தான். குடும்பத்துக்கு உதவு.
+SQ07_DESC,A child with a red kite is lost on the beach. Help the family find him.,சிவப்பு பட்டம் வச்சிருந்த ஒரு பையன் பீச்சுல காணாம போயிட்டான். அவனைக் கண்டுபிடிக்க வீட்டுக்காரங்களுக்கு ஹெல்ப் பண்ணு.
 SQ07_BRIEF,The boy has a red kite and a striped shirt. Let's look from the beach road.,"பையனிடம் சிவப்பு பட்டம், கோடு போட்ட சட்டை. கடற்கரைச் சாலையிலிருந்து தேடுவோம்."
 SQ07_LOOK,Start looking,தேடத் ஆரம்பி
 SQ07_SCAN,Stop at the beach entrance and look at the crowd.,கடற்கரை நுழைவில் நிறுத்திக் கூட்டத்தைப் பார்.
@@ -519,7 +519,7 @@ SQ10_GENERAL,Rubbish,குப்பை
 SQ10_CORRECTION,Blue means recycling! Ask the helper at the south entrance.,நீலம் என்றால் ரீசைக்கிளிங்! தெற்கு நுழைவில் உதவியாளரிடம் கேள்.
 SQ10_LAST_DUMP,Unload the last two bags at the sorting point.,கடைசி இரண்டு பைகளையும் பிரிப்பு மையத்தில் இறக்கு.
 SQ14_TITLE,"Exam Hall, Wrong Gate","எக்ஸாம் ஹால், தப்பான கேட்"
-SQ14_DESC,A student is late for an exam and needs a copy of her ID.,மாணவிக்குத் தேர்வுக்குத் லேட். அடையாள அட்டை நகல் தேவை.
+SQ14_DESC,A student is late for an exam and needs a copy of her ID.,எக்ஸாமுக்கு லேட்டாகுற ஒரு பொண்ணுக்கு அவளோட ஐடி காப்பி வேணும்.
 SQ14_NOTICE,Stop at the school and read the notice.,பள்ளியில் நிறுத்தி அறிவிப்பைப் படி.
 SQ14_COPY,The notice says: use the east gate and bring a copy of your ID. What now?,"அறிவிப்பு: கிழக்கு வாசல் வழியாக வா, அடையாள நகல் கொண்டு வா. இப்போ என்ன?"
 SQ14_PRINT,Get the ID copy,நகல் எடு
@@ -529,7 +529,7 @@ SQ14_PRINTER,Go to the print shop and collect the ID copy.,அச்சுக்
 SQ14_GATE,Hurry to the east gate!,கிழக்கு வாசலுக்கு சீக்கிரமா போ!
 SQ14_HANDOVER,Give the copy to the student.,நகலை மாணவியிடம் கொடு.
 SQ15_TITLE,"Last Stop, Extra Help",லாஸ்ட் ஸ்டாப்ல ஒரு உதவி
-SQ15_DESC,The bus broke down. Take two passengers where they need to go.,பஸ் பழுதானது. இரண்டு பயணிகளை அவர்கள் இடத்தில் சேர்.
+SQ15_DESC,The bus broke down. Take two passengers where they need to go.,பஸ் பிரேக்டவுன் ஆயிடுச்சு. ரெண்டு பாசஞ்சர்களையும் அவங்க போக வேண்டிய இடத்துல இறக்கிவிடு.
 SQ15_BOARD,Stop at the bus stop and let both passengers in.,பஸ் நிறுத்தத்தில் நிறுத்தி இருவரையும் ஏற்று.
 SQ15_ORDER,One needs the clinic. One needs the library. Who first?,"ஒருவருக்கு மருத்துவமனை, ஒருவருக்கு நூலகம். முதலில் யார்?"
 SQ15_CLINIC,Clinic first,மருத்துவமனை முதலில்
@@ -537,7 +537,7 @@ SQ15_LIBRARY,Library first,நூலகம் முதலில்
 SQ15_FIRST,Drive to the first stop and drop your passenger.,முதல் இடத்துக்குப் போய்ப் பயணியை இறக்கு.
 SQ15_SECOND,Now drop the last passenger.,இப்போ கடைசிப் பயணியை இறக்கு.
 SQ17_TITLE,The Monsoon Supply Run,மழைக்கால சப்ளை ரன்
-SQ17_DESC,Floods have closed a road. Carry food and water to people who need it.,வெள்ளத்தால் சாலை மூடப்பட்டது. தேவைப்படுவோருக்கு உணவும் நீரும் கொண்டு போ.
+SQ17_DESC,Floods have closed a road. Carry food and water to people who need it.,வெள்ளத்தால ரோடு மூடியிருக்கு. தேவைப்படுறவங்களுக்கு சாப்பாடும் தண்ணியும் கொண்டு போ.
 SQ17_LOAD,Load the food and water.,உணவையும் நீரையும் ஏற்று.
 SQ17_WARNING,Stop and read the flood sign.,நிறுத்தி வெள்ளப் பலகையைப் படி.
 SQ17_ORDER,The shelter needs two bundles. The relief desk needs one. Who first?,"முகாமுக்கு இரண்டு மூட்டைகள், உதவி மேசைக்கு ஒன்று. முதலில் யார்?"
@@ -546,7 +546,7 @@ SQ17_DESK,Relief desk,உதவி மேசை
 SQ17_FIRST,Follow the route and deliver. Avoid the flood!,வழியைப் பின்பற்றிக் கொடு. வெள்ளத்தைத் தவிர்!
 SQ17_SECOND,Deliver the rest.,மீதியைக் கொடு.
 SQ18_TITLE,Five-Star Auto Anna,ஃபைவ் ஸ்டார் ஆட்டோ அண்ணா
-SQ18_DESC,Three neighbours need help in one trip. Keep them all happy.,மூன்று அண்டை வீட்டார்க்கு ஒரே பயணத்தில் உதவி வேண்டும். அனைவரையும் மகிழ்ச்சியாக வை.
+SQ18_DESC,Three neighbours need help in one trip. Keep them all happy.,ஒரே சவாரியில மூணு பேருக்கு ஹெல்ப் பண்ணணும். எல்லாரையும் சந்தோஷமா பார்த்துக்கோ.
 SQ18_PREP,What do you do first?,முதலில் என்ன செய்வாய்?
 SQ18_QUIET,Clean the seat,இருக்கையைச் சுத்தம் செய்
 SQ18_CHARGER,Buy a charger,சார்ஜர் வாங்கு
@@ -555,7 +555,7 @@ SQ18_LUGGAGE,Stop here and load the suitcase.,இங்கே நிறுத்
 SQ18_DROP,Take the suitcase to its owner's house.,பெட்டியை உரிமையாளரின் வீட்டில் சேர்.
 SQ18_CHARGE,Finish at the charging stop.,சார்ஜிங் இடத்தில் முடி.
 SQ20_TITLE,Blackout on the Corner,தெரு முனையில கரன்ட் கட்
-SQ20_DESC,The street lights are out. Take an electrician and his tools to fix them.,தெருவிளக்குகள் அணைந்தன. எலக்ட்ரீஷியனையும் கருவிகளையும் கொண்டு போ.
+SQ20_DESC,The street lights are out. Take an electrician and his tools to fix them.,தெரு லைட்டெல்லாம் அணைஞ்சிடுச்சு. எலக்ட்ரீஷியனையும் அவரோட டூல்ஸையும் அங்க கூட்டிட்டு போ.
 SQ20_PICKUP,Stop at the night market and load the tools.,இரவுச் சந்தையில் நிறுத்திக் கருவிகளை ஏற்று.
 SQ20_MARKER,Stop and read the warning sign.,நிறுத்தி எச்சரிக்கைப் பலகையைப் படி.
 SQ20_BAY,Take the lit road. The dark corner is closed.,விளக்குள்ள சாலையில் போ. இருண்ட முனை மூடப்பட்டுள்ளது.
@@ -563,7 +563,7 @@ SQ20_REPAIR,Stop at the power box and unload the tools.,மின் பெட�
 SQ20_FINISH,The electrician fixes it. The lights are back on!,எலக்ட்ரீஷியன் சரிசெய்தார். விளக்குகள் எரிகின்றன!
 SQ20_THANKS,Thank you!,நன்றி!
 SQ23_TITLE,A Mirror Through Mount Road,மவுண்ட் ரோடுல ஒரு கண்ணாடி
-SQ23_DESC,Deliver a big glass mirror along Mount Road without breaking it.,பெரிய கண்ணாடியை உடையாமல் மவுண்ட் ரோடு வழியாகக் கொண்டு போ.
+SQ23_DESC,Deliver a big glass mirror along Mount Road without breaking it.,மவுண்ட் ரோடு வழியா பெரிய கண்ணாடியை உடைக்காம டெலிவரி பண்ணு.
 SQ23_MIRROR,Stop at the glass shop and load the mirror.,கண்ணாடிக் கடையில் நிறுத்தி ஏற்று.
 SQ23_ROUTE,The small lane has sharp turns. The wide road is safer. Which way?,சிறிய சந்தில் கூர்மையான திருப்பங்கள். அகலச் சாலை பாதுகாப்பு. எந்த வழி?
 SQ23_WIDE,Wide road,அகலச் சாலை
@@ -572,7 +572,7 @@ SQ23_WARNING,The lane is too tight for the mirror! Read the road sign.,சந்
 SQ23_PARK,"At the office: stop at the marker, shift to R, roll back a little, stop and tap Done.","அலுவலகத்தில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
 SQ23_UNLOAD,Unload the mirror here.,கண்ணாடியை இங்கே இறக்கு.
 SQ25_TITLE,Three Clues to Madras,மெட்ராஸோட மூணு க்ளூஸ்
-SQ25_DESC,An old postcard shows a Madras landmark. Follow the clues to find the spot.,பழைய அஞ்சலட்டையில் ஒரு மெட்ராஸ் இடம் உள்ளது. குறிப்புகளைப் பின்பற்று.
+SQ25_DESC,An old postcard shows a Madras landmark. Follow the clues to find the spot.,ஒரு பழைய போஸ்ட் கார்டுல மெட்ராஸோட ஒரு இடம் இருக்கு. க்ளூஸை ஃபாலோ பண்ணி அந்த இடத்தைக் கண்டுபிடி.
 SQ25_CLUE_1,Drive to the old stone building and read the plaque.,பழைய கல் கட்டடத்துக்குப் போய்க் கல்வெட்டைப் படி.
 SQ25_GUESS,The plaque shows an old clock. The postcard shows the same thing. Which one?,கல்வெட்டில் பழைய கடிகாரம். அஞ்சலட்டையிலும் அதே. எது?
 SQ25_CLOCK,The old clock,பழைய கடிகாரம்
