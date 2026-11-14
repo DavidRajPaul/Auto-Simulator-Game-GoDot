@@ -1,4 +1,4 @@
-# Fetched assets (all CC0 — public domain)
+# Fetched assets (CC0 — public domain — unless the Licence column says CC BY)
 
 | File | Source | Title | Author | Licence |
 |---|---|---|---|---|
@@ -13,3 +13,17 @@
 | `assets/audio/ambience/church_bell.ogg` | [https://bigsoundbank.com/1-church-bell-s0830.html](https://bigsoundbank.com/1-church-bell-s0830.html) | 1 church bell | Joseph Sardin (BigSoundBank) | CC0 |
 | `assets/audio/ambience/dogs_far.ogg` | [https://bigsoundbank.com/barking-dogs-s0288.html](https://bigsoundbank.com/barking-dogs-s0288.html) | Barking dogs | DenisChardonnet (BigSoundBank) | CC0 |
 | `assets/audio/ambience/cycle_bell.ogg` | [https://bigsoundbank.com/search?q=bells](https://bigsoundbank.com/search?q=bells) | Bicycle Bell #3 (sound 0974) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_01.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #1 (sound 2718) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_02.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #2 (sound 3113) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_03.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #3 (sound 3114) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_04.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #4 (sound 3115) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_05.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #5 (sound 3116) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_06.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #6 (sound 3179) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_07.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #7 (sound 3180) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_08.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #8 (sound 3181) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_09.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #9 (sound 3182) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_10.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #10 (sound 3183) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_11.ogg` | [https://bigsoundbank.com/search?q=coup+de+tonnerre](https://bigsoundbank.com/search?q=coup+de+tonnerre) | Thunder #11 (sound 3184) | Joseph Sardin (BigSoundBank) | CC0 |
+| `assets/audio/weather/thunder_close_01.ogg` | [https://freesound.org/people/TSP-Talk/sounds/844420/](https://freesound.org/people/TSP-Talk/sounds/844420/) | Close thunderclap, Munich-Trudering | TSP-Talk (Freesound) | CC0 |
+| `assets/audio/weather/thunder_close_02.ogg` | [https://freesound.org/people/InspectorJ/sounds/360328/](https://freesound.org/people/InspectorJ/sounds/360328/) | Thunder, Very Close, Rain, A.wav | InspectorJ, www.jshaw.co.uk (Freesound) | CC BY 4.0 |
+| `assets/audio/weather/thunder_close_03.ogg` | [https://freesound.org/people/kevp888/sounds/639273/](https://freesound.org/people/kevp888/sounds/639273/) | VOC_220619-2022-2_FR_LoudThunderclap.wav | kevp888 / Kevin Luce (Freesound) | CC BY 4.0 |

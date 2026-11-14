@@ -74,6 +74,13 @@ var is_raining: bool = false
 ## Today's rain window in shift minutes ([-1, -1] = dry day). NE monsoon: Oct–Dec.
 var rain_window: Vector2 = Vector2(-1.0, -1.0)
 const MONSOON_RAIN_CHANCE: float = 0.4
+## Thunderstorms (Nov 14, scripts/world/Thunderstorm.gd): most rain over Chennai comes as a
+## thunderstorm, the pre-monsoon and summer showers nearly always. Whether a rainy day carries
+## thunder and lightning is a hash of the day, so it survives save/load with the rain window.
+const THUNDER_CHANCE_MONSOON: float = 0.6
+const THUNDER_CHANCE_DRY_SEASON: float = 0.8
+## -1 = by the day's roll, 0 = never, 1 = whenever it rains (tests, shots).
+var thunder_override: int = -1
 const SIGNAL_RESPECT_XP: int = 2
 
 var owned_vehicles: PackedStringArray = ["singara_classic"]
@@ -747,6 +754,24 @@ func roll_weather() -> void:
 		rain_window = Vector2(start, start + rng.randf_range(120.0, 300.0))
 	else:
 		rain_window = Vector2(-1.0, -1.0)
+
+## True while it rains and today's rain is a thunderstorm.
+func is_thunderstorm() -> bool:
+	if not is_raining or thunder_override == 0:
+		return false
+	if thunder_override == 1:
+		return true
+	var month: int = int(Time.get_date_dict_from_system()["month"])
+	var chance: float = THUNDER_CHANCE_MONSOON if month >= 10 or month <= 1 else THUNDER_CHANCE_DRY_SEASON
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(day * 4099 + 17)
+	return rng.randf() < chance
+
+## 0 at the start of today's rain, 1 at its end (0 when dry): a storm builds, passes, moves on.
+func rain_progress() -> float:
+	if rain_window.y <= rain_window.x:
+		return 0.0
+	return clampf((shift_minute - rain_window.x) / (rain_window.y - rain_window.x), 0.0, 1.0)
 
 ## Force weather (tests, debug menu). duration in game minutes.
 func set_rain(on: bool, duration_min: float = 180.0) -> void:

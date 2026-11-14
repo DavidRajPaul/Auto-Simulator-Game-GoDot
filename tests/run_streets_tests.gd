@@ -197,7 +197,111 @@ func _test_city() -> void:
 	_check("Rain silences crows and dogs", float(amb.targets()["crows"]) == 0.0 and float(amb.shot_levels()["cycle_bell"]) == 0.0)
 	GameState.set_rain(false, 0.0)
 	_check("No nodes are created for one-shots while driving", amb._shot_voices.size() == AmbienceAudio.SHOT_VOICES)
+	await _test_thunderstorm(city)
 	city.queue_free()
+
+## Nov 14 thunder and lightning (scripts/world/Thunderstorm.gd): storms only in rain, the flash
+## lights the street, the ambient, the fog and the sky and then lets go, thunder comes d / 343 s
+## later, and a close strike cracks loud and bright while a far one only rumbles, low and quiet.
+func _test_thunderstorm(city: Node) -> void:
+	var ts: Thunderstorm = city.get_node_or_null("Thunderstorm") as Thunderstorm
+	_check("Thunderstorm runs in the city", ts != null)
+	if ts == null:
+		return
+	var env: Environment = (city.get_node("WorldEnvironment") as WorldEnvironment).environment
+	var sky: ShaderMaterial = env.sky.sky_material as ShaderMaterial
+	_check("Lightning light, bolt and thunder voices are built once, idle and hidden",
+		not ts.light.visible and not ts.bolt.visible and ts.voices.size() == Thunderstorm.THUNDER_VOICES and not ts.light.shadow_enabled)
+	var pools_ok: bool = true
+	for p: String in Thunderstorm.POOLS:
+		pools_ok = pools_ok and not (ts.pools[p] as PackedStringArray).is_empty()
+	_check("Real thunder recordings loaded for close, mid and far strikes", pools_ok, str(ts.pools))
+	GameState.thunder_override = -1
+	GameState.set_rain(false, 0.0)
+	var before: int = ts.strike_count
+	for i: int in 120:
+		await get_tree().process_frame
+	_check("No lightning without rain", not GameState.is_thunderstorm() and ts.strike_count == before)
+	# Distance rules.
+	_check("Thunder gets quieter with distance, from loud overhead to faint far off",
+		Thunderstorm.thunder_db(200.0) > Thunderstorm.thunder_db(1000.0) and Thunderstorm.thunder_db(1000.0) > Thunderstorm.thunder_db(8000.0)
+		and Thunderstorm.thunder_db(200.0) > -3.0 and Thunderstorm.thunder_db(9000.0) < -20.0,
+		"%.1f / %.1f / %.1f dB" % [Thunderstorm.thunder_db(200.0), Thunderstorm.thunder_db(1000.0), Thunderstorm.thunder_db(8000.0)])
+	_check("Air takes the highs: a close crack is bright, a far roll is only bass",
+		Thunderstorm.thunder_cutoff_hz(250.0) > 10000.0 and Thunderstorm.thunder_cutoff_hz(8000.0) < 1000.0)
+	_check("Close, mid and far strikes pick their own recordings",
+		Thunderstorm.pool_for(400.0) == "close" and Thunderstorm.pool_for(3000.0) == "mid" and Thunderstorm.pool_for(9000.0) == "far")
+	_check("The sky glow carries further than the light on the street",
+		Thunderstorm.sky_falloff(6000.0) > Thunderstorm.light_falloff(6000.0) * 2.0)
+	var children: int = ts.get_child_count()
+	var heard: Array[float] = []
+	var cb: Callable = func(_at: Vector3, d: float, _g: bool) -> void: heard.append(d)
+	SignalBus.lightning_struck.connect(cb)
+	# A close ground strike to the camera's right.
+	var base_amb: float = env.ambient_light_energy
+	var base_fog: float = env.fog_light_energy
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var right: Vector3 = cam.global_transform.basis.x if cam != null else Vector3.RIGHT
+	var bearing: float = atan2(right.z, right.x)
+	ts.strike(343.0 * 1.5, bearing, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var lit: float = ts.light.light_energy
+	_check("A close strike lights the street: light, ambient, fog and sky all flash",
+		ts.light.visible and lit > 0.5 and env.ambient_light_energy > base_amb * 1.5 and env.fog_light_energy > base_fog * 1.3
+		and float(sky.get_shader_parameter("flash")) > 0.3,
+		"light %.2f amb %.2f/%.2f fog %.2f sky %.2f" % [lit, env.ambient_light_energy, base_amb, env.fog_light_energy, float(sky.get_shader_parameter("flash"))])
+	_check("A ground strike shows its bolt", ts.bolt.visible and ts.bolt.mesh.get_surface_count() == 1)
+	_check("The light comes from the strike's side, from above", ts.flash_dir.y > 0.3 and ts.flash_dir.dot(right) > 0.3)
+	_check("Every strike is announced on the SignalBus", heard.size() == 1 and is_equal_approx(heard[0], 343.0 * 1.5))
+	# The flash flickers and dies; the thunder has not arrived yet.
+	for i: int in 60:
+		await get_tree().process_frame
+	_check("The flash is over within a second and everything returns to normal",
+		not ts.light.visible and not ts.bolt.visible and is_equal_approx(env.ambient_light_energy, base_amb)
+		and is_equal_approx(env.fog_light_energy, base_fog) and float(sky.get_shader_parameter("flash")) == 0.0)
+	_check("Thunder is still on its way after one second (sound is slower than light)", ts.pending.size() == 1)
+	for i: int in 36:
+		await get_tree().process_frame
+	_check("Thunder arrives distance / 343 s after the flash", ts.pending.is_empty() and float(ts.last_thunder.get("distance_m", 0.0)) > 500.0)
+	var close_file: String = str(ts.last_thunder.get("file", ""))
+	_check("A close strike cracks: a close recording, loud and bright, panned to its side",
+		(ts.pools["close"] as PackedStringArray).has(close_file) and float(ts.last_thunder["db"]) > -8.0
+		and float(ts.last_thunder["cutoff_hz"]) > 5000.0 and float(ts.last_thunder["pan"]) > 0.3, str(ts.last_thunder))
+	var playing: bool = false
+	for v: AudioStreamPlayer in ts.voices:
+		playing = playing or v.playing
+	_check("…and it is playing", playing)
+	# A far strike inside the cloud: dim, no bolt, a quiet low rumble.
+	ts.strike(8000.0, bearing + PI, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("A far cloud flash lights the sky more than the street, and shows no bolt",
+		not ts.bolt.visible and ts.light.light_energy < lit * 0.2 and float(sky.get_shader_parameter("flash")) > 0.05,
+		"light %.3f sky %.3f" % [ts.light.light_energy, float(sky.get_shader_parameter("flash"))])
+	ts._t += 8000.0 / Thunderstorm.SPEED_OF_SOUND_MPS
+	await get_tree().process_frame
+	_check("A far strike only rumbles: a far recording, quiet and low",
+		(ts.pools["far"] as PackedStringArray).has(str(ts.last_thunder.get("file", ""))) and float(ts.last_thunder["db"]) < -18.0
+		and float(ts.last_thunder["cutoff_hz"]) < 1000.0 and float(ts.last_thunder["pan"]) < 0.0, str(ts.last_thunder))
+	SignalBus.lightning_struck.disconnect(cb)
+	# A storm day: strikes come by themselves, closest in the middle of the rain.
+	GameState.thunder_override = 1
+	GameState.set_rain(true, 120.0)
+	var start: int = ts.strike_count
+	for i: int in 9 * 60:
+		await get_tree().process_frame
+	_check("In a thunderstorm the lightning comes by itself", GameState.is_thunderstorm() and ts.strike_count > start, "%d strikes" % (ts.strike_count - start))
+	GameState.shift_minute = GameState.rain_window.x + 3.0
+	var edge: float = ts.storm_centre_m()
+	GameState.shift_minute = (GameState.rain_window.x + GameState.rain_window.y) * 0.5
+	var middle: float = ts.storm_centre_m()
+	_check("The storm builds, passes closest mid-rain and moves on", middle < edge * 0.5, "%.0f m / %.0f m" % [middle, edge])
+	_check("No nodes are created by strikes", ts.get_child_count() == children)
+	GameState.thunder_override = -1
+	GameState.set_rain(false, 0.0)
+	for i: int in 90:
+		await get_tree().process_frame
 
 func _check(name: String, ok: bool, detail: String = "") -> void:
 	if ok:
