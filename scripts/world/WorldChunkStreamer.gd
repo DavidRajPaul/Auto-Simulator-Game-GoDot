@@ -175,6 +175,7 @@ var _xfmr_cols: PackedColorArray = PackedColorArray()
 var _prop_blocks: Dictionary = {}
 const STALL_HALF: Vector2 = Vector2(1.7, 1.2)
 var _stall_kit: Array[Dictionary] = [] # Read once on the main thread, used by chunk workers.
+var _stall_boxes: Array[Rect2] = [] # Collision footprint per stall kind (stall_boxes).
 var _cart_kit: Array[Dictionary] = [] # BeachCartKit variants, same pattern.
 ## Temple-tank footprints (water + ghat steps) per chunk: Vector2i -> PackedVector2Array, 3 points
 ## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
@@ -243,6 +244,7 @@ func _ready() -> void:
 		add_child(shop_people)
 	_load_transformer_tank()
 	_stall_kit = StreetStallKit.arrays()
+	_stall_boxes = stall_boxes(_stall_kit)
 	_cart_kit = BeachCartKit.arrays()
 	_build_ground()
 	_build_areas()
@@ -730,6 +732,7 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_wal
 		_cart(m, faces, cart)
 	if dressing_enabled:
 		_street_dressing(m, dress)
+	_obstacle_faces(faces, dress)
 	# Trees are not part of the chunk mesh: StreetTrees draws the owner's models for every
 	# loaded chunk (see _build_chunk "trees" meta and _attach).
 	if m.verts.is_empty():
@@ -2368,6 +2371,65 @@ func _quad_facing(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector
 		MeshKit.quad(st, a, d, c, b, colour)
 
 ## Collision for a wall a-b (an oriented box as 12 triangles).
+## Nov 14 device report: "the auto can go right past the trees, the street shops and the
+## poles". Everything solid that stands on a kerb now has a box in the chunk's ONE collider
+## (the ConcavePolygonShape3D the buildings already use): tree trunks, EB poles, transformer
+## structures and kerb stalls. No new nodes or bodies. Sizes are the parts the auto would hit:
+## the trunk at bumper height, not the crown; a stall's counter and frame, not its overhanging
+## tarp. Pedestrians and traffic don't use physics, so this only changes the player's auto (and
+## any parked vehicle it has knocked loose).
+const TRUNK_HALF_M: Array[float] = [0.34, 0.2, 0.24, 0.2, 0.3] # neem, coconut, ashoka A/B, pungai
+const TRUNK_H_M: float = 3.0
+const POLE_HALF_M: float = 0.2
+const COLLIDER_H_M: float = 2.4
+
+func _obstacle_faces(faces: PackedVector3Array, dress: Dictionary) -> void:
+	for t: Array in dress.get("trees", []):
+		var code: int = int(t[2])
+		var half: float = (TRUNK_HALF_M[code] if code >= 0 and code < TRUNK_HALF_M.size() else 0.3) * float(t[3])
+		_obox_faces(faces, Vector2(float(t[0]), float(t[1])), Vector2(half, half), 0.0, TRUNK_H_M)
+	for p: Array in dress.get("poles", []):
+		_obox_faces(faces, Vector2(float(p[0]), float(p[1])), Vector2(POLE_HALF_M, POLE_HALF_M), float(p[2]), POLE_H)
+	for x: Array in dress.get("xfmr", []):
+		var base: Vector2 = Vector2(float(x[0]), float(x[1]))
+		var out: Vector2 = Vector2(float(x[3]), float(x[4]))
+		# Both poles and the plinth between them, out to the tank behind the pole line.
+		_obox_faces(faces, base + out * XFMR_OUT * 0.5, Vector2(XFMR_OUT * 0.5 + 0.45, XFMR_HALF_SPAN + 0.25), float(x[2]), COLLIDER_H_M)
+	for st: Array in dress.get("stalls", []):
+		var kind: int = int(st[3])
+		if kind < 0 or kind >= _stall_boxes.size():
+			continue
+		var r: Rect2 = _stall_boxes[kind]
+		var yaw: float = float(st[2])
+		# The kit's local box centre turned by the stall's yaw (same rotation as _stall).
+		var lc: Vector2 = r.get_center()
+		var c: float = cos(yaw)
+		var n: float = sin(yaw)
+		var centre: Vector2 = Vector2(float(st[0]) + lc.x * c + lc.y * n, float(st[1]) - lc.x * n + lc.y * c)
+		_obox_faces(faces, centre, r.size * 0.5, yaw, COLLIDER_H_M)
+
+## A box `half` (local x, z) about `centre`, turned by `yaw` like every dress object (local +X
+## is (cos, -sin), local +Z is (sin, cos)), from the ground up to `h`.
+func _obox_faces(faces: PackedVector3Array, centre: Vector2, half: Vector2, yaw: float, h: float) -> void:
+	var az: Vector2 = Vector2(sin(yaw), cos(yaw)) * half.y
+	_wall_faces(faces, centre - az, centre + az, -0.2, h + 0.2, half.x * 2.0)
+
+## Footprint of each stall kind (local x, z) from its parts below COLLIDER_H_M, so the tarp and
+## any awning over the walkway stay walk-through. Built once from the kit in _ready.
+static func stall_boxes(kit: Array[Dictionary]) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for k: Dictionary in kit:
+		var v: PackedVector3Array = k["v"]
+		var lo: Vector2 = Vector2(INF, INF)
+		var hi: Vector2 = Vector2(-INF, -INF)
+		for p: Vector3 in v:
+			if p.y > 1.2:
+				continue
+			lo = lo.min(Vector2(p.x, p.z))
+			hi = hi.max(Vector2(p.x, p.z))
+		out.append(Rect2(lo, hi - lo) if lo.x < INF else Rect2(-0.6, -0.5, 1.2, 1.0))
+	return out
+
 func _wall_faces(faces: PackedVector3Array, a: Vector2, b: Vector2, y0: float, h: float, t: float) -> void:
 	var e: Vector2 = (b - a).normalized()
 	var n: Vector2 = Vector2(-e.y, e.x) * t * 0.5
