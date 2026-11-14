@@ -1,810 +1,810 @@
 keys,en,ta
-PAUSE,"Pause","இடைநிறுத்து"
-RESUME,"Resume","தொடரவும்"
-SETTINGS,"Settings","அமைப்புகள்"
-GARAGE,"Garage","கேரேஜ்"
-CLOSE,"Close","மூடு"
-DAY,"Day","நாள்"
-FINE_TITLE,"Traffic violation","போக்குவரத்து விதிமீறல்"
-FINE_CHALLAN,"Challan no.","சலான் எண்"
-FINE_OFFENCE,"Offence","குற்றம்"
-FINE_REASON_RED_LIGHT,"Jumped a red signal","சிவப்பு சிக்னலைத் தாண்டினாய்"
-FINE_WHERE,"Where","இடம்"
-FINE_WHERE_UNKNOWN,"A signal junction","சிக்னல் சந்திப்பு"
-FINE_WHEN,"When","நேரம்"
-FINE_AMOUNT,"Fine","அபராதம்"
-FINE_PAID_NOW,"Paid now","இப்போது செலுத்தியது"
-FINE_STILL_DUE,"Still due","இன்னும் பாக்கி"
-FINE_DUE_NOTE,"Your wallet was short. %s is still owed and will be taken from the next money you earn.","பணப்பையில் போதுமான பணம் இல்லை. %s இன்னும் பாக்கி; அடுத்து வரும் வருமானத்திலிருந்து எடுக்கப்படும்."
-FINE_BALANCE,"Wallet now","இப்போது பணப்பை"
-FINE_TIP_RED_LIGHT,"Stop behind the line when your signal is red. Amber is never fined.","உன் சிக்னல் சிவப்பாக இருக்கும்போது கோட்டுக்குப் பின் நில். மஞ்சளுக்கு அபராதம் இல்லை."
-FINE_RECOVERED_PART,"₹%d taken for your pending fine. ₹%d still due.","நிலுவை அபராதத்துக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி."
-FINE_RECOVERED_DONE,"₹%d taken for your pending fine. Fine paid off.","நிலுவை அபராதத்துக்கு ₹%d எடுக்கப்பட்டது. அபராதம் முழுதும் செலுத்தப்பட்டது."
-OK,"OK","சரி"
-CONTROLS,"Controls","கட்டுப்பாடு"
-CTRL_WHEEL,"Handlebar drag","ஹேண்டில்பார் இழுப்பு"
-CTRL_ARCADE,"Arrow buttons","அம்புக்குறி பொத்தான்கள்"
-CTRL_TILT,"Tilt phone","போனை சாய்"
-GRAPHICS,"Graphics","கிராபிக்ஸ்"
-GFX_LOW,"Low","குறைவு"
-GFX_MED,"Medium","நடுத்தரம்"
-GFX_HIGH,"High","அதிகம்"
-LANGUAGE,"Language","மொழி"
-VOLUME,"Volume","ஒலி அளவு"
-FILL_LPG,"Fill LPG","LPG நிரப்பு"
-CHARGE_EV,"Charge battery","பேட்டரி சார்ஜ்"
-OPEN_GARAGE,"Open garage","கேரேஜ் திற"
-WRONG_FUEL_EV,"EV kiosk — your auto runs on LPG","EV நிலையம் — உங்கள் ஆட்டோ LPG-யில் ஓடுகிறது"
-WRONG_FUEL_LPG,"LPG bunk — your auto is electric","LPG பங்க் — உங்கள் ஆட்டோ மின்சாரம்"
-TANK_FULL,"Tank already full","டேங்க் ஏற்கனவே நிரம்பியுள்ளது"
-TOW,"Tow to nearest station","அருகிலுள்ள நிலையத்துக்கு இழு"
-OUT_OF_FUEL,"Out of fuel!","எரிபொருள் தீர்ந்தது!"
-TAB_REPAIR,"Repair","பழுது நீக்கம்"
-TAB_UPGRADES,"Upgrades","மேம்பாடுகள்"
-TAB_HORN,"Horn","ஹாரன்"
-TAB_PAINT,"Paint","பெயிண்ட்"
-TAB_AUTOS,"Autos","ஆட்டோக்கள்"
-CONDITION,"Condition","நிலை"
-REPAIR_ALL,"Repair","பழுது நீக்கு"
-NOTHING_TO_REPAIR,"Good as new!","புதுசு மாதிரி இருக்கு!"
-LEVEL,"Level","நிலை"
-MAXED,"Maxed","முழுமை"
-BUY,"Buy","வாங்கு"
-EQUIP,"Use","பயன்படுத்து"
-EQUIPPED,"In use","பயன்பாட்டில்"
-OWNED,"Owned","சொந்தம்"
-DRIVE,"Drive","ஓட்டு"
-DRIVING,"Driving","ஓட்டுகிறீர்கள்"
-NOT_ENOUGH,"Not enough money","போதுமான பணம் இல்லை"
-SHIFT_OVER,"Shift over!","ஷிஃப்ட் முடிந்தது!"
-EARNED,"Earned","சம்பாதித்தது"
-RIDES,"Rides","சவாரிகள்"
-FUEL_SPENT,"Fuel","எரிபொருள்"
-REPAIRS,"Repairs","பழுது"
-WALLET,"Wallet","பணப்பை"
-RATING,"Rating","மதிப்பீடு"
-NEXT_DAY,"Start next day","அடுத்த நாள் தொடங்கு"
-RESET_PROGRESS,"Reset progress","முன்னேற்றத்தை மீட்டமை"
-RESET_AUTO,"Reset auto","ஆட்டோவை மீட்டமை"
-VIBRATION,"Vibration","அதிர்வு"
-GUIDE_ARROW,"Guide arrow","வழிகாட்டி அம்பு"
-GUIDE_RIDER,"Rider","சவாரி"
-GUIDE_DROP,"Drop","இறக்கம்"
-ON,"On","ஆன்"
-OFF,"Off","ஆஃப்"
-MAIN_MENU,"Main menu","முதன்மை மெனு"
-SAVED_AUTOMATICALLY,"Your progress saves automatically.","உங்கள் முன்னேற்றம் தானாகச் சேமிக்கப்படும்."
-CONTINUE,"Continue","தொடர்"
-NEW_GAME,"New career","புதிய பயணம்"
-NEW_GAME_CONFIRM,"Start again from ₹500? Your current career will be replaced.","₹500-இல் இருந்து மீண்டும் தொடங்கவா? இப்போதைய முன்னேற்றம் மாற்றப்படும்."
-YES_START,"Yes, start again","ஆம், தொடங்கு"
-CREDITS,"Credits","நன்றி"
-BACK,"Back","பின்"
-QUIT,"Quit","வெளியேறு"
-TAGLINE,"Chennai Rickshaw Simulator","சென்னை ஆட்டோ சிமுலேட்டர்"
-MENU_HINT,"Real Chennai streets from OpenStreetMap. Drive on the left!","OpenStreetMap-இன் உண்மையான சென்னை தெருக்கள். இடது பக்கம் ஓட்டுங்கள்!"
-STOP_TO_SHIFT,"Stop first to change gear","கியர் மாற்ற நிறுத்தவும்"
-GEAR_REVERSE,"Reverse gear","ரிவர்ஸ் கியர்"
-GEAR_DRIVE,"Drive","டிரைவ்"
-SIGNAL_SIR,"Signal pottu turn! +2 Respect","சிக்னல் போட்டு திருப்பம்! +2 மரியாதை"
-AUTO_REVERSE,"Brake to reverse","பிரேக் மூலம் ரிவர்ஸ்"
-LV,"Lv","நிலை"
-LEVEL_UP,"Level up! Lv","நிலை உயர்வு! நிலை"
-UNLOCKS_AT_LV,"Unlocks at Lv","திறக்கும் நிலை"
-GOAL_DONE,"Goal done","இலக்கு முடிந்தது"
-ALL_GOALS_DONE,"All shift goals done!","இன்றைய எல்லா இலக்குகளும் முடிந்தன!"
-GOAL_RIDES,"Complete %d rides","%d சவாரிகளை முடிக்கவும்"
-GOAL_SMOOTH,"%d smooth rides (comfort 80%%+)","%d மென்மையான சவாரிகள் (வசதி 80%%+)"
-GOAL_EARN,"Earn ₹%d today","இன்று ₹%d சம்பாதிக்கவும்"
-GOAL_METER,"%d Correct Meter rides","%d சரியான மீட்டர் சவாரிகள்"
-GOAL_GETHU,"%d Gap-la Gethu near misses","%d கேப்-ல கெத்து"
-GOAL_SIGNAL,"Signal %d turns","%d திருப்பங்களில் சிக்னல் போடவும்"
-UNLOCK_DISPATCH_TEASER,"Ride-app bookings are coming to your dashboard soon","சவாரி செயலி முன்பதிவுகள் விரைவில்"
-UNLOCK_AIR_HORN,"Unlocked: Madras Musical Air-Horn in the garage","திறக்கப்பட்டது: மியூசிக்கல் ஏர்-ஹார்ன்"
-UNLOCK_EV,"Unlocked: Namma Green EV in the garage","திறக்கப்பட்டது: நம்ம கிரீன் EV"
-UNLOCK_NEON,"Unlocked: Neon Night paint","திறக்கப்பட்டது: நியான் நைட் பெயிண்ட்"
-UNLOCK_GOLD_METER,"Stand Leader: the stand salutes you","ஸ்டாண்ட் லீடர்: ஸ்டாண்ட் உங்களை வணங்குகிறது"
-LOADING_CITY,"Loading Chennai…","சென்னை ஏற்றப்படுகிறது…"
-LOADING_STREETS,"Building the streets…","தெருக்கள் உருவாகின்றன…"
-LOADING_READY,"Vaanga, let's go!","வாங்க, போகலாம்!"
-TIP_1,"Tip: Chennai drives on the left. Keep to the left lane.","குறிப்பு: சென்னையில் இடது பக்கம் ஓட்டுங்கள்."
-TIP_2,"Tip: Slide your thumb from gas to brake without lifting it.","குறிப்பு: விரலை எடுக்காமல் ஆக்சிலரேட்டரிலிருந்து பிரேக்குக்கு நகர்த்தலாம்."
-TIP_3,"Tip: Yellow beams are riders waving you down. Stop right beside one.","குறிப்பு: மஞ்சள் ஒளி என்றால் பயணி அழைக்கிறார். அருகில் நிறுத்துங்கள்."
-TIP_4,"Tip: Honk to move cows and slow traffic out of your lane.","குறிப்பு: மாடு, மெதுவான வண்டிகளை நகர்த்த ஹார்ன் அடியுங்கள்."
-TIP_5,"Tip: Fill LPG at a bunk before the gauge turns red.","குறிப்பு: அளவு சிவப்பாகும் முன் LPG நிரப்புங்கள்."
-TIP_6,"Tip: Stop fully before shifting between D and R.","குறிப்பு: D, R மாற்றும் முன் முழுமையாக நிறுத்துங்கள்."
-STAT_SPEED,"Top speed","அதிக வேகம்"
-STAT_COMFORT,"Comfort","சௌகரியம்"
-STAT_TANK,"LPG tank","LPG டேங்க்"
-GAME_PAUSED,"Game paused","விளையாட்டு நிறுத்தம்"
-COMFORT_CUP,"Tea cup","டீ கப்"
-FARE_NEGOTIATION,"Bargain","பேரம்"
-CHANCE,"chance","வாய்ப்பு"
-SAVARI_COMPLETE,"SAVARI COMPLETE!","சவாரி முடிந்தது!"
-TOTAL_EARNED,"TOTAL EARNED","மொத்த வருமானம்"
-DRIVER_XP,"DRIVER XP","டிரைவர் XP"
-NEXT_SAVARI,"NEXT SAVARI","அடுத்த சவாரி"
-LEVEL_UP_TITLE,"Level up!","நிலை உயர்வு!"
-COLLECT,"COLLECT","பெறு"
-FARE_BILL,"NAMMA METER RECEIPT","நம்ம மீட்டர் ரசீது"
-METER_FARE,"Meter fare","மீட்டர் கட்டணம்"
-COMFORT_TIP,"Comfort tip","சௌகரிய டிப்ஸ்"
-GETHU_BONUS,"Close-pass bonus","நெருக்க ஓட்ட போனஸ்"
-ON_TIME,"On time","சரியான நேரம்"
-LATE,"Late!","தாமதம்!"
-AD_DOUBLE_FARE,"2× fare","இரட்டிப்பு கட்டணம்"
-AD_FUEL_RESCUE,"Free half tank","இலவச அரை டேங்க்"
-AD_FREE_TOW,"Free tow","இலவச இழுப்பு"
-AD_TEST_DRIVE,"Test drive","சோதனை ஓட்டம்"
-DAILY_REWARD,"Daily stand bonus","தினசரி ஸ்டாண்ட் போனஸ்"
-CLAIM,"Claim","பெறு"
-DAY_N,"Day %d","நாள் %d"
-ACHIEVEMENTS,"Achievements","சாதனைகள்"
-DOUBLE_FARE,"2× FARE","இரட்டிப்பு கட்டணம்"
-DAILY_COME_BACK,"Come back tomorrow — streak: %d day(s).","நாளை வாருங்கள் — தொடர்: %d நாள்"
-WATCH_OUT,"Paathu po! Watch out!","பார்த்துப் போ!"
-WATCH_OUT_2,"Konjam gavanama! Take care!","கொஞ்சம் கவனமா!"
-WATCH_OUT_3,"Road-a paathu ottunga! Eyes on the road!","ரோட்டைப் பார்த்து ஓட்டுங்க!"
-WATCH_OUT_4,"Slow-a ponga! Easy does it!","மெதுவா போங்க!"
-WATCH_OUT_5,"Pedestrian nearby! Watch your side!","பாதசாரி அருகில் இருக்கிறார்! கவனமா!"
-WATCH_OUT_6,"Gap kudunga! Give them room!","வழி விடுங்க!"
-TUT_MENTOR,"Murugan Anna · Mylapore stand","முருகன் அண்ணா · மயிலாப்பூர் ஸ்டாண்ட்"
-TUT_KICK,"Vaa thambi! Engine is off. Pull the KICK lever: kick... kick... kick, nice and steady.","வா தம்பி! இன்ஜின் ஆஃப். KICK-ஐ நிதானமா இழு: கிக்... கிக்... கிக்."
+PAUSE,Pause,பாஸ்
+RESUME,Resume,தொடரு
+SETTINGS,Settings,செட்டிங்ஸ்
+GARAGE,Garage,கேரேஜ்
+CLOSE,Close,மூடு
+DAY,Day,நாள்
+FINE_TITLE,Traffic violation,டிராஃபிக் ஃபைன்
+FINE_CHALLAN,Challan no.,சலான் எண்
+FINE_OFFENCE,Offence,என்ன தப்பு
+FINE_REASON_RED_LIGHT,Jumped a red signal,ரெட் சிக்னலைத் தாண்டிட்டே
+FINE_WHERE,Where,எங்க
+FINE_WHERE_UNKNOWN,A signal junction,சிக்னல் சந்திப்பு
+FINE_WHEN,When,எப்போ
+FINE_AMOUNT,Fine,ஃபைன்
+FINE_PAID_NOW,Paid now,இப்போ கட்டினது
+FINE_STILL_DUE,Still due,இன்னும் பாக்கி
+FINE_DUE_NOTE,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. %s இன்னும் பாக்கி; அடுத்து வரும் வருமானத்திலிருந்து எடுக்கப்படும்.
+FINE_BALANCE,Wallet now,வாலெட்டில் மீதி
+FINE_TIP_RED_LIGHT,Stop behind the line when your signal is red. Amber is never fined.,உன் சிக்னல் சிவப்பாக இருக்கும்போது கோட்டுக்குப் பின் நில். மஞ்சளுக்கு ஃபைன் இல்லை.
+FINE_RECOVERED_PART,₹%d taken for your pending fine. ₹%d still due.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி.
+FINE_RECOVERED_DONE,₹%d taken for your pending fine. Fine paid off.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. ஃபைன் முழுதும் கட்டியாச்சு.
+OK,OK,சரி
+CONTROLS,Controls,கன்ட்ரோல்ஸ்
+CTRL_WHEEL,Handlebar drag,ஹேண்டிலை டிராக் பண்ணு
+CTRL_ARCADE,Arrow buttons,அம்பு பட்டன்ஸ்
+CTRL_TILT,Tilt phone,போனை சாய்ச்சு
+GRAPHICS,Graphics,கிராஃபிக்ஸ்
+GFX_LOW,Low,லோ
+GFX_MED,Medium,மீடியம்
+GFX_HIGH,High,ஹை
+LANGUAGE,Language,லாங்குவேஜ்
+VOLUME,Volume,வால்யூம்
+FILL_LPG,Fill LPG,எல்பிஜி ஃபில் பண்ணு
+CHARGE_EV,Charge battery,பேட்டரி சார்ஜ் பண்ணு
+OPEN_GARAGE,Open garage,கேரேஜைத் திற
+WRONG_FUEL_EV,EV kiosk — your auto runs on LPG,இது ஈவி சார்ஜிங் ஸ்டேஷன் — உன் ஆட்டோ எல்பிஜி
+WRONG_FUEL_LPG,LPG bunk — your auto is electric,இது எல்பிஜி பங்க் — உன் ஆட்டோ எலக்ட்ரிக்
+TANK_FULL,Tank already full,டேங்க் ஏற்கனவே நிரம்பியுள்ளது
+TOW,Tow to nearest station,பக்கத்துல இருக்குற நிலையத்துக்கு இழு
+OUT_OF_FUEL,Out of fuel!,ஃப்யூயல் காலியாயிடுச்சு!
+TAB_REPAIR,Repair,ரிப்பேர்
+TAB_UPGRADES,Upgrades,அப்கிரேட்ஸ்
+TAB_HORN,Horn,ஹாரன்
+TAB_PAINT,Paint,பெயிண்ட்
+TAB_AUTOS,Autos,ஆட்டோக்கள்
+CONDITION,Condition,வண்டி கண்டிஷன்
+REPAIR_ALL,Repair,ரிப்பேர் பண்ணு
+NOTHING_TO_REPAIR,Good as new!,புதுசு மாதிரி இருக்கு!
+LEVEL,Level,லெவல்
+MAXED,Maxed,மேக்ஸ்
+BUY,Buy,வாங்கு
+EQUIP,Use,யூஸ் பண்ணு
+EQUIPPED,In use,யூஸ்ல இருக்கு
+OWNED,Owned,உன்கிட்ட இருக்கு
+DRIVE,Drive,ஓட்டு
+DRIVING,Driving,ஓட்டிட்டு இருக்கே
+NOT_ENOUGH,Not enough money,காசு பத்தல
+SHIFT_OVER,Shift over!,ஷிஃப்ட் முடிஞ்சிடுச்சு!
+EARNED,Earned,சம்பாத்தியம்
+RIDES,Rides,சவாரிகள்
+FUEL_SPENT,Fuel,ஃப்யூயல்
+REPAIRS,Repairs,பழுது
+WALLET,Wallet,வாலெட்
+RATING,Rating,ரேட்டிங்
+NEXT_DAY,Start next day,அடுத்த நாளை ஆரம்பி
+RESET_PROGRESS,Reset progress,ப்ரோக்ரஸை ரீசெட் பண்ணு
+RESET_AUTO,Reset auto,ஆட்டோவை ரீசெட் பண்ணு
+VIBRATION,Vibration,அதிர்வு
+GUIDE_ARROW,Guide arrow,வழிகாட்டி அம்பு
+GUIDE_RIDER,Rider,பாசஞ்சர்
+GUIDE_DROP,Drop,டிராப்
+ON,On,ஆன்
+OFF,Off,ஆஃப்
+MAIN_MENU,Main menu,மெயின் மெனு
+SAVED_AUTOMATICALLY,Your progress saves automatically.,உங்கள் முன்னேற்றம் தானாகச் சேமிக்கப்படும்.
+CONTINUE,Continue,தொடர்
+NEW_GAME,New career,புது கேரியர்
+NEW_GAME_CONFIRM,Start again from ₹500? Your current career will be replaced.,₹500-ல இருந்து திரும்ப ஆரம்பிக்கலாமா? இப்போ இருக்குற ப்ரோக்ரஸ் போயிடும்.
+YES_START,"Yes, start again","ஆமா, ஆரம்பிக்கலாம்"
+CREDITS,Credits,கிரெடிட்ஸ்
+BACK,Back,பேக்
+QUIT,Quit,வெளியே போ
+TAGLINE,Chennai Rickshaw Simulator,சென்னை ஆட்டோ சிமுலேட்டர்
+MENU_HINT,Real Chennai streets from OpenStreetMap. Drive on the left!,நிஜ சென்னை ரோடுகள்! இடது பக்கம் ஓட்ட மறந்துடாதே.
+STOP_TO_SHIFT,Stop first to change gear,கியர் மாத்துறதுக்கு முன்னாடி வண்டியை நிறுத்து
+GEAR_REVERSE,Reverse gear,ரிவர்ஸ் கியர்
+GEAR_DRIVE,Drive,டிரைவ்
+SIGNAL_SIR,Signal pottu turn! +2 Respect,சிக்னல் போட்டு திருப்பம்! +2 ரெஸ்பெக்ட்
+AUTO_REVERSE,Brake to reverse,பிரேக் மூலம் ரிவர்ஸ்
+LV,Lv,நிலை
+LEVEL_UP,Level up! Lv,நிலை உயர்வு! நிலை
+UNLOCKS_AT_LV,Unlocks at Lv,திறக்கும் நிலை
+GOAL_DONE,Goal done,டார்கெட் முடிஞ்சிடுச்சு!
+ALL_GOALS_DONE,All shift goals done!,இன்னைக்கு எல்லா டார்கெட்டும் முடிஞ்சிடுச்சு!
+GOAL_RIDES,Complete %d rides,%d சவாரிகளை முடிச்சிடு
+GOAL_SMOOTH,%d smooth rides (comfort 80%%+),%d மென்மையான சவாரிகள் (வசதி 80%%+)
+GOAL_EARN,Earn ₹%d today,இன்று ₹%d சம்பாதிக்கவும்
+GOAL_METER,%d Correct Meter rides,%d சரியான மீட்டர் சவாரிகள்
+GOAL_GETHU,%d Gap-la Gethu near misses,%d கேப்-ல கெத்து
+GOAL_SIGNAL,Signal %d turns,%d திருப்பங்களில் சிக்னல் போடவும்
+UNLOCK_DISPATCH_TEASER,Ride-app bookings are coming to your dashboard soon,சவாரி செயலி முன்பதிவுகள் சீக்கிரமே
+UNLOCK_AIR_HORN,Unlocked: Madras Musical Air-Horn in the garage,திறக்கப்பட்டது: மியூசிக்கல் ஏர்-ஹார்ன்
+UNLOCK_EV,Unlocked: Namma Green EV in the garage,திறக்கப்பட்டது: நம்ம கிரீன் ஈவி
+UNLOCK_NEON,Unlocked: Neon Night paint,திறக்கப்பட்டது: நியான் நைட் பெயிண்ட்
+UNLOCK_GOLD_METER,Stand Leader: the stand salutes you,ஸ்டாண்ட் லீடர்: ஸ்டாண்ட் உங்களை வணங்குகிறது
+LOADING_CITY,Loading Chennai…,சென்னை லோட் ஆகுது…
+LOADING_STREETS,Building the streets…,ரோடுகள் ரெடி ஆகுது…
+LOADING_READY,"Vaanga, let's go!","வாங்க, கிளம்பலாம்!"
+TIP_1,Tip: Chennai drives on the left. Keep to the left lane.,டிப்: சென்னையில இடது பக்கம்தான் ஓட்டணும்.
+TIP_2,Tip: Slide your thumb from gas to brake without lifting it.,குறிப்பு: விரலை எடுக்காமல் ஆக்சிலரேட்டரிலிருந்து பிரேக்குக்கு நகர்த்தலாம்.
+TIP_3,Tip: Yellow beams are riders waving you down. Stop right beside one.,டிப்: மஞ்சள் லைட் தெரிஞ்சா பாசஞ்சர் கூப்பிடுறாங்க. பக்கத்துல நிறுத்து.
+TIP_4,Tip: Honk to move cows and slow traffic out of your lane.,டிப்: மாடுகளும் மெதுவா போற வண்டிகளும் ஒதுங்க ஹாரன் அடி.
+TIP_5,Tip: Fill LPG at a bunk before the gauge turns red.,டிப்: எல்பிஜி மீட்டர் ரெட் ஆகுறதுக்குள்ள பங்க்ல ஃபில் பண்ணிடு.
+TIP_6,Tip: Stop fully before shifting between D and R.,"டிப்: டி, ஆர் கியர் மாத்துற முன்னாடி வண்டியை முழுசா நிறுத்து."
+STAT_SPEED,Top speed,அதிக வேகம்
+STAT_COMFORT,Comfort,கம்ஃபர்ட்
+STAT_TANK,LPG tank,எல்பிஜி டேங்க்
+GAME_PAUSED,Game paused,கேம் பாஸ்ல இருக்கு
+COMFORT_CUP,Tea cup,டீ கப்
+FARE_NEGOTIATION,Bargain,பேரம்
+CHANCE,chance,வாய்ப்பு
+SAVARI_COMPLETE,SAVARI COMPLETE!,சவாரி முடிஞ்சிடுச்சு!
+TOTAL_EARNED,TOTAL EARNED,மொத்த சம்பாத்தியம்
+DRIVER_XP,DRIVER XP,டிரைவர் எக்ஸ்பி
+NEXT_SAVARI,NEXT SAVARI,அடுத்த சவாரி
+LEVEL_UP_TITLE,Level up!,லெவல் அப்!
+COLLECT,COLLECT,கலெக்ட் பண்ணு
+FARE_BILL,NAMMA METER RECEIPT,நம்ம மீட்டர் ரசீது
+METER_FARE,Meter fare,மீட்டர் கட்டணம்
+COMFORT_TIP,Comfort tip,சௌகரிய டிப்ஸ்
+GETHU_BONUS,Close-pass bonus,நெருக்க ஓட்ட போனஸ்
+ON_TIME,On time,சரியான நேரம்
+LATE,Late!,லேட்!
+AD_DOUBLE_FARE,2× fare,இரட்டிப்பு கட்டணம்
+AD_FUEL_RESCUE,Free half tank,ஃப்ரீ அரை டேங்க்
+AD_FREE_TOW,Free tow,ஃப்ரீ இழுப்பு
+AD_TEST_DRIVE,Test drive,டெஸ்ட் டிரைவ்
+DAILY_REWARD,Daily stand bonus,டெய்லி ஸ்டாண்ட் போனஸ்
+CLAIM,Claim,க்ளெய்ம் பண்ணு
+DAY_N,Day %d,நாள் %d
+ACHIEVEMENTS,Achievements,அச்சீவ்மென்ட்ஸ்
+DOUBLE_FARE,2× FARE,இரட்டிப்பு கட்டணம்
+DAILY_COME_BACK,Come back tomorrow — streak: %d day(s).,நாளை வாங்க — தொடர்: %d நாள்
+WATCH_OUT,Paathu po! Watch out!,பார்த்துப் போ!
+WATCH_OUT_2,Konjam gavanama! Take care!,கொஞ்சம் கவனமா!
+WATCH_OUT_3,Road-a paathu ottunga! Eyes on the road!,ரோட்டைப் பார்த்து ஓட்டுங்க!
+WATCH_OUT_4,Slow-a ponga! Easy does it!,மெதுவா போங்க!
+WATCH_OUT_5,Pedestrian nearby! Watch your side!,பாதசாரி அருகில் இருக்காங்க! கவனமா!
+WATCH_OUT_6,Gap kudunga! Give them room!,வழி விடுங்க!
+TUT_MENTOR,Murugan Anna · Mylapore stand,முருகன் அண்ணா · மயிலாப்பூர் ஸ்டாண்ட்
+TUT_KICK,"Vaa thambi! Engine is off. Pull the KICK lever: kick... kick... kick, nice and steady.",வா தம்பி! இன்ஜின் ஆஃப். கிக்-ஐ நிதானமா இழு: கிக்... கிக்... கிக்.
 TUT_KICK_HINT,"Not too fast! One kick every second, three times.","வேகமா வேண்டாம்! ஒரு நொடிக்கு ஒரு கிக், மூணு தடவை."
-TUT_PULL_OUT,"Super! Now hold ACCEL and pull out onto the road.","சூப்பர்! ACCEL-ஐ அழுத்திப் பிடி, ரோட்டுக்கு வா."
-TUT_PULL_OUT_HINT,"Keep your thumb on ACCEL until you pass 15 km/h.","15 கி.மீ தாண்டும் வரை ACCEL-ஐ விடாதே."
-TUT_STOP_LINE,"Steer with the arrows. See the yellow STOP line ahead? Brake and stop right on it.","அம்புக்குறியால திருப்பு. முன்னாடி மஞ்சள் STOP கோடு தெரியுதா? பிரேக் போட்டு அதுல நிறுத்து."
-TUT_STOP_LINE_HINT,"Slow down early. Stop within 3 metres of the yellow line.","முன்னாடியே வேகம் குறை. மஞ்சள் கோட்டுக்கு 3 மீட்டருக்குள் நிறுத்து."
-TUT_STOP_LINE_MISSED,"Missed it! There's another line ahead. Brake earlier this time.","தவறிடுச்சு! முன்னாடி இன்னொரு கோடு இருக்கு. இந்த தடவை சீக்கிரம் பிரேக்."
-TUT_INDICATE,"Before you turn, show the indicator. Tap the left arrow lamp, then take the next turn.","திரும்பும் முன் இண்டிகேட்டர் போடு. இடது விளக்கை அழுத்திட்டு அடுத்த திருப்பத்தில் திரும்பு."
-TUT_INDICATE_HINT,"Indicator on, then turn at the next junction. Chennai drivers respect that.","இண்டிகேட்டர் போட்டு அடுத்த சந்திப்பில் திரும்பு. சென்னை டிரைவர்கள் மதிப்பாங்க."
+TUT_PULL_OUT,Super! Now hold ACCEL and pull out onto the road.,"சூப்பர்! ஆக்சல்-ஐ அழுத்திப் பிடி, ரோட்டுக்கு வா."
+TUT_PULL_OUT_HINT,Keep your thumb on ACCEL until you pass 15 km/h.,15 கி.மீ தாண்டும் வரை ஆக்சல்-ஐ விடாதே.
+TUT_STOP_LINE,Steer with the arrows. See the yellow STOP line ahead? Brake and stop right on it.,அம்புக்குறியால திருப்பு. முன்னாடி மஞ்சள் ஸ்டாப் கோடு தெரியுதா? பிரேக் போட்டு அதுல நிறுத்து.
+TUT_STOP_LINE_HINT,Slow down early. Stop within 3 metres of the yellow line.,முன்னாடியே வேகம் குறை. மஞ்சள் கோட்டுக்கு 3 மீட்டருக்குள் நிறுத்து.
+TUT_STOP_LINE_MISSED,Missed it! There's another line ahead. Brake earlier this time.,தவறிடுச்சு! முன்னாடி இன்னொரு கோடு இருக்கு. இந்த தடவை சீக்கிரம் பிரேக்.
+TUT_INDICATE,"Before you turn, show the indicator. Tap the left arrow lamp, then take the next turn.",திரும்பும் முன் இண்டிகேட்டர் போடு. இடது விளக்கை அழுத்திட்டு அடுத்த திருப்பத்தில் திரும்பு.
+TUT_INDICATE_HINT,"Indicator on, then turn at the next junction. Chennai drivers respect that.",இண்டிகேட்டர் போட்டு அடுத்த சந்திப்பில் திரும்பு. சென்னை டிரைவர்கள் மதிப்பாங்க.
 TUT_HORN,"Scooter blocking you? Give one horn, he'll move over.","ஸ்கூட்டர் வழி மறைக்குதா? ஒரு ஹார்ன் அடி, அவர் ஒதுங்குவார்."
-TUT_HORN_HINT,"Tap the yellow HORN button.","மஞ்சள் HORN பொத்தானை அழுத்து."
-TUT_PICK_UP,"See the lady waving on the left? She's going to office. Stop right beside her.","இடது பக்கம் கை காட்டுறாங்களா? அவங்க ஆபீஸ் போறாங்க. அவங்க பக்கத்துல நிறுத்து."
-TUT_PICK_UP_HINT,"Follow the green arrow to her and stop next to the yellow beam.","பச்சை அம்பைப் பின்தொடர்ந்து மஞ்சள் ஒளி அருகில் நிறுத்து."
-TUT_HAGGLE,"Now the bargain! The rider offers a price. You can accept, or ask for more. Ask too much and they walk away. Tap Accept for now.","இப்போது பேரம்! பயணி ஒரு விலை சொல்வார். ஏற்கலாம், அல்லது அதிகம் கேட்கலாம். மிக அதிகம் கேட்டால் போய்விடுவார். இப்போது ஏற்றுக்கொள் என்பதைத் தட்டு."
-TUT_HAGGLE_HINT,"Tap Accept on the card.","கார்டில் ஏற்றுக்கொள் என்பதைத் தட்டு."
-TUT_GPS,"Follow the green line on the road and the map. Drive smooth: the tea cup shows her comfort.","ரோட்டுலயும் மேப்லயும் பச்சை கோட்டைப் பின்தொடர். மெதுவா ஓட்டு: டீ கப் அவங்க வசதியைக் காட்டுது."
-TUT_GPS_HINT,"Turn where the banner shows. Hard braking spills the tea cup.","பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக் டீயைக் கொட்டும்."
-TUT_DROP_OFF,"Almost there. Stop inside the green ring to drop her off.","வந்தாச்சு. பச்சை வட்டத்துக்குள் நிறுத்தி இறக்கு."
-TUT_DROP_OFF_HINT,"Come to a full stop inside the green ring.","பச்சை வட்டத்துக்குள் முழுசா நிறுத்து."
-TUT_FREE_ROAM,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.","இப்போ நீ தான் பாஸ்! முதல் சவாரி போனஸ் +₹100. மினி-மேப்பை அழுத்து: தங்க ! சின்னம் பக்கக் கதைகள். ஒன்றைத் தேர்ந்து, அதன் ஓரத்தில் நிறுத்தித் தொடங்கு."
-TUT_ALL_DONE,"All the best, thambi. The road is yours.","வாழ்த்துக்கள் தம்பி. ரோடு உன்னுடையது."
-TUT_KICK_TASK,"Tap KICK 3 times, steady","KICK-ஐ 3 முறை நிதானமா அழுத்து"
-TUT_PULL_OUT_TASK,"Hold ACCEL until 15 km/h","15 கி.மீ வரை ACCEL-ஐ பிடி"
-TUT_STOP_LINE_TASK,"Brake and stop on the yellow STOP line","மஞ்சள் STOP கோட்டில் நிறுத்து"
-TUT_INDICATE_TASK,"Tap the left indicator, then turn","இடது இண்டிகேட்டர் போட்டு திரும்பு"
-TUT_HORN_TASK,"Tap HORN once","ஒரு முறை HORN அடி"
-TUT_PICK_UP_TASK,"Stop beside the waving rider","கை காட்டுபவர் அருகில் நிறுத்து"
-TUT_HAGGLE_TASK,"Tap Accept on the card","கார்டில் ஏற்றுக்கொள் தட்டு"
+TUT_HORN_HINT,Tap the yellow HORN button.,மஞ்சள் ஹாரன் பொத்தானை அழுத்து.
+TUT_PICK_UP,See the lady waving on the left? She's going to office. Stop right beside her.,இடது பக்கம் கை காட்டுறாங்களா? அவங்க ஆபீஸ் போறாங்க. அவங்க பக்கத்துல நிறுத்து.
+TUT_PICK_UP_HINT,Follow the green arrow to her and stop next to the yellow beam.,பச்சை அம்பைப் பின்தொடர்ந்து மஞ்சள் ஒளி அருகில் நிறுத்து.
+TUT_HAGGLE,"Now the bargain! The rider offers a price. You can accept, or ask for more. Ask too much and they walk away. Tap Accept for now.","இப்போ பேரம்! பயணி ஒரு விலை சொல்வார். ஏற்கலாம், அல்லது அதிகம் கேட்கலாம். ரொம்ப அதிகம் கேட்டால் போய்விடுவார். இப்போ ஏற்றுக்கொள் என்பதைத் தட்டு."
+TUT_HAGGLE_HINT,Tap Accept on the card.,கார்டில் ஏற்றுக்கொள் என்பதைத் தட்டு.
+TUT_GPS,Follow the green line on the road and the map. Drive smooth: the tea cup shows her comfort.,ரோட்டுலயும் மேப்லயும் பச்சை கோட்டைப் பின்தொடர். மெதுவா ஓட்டு: டீ கப் அவங்க வசதியைக் காட்டுது.
+TUT_GPS_HINT,Turn where the banner shows. Hard braking spills the tea cup.,பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக் டீயைக் கொட்டும்.
+TUT_DROP_OFF,Almost there. Stop inside the green ring to drop her off.,வந்தாச்சு. பச்சை வட்டத்துக்குள் நிறுத்தி இறக்கு.
+TUT_DROP_OFF_HINT,Come to a full stop inside the green ring.,பச்சை வட்டத்துக்குள் முழுசா நிறுத்து.
+TUT_FREE_ROAM,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.",இப்போ நீ தான் பாஸ்! முதல் சவாரிக்கு +₹100 போனஸ். மினி மேப்பை தட்டு. தங்க நிற ! மார்க்கர் சைடு குவெஸ்ட். ஒண்ணை செலக்ட் பண்ணி அங்க போய் நிறுத்து.
+TUT_ALL_DONE,"All the best, thambi. The road is yours.",சூப்பர் தம்பி! இனி ரோடு உன்னோடது.
+TUT_KICK_TASK,"Tap KICK 3 times, steady",கிக்-ஐ 3 முறை நிதானமா அழுத்து
+TUT_PULL_OUT_TASK,Hold ACCEL until 15 km/h,15 கி.மீ வரை ஆக்சல்-ஐ பிடி
+TUT_STOP_LINE_TASK,Brake and stop on the yellow STOP line,மஞ்சள் ஸ்டாப் கோட்டில் நிறுத்து
+TUT_INDICATE_TASK,"Tap the left indicator, then turn",இடது இண்டிகேட்டர் போட்டு திரும்பு
+TUT_HORN_TASK,Tap HORN once,ஒரு முறை ஹாரன் அடி
+TUT_PICK_UP_TASK,Stop beside the waving rider,கை காட்டுபவர் அருகில் நிறுத்து
+TUT_HAGGLE_TASK,Tap Accept on the card,கார்டில் ஏற்றுக்கொள் தட்டு
 TUT_GPS_TASK,"Follow the green line, drive smooth","பச்சை கோட்டைப் பின்தொடர், மெதுவா"
-TUT_DROP_OFF_TASK,"Stop inside the green ring","பச்சை வட்டத்துக்குள் நிறுத்து"
-TUT_FREE_ROAM_TASK,"Free roam! Tap the mini-map","சுதந்திரமா ஓட்டு! மினி-மேப் அழுத்து"
-TUT_SKIP,"SKIP","தவிர்"
-TUT_TAP,"TAP","அழுத்து"
-TUT_HOLD,"HOLD","பிடி"
-QUEST_JOURNAL,"Side quests","பக்கக் கதைகள்"
-QUEST_EMPTY,"New side quests are coming soon.","புதிய பக்கக் கதைகள் விரைவில் வருகின்றன."
-QUEST_DONE,"Done","முடிந்தது"
-QUEST_LOCKED,"Locked","பூட்டப்பட்டது"
-QUEST_TRACKED,"On route","வழியில்"
-QUEST_AVAILABLE,"Available","கிடைக்கிறது"
-QUEST_LEVEL,"Reach level %d","%d-ஆம் நிலையை அடையுங்கள்"
-QUEST_PREREQUISITE,"Finish earlier quests to unlock","முந்தைய கதைகளை முடித்து திறக்கவும்"
-QUEST_TRACK,"Go there","அங்கே போ"
-QUEST_UNTRACK,"Clear route","வழியை நீக்கு"
-QUEST_START,"Start","தொடங்கு"
-QUEST_STOP_AT_KERB,"Stop at the quest's gold marker to begin.","தொடங்க, தங்கக் குறியில் நிறுத்து."
-QUEST_NEARBY,"Side quest: %s","பக்கக் கதை: %s"
-QUEST_LESSON,"Gold gems on the road mark side quests. Stop at one to see the job and tap Start.","சாலையில் தங்கக் குறிகள் பக்கக் கதைகளைக் காட்டும். அங்கே நிறுத்தி வேலையைப் பார்த்துத் தொடங்கு என்பதைத் தட்டு."
-QUEST_DONE_CHOICE,"Finish","முடி"
-QUEST_TAKE_PHOTO,"Take photo","படம் எடு"
-QUEST_INSPECT,"Look","பார்"
-QUEST_CALM,"Calm him","அமைதிப்படுத்து"
-QUEST_PARK,"Done","முடிந்தது"
-QUEST_REVERSE_FIRST,"Shift to R, roll back a little, stop, then tap Done.","R-க்கு மாற்றி, சற்று பின்னால் நகர்த்தி, நிறுத்தி, முடிந்தது என்பதைத் தட்டு."
-QUEST_QUALITY_COFFEE,"Coffee left: %d%%","மீதி காபி: %d%%"
-QUEST_QUALITY_COMFORT,"Calm and happy: %d%%","அமைதியும் மகிழ்ச்சியும்: %d%%"
-QUEST_RETRY,"Try again","மீண்டும் முயற்சி"
-QUEST_LEAVE,"Leave","வெளியேறு"
-QUEST_FACE_VIEW,"Turn the auto toward the marked view and stop.","குறித்த காட்சியை நோக்கி ஆட்டோவைத் திருப்பி நிறுத்துங்கள்."
-QUEST_TIME_LEFT,"%d s left","%d நொடி மீதி"
-QUEST_SPEED_LIMIT,"Under %d km/h","%d கி.மீ/மணிக்குள்"
-QUEST_DAMAGE_LIMIT,"Don't crash","மோதாதே"
-QUEST_FAILED,"Job stopped: %s","வேலை நின்றது: %s"
-QUEST_FAIL_DEADLINE,"you ran out of time.","நேரம் முடிந்தது."
-QUEST_FAIL_WRECK_STRANDED,"the auto is wrecked and there's no money or ad for a repair.","ஆட்டோ முழுதும் சேதம்; பழுதுக்கு பணமும் விளம்பரமும் இல்லை."
-QUEST_RESET_WRECK,"Auto wrecked: the timed job is called off. Start it again from the beginning.","ஆட்டோ சேதமானது: நேர வேலை ரத்து. மீண்டும் முதலிலிருந்து தொடங்கு."
-QUEST_FAIL_SPEED,"you drove too fast.","மிக வேகமாக ஓட்டினாய்."
-QUEST_FAIL_DAMAGE,"the auto got too much damage.","ஆட்டோ அதிகம் சேதமானது."
-QUEST_FAIL_QUALITY,"too many bumps. Drive more gently.","அதிகக் குலுக்கல். மெதுவாக ஓட்டு."
-QUEST_FAIL_UNREACHABLE,"no road goes there now.","அங்கே இப்போது சாலை இல்லை."
-QUEST_COMPLETED,"Job done! You earned ₹%s.","வேலை முடிந்தது! ₹%s கிடைத்தது."
-SQ02_TITLE,"Filter Coffee, No Spill","சிந்தாத ஃபில்டர் காபி"
-SQ02_DESC,"Deliver hot filter coffee to three shops without spilling it.","சூடான ஃபில்டர் காபியைச் சிந்தாமல் மூன்று கடைகளுக்குக் கொடு."
-SQ02_ORDER,"Which shop first?","முதலில் எந்தக் கடை?"
-SQ02_LUZ_FIRST,"Tailor shop","தையல் கடை"
-SQ02_GARDEN_FIRST,"Book shop","புத்தகக் கடை"
-SQ02_FIRST,"Take coffee to the first shop. Drive smoothly!","முதல் கடைக்குக் காபி கொண்டு போ. மெதுவாக ஓட்டு!"
-SQ02_SECOND,"Now the second shop. Don't spill!","இப்போது இரண்டாவது கடை. சிந்தாதே!"
-SQ02_THIRD,"Last one: take it to the tea shop.","கடைசி: டீக்கடைக்குக் கொண்டு போ."
-SQ04_TITLE,"Paati Knows the Way","பாட்டிக்குத் தெரிந்த பாதை"
-SQ04_RIDER,"Paati","பாட்டி"
-RIDER_IN,"%s is in the auto.","%s ஆட்டோவில் ஏறிவிட்டார்."
-QUEST_NOT_ON_FIRE,"Put the fire out before starting a quest.","தீயை அணைத்த பிறகு வேலையைத் தொடங்கு."
-SQ03_RIDER,"Musician","இசைக்கலைஞர்"
-SQ09_RIDER,"Kutty","குட்டி"
-SQ14_RIDER,"Student","மாணவி"
-SQ21_RIDER,"Job seeker","வேலை தேடுபவர்"
+TUT_DROP_OFF_TASK,Stop inside the green ring,பச்சை வட்டத்துக்குள் நிறுத்து
+TUT_FREE_ROAM_TASK,Free roam! Tap the mini-map,சுதந்திரமா ஓட்டு! மினி-மேப் அழுத்து
+TUT_SKIP,SKIP,தவிர்
+TUT_TAP,TAP,அழுத்து
+TUT_HOLD,HOLD,பிடி
+QUEST_JOURNAL,Side quests,சைடு குவெஸ்ட்ஸ்
+QUEST_EMPTY,New side quests are coming soon.,புது சைடு குவெஸ்ட்ஸ் சீக்கிரம் வரும்!
+QUEST_DONE,Done,முடிஞ்சிடுச்சு
+QUEST_LOCKED,Locked,இன்னும் அன்லாக் ஆகல
+QUEST_TRACKED,On route,ரூட்ல இருக்கு
+QUEST_AVAILABLE,Available,ரெடியா இருக்கு
+QUEST_LEVEL,Reach level %d,%d-ஆம் நிலையை எட்டிடு
+QUEST_PREREQUISITE,Finish earlier quests to unlock,முன்னாடி இருந்த குவெஸ்ட்ஸை முடித்து திறக்கவும்
+QUEST_TRACK,Go there,அங்க போ
+QUEST_UNTRACK,Clear route,ரூட்டை கிளியர் பண்ணு
+QUEST_START,Start,ஆரம்பி
+QUEST_STOP_AT_KERB,Stop at the quest's gold marker to begin.,"தொடங்க, தங்கக் குறியில் நிறுத்து."
+QUEST_NEARBY,Side quest: %s,பக்கக் கதை: %s
+QUEST_LESSON,Gold gems on the road mark side quests. Stop at one to see the job and tap Start.,சாலையில் தங்கக் குறிகள் பக்கக் கதைகளைக் காட்டும். அங்கே நிறுத்தி வேலையைப் பார்த்துத் ஆரம்பி என்பதைத் தட்டு.
+QUEST_DONE_CHOICE,Finish,முடிச்சிடு
+QUEST_TAKE_PHOTO,Take photo,ஃபோட்டோ எடு
+QUEST_INSPECT,Look,பார்
+QUEST_CALM,Calm him,அமைதிப்படுத்து
+QUEST_PARK,Done,முடிஞ்சிடுச்சு
+QUEST_REVERSE_FIRST,"Shift to R, roll back a little, stop, then tap Done.","ஆர்-க்கு மாற்றி, சற்று பின்னால் நகர்த்தி, நிறுத்தி, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
+QUEST_QUALITY_COFFEE,Coffee left: %d%%,மீதி காபி: %d%%
+QUEST_QUALITY_COMFORT,Calm and happy: %d%%,அமைதியும் மகிழ்ச்சியும்: %d%%
+QUEST_RETRY,Try again,திரும்ப ட்ரை பண்ணு
+QUEST_LEAVE,Leave,வெளியே போ
+QUEST_FACE_VIEW,Turn the auto toward the marked view and stop.,குறித்த காட்சியை நோக்கி ஆட்டோவைத் திருப்பி நிறுத்துங்க.
+QUEST_TIME_LEFT,%d s left,இன்னும் %d நொடி
+QUEST_SPEED_LIMIT,Under %d km/h,%d கி.மீ/மணிக்குள்
+QUEST_DAMAGE_LIMIT,Don't crash,மோதாதே
+QUEST_FAILED,Job stopped: %s,வேலை நின்னுடுச்சு: %s
+QUEST_FAIL_DEADLINE,you ran out of time.,நேரம் முடிஞ்சிடுச்சு.
+QUEST_FAIL_WRECK_STRANDED,the auto is wrecked and there's no money or ad for a repair.,ஆட்டோ முழுதும் சேதம்; பழுதுக்கு பணமும் விளம்பரமும் இல்லை.
+QUEST_RESET_WRECK,Auto wrecked: the timed job is called off. Start it again from the beginning.,ஆட்டோ சேதமானது: நேர வேலை ரத்து. மீண்டும் முதலிலிருந்து ஆரம்பி.
+QUEST_FAIL_SPEED,you drove too fast.,மிக வேகமா ஓட்டினாய்.
+QUEST_FAIL_DAMAGE,the auto got too much damage.,ஆட்டோ அதிகம் சேதமானது.
+QUEST_FAIL_QUALITY,too many bumps. Drive more gently.,அதிகக் குலுக்கல். மெதுவா ஓட்டு.
+QUEST_FAIL_UNREACHABLE,no road goes there now.,அங்கே இப்போ சாலை இல்லை.
+QUEST_COMPLETED,Job done! You earned ₹%s.,வேலை முடிஞ்சிடுச்சு! ₹%s சம்பாதிச்சாச்சு.
+SQ02_TITLE,"Filter Coffee, No Spill",சிந்தாத ஃபில்டர் காபி
+SQ02_DESC,Deliver hot filter coffee to three shops without spilling it.,சூடான ஃபில்டர் காபியைச் சிந்தாமல் மூன்று கடைகளுக்குக் கொடு.
+SQ02_ORDER,Which shop first?,முதலில் எந்தக் கடை?
+SQ02_LUZ_FIRST,Tailor shop,தையல் கடை
+SQ02_GARDEN_FIRST,Book shop,புத்தகக் கடை
+SQ02_FIRST,Take coffee to the first shop. Drive smoothly!,முதல் கடைக்குக் காபி கொண்டு போ. மெதுவா ஓட்டு!
+SQ02_SECOND,Now the second shop. Don't spill!,இப்போ இரண்டாவது கடை. சிந்தாதே!
+SQ02_THIRD,Last one: take it to the tea shop.,கடைசி: டீக்கடைக்குக் கொண்டு போ.
+SQ04_TITLE,Paati Knows the Way,பாட்டிக்கு வழி தெரியும்!
+SQ04_RIDER,Paati,பாட்டி
+RIDER_IN,%s is in the auto.,%s ஆட்டோவில் ஏறிவிட்டார்.
+QUEST_NOT_ON_FIRE,Put the fire out before starting a quest.,தீயை அணைத்த பிறகு வேலையைத் ஆரம்பி.
+SQ03_RIDER,Musician,இசைக்கலைஞர்
+SQ09_RIDER,Kutty,குட்டி
+SQ14_RIDER,Student,மாணவி
+SQ21_RIDER,Job seeker,வேலை தேடுபவர்
 RIDER_OUT_FIRE,"%s got out of the burning auto. Put the fire out, then pick her up.","%s எரியும் ஆட்டோவிலிருந்து இறங்கிவிட்டார். தீயை அணைத்து, பிறகு அவரை ஏற்றிக்கொள்."
-RIDER_LEFT_BEHIND,"%s is waiting. Stop next to her to pick her up.","%s காத்திருக்கிறார். அவர் அருகில் நிறுத்தி ஏற்றிக்கொள்."
-SQ04_DESC,"An old grandmother is lost. Use her memories to find her family's home.","ஒரு பாட்டிக்கு வழி தெரியவில்லை. அவரின் நினைவுகளை வைத்து வீட்டைக் கண்டுபிடி."
-SQ04_CLUE_1,"Paati remembers a flower stall. Drive there and look around.","பாட்டிக்குப் பூக்கடை நினைவிருக்கிறது. அங்கே போய்ப் பார்."
-SQ04_GUESS,"The seller says to go by the temple tank steps. Where next?","குளத்துப் படிகள் வழியாகப் போகச் சொல்கிறார் கடைக்காரர். அடுத்து எங்கே?"
-SQ04_TANK,"Tank steps","குளத்துப் படிகள்"
-SQ04_MARKET,"The market","சந்தை"
-SQ04_HINT,"Paati shakes her head. She wants the tank steps.","பாட்டி தலையசைக்கிறார். அவர் குளத்துப் படிகளைச் சொல்கிறார்."
-SQ04_LISTEN,"Go to the tank steps","குளத்துப் படிகளுக்குப் போ"
-SQ04_CLUE_2,"Drive to the tank steps and look around.","குளத்துப் படிகளுக்குப் போய்ப் பார்."
-SQ04_REVEAL,"Paati smiles. She knows this place. The house is close!","பாட்டி சிரிக்கிறார். இந்த இடம் அவருக்குத் தெரியும். வீடு அருகில்தான்!"
-SQ04_READY,"Take her home","வீட்டில் சேர்"
-SQ04_HOME,"Take Paati to her granddaughter's home.","பாட்டியைப் பேத்தியின் வீட்டில் சேர்."
-SQ09_TITLE,"A Quiet Ride for Kutty","குட்டிக்கான அமைதிப் பயணம்"
-SQ09_DESC,"A scared puppy needs a gentle ride to the animal clinic.","பயந்த நாய்க்குட்டியை மெதுவாக விலங்கு மருத்துவமனைக்குக் கொண்டு போ."
+RIDER_LEFT_BEHIND,%s is waiting. Stop next to her to pick her up.,%s காத்திருக்கிறார். அவர் அருகில் நிறுத்தி ஏற்றிக்கொள்.
+SQ04_DESC,An old grandmother is lost. Use her memories to find her family's home.,ஒரு பாட்டிக்கு வழி தெரியல. அவரின் நினைவுகளை வைத்து வீட்டைக் கண்டுபிடி.
+SQ04_CLUE_1,Paati remembers a flower stall. Drive there and look around.,பாட்டிக்குப் பூக்கடை நினைவிருக்கிறது. அங்கே போய்ப் பார்.
+SQ04_GUESS,The seller says to go by the temple tank steps. Where next?,குளத்துப் படிகள் வழியாகப் போகச் சொல்கிறார் கடைக்காரர். அடுத்து எங்கே?
+SQ04_TANK,Tank steps,குளத்துப் படிகள்
+SQ04_MARKET,The market,சந்தை
+SQ04_HINT,Paati shakes her head. She wants the tank steps.,பாட்டி தலையசைக்கிறார். அவர் குளத்துப் படிகளைச் சொல்கிறார்.
+SQ04_LISTEN,Go to the tank steps,குளத்துப் படிகளுக்குப் போ
+SQ04_CLUE_2,Drive to the tank steps and look around.,குளத்துப் படிகளுக்குப் போய்ப் பார்.
+SQ04_REVEAL,Paati smiles. She knows this place. The house is close!,பாட்டி சிரிக்கிறார். இந்த இடம் அவருக்குத் தெரியும். வீடு அருகில்தான்!
+SQ04_READY,Take her home,வீட்டில் சேர்
+SQ04_HOME,Take Paati to her granddaughter's home.,பாட்டியைப் பேத்தியின் வீட்டில் சேர்.
+SQ09_TITLE,A Quiet Ride for Kutty,குட்டிக்கு ஒரு அமைதியான சவாரி
+SQ09_DESC,A scared puppy needs a gentle ride to the animal clinic.,பயந்த நாய்க்குட்டியை மெதுவா விலங்கு மருத்துவமனைக்குக் கொண்டு போ.
 SQ09_BRIEF,"Kutty is shaking with fear. Go straight to the clinic, or stop first to calm him?","குட்டி பயத்தில் நடுங்குகிறது. நேராக மருத்துவமனையா, அல்லது நிறுத்தி அமைதிப்படுத்தவா?"
-SQ09_DIRECT,"Go straight there","நேராகப் போ"
-SQ09_CALM_FIRST,"Stop and calm him","நிறுத்தி அமைதிப்படுத்து"
-SQ09_CALM,"Stop at the quiet corner and calm Kutty.","அமைதியான முனையில் நிறுத்திக் குட்டியை அமைதிப்படுத்து."
+SQ09_DIRECT,Go straight there,நேராகப் போ
+SQ09_CALM_FIRST,Stop and calm him,நிறுத்தி அமைதிப்படுத்து
+SQ09_CALM,Stop at the quiet corner and calm Kutty.,அமைதியான முனையில் நிறுத்திக் குட்டியை அமைதிப்படுத்து.
 SQ09_CARE,"Drive to the animal clinic. No horn, no bumps!","விலங்கு மருத்துவமனைக்குப் போ. ஹாரன் வேண்டாம், குலுக்கல் வேண்டாம்!"
-SQ09_THANKS,"Kutty is safe now. The doctor says thank you!","குட்டி இப்போது பாதுகாப்பாக உள்ளது. மருத்துவர் நன்றி சொல்கிறார்!"
-SQ19_TITLE,"That Is Not My Parcel","இது என் பார்சல் இல்லை"
-SQ19_DESC,"Two parcels got mixed up. Take each one to the right shop.","இரண்டு பொட்டலங்கள் மாறிவிட்டன. சரியான கடைக்குக் கொண்டு போ."
-SQ19_LABELS,"The blue parcel says Tailor. The red parcel says Printer. Which goes to the tailor?","நீலத்தில் தையல்காரர், சிவப்பில் அச்சகம் என்று உள்ளது. தையல்காரருக்கு எது?"
-SQ19_BLUE,"Blue parcel","நீலப் பொட்டலம்"
-SQ19_RED,"Red parcel","சிவப்புப் பொட்டலம்"
-SQ19_VERIFY,"Look again! Stop at the courier office and read the receipt.","மீண்டும் பார்! கூரியர் அலுவலகத்தில் ரசீதைப் படி."
-SQ19_SHOP_1,"Take the blue parcel to the tailor.","நீலப் பொட்டலத்தைத் தையல்காரரிடம் கொடு."
-SQ19_SHOP_2,"Take the red parcel to the printer.","சிவப்புப் பொட்டலத்தை அச்சகத்தில் கொடு."
-SQ19_RECEIPT,"Both shops have their parcels. Thank you!","இரண்டு கடைகளுக்கும் பொட்டலம் கிடைத்தது. நன்றி!"
-SQ24_TITLE,"Midnight Mechanic","நள்ளிரவு மெக்கானிக்"
-SQ24_DESC,"An auto driver is stuck at night. Find the right part for his engine.","ஒரு ஆட்டோ ஓட்டுநர் இரவில் சிக்கிக்கொண்டார். சரியான உதிரிபாகம் கண்டுபிடி."
-SQ24_DIAGNOSE,"The driver says the engine makes a loud squeal. What does he need?","என்ஜினில் உரத்த சத்தம் என்கிறார். என்ன வேண்டும்?"
-SQ24_BELT,"A new belt","புதிய பெல்ட்"
-SQ24_FUSE,"A new fuse","புதிய ஃபியூஸ்"
-SQ24_VERIFY,"Not sure? Read the electrician's board.","சந்தேகமா? எலக்ட்ரீஷியன் பலகையைப் படி."
-SQ24_WORKSHOP,"Go to the night workshop and buy a belt.","இரவுப் பட்டறையில் பெல்ட் வாங்கு."
-SQ24_STRANDED,"Take the belt back to the stuck auto.","பெல்ட்டை ஆட்டோவிடம் கொண்டு போ."
-SQ24_FINISH,"The driver fits the belt. His engine runs fine!","ஓட்டுநர் பெல்ட் பொருத்தினார். என்ஜின் நன்றாக ஓடுகிறது!"
-SQ27_TITLE,"Narrow-Lane Promise","குறுகிய தெரு வாக்குறுதி"
-SQ27_DESC,"Deliver a parcel to a house in a small T Nagar lane and park neatly.","தி.நகர் சிறிய சந்தில் உள்ள வீட்டுக்குப் பொட்டலம் கொடுத்து நேர்த்தியாக நிறுத்து."
-SQ27_APPROACH,"The small lane is quick. The wide road is easier. Which way?","சிறிய சந்து விரைவு. அகலச் சாலை எளிது. எந்த வழி?"
-SQ27_NARROW,"Small lane","சிறிய சந்து"
-SQ27_WIDE,"Wide road","அகலச் சாலை"
-SQ27_LANE,"Drive slowly along your road. Don't hit anything.","உன் சாலையில் மெதுவாகப் போ. எதிலும் மோதாதே."
-SQ27_PARK,"At the house: stop at the marker, shift to R, roll back a little, stop and tap Done.","வீட்டில்: குறியில் நிறுத்து, R-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிந்தது என்பதைத் தட்டு."
-SQ27_HANDOVER,"Well parked! The neighbour takes the parcel.","நன்றாக நிறுத்தினாய்! பக்கத்து வீட்டார் பொட்டலத்தை வாங்கினார்."
-SQ01_TITLE,"The Wedding Gold","திருமண நகை"
-SQ01_DESC,"Someone lost a gold pouch at a wedding. Find the real owner.","திருமணத்தில் ஒருவரின் தங்கப் பை தொலைந்தது. உண்மையான உரிமையாளரைக் கண்டுபிடி."
-SQ01_RECEIPT,"Go to the wedding hall and stop at the marker.","திருமண மண்டபத்துக்குப் போய்க் குறியில் நிறுத்து."
-SQ01_CLAIMANT,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?","ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?"
+SQ09_THANKS,Kutty is safe now. The doctor says thank you!,குட்டி இப்போ பாதுகாப்பாக உள்ளது. மருத்துவர் நன்றி சொல்கிறார்!
+SQ19_TITLE,That Is Not My Parcel,இது என் பார்சல் இல்லை
+SQ19_DESC,Two parcels got mixed up. Take each one to the right shop.,இரண்டு பொட்டலங்கள் மாறிவிட்டன. சரியான கடைக்குக் கொண்டு போ.
+SQ19_LABELS,The blue parcel says Tailor. The red parcel says Printer. Which goes to the tailor?,"நீலத்தில் தையல்காரர், சிவப்பில் அச்சகம் என்று உள்ளது. தையல்காரருக்கு எது?"
+SQ19_BLUE,Blue parcel,நீலப் பொட்டலம்
+SQ19_RED,Red parcel,சிவப்பு பொட்டலம்
+SQ19_VERIFY,Look again! Stop at the courier office and read the receipt.,மீண்டும் பார்! கூரியர் அலுவலகத்தில் ரசீதைப் படி.
+SQ19_SHOP_1,Take the blue parcel to the tailor.,நீலப் பொட்டலத்தைத் தையல்காரரிடம் கொடு.
+SQ19_SHOP_2,Take the red parcel to the printer.,சிவப்பு பொட்டலத்தை அச்சகத்தில் கொடு.
+SQ19_RECEIPT,Both shops have their parcels. Thank you!,இரண்டு கடைகளுக்கும் பொட்டலம் கிடைச்சிடுச்சு. நன்றி!
+SQ24_TITLE,Midnight Mechanic,மிட்நைட் மெக்கானிக்
+SQ24_DESC,An auto driver is stuck at night. Find the right part for his engine.,ஒரு ஆட்டோ ஓட்டுநர் இரவில் சிக்கிக்கொண்டார். சரியான உதிரிபாகம் கண்டுபிடி.
+SQ24_DIAGNOSE,The driver says the engine makes a loud squeal. What does he need?,என்ஜினில் உரத்த சத்தம் என்கிறார். என்ன வேண்டும்?
+SQ24_BELT,A new belt,புதிய பெல்ட்
+SQ24_FUSE,A new fuse,புதிய ஃபியூஸ்
+SQ24_VERIFY,Not sure? Read the electrician's board.,சந்தேகமா? எலக்ட்ரீஷியன் பலகையைப் படி.
+SQ24_WORKSHOP,Go to the night workshop and buy a belt.,இரவுப் பட்டறையில் பெல்ட் வாங்கு.
+SQ24_STRANDED,Take the belt back to the stuck auto.,பெல்ட்டை ஆட்டோவிடம் கொண்டு போ.
+SQ24_FINISH,The driver fits the belt. His engine runs fine!,ஓட்டுநர் பெல்ட் பொருத்தினார். என்ஜின் நல்லா ஓடுகிறது!
+SQ27_TITLE,Narrow-Lane Promise,குறுகிய தெரு வாக்குறுதி
+SQ27_DESC,Deliver a parcel to a house in a small T Nagar lane and park neatly.,தி.நகர் சிறிய சந்தில் உள்ள வீட்டுக்குப் பொட்டலம் கொடுத்து நீட்டா நிறுத்து.
+SQ27_APPROACH,The small lane is quick. The wide road is easier. Which way?,சிறிய சந்து விரைவு. அகலச் சாலை எளிது. எந்த வழி?
+SQ27_NARROW,Small lane,சிறிய சந்து
+SQ27_WIDE,Wide road,அகலச் சாலை
+SQ27_LANE,Drive slowly along your road. Don't hit anything.,உன் சாலையில் மெதுவாப் போ. எதிலும் மோதாதே.
+SQ27_PARK,"At the house: stop at the marker, shift to R, roll back a little, stop and tap Done.","வீட்டில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
+SQ27_HANDOVER,Well parked! The neighbour takes the parcel.,நல்லா நிறுத்தினாய்! பக்கத்து வீட்டார் பொட்டலத்தை வாங்கினார்.
+SQ01_TITLE,The Wedding Gold,திருமண நகை
+SQ01_DESC,Someone lost a gold pouch at a wedding. Find the real owner.,திருமணத்தில் ஒருவரின் தங்கப் பை தொலைந்தது. உண்மையான உரிமையாளரைக் கண்டுபிடி.
+SQ01_RECEIPT,Go to the wedding hall and stop at the marker.,திருமண மண்டபத்துக்குப் போய்க் குறியில் நிறுத்து.
+SQ01_CLAIMANT,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?",ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?
 SQ01_OWNER,"Meena, she knows the stamp","மீனா, முத்திரை தெரியும்"
-SQ01_OTHER,"The other woman","மற்றொரு பெண்"
-SQ01_VERIFY,"She doesn't know the stamp. Ask the flower seller.","அவருக்கு முத்திரை தெரியவில்லை. பூக்காரரிடம் கேள்."
-SQ01_ASK,"The flower seller knows Meena. It is her pouch.","பூக்காரருக்கு மீனாவைத் தெரியும். பை அவருடையதே."
-SQ01_CHECK_RECEIPT,"Go to the help desk","உதவி மேசைக்குப் போ"
-SQ01_HANDOVER,"Take the pouch to the help desk.","பையை உதவி மேசைக்குக் கொண்டு போ."
-SQ01_THANKS,"Meena has her gold back. Her family says thank you!","மீனாவுக்குத் தங்கம் கிடைத்தது. குடும்பம் நன்றி சொல்கிறது!"
-SQ06_TITLE,"Before the Last Light","கடைசி வெளிச்சத்திற்கு முன்"
-SQ06_DESC,"A photographer wants two beach photos before the sun sets.","சூரியன் மறைவதற்குள் புகைப்படக்காரருக்கு இரண்டு கடற்கரைப் படங்கள் வேண்டும்."
-SQ06_BRIEF,"The sun is going down. Stop at each photo spot and take a picture.","சூரியன் மறைகிறது. ஒவ்வொரு இடத்திலும் நிறுத்திப் படம் எடு."
-SQ06_READY,"Let's go","போகலாம்"
-SQ06_PHOTO_1,"Drive to the first photo spot, stop and take a photo.","முதல் இடத்துக்குப் போய் நிறுத்திப் படம் எடு."
-SQ06_PHOTO_2,"Now the second photo spot. Hurry!","இப்போது இரண்டாவது இடம். வேகமாக!"
-SQ12_TITLE,"Match-Day Mix-Up","போட்டி நாள் குழப்பம்"
-SQ12_DESC,"The cricket team's kit bag got mixed up. Bring the right one before the match.","கிரிக்கெட் குழுவின் பை மாறிவிட்டது. போட்டிக்கு முன் சரியான பையைக் கொண்டு வா."
-SQ12_STALL,"Go to the sports shop to check the bags.","பைகளைப் பார்க்க விளையாட்டுக் கடைக்குப் போ."
-SQ12_KIT,"The team's note says: blue with a white stripe. Which bag?","குழுவின் குறிப்பு: வெள்ளைக் கோடு உள்ள நீலப் பை. எந்தப் பை?"
+SQ01_OTHER,The other woman,மற்றொரு பெண்
+SQ01_VERIFY,She doesn't know the stamp. Ask the flower seller.,அவருக்கு முத்திரை தெரியல. பூக்காரரிடம் கேள்.
+SQ01_ASK,The flower seller knows Meena. It is her pouch.,பூக்காரருக்கு மீனாவைத் தெரியும். பை அவருடையதே.
+SQ01_CHECK_RECEIPT,Go to the help desk,உதவி மேசைக்குப் போ
+SQ01_HANDOVER,Take the pouch to the help desk.,பையை உதவி மேசைக்குக் கொண்டு போ.
+SQ01_THANKS,Meena has her gold back. Her family says thank you!,மீனாவுக்குத் தங்கம் கிடைச்சிடுச்சு. குடும்பம் நன்றி சொல்கிறது!
+SQ06_TITLE,Before the Last Light,கடைசி வெளிச்சத்திற்கு முன்
+SQ06_DESC,A photographer wants two beach photos before the sun sets.,சூரியன் மறைவதற்குள் புகைப்படக்காரருக்கு இரண்டு கடற்கரைப் படங்கள் வேண்டும்.
+SQ06_BRIEF,The sun is going down. Stop at each photo spot and take a picture.,சூரியன் மறைகிறது. ஒவ்வொரு இடத்திலும் நிறுத்திப் படம் எடு.
+SQ06_READY,Let's go,போகலாம்
+SQ06_PHOTO_1,"Drive to the first photo spot, stop and take a photo.",முதல் இடத்துக்குப் போய் நிறுத்திப் படம் எடு.
+SQ06_PHOTO_2,Now the second photo spot. Hurry!,இப்போ இரண்டாவது இடம். வேகமா!
+SQ12_TITLE,Match-Day Mix-Up,போட்டி நாள் குழப்பம்
+SQ12_DESC,The cricket team's kit bag got mixed up. Bring the right one before the match.,கிரிக்கெட் குழுவின் பை மாறிவிட்டது. போட்டிக்கு முன் சரியான பையைக் கொண்டு வா.
+SQ12_STALL,Go to the sports shop to check the bags.,பைகளைப் பார்க்க விளையாட்டுக் கடைக்குப் போ.
+SQ12_KIT,The team's note says: blue with a white stripe. Which bag?,குழுவின் குறிப்பு: வெள்ளைக் கோடு உள்ள நீலப் பை. எந்தப் பை?
 SQ12_BLUE,"Blue, white stripe","நீலம், வெள்ளைக் கோடு"
 SQ12_RED,"Red, white stripe","சிவப்பு, வெள்ளைக் கோடு"
-SQ12_VERIFY,"That's the wrong bag. Swap it at the ticket counter.","அது தவறான பை. டிக்கெட் கவுன்டரில் மாற்று."
-SQ12_SWAP,"The clerk swaps the bag and shows you the gate.","ஊழியர் பையை மாற்றி வாசலைக் காட்டுகிறார்."
-SQ12_SWAP_CHOICE,"Take the blue bag","நீலப் பையை எடு"
-SQ12_GATE,"Take the bag to the stadium gate.","பையை மைதான வாசலுக்குக் கொண்டு போ."
-SQ12_FINISH,"The players have their kit, just in time!","வீரர்களுக்குப் பை கிடைத்தது, சரியான நேரத்தில்!"
-SQ16_TITLE,"Room for an Ambulance","ஆம்புலன்ஸுக்கு வழி"
-SQ16_DESC,"An ambulance is coming through. Pull over and let it pass.","ஆம்புலன்ஸ் வருகிறது. ஓரமாக நிறுத்தி வழி விடு."
-SQ16_BRIEF,"An ambulance is coming! At each stop: turn on your indicator, then stop on the marker.","ஆம்புலன்ஸ் வருகிறது! ஒவ்வொரு இடத்திலும் இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து."
-SQ16_READY,"I'll make way","வழி விடுகிறேன்"
-SQ16_YIELD_1,"Stop 1: turn on your indicator and stop on the marker.","இடம் 1: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து."
-SQ16_YIELD_2,"Stop 2: indicator on, then stop on the marker.","இடம் 2: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து."
-SQ16_YIELD_3,"Last stop: indicator on, then stop on the marker.","கடைசி இடம்: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து."
-SQ21_TITLE,"The Interview Folder","நேர்காணல் கோப்பு"
-SQ21_DESC,"A job seeker lost his papers. Help him get to his interview on time.","வேலை தேடுபவரின் காகிதங்கள் தொலைந்தன. நேர்காணலுக்கு நேரத்தில் கொண்டு சேர்."
-SQ21_PLAN,"His folder is at home. A print shop can make new copies. Which one?","கோப்பு வீட்டில் உள்ளது. அச்சுக் கடையில் புதிய நகல் எடுக்கலாம். எது?"
-SQ21_RECOVER,"Get the folder","கோப்பை எடு"
-SQ21_PRINT,"Print new copies","புதிய நகல் எடு"
-SQ21_FOLDER,"Drive there and stop to collect the papers.","அங்கே போய் நிறுத்திக் காகிதங்களை வாங்கு."
-SQ21_INTERVIEW,"Hurry to the interview office!","நேர்காணல் அலுவலகத்துக்கு விரைந்து போ!"
-SQ26_TITLE,"The Garland Deadline","மாலை சேரும் நேரம்"
-SQ26_DESC,"A wedding needs two flower garlands. Bring them fresh and on time.","திருமணத்துக்கு இரண்டு மாலைகள் வேண்டும். புதிதாக, நேரத்தில் கொண்டு வா."
-SQ26_ORDER,"The jasmine and roses are at different shops. Which first?","மல்லிகையும் ரோஜாவும் வெவ்வேறு கடைகளில். முதலில் எது?"
-SQ26_JASMINE_FIRST,"Jasmine","மல்லிகை"
-SQ26_ROSES_FIRST,"Roses","ரோஜா"
-SQ26_SUPPLIER_1,"Go to the flower shop and stop to collect the garland.","பூக்கடைக்குப் போய் நிறுத்தி மாலையை வாங்கு."
-SQ26_SUPPLIER_2,"Now collect the other garland.","இப்போது மற்ற மாலையை வாங்கு."
-SQ26_HALL,"Take both garlands to the wedding hall.","இரண்டு மாலைகளையும் மண்டபத்துக்குக் கொண்டு போ."
-ENGINE_OFF_KICK,"Engine off. Tap KICK in a steady rhythm.","இன்ஜின் ஆஃப். KICK-ஐ நிதானமாக அழுத்து."
-SKIP_TUTORIAL,"Skip tutorial","பயிற்சியைத் தவிர்"
-REPLAY_TUTORIAL,"Replay tutorial","பயிற்சியை மீண்டும் செய்"
-REPLAY,"Replay","மீண்டும்"
-TUTORIAL_QUEUED,"Tutorial on next drive","அடுத்த ஓட்டத்தில் பயிற்சி"
-WRECKED_MSG,"Auto wrecked! The engine is on fire.","ஆட்டோ நொறுங்கியது! இன்ஜின் தீப்பிடித்தது."
-AD_WRECK_REPAIR,"Free repair","இலவச பழுது நீக்கம்"
-ROADSIDE_REPAIR,"Repair here","இங்கேயே சரி செய்"
-PATCH_UP,"Patch up (free, still smoking)","தற்காலிகமாக சரி செய் (இலவசம்)"
-WRECK_DETAIL,"Condition 0%% · Full repair ₹%s · You have ₹%s","நிலை 0%% · முழு பழுது நீக்கம் ₹%s · உங்களிடம் ₹%s"
-WRECK_AD_BTN,"Watch ad","விளம்பரம் பார்"
-WRECK_AD_REPAIR_DESC,"Full repair, like new (%d left today)","முழு பழுது நீக்கம், புதிது போல (இன்று இன்னும் %d)"
-WRECK_PAY_BTN,"Pay ₹%s","₹%s செலுத்து"
-WRECK_PAY_DESC,"Repair to %d%%","%d%% வரை சரி செய்"
-WRECK_PAY_FULL_DESC,"Full repair, like new","முழு பழுது நீக்கம், புதிது போல"
-WRECK_GARAGE_DESC,"Repairs and upgrades at this garage","இந்த கேரேஜில் பழுது நீக்கம், மேம்பாடுகள்"
-WRECK_TOW_BTN,"Tow ₹%s","இழுவை ₹%s"
-WRECK_TOW_FREE_BTN,"Free tow","இலவச இழுவை"
+SQ12_VERIFY,That's the wrong bag. Swap it at the ticket counter.,அது தப்பான பை. டிக்கெட் கவுன்டரில் மாற்று.
+SQ12_SWAP,The clerk swaps the bag and shows you the gate.,ஊழியர் பையை மாற்றி வாசலைக் காட்டுகிறார்.
+SQ12_SWAP_CHOICE,Take the blue bag,நீலப் பையை எடு
+SQ12_GATE,Take the bag to the stadium gate.,பையை மைதான வாசலுக்குக் கொண்டு போ.
+SQ12_FINISH,"The players have their kit, just in time!","வீரர்களுக்குப் பை கிடைச்சிடுச்சு, சரியான நேரத்தில்!"
+SQ16_TITLE,Room for an Ambulance,ஆம்புலன்ஸுக்கு வழி விடு
+SQ16_DESC,An ambulance is coming through. Pull over and let it pass.,ஆம்புலன்ஸ் வருது. ஓரமாக நிறுத்தி வழி விடு.
+SQ16_BRIEF,"An ambulance is coming! At each stop: turn on your indicator, then stop on the marker.",ஆம்புலன்ஸ் வருது! ஒவ்வொரு இடத்திலும் இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
+SQ16_READY,I'll make way,வழி விடுகிறேன்
+SQ16_YIELD_1,Stop 1: turn on your indicator and stop on the marker.,இடம் 1: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
+SQ16_YIELD_2,"Stop 2: indicator on, then stop on the marker.",இடம் 2: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
+SQ16_YIELD_3,"Last stop: indicator on, then stop on the marker.",கடைசி இடம்: இண்டிகேட்டர் போட்டுக் குறியில் நிறுத்து.
+SQ21_TITLE,The Interview Folder,இன்டர்வியூ ஃபைல்
+SQ21_DESC,A job seeker lost his papers. Help him get to his interview on time.,வேலை தேடுபவரின் காகிதங்கள் தொலைந்தன. நேர்காணலுக்கு நேரத்தில் கொண்டு சேர்.
+SQ21_PLAN,His folder is at home. A print shop can make new copies. Which one?,கோப்பு வீட்டில் உள்ளது. அச்சுக் கடையில் புதிய நகல் எடுக்கலாம். எது?
+SQ21_RECOVER,Get the folder,கோப்பை எடு
+SQ21_PRINT,Print new copies,புதிய நகல் எடு
+SQ21_FOLDER,Drive there and stop to collect the papers.,அங்கே போய் நிறுத்திக் காகிதங்களை வாங்கு.
+SQ21_INTERVIEW,Hurry to the interview office!,இன்டர்வியூ அலுவலகத்துக்கு சீக்கிரமா போ!
+SQ26_TITLE,The Garland Deadline,மாலை சேரும் நேரம்
+SQ26_DESC,A wedding needs two flower garlands. Bring them fresh and on time.,"திருமணத்துக்கு இரண்டு மாலைகள் வேண்டும். புதிதாக, நேரத்தில் கொண்டு வா."
+SQ26_ORDER,The jasmine and roses are at different shops. Which first?,மல்லிகையும் ரோஜாவும் வெவ்வேறு கடைகளில். முதலில் எது?
+SQ26_JASMINE_FIRST,Jasmine,மல்லிகை
+SQ26_ROSES_FIRST,Roses,ரோஜா
+SQ26_SUPPLIER_1,Go to the flower shop and stop to collect the garland.,பூக்கடைக்குப் போய் நிறுத்தி மாலையை வாங்கு.
+SQ26_SUPPLIER_2,Now collect the other garland.,இப்போ மற்ற மாலையை வாங்கு.
+SQ26_HALL,Take both garlands to the wedding hall.,இரண்டு மாலைகளையும் மண்டபத்துக்குக் கொண்டு போ.
+ENGINE_OFF_KICK,Engine off. Tap KICK in a steady rhythm.,இன்ஜின் ஆஃப். கிக்-ஐ நிதானமா அழுத்து.
+SKIP_TUTORIAL,Skip tutorial,பயிற்சியைத் தவிர்
+REPLAY_TUTORIAL,Replay tutorial,பயிற்சியை மீண்டும் செய்
+REPLAY,Replay,மீண்டும்
+TUTORIAL_QUEUED,Tutorial on next drive,அடுத்த ஓட்டத்தில் பயிற்சி
+WRECKED_MSG,Auto wrecked! The engine is on fire.,ஆட்டோ நொறுங்கியது! இன்ஜின் தீப்பிடித்தது.
+AD_WRECK_REPAIR,Free repair,ஃப்ரீ ரிப்பேர்
+ROADSIDE_REPAIR,Repair here,இங்கேயே சரி செய்
+PATCH_UP,"Patch up (free, still smoking)",தற்காலிகமாக சரி செய் (ஃப்ரீம்)
+WRECK_DETAIL,Condition 0%% · Full repair ₹%s · You have ₹%s,நிலை 0%% · முழு ரிப்பேர் ₹%s · உங்களிடம் ₹%s
+WRECK_AD_BTN,Watch ad,விளம்பரம் பார்
+WRECK_AD_REPAIR_DESC,"Full repair, like new (%d left today)","முழு ரிப்பேர், புதிது போல (இன்று இன்னும் %d)"
+WRECK_PAY_BTN,Pay ₹%s,₹%s செலுத்து
+WRECK_PAY_DESC,Repair to %d%%,%d%% வரை சரி செய்
+WRECK_PAY_FULL_DESC,"Full repair, like new","முழு ரிப்பேர், புதிது போல"
+WRECK_GARAGE_DESC,Repairs and upgrades at this garage,"இந்த கேரேஜில் ரிப்பேர், அப்கிரேட்ஸ்"
+WRECK_TOW_BTN,Tow ₹%s,இழுவை ₹%s
+WRECK_TOW_FREE_BTN,Free tow,ஃப்ரீ இழுவை
 WRECK_TOW_DESC,"To %s, %.1f km away","%s-க்கு, %.1f கி.மீ. தூரம்"
-WRECK_AD_TOW_DESC,"Free tow to %s","%s-க்கு இலவச இழுவை"
-WRECK_PATCH_BTN,"Patch up","தற்காலிகமாக சரி செய்"
-WRECK_PATCH_DESC,"Free: runs again at %d%%, still smoking","இலவசம்: %d%%-ல் மீண்டும் ஓடும், புகை தொடரும்"
-RIDER_FLED_FIRE,"Your rider jumped out and ran from the fire. No fare for this ride.","பயணி தீயைக் கண்டு குதித்து ஓடிவிட்டார். இந்தப் பயணத்துக்குக் கட்டணம் இல்லை."
-AD_NOT_READY,"No ad right now. Try again soon.","இப்போது விளம்பரம் இல்லை. சிறிது நேரத்தில் முயற்சிக்கவும்."
-ENGINE_SMOKING,"Engine smoking! Get it repaired.","இன்ஜினில் புகை! பழுது பார்க்கவும்."
-ENGINE_FIRE,"Engine on fire! It's losing power. Get to a garage now.","இன்ஜினில் தீ! சக்தி குறைகிறது. உடனே கேரேஜுக்கு போ."
-NO_FUEL_ON_FIRE,"Not with flames showing. Put the fire out at a garage first.","தீ எரியும்போது எரிபொருள் இல்லை. முதலில் கேரேஜில் தீயை அணை."
-ACH_FIRST_SAVARI,"Muthal Savari","முதல் சவாரி"
-ACH_FIRST_SAVARI_DESC,"Complete your first ride","உங்கள் முதல் சவாரியை முடியுங்கள்"
-ACH_SAVARI_25,"Stand Regular","ஸ்டாண்ட் ரெகுலர்"
-ACH_SAVARI_25_DESC,"Complete 25 rides","25 சவாரிகளை முடியுங்கள்"
-ACH_SAVARI_100,"100 Savaris","100 சவாரிகள்"
-ACH_SAVARI_100_DESC,"Complete 100 rides","100 சவாரிகளை முடியுங்கள்"
-ACH_SAVARI_250,"Route Expert","ரூட் நிபுணர்"
-ACH_SAVARI_250_DESC,"Complete 250 rides","250 சவாரிகளை முடியுங்கள்"
-ACH_SAVARI_500,"Auto Anna","ஆட்டோ அண்ணா"
-ACH_SAVARI_500_DESC,"Complete 500 rides","500 சவாரிகளை முடியுங்கள்"
-ACH_KM_50,"City Rounds","நகர வலம்"
-ACH_KM_50_DESC,"Carry riders for 50 km","பயணிகளை 50 கி.மீ. ஏற்றிச் செல்லுங்கள்"
-ACH_KM_250,"Every Street Known","எல்லா தெருவும் தெரியும்"
-ACH_KM_250_DESC,"Carry riders for 250 km","பயணிகளை 250 கி.மீ. ஏற்றிச் செல்லுங்கள்"
-ACH_HONEST_METER_20,"Meter Podu!","மீட்டர் போடு!"
-ACH_HONEST_METER_20_DESC,"Charge the correct meter 20 times","சரியான மீட்டர் கட்டணத்தை 20 முறை வாங்குங்கள்"
-ACH_HONEST_METER_100,"Meter Mannan","மீட்டர் மன்னன்"
-ACH_HONEST_METER_100_DESC,"Charge the correct meter 100 times","சரியான மீட்டர் கட்டணத்தை 100 முறை வாங்குங்கள்"
-ACH_MELA_25,"Meter Mela Master","மீட்டர் மேலா மாஸ்டர்"
-ACH_MELA_25_DESC,"Win 25 Meter Mela bargains","25 மீட்டர் மேலா பேரங்களில் வெல்லுங்கள்"
-ACH_ON_TIME_25,"Right on Time","சரியான நேரம்"
-ACH_ON_TIME_25_DESC,"Finish 25 rides on time","25 சவாரிகளை நேரத்தில் முடியுங்கள்"
-ACH_RIDER_TYPES_5,"Everyone's Auto","எல்லோரின் ஆட்டோ"
-ACH_RIDER_TYPES_5_DESC,"Carry all 5 kinds of rider","5 வகை பயணிகளையும் ஏற்றிச் செல்லுங்கள்"
-ACH_SMOOTH_10,"Tea Didn't Spill","டீ சிந்தவில்லை"
-ACH_SMOOTH_10_DESC,"10 rides with a full tea cup","நிறைந்த டீ கப்புடன் 10 சவாரிகள்"
-ACH_SMOOTH_50,"Tea Master","டீ மாஸ்டர்"
-ACH_SMOOTH_50_DESC,"50 rides with a full tea cup","நிறைந்த டீ கப்புடன் 50 சவாரிகள்"
-ACH_STARS_25,"Five-Star Savari","ஐந்து நட்சத்திர சவாரி"
-ACH_STARS_25_DESC,"Earn 5 stars on 25 rides","25 சவாரிகளில் 5 நட்சத்திரங்கள் பெறுங்கள்"
-ACH_NO_CRASH_5,"Clean Hands","சுத்தமான கை"
-ACH_NO_CRASH_5_DESC,"5 rides in a row without a crash","மோதல் இல்லாமல் தொடர்ந்து 5 சவாரிகள்"
-ACH_NO_CRASH_20,"Not a Scratch","ஒரு கீறல் கூட இல்லை"
-ACH_NO_CRASH_20_DESC,"20 rides in a row without a crash","மோதல் இல்லாமல் தொடர்ந்து 20 சவாரிகள்"
-ACH_GETHU_50,"Gap-la Guru","கேப்-ல குரு"
-ACH_GETHU_50_DESC,"50 Gap-la Gethu near misses","50 கேப்-ல கெத்து நூலிழை தப்பல்கள்"
-ACH_GETHU_250,"Gap Thalaivar","கேப் தலைவர்"
-ACH_GETHU_250_DESC,"250 Gap-la Gethu near misses","250 கேப்-ல கெத்து நூலிழை தப்பல்கள்"
-ACH_SIGNALS_100,"Indicator Podu","இண்டிகேட்டர் போடு"
-ACH_SIGNALS_100_DESC,"Signal 100 turns","100 திருப்பங்களில் இண்டிகேட்டர் போடுங்கள்"
-ACH_MONSOON_10,"Monsoon Warrior","மழைக்கால வீரர்"
-ACH_MONSOON_10_DESC,"10 rides in the rain","மழையில் 10 சவாரிகள்"
-ACH_MONSOON_50,"Mazhai Raja","மழை ராஜா"
-ACH_MONSOON_50_DESC,"50 rides in the rain","மழையில் 50 சவாரிகள்"
-ACH_NIGHT_10,"Marina Night Rider","மெரினா இரவு ஓட்டுநர்"
-ACH_NIGHT_10_DESC,"10 rides after 7 PM","இரவு 7 மணிக்கு பின் 10 சவாரிகள்"
-ACH_NIGHT_50,"Night Shift Legend","இரவு ஷிப்ட் ஜாம்பவான்"
-ACH_NIGHT_50_DESC,"50 rides after 7 PM","இரவு 7 மணிக்கு பின் 50 சவாரிகள்"
-ACH_EARN_10K,"Pocket Full of Rupees","பாக்கெட் நிறைய ரூபாய்"
+WRECK_AD_TOW_DESC,Free tow to %s,%s-க்கு ஃப்ரீ இழுவை
+WRECK_PATCH_BTN,Patch up,தற்காலிகமாக சரி செய்
+WRECK_PATCH_DESC,"Free: runs again at %d%%, still smoking","ஃப்ரீம்: %d%%-ல் மீண்டும் ஓடும், புகை தொடரும்"
+RIDER_FLED_FIRE,Your rider jumped out and ran from the fire. No fare for this ride.,பயணி தீயைக் கண்டு குதித்து ஓடிவிட்டார். இந்தப் பயணத்துக்குக் கட்டணம் இல்லை.
+AD_NOT_READY,No ad right now. Try again soon.,இப்போ விளம்பரம் இல்லை. சிறிது நேரத்தில் முயற்சிக்கவும்.
+ENGINE_SMOKING,Engine smoking! Get it repaired.,இன்ஜினில் புகை! பழுது பார்க்கவும்.
+ENGINE_FIRE,Engine on fire! It's losing power. Get to a garage now.,இன்ஜினில் தீ! சக்தி குறைகிறது. உடனே கேரேஜுக்கு போ.
+NO_FUEL_ON_FIRE,Not with flames showing. Put the fire out at a garage first.,தீ எரியும்போது ஃப்யூயல் இல்லை. முதலில் கேரேஜில் தீயை அணை.
+ACH_FIRST_SAVARI,Muthal Savari,முதல் சவாரி
+ACH_FIRST_SAVARI_DESC,Complete your first ride,உங்கள் முதல் சவாரியை முடியுங்கள்
+ACH_SAVARI_25,Stand Regular,ஸ்டாண்ட் ரெகுலர்
+ACH_SAVARI_25_DESC,Complete 25 rides,25 சவாரிகளை முடியுங்கள்
+ACH_SAVARI_100,100 Savaris,100 சவாரிகள்
+ACH_SAVARI_100_DESC,Complete 100 rides,100 சவாரிகளை முடியுங்கள்
+ACH_SAVARI_250,Route Expert,ரூட் நிபுணர்
+ACH_SAVARI_250_DESC,Complete 250 rides,250 சவாரிகளை முடியுங்கள்
+ACH_SAVARI_500,Auto Anna,ஆட்டோ அண்ணா
+ACH_SAVARI_500_DESC,Complete 500 rides,500 சவாரிகளை முடியுங்கள்
+ACH_KM_50,City Rounds,நகர வலம்
+ACH_KM_50_DESC,Carry riders for 50 km,பயணிகளை 50 கி.மீ. ஏற்றிச் செல்லுங்கள்
+ACH_KM_250,Every Street Known,எல்லா தெருவும் தெரியும்
+ACH_KM_250_DESC,Carry riders for 250 km,பயணிகளை 250 கி.மீ. ஏற்றிச் செல்லுங்கள்
+ACH_HONEST_METER_20,Meter Podu!,மீட்டர் போடு!
+ACH_HONEST_METER_20_DESC,Charge the correct meter 20 times,சரியான மீட்டர் கட்டணத்தை 20 முறை வாங்குங்கள்
+ACH_HONEST_METER_100,Meter Mannan,மீட்டர் மன்னன்
+ACH_HONEST_METER_100_DESC,Charge the correct meter 100 times,சரியான மீட்டர் கட்டணத்தை 100 முறை வாங்குங்கள்
+ACH_MELA_25,Meter Mela Master,மீட்டர் மேலா மாஸ்டர்
+ACH_MELA_25_DESC,Win 25 Meter Mela bargains,25 மீட்டர் மேலா பேரங்களில் வெல்லுங்கள்
+ACH_ON_TIME_25,Right on Time,சரியான நேரம்
+ACH_ON_TIME_25_DESC,Finish 25 rides on time,25 சவாரிகளை நேரத்தில் முடியுங்கள்
+ACH_RIDER_TYPES_5,Everyone's Auto,எல்லோரின் ஆட்டோ
+ACH_RIDER_TYPES_5_DESC,Carry all 5 kinds of rider,5 வகை பயணிகளையும் ஏற்றிச் செல்லுங்கள்
+ACH_SMOOTH_10,Tea Didn't Spill,டீ சிந்தவில்லை
+ACH_SMOOTH_10_DESC,10 rides with a full tea cup,நிறைந்த டீ கப்புடன் 10 சவாரிகள்
+ACH_SMOOTH_50,Tea Master,டீ மாஸ்டர்
+ACH_SMOOTH_50_DESC,50 rides with a full tea cup,நிறைந்த டீ கப்புடன் 50 சவாரிகள்
+ACH_STARS_25,Five-Star Savari,ஐந்து நட்சத்திர சவாரி
+ACH_STARS_25_DESC,Earn 5 stars on 25 rides,25 சவாரிகளில் 5 நட்சத்திரங்கள் பெறுங்கள்
+ACH_NO_CRASH_5,Clean Hands,சுத்தமான கை
+ACH_NO_CRASH_5_DESC,5 rides in a row without a crash,மோதல் இல்லாமல் தொடர்ந்து 5 சவாரிகள்
+ACH_NO_CRASH_20,Not a Scratch,ஒரு கீறல் கூட இல்லை
+ACH_NO_CRASH_20_DESC,20 rides in a row without a crash,மோதல் இல்லாமல் தொடர்ந்து 20 சவாரிகள்
+ACH_GETHU_50,Gap-la Guru,கேப்-ல குரு
+ACH_GETHU_50_DESC,50 Gap-la Gethu near misses,50 கேப்-ல கெத்து நூலிழை தப்பல்கள்
+ACH_GETHU_250,Gap Thalaivar,கேப் தலைவர்
+ACH_GETHU_250_DESC,250 Gap-la Gethu near misses,250 கேப்-ல கெத்து நூலிழை தப்பல்கள்
+ACH_SIGNALS_100,Indicator Podu,இண்டிகேட்டர் போடு
+ACH_SIGNALS_100_DESC,Signal 100 turns,100 திருப்பங்களில் இண்டிகேட்டர் போடுங்கள்
+ACH_MONSOON_10,Monsoon Warrior,மழைக்கால வீரர்
+ACH_MONSOON_10_DESC,10 rides in the rain,மழையில் 10 சவாரிகள்
+ACH_MONSOON_50,Mazhai Raja,மழை ராஜா
+ACH_MONSOON_50_DESC,50 rides in the rain,மழையில் 50 சவாரிகள்
+ACH_NIGHT_10,Marina Night Rider,மெரினா இரவு ஓட்டுநர்
+ACH_NIGHT_10_DESC,10 rides after 7 PM,இரவு 7 மணிக்கு பின் 10 சவாரிகள்
+ACH_NIGHT_50,Night Shift Legend,இரவு ஷிப்ட் ஜாம்பவான்
+ACH_NIGHT_50_DESC,50 rides after 7 PM,இரவு 7 மணிக்கு பின் 50 சவாரிகள்
+ACH_EARN_10K,Pocket Full of Rupees,பாக்கெட் நிறைய ரூபாய்
 ACH_EARN_10K_DESC,"Earn ₹10,000 in fares","கட்டணமாக ₹10,000 சம்பாதியுங்கள்"
-ACH_EARN_50K,"Stand Owner Material","ஸ்டாண்ட் ஓனர் தகுதி"
+ACH_EARN_50K,Stand Owner Material,ஸ்டாண்ட் ஓனர் தகுதி
 ACH_EARN_50K_DESC,"Earn ₹50,000 in fares","கட்டணமாக ₹50,000 சம்பாதியுங்கள்"
-ACH_EARN_100K,"Lakhpati Auto","லட்சாதிபதி ஆட்டோ"
+ACH_EARN_100K,Lakhpati Auto,லட்சாதிபதி ஆட்டோ
 ACH_EARN_100K_DESC,"Earn ₹1,00,000 in fares","கட்டணமாக ₹1,00,000 சம்பாதியுங்கள்"
-ACH_BEST_FARE_200,"Long Trip Jackpot","நீண்ட பயண ஜாக்பாட்"
-ACH_BEST_FARE_200_DESC,"Earn ₹200 or more from one ride","ஒரே சவாரியில் ₹200 அல்லது அதற்கு மேல் சம்பாதியுங்கள்"
-ACH_STREAK_7,"Every Day at the Stand","தினமும் ஸ்டாண்டில்"
-ACH_STREAK_7_DESC,"Log in 7 days in a row","தொடர்ந்து 7 நாட்கள் வாருங்கள்"
-ACH_STREAK_30,"Stand Pillar","ஸ்டாண்டின் தூண்"
-ACH_STREAK_30_DESC,"Log in 30 days in a row","தொடர்ந்து 30 நாட்கள் வாருங்கள்"
-ACH_SHIFTS_7,"Full Week","முழு வாரம்"
-ACH_SHIFTS_7_DESC,"Finish 7 shifts","7 ஷிப்டுகளை முடியுங்கள்"
-ACH_GOALS_10,"Goal Getter","இலக்கு வீரர்"
-ACH_GOALS_10_DESC,"Finish all 3 shift goals on 10 days","10 நாட்கள் 3 ஷிப்ட் இலக்குகளையும் முடியுங்கள்"
-ACH_LEVEL_5,"Mylapore Regular","மயிலாப்பூர் ரெகுலர்"
-ACH_LEVEL_5_DESC,"Reach Driver Level 5","டிரைவர் நிலை 5-ஐ அடையுங்கள்"
-ACH_LEVEL_10,"Stand Leader","ஸ்டாண்ட் தலைவர்"
-ACH_LEVEL_10_DESC,"Reach Driver Level 10","டிரைவர் நிலை 10-ஐ அடையுங்கள்"
-ACH_LEVEL_20,"Madras Legend","மெட்ராஸ் ஜாம்பவான்"
-ACH_LEVEL_20_DESC,"Reach Driver Level 20","டிரைவர் நிலை 20-ஐ அடையுங்கள்"
-ACH_PAINT_FIRST,"Alangaram","அலங்காரம்"
-ACH_PAINT_FIRST_DESC,"Buy your first paint job","உங்கள் முதல் பெயிண்டை வாங்குங்கள்"
-ACH_TUNED_9,"Fully Tuned","முழு டியூனிங்"
-ACH_TUNED_9_DESC,"Buy 9 garage upgrades","9 கேரேஜ் மேம்பாடுகளை வாங்குங்கள்"
-ACH_OWN_AUTOS_3,"Full Stand","முழு ஸ்டாண்ட்"
-ACH_OWN_AUTOS_3_DESC,"Own all 3 autos","3 ஆட்டோக்களையும் சொந்தமாக்குங்கள்"
-ACHIEVEMENTS_UNLOCKED,"%d of %d unlocked","%d / %d பெற்றவை"
-ACH_NEXT_UP,"Almost there","கிட்டத்தட்ட முடிந்தது"
-ACH_CAT_RIDES,"Rides","சவாரிகள்"
-ACH_CAT_HONEST,"Riders & fares","பயணிகள் & கட்டணம்"
-ACH_CAT_COMFORT,"Smooth driving","மென்மையான ஓட்டம்"
-ACH_CAT_SKILL,"Street skills","தெரு திறமை"
-ACH_CAT_CITY,"Rain & night","மழை & இரவு"
-ACH_CAT_MONEY,"Earnings","வருமானம்"
-ACH_CAT_CAREER,"Career","பணி வாழ்க்கை"
-DAILY_SHORT,"Daily bonus","தினசரி போனஸ்"
-STAT_BATTERY,"Battery","பேட்டரி"
-VEHICLE_N_OF,"%d of %d","%d / %d"
-AUTO_REPAIR_HINT,"Fix the damage at any garage in the city","நகரில் எந்த கேரேஜிலும் பழுது பார்க்கலாம்"
-DRIVER_PROFILE,"Driver profile","டிரைவர் விவரம்"
-PROFILE_XP,"%s / %s XP","%s / %s XP"
-PROFILE_NEXT_RANK,"Next rank: %s","அடுத்த பட்டம்: %s"
-PROFILE_MAX_RANK,"Top rank reached","உச்ச பட்டம் பெற்றீர்கள்"
-PROFILE_RANK_TITLE,"Driver rank","டிரைவர் பட்டம்"
-PROFILE_RANK_HELP,"Your rank is your name at the stand. Every ride, shift goal and turn signal earns XP, and each new rank pays a cash bonus.","பட்டம் என்பது ஸ்டாண்டில் உங்கள் பெயர். ஒவ்வொரு சவாரி, ஷிப்ட் இலக்கு, இண்டிகேட்டருக்கும் XP கிடைக்கும்; புதிய பட்டத்திற்கு பண போனஸ் உண்டு."
-PROFILE_RATING_TITLE,"Stand rating","ஸ்டாண்ட் மதிப்பீடு"
-PROFILE_RATING_HELP,"Every new driver starts at 4.5. Each rider's stars move it up or down: a comfortable, on-time ride raises it, a rough or late one lowers it. Riders agree to Meter Mela and fixed fares less often when it drops.","புதிய டிரைவர் 4.5-இல் தொடங்குவார். ஒவ்வொரு பயணியின் நட்சத்திரமும் இதை மாற்றும்: சௌகரியமான, நேரத்தில் முடிந்த சவாரி உயர்த்தும்; கரடுமுரடான அல்லது தாமதமான சவாரி குறைக்கும். மதிப்பீடு குறைந்தால் பயணிகள் கூடுதல் கட்டணத்திற்கு குறைவாகவே சம்மதிப்பார்கள்."
-PROFILE_CAREER_TITLE,"Career so far","இதுவரை"
-PROFILE_LEVEL_BONUS,"+₹%d","+₹%d"
-EARNED_TOTAL,"Total earned","மொத்த வருமானம்"
-DISTANCE_TOTAL,"Distance","தூரம்"
-RIDES_DONE,"Rides","சவாரிகள்"
-PROFILE_ALL_RANKS,"All ranks","அனைத்து பட்டங்களும்"
-QUEST_TRANSFER,"Load / unload","ஏற்று / இறக்கு"
-QUEST_CARGO_CAPACITY,"The auto is full. Unload first.","ஆட்டோ நிறைந்துவிட்டது. முதலில் இறக்கு."
-QUEST_FAIL_DIVERSION,"that road is closed.","அந்தச் சாலை மூடப்பட்டுள்ளது."
+ACH_BEST_FARE_200,Long Trip Jackpot,நீண்ட பயண ஜாக்பாட்
+ACH_BEST_FARE_200_DESC,Earn ₹200 or more from one ride,ஒரே சவாரியில் ₹200 அல்லது அதற்கு மேல் சம்பாதியுங்கள்
+ACH_STREAK_7,Every Day at the Stand,டெய்லி ஸ்டாண்டில்
+ACH_STREAK_7_DESC,Log in 7 days in a row,தொடர்ந்து 7 நாட்கள் வாங்க
+ACH_STREAK_30,Stand Pillar,ஸ்டாண்டின் தூண்
+ACH_STREAK_30_DESC,Log in 30 days in a row,தொடர்ந்து 30 நாட்கள் வாங்க
+ACH_SHIFTS_7,Full Week,முழு வாரம்
+ACH_SHIFTS_7_DESC,Finish 7 shifts,7 ஷிப்டுகளை முடியுங்கள்
+ACH_GOALS_10,Goal Getter,இலக்கு வீரர்
+ACH_GOALS_10_DESC,Finish all 3 shift goals on 10 days,10 நாட்கள் 3 ஷிப்ட் இலக்குகளையும் முடியுங்கள்
+ACH_LEVEL_5,Mylapore Regular,மயிலாப்பூர் ரெகுலர்
+ACH_LEVEL_5_DESC,Reach Driver Level 5,டிரைவர் நிலை 5-ஐ எட்டிடு
+ACH_LEVEL_10,Stand Leader,ஸ்டாண்ட் தலைவர்
+ACH_LEVEL_10_DESC,Reach Driver Level 10,டிரைவர் நிலை 10-ஐ எட்டிடு
+ACH_LEVEL_20,Madras Legend,மெட்ராஸ் ஜாம்பவான்
+ACH_LEVEL_20_DESC,Reach Driver Level 20,டிரைவர் நிலை 20-ஐ எட்டிடு
+ACH_PAINT_FIRST,Alangaram,அலங்காரம்
+ACH_PAINT_FIRST_DESC,Buy your first paint job,உங்கள் முதல் பெயிண்டை வாங்குங்கள்
+ACH_TUNED_9,Fully Tuned,முழு டியூனிங்
+ACH_TUNED_9_DESC,Buy 9 garage upgrades,9 கேரேஜ் மேம்பாடுகளை வாங்குங்கள்
+ACH_OWN_AUTOS_3,Full Stand,முழு ஸ்டாண்ட்
+ACH_OWN_AUTOS_3_DESC,Own all 3 autos,3 ஆட்டோக்களையும் சொந்தமாக்குங்கள்
+ACHIEVEMENTS_UNLOCKED,%d of %d unlocked,%d / %d பெற்றவை
+ACH_NEXT_UP,Almost there,கிட்டத்தட்ட முடிஞ்சிடுச்சு
+ACH_CAT_RIDES,Rides,சவாரிகள்
+ACH_CAT_HONEST,Riders & fares,பயணிகள் & கட்டணம்
+ACH_CAT_COMFORT,Smooth driving,மென்மையான ஓட்டம்
+ACH_CAT_SKILL,Street skills,தெரு திறமை
+ACH_CAT_CITY,Rain & night,மழை & இரவு
+ACH_CAT_MONEY,Earnings,வருமானம்
+ACH_CAT_CAREER,Career,பணி வாழ்க்கை
+DAILY_SHORT,Daily bonus,டெய்லி போனஸ்
+STAT_BATTERY,Battery,பேட்டரி
+VEHICLE_N_OF,%d of %d,%d / %d
+AUTO_REPAIR_HINT,Fix the damage at any garage in the city,நகரில் எந்த கேரேஜிலும் பழுது பார்க்கலாம்
+DRIVER_PROFILE,Driver profile,டிரைவர் விவரம்
+PROFILE_XP,%s / %s XP,%s / %s எக்ஸ்பி
+PROFILE_NEXT_RANK,Next rank: %s,அடுத்த பட்டம்: %s
+PROFILE_MAX_RANK,Top rank reached,உச்ச பட்டம் பெற்றீர்கள்
+PROFILE_RANK_TITLE,Driver rank,டிரைவர் பட்டம்
+PROFILE_RANK_HELP,"Your rank is your name at the stand. Every ride, shift goal and turn signal earns XP, and each new rank pays a cash bonus.","பட்டம் என்பது ஸ்டாண்டில் உங்கள் பெயர். ஒவ்வொரு சவாரி, ஷிப்ட் இலக்கு, இண்டிகேட்டருக்கும் எக்ஸ்பி கிடைக்கும்; புதிய பட்டத்திற்கு பண போனஸ் உண்டு."
+PROFILE_RATING_TITLE,Stand rating,ஸ்டாண்ட் ரேட்டிங்
+PROFILE_RATING_HELP,"Every new driver starts at 4.5. Each rider's stars move it up or down: a comfortable, on-time ride raises it, a rough or late one lowers it. Riders agree to Meter Mela and fixed fares less often when it drops.","புதிய டிரைவர் 4.5-இல் ஆரம்பிவார். ஒவ்வொரு பயணியின் நட்சத்திரமும் இதை மாற்றும்: சௌகரியமான, நேரத்தில் முடிந்த சவாரி உயர்த்தும்; கரடுமுரடான அல்லது தாமதமான சவாரி குறைக்கும். ரேட்டிங் குறைந்தால் பயணிகள் கூடுதல் கட்டணத்திற்கு குறைவாகவே சம்மதிப்பார்கள்."
+PROFILE_CAREER_TITLE,Career so far,இதுவரை
+PROFILE_LEVEL_BONUS,+₹%d,+₹%d
+EARNED_TOTAL,Total earned,மொத்த சம்பாத்தியம்
+DISTANCE_TOTAL,Distance,தூரம்
+RIDES_DONE,Rides,சவாரிகள்
+PROFILE_ALL_RANKS,All ranks,எல்லா பட்டங்களும்
+QUEST_TRANSFER,Load / unload,ஏற்று / இறக்கு
+QUEST_CARGO_CAPACITY,The auto is full. Unload first.,ஆட்டோ நிறைந்துவிட்டது. முதலில் இறக்கு.
+QUEST_FAIL_DIVERSION,that road is closed.,அந்தச் ரோடு மூடியிருக்கு.
 SQ03_TITLE,Margazhi Missing Beat,மார்கழியின் தவறிய தாளம்
-SQ03_DESC,"A musician forgot his mridangam drum. Bring it to the music hall before the concert.","இசைக்கலைஞர் மிருதங்கத்தை மறந்துவிட்டார். கச்சேரிக்கு முன் சபாவுக்குக் கொண்டு வா."
-SQ03_BRIEF,"The drum is at the music shop. Remember: the hall wants it at the back gate.","மிருதங்கம் இசைக் கடையில் உள்ளது. நினைவிருக்கட்டும்: சபாவின் பின் வாசலில் கொடுக்க வேண்டும்."
-SQ03_READY,"Let's go","போகலாம்"
-SQ03_CASE,"Go to the music shop and load the drum.","இசைக் கடைக்குப் போய் மிருதங்கத்தை ஏற்று."
-SQ03_APPROACH,"Drive slowly to the music hall. Don't shake the drum!","சபாவுக்கு மெதுவாக ஓட்டு. மிருதங்கத்தைக் குலுக்காதே!"
-SQ03_GATE,"There is a long queue at the front. Which gate takes the drum?","முன்னால் நீண்ட வரிசை. மிருதங்கம் எந்த வாசல் வழியாகச் செல்லும்?"
-SQ03_REAR,"Back gate","பின் வாசல்"
-SQ03_FRONT,"Front gate","முன் வாசல்"
-SQ03_VERIFY,"Not the front. Read the notice board to be sure.","முன் வாசல் இல்லை. உறுதி செய்ய அறிவிப்புப் பலகையைப் படி."
-SQ03_HANDOVER,"Go to the back gate and unload the drum.","பின் வாசலுக்குப் போய் மிருதங்கத்தை இறக்கு."
+SQ03_DESC,A musician forgot his mridangam drum. Bring it to the music hall before the concert.,இசைக்கலைஞர் மிருதங்கத்தை மறந்துவிட்டார். கச்சேரிக்கு முன் சபாவுக்குக் கொண்டு வா.
+SQ03_BRIEF,The drum is at the music shop. Remember: the hall wants it at the back gate.,மிருதங்கம் இசைக் கடையில் உள்ளது. ஞாபகம் வச்சுக்கோ: சபாவின் பின் வாசலில் கொடுக்கணும்.
+SQ03_READY,Let's go,போகலாம்
+SQ03_CASE,Go to the music shop and load the drum.,இசைக் கடைக்குப் போய் மிருதங்கத்தை ஏற்று.
+SQ03_APPROACH,Drive slowly to the music hall. Don't shake the drum!,சபாவுக்கு மெதுவா ஓட்டு. மிருதங்கத்தைக் குலுக்காதே!
+SQ03_GATE,There is a long queue at the front. Which gate takes the drum?,முன்னால் நீண்ட வரிசை. மிருதங்கம் எந்த வாசல் வழியாகச் செல்லும்?
+SQ03_REAR,Back gate,பின்னாடி கேட்
+SQ03_FRONT,Front gate,முன்னாடி கேட்
+SQ03_VERIFY,Not the front. Read the notice board to be sure.,முன்னாடி கேட் இல்லை. உறுதி செய்ய அறிவிப்புப் பலகையைப் படி.
+SQ03_HANDOVER,Go to the back gate and unload the drum.,பின் வாசலுக்குப் போய் மிருதங்கத்தை இறக்கு.
 SQ05_TITLE,Festival Detour,திருவிழா மாற்றுப் பாதை
-SQ05_DESC,"A temple procession has closed the road. Take festival lamps around it.","ஊர்வலத்தால் சாலை மூடப்பட்டுள்ளது. திருவிழா விளக்குகளைச் சுற்றி எடுத்துச் செல்."
-SQ05_LAMPS,"Stop at the lamp shop and load the lamps.","விளக்குக் கடையில் நிறுத்தி விளக்குகளை ஏற்று."
-SQ05_SIGN,"The temple road is closed for the procession. Which way?","ஊர்வலத்தால் கோயில் சாலை மூடப்பட்டுள்ளது. எந்த வழி?"
-SQ05_OUTER,"Open outer road","திறந்த வெளிச் சாலை"
-SQ05_TEMPLE,"Temple road","கோயில் சாலை"
-SQ05_WRONG,"That road is closed! Read the sign.","அந்தச் சாலை மூடப்பட்டுள்ளது! பலகையைப் படி."
-SQ05_BAY,"At the store: stop at the marker, shift to R, roll back a little, stop and tap Done.","கிடங்கில்: குறியில் நிறுத்து, R-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிந்தது என்பதைத் தட்டு."
-SQ05_UNLOAD,"Unload the lamps here.","விளக்குகளை இங்கே இறக்கு."
-SQ07_TITLE,The Little Red Kite,சின்னச் சிவப்புப் பட்டம்
-SQ07_DESC,"A child with a red kite is lost on the beach. Help the family find him.","சிவப்புப் பட்டத்துடன் ஒரு குழந்தை கடற்கரையில் தொலைந்தான். குடும்பத்துக்கு உதவு."
-SQ07_BRIEF,"The boy has a red kite and a striped shirt. Let's look from the beach road.","பையனிடம் சிவப்புப் பட்டம், கோடு போட்ட சட்டை. கடற்கரைச் சாலையிலிருந்து தேடுவோம்."
-SQ07_LOOK,"Start looking","தேடத் தொடங்கு"
-SQ07_SCAN,"Stop at the beach entrance and look at the crowd.","கடற்கரை நுழைவில் நிறுத்திக் கூட்டத்தைப் பார்."
-SQ07_GUESS,"You see two groups of children. Which one?","இரண்டு குழந்தைகள் கூட்டம் தெரிகிறது. எது?"
-SQ07_STRIPED,"Red kite, striped shirt","சிவப்புப் பட்டம், கோடு சட்டை"
-SQ07_BLUE,"Blue kite group","நீலப் பட்டக் கூட்டம்"
-SQ07_VERIFY,"Wrong group! Look near the next entrance.","தவறான கூட்டம்! அடுத்த நுழைவில் பார்."
-SQ07_CONFIRM,"Drive to the south entrance and look for the boy.","தெற்கு நுழைவுக்குப் போய்ப் பையனைத் தேடு."
-SQ07_REUNITE,"You found him! Drive to the help point.","கண்டுபிடித்துவிட்டாய்! உதவி மையத்துக்குப் போ."
+SQ05_DESC,A temple procession has closed the road. Take festival lamps around it.,ஊர்வலத்தால் ரோடு மூடியிருக்கு. திருவிழா விளக்குகளைச் சுற்றி எடுத்துச் செல்.
+SQ05_LAMPS,Stop at the lamp shop and load the lamps.,விளக்குக் கடையில் நிறுத்தி விளக்குகளை ஏற்று.
+SQ05_SIGN,The temple road is closed for the procession. Which way?,ஊர்வலத்தால் கோயில் ரோடு மூடியிருக்கு. எந்த வழி?
+SQ05_OUTER,Open outer road,திறந்த வெளிச் சாலை
+SQ05_TEMPLE,Temple road,கோயில் சாலை
+SQ05_WRONG,That road is closed! Read the sign.,அந்தச் ரோடு மூடியிருக்கு! பலகையைப் படி.
+SQ05_BAY,"At the store: stop at the marker, shift to R, roll back a little, stop and tap Done.","கிடங்கில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
+SQ05_UNLOAD,Unload the lamps here.,விளக்குகளை இங்கே இறக்கு.
+SQ07_TITLE,The Little Red Kite,சின்னச் சிவப்பு பட்டம்
+SQ07_DESC,A child with a red kite is lost on the beach. Help the family find him.,சிவப்பு பட்டத்துடன் ஒரு குழந்தை கடற்கரையில் தொலைந்தான். குடும்பத்துக்கு உதவு.
+SQ07_BRIEF,The boy has a red kite and a striped shirt. Let's look from the beach road.,"பையனிடம் சிவப்பு பட்டம், கோடு போட்ட சட்டை. கடற்கரைச் சாலையிலிருந்து தேடுவோம்."
+SQ07_LOOK,Start looking,தேடத் ஆரம்பி
+SQ07_SCAN,Stop at the beach entrance and look at the crowd.,கடற்கரை நுழைவில் நிறுத்திக் கூட்டத்தைப் பார்.
+SQ07_GUESS,You see two groups of children. Which one?,இரண்டு குழந்தைகள் கூட்டம் தெரிகிறது. எது?
+SQ07_STRIPED,"Red kite, striped shirt","சிவப்பு பட்டம், கோடு சட்டை"
+SQ07_BLUE,Blue kite group,நீலப் பட்டக் கூட்டம்
+SQ07_VERIFY,Wrong group! Look near the next entrance.,தப்பான கூட்டம்! அடுத்த நுழைவில் பார்.
+SQ07_CONFIRM,Drive to the south entrance and look for the boy.,தெற்கு நுழைவுக்குப் போய்ப் பையனைத் தேடு.
+SQ07_REUNITE,You found him! Drive to the help point.,கண்டுபிடித்துவிட்டாய்! உதவி மையத்துக்குப் போ.
 SQ08_TITLE,Rain Before Pack-Up,மழைக்கு முன் கடை மூடல்
-SQ08_DESC,"Rain is coming! Help two beach sellers save their goods.","மழை வருகிறது! இரண்டு கடைக்காரர்களின் பொருட்களைக் காப்பாற்று."
-SQ08_ORDER,"One seller has paper goods. The other has sealed boxes. Who first?","ஒருவரிடம் காகிதப் பொருட்கள். மற்றவரிடம் மூடிய பெட்டிகள். முதலில் யார்?"
-SQ08_PAPER,"Paper seller","காகிதக் கடைக்காரர்"
-SQ08_BOXES,"Box seller","பெட்டிக் கடைக்காரர்"
-SQ08_FIRST,"Go to the first seller and load the goods.","முதல் கடைக்காரரிடம் போய் ஏற்று."
-SQ08_SECOND,"Now go to the other seller and load up.","இப்போது மற்றவரிடம் போய் ஏற்று."
-SQ08_SHELTER,"Take everything to the shelter and unload.","எல்லாவற்றையும் கூடாரத்தில் இறக்கு."
+SQ08_DESC,Rain is coming! Help two beach sellers save their goods.,மழை வருது! இரண்டு கடைக்காரர்களின் பொருட்களைக் காப்பாற்று.
+SQ08_ORDER,One seller has paper goods. The other has sealed boxes. Who first?,ஒருவரிடம் காகிதப் பொருட்கள். மற்றவரிடம் மூடிய பெட்டிகள். முதலில் யார்?
+SQ08_PAPER,Paper seller,காகிதக் கடைக்காரர்
+SQ08_BOXES,Box seller,பெட்டிக் கடைக்காரர்
+SQ08_FIRST,Go to the first seller and load the goods.,முதல் கடைக்காரரிடம் போய் ஏற்று.
+SQ08_SECOND,Now go to the other seller and load up.,இப்போ மற்றவரிடம் போய் ஏற்று.
+SQ08_SHELTER,Take everything to the shelter and unload.,எல்லாவற்றையும் கூடாரத்தில் இறக்கு.
 SQ10_TITLE,Beach Clean-Up Relay,கடற்கரைச் சுத்தம்
-SQ10_DESC,"Help the beach clean-up team carry rubbish bags to the sorting point.","கடற்கரை சுத்தம் செய்யும் குழுவின் குப்பைப் பைகளைப் பிரிப்பு மையத்துக்குக் கொண்டு போ."
-SQ10_SORT,"Blue bags are for recycling. Red bags are for rubbish. Keep them apart.","நீலப் பைகள் மறுசுழற்சிக்கு. சிவப்புப் பைகள் குப்பைக்கு. தனித்தனியாக வை."
-SQ10_START,"Let's start","தொடங்கலாம்"
-SQ10_BLUE,"Go to the north entrance and load two blue bags.","வடக்கு நுழைவில் இரண்டு நீலப் பைகளை ஏற்று."
-SQ10_RED,"Go to the south entrance and load one red bag.","தெற்கு நுழைவில் ஒரு சிவப்புப் பையை ஏற்று."
-SQ10_FIRST_DUMP,"Unload all three bags at the sorting point.","மூன்று பைகளையும் பிரிப்பு மையத்தில் இறக்கு."
-SQ10_SECOND_LOAD,"Go to the west entrance and load two more bags.","மேற்கு நுழைவில் மேலும் இரண்டு பைகளை ஏற்று."
-SQ10_CATEGORY,"These bags have a blue label. Where do they go?","இந்தப் பைகளில் நீல அடையாளம் உள்ளது. எங்கே போகும்?"
-SQ10_RECYCLING,"Recycling","மறுசுழற்சி"
-SQ10_GENERAL,"Rubbish","குப்பை"
-SQ10_CORRECTION,"Blue means recycling! Ask the helper at the south entrance.","நீலம் என்றால் மறுசுழற்சி! தெற்கு நுழைவில் உதவியாளரிடம் கேள்."
-SQ10_LAST_DUMP,"Unload the last two bags at the sorting point.","கடைசி இரண்டு பைகளையும் பிரிப்பு மையத்தில் இறக்கு."
-SQ14_TITLE,"Exam Hall, Wrong Gate",தேர்வு மையத்தின் தவறான வாசல்
-SQ14_DESC,"A student is late for an exam and needs a copy of her ID.","மாணவிக்குத் தேர்வுக்குத் தாமதம். அடையாள அட்டை நகல் தேவை."
-SQ14_NOTICE,"Stop at the school and read the notice.","பள்ளியில் நிறுத்தி அறிவிப்பைப் படி."
-SQ14_COPY,"The notice says: use the east gate and bring a copy of your ID. What now?","அறிவிப்பு: கிழக்கு வாசல் வழியாக வா, அடையாள நகல் கொண்டு வா. இப்போது என்ன?"
-SQ14_PRINT,"Get the ID copy","நகல் எடு"
-SQ14_SKIP,"Go without it","நகல் இல்லாமல் போ"
-SQ14_VERIFY,"The guard says no copy, no entry. Look at the notice in the print shop window.","நகல் இல்லாமல் அனுமதி இல்லை என்கிறார் காவலர். அச்சுக் கடை அறிவிப்பைப் பார்."
-SQ14_PRINTER,"Go to the print shop and collect the ID copy.","அச்சுக் கடையில் நகலை வாங்கு."
-SQ14_GATE,"Hurry to the east gate!","கிழக்கு வாசலுக்கு விரைந்து போ!"
-SQ14_HANDOVER,"Give the copy to the student.","நகலை மாணவியிடம் கொடு."
-SQ15_TITLE,"Last Stop, Extra Help",கடைசி நிறுத்தத்தில் உதவி
-SQ15_DESC,"The bus broke down. Take two passengers where they need to go.","பேருந்து பழுதானது. இரண்டு பயணிகளை அவர்கள் இடத்தில் சேர்."
-SQ15_BOARD,"Stop at the bus stop and let both passengers in.","பேருந்து நிறுத்தத்தில் நிறுத்தி இருவரையும் ஏற்று."
-SQ15_ORDER,"One needs the clinic. One needs the library. Who first?","ஒருவருக்கு மருத்துவமனை, ஒருவருக்கு நூலகம். முதலில் யார்?"
-SQ15_CLINIC,"Clinic first","மருத்துவமனை முதலில்"
-SQ15_LIBRARY,"Library first","நூலகம் முதலில்"
-SQ15_FIRST,"Drive to the first stop and drop your passenger.","முதல் இடத்துக்குப் போய்ப் பயணியை இறக்கு."
-SQ15_SECOND,"Now drop the last passenger.","இப்போது கடைசிப் பயணியை இறக்கு."
-SQ17_TITLE,The Monsoon Supply Run,பருவமழை உதவிப் பயணம்
-SQ17_DESC,"Floods have closed a road. Carry food and water to people who need it.","வெள்ளத்தால் சாலை மூடப்பட்டது. தேவைப்படுவோருக்கு உணவும் நீரும் கொண்டு போ."
-SQ17_LOAD,"Load the food and water.","உணவையும் நீரையும் ஏற்று."
-SQ17_WARNING,"Stop and read the flood sign.","நிறுத்தி வெள்ளப் பலகையைப் படி."
-SQ17_ORDER,"The shelter needs two bundles. The relief desk needs one. Who first?","முகாமுக்கு இரண்டு மூட்டைகள், உதவி மேசைக்கு ஒன்று. முதலில் யார்?"
-SQ17_SHELTER,"Shelter","முகாம்"
-SQ17_DESK,"Relief desk","உதவி மேசை"
-SQ17_FIRST,"Follow the route and deliver. Avoid the flood!","வழியைப் பின்பற்றிக் கொடு. வெள்ளத்தைத் தவிர்!"
-SQ17_SECOND,"Deliver the rest.","மீதியைக் கொடு."
-SQ18_TITLE,Five-Star Auto Anna,ஐந்து நட்சத்திர ஆட்டோ அண்ணா
-SQ18_DESC,"Three neighbours need help in one trip. Keep them all happy.","மூன்று அண்டை வீட்டார்க்கு ஒரே பயணத்தில் உதவி வேண்டும். அனைவரையும் மகிழ்ச்சியாக வை."
-SQ18_PREP,"What do you do first?","முதலில் என்ன செய்வாய்?"
-SQ18_QUIET,"Clean the seat","இருக்கையைச் சுத்தம் செய்"
-SQ18_CHARGER,"Buy a charger","சார்ஜர் வாங்கு"
-SQ18_SUPPLY,"Stop at the shop and get ready.","கடையில் நிறுத்தித் தயார் செய்."
-SQ18_LUGGAGE,"Stop here and load the suitcase.","இங்கே நிறுத்திப் பெட்டியை ஏற்று."
-SQ18_DROP,"Take the suitcase to its owner's house.","பெட்டியை உரிமையாளரின் வீட்டில் சேர்."
-SQ18_CHARGE,"Finish at the charging stop.","சார்ஜிங் இடத்தில் முடி."
-SQ20_TITLE,Blackout on the Corner,மூலையில் மின்தடை
-SQ20_DESC,"The street lights are out. Take an electrician and his tools to fix them.","தெருவிளக்குகள் அணைந்தன. எலக்ட்ரீஷியனையும் கருவிகளையும் கொண்டு போ."
-SQ20_PICKUP,"Stop at the night market and load the tools.","இரவுச் சந்தையில் நிறுத்திக் கருவிகளை ஏற்று."
-SQ20_MARKER,"Stop and read the warning sign.","நிறுத்தி எச்சரிக்கைப் பலகையைப் படி."
-SQ20_BAY,"Take the lit road. The dark corner is closed.","விளக்குள்ள சாலையில் போ. இருண்ட முனை மூடப்பட்டுள்ளது."
-SQ20_REPAIR,"Stop at the power box and unload the tools.","மின் பெட்டியில் நிறுத்திக் கருவிகளை இறக்கு."
-SQ20_FINISH,"The electrician fixes it. The lights are back on!","எலக்ட்ரீஷியன் சரிசெய்தார். விளக்குகள் எரிகின்றன!"
-SQ20_THANKS,"Thank you!","நன்றி!"
-SQ23_TITLE,A Mirror Through Mount Road,மவுண்ட் ரோட்டில் கண்ணாடி
-SQ23_DESC,"Deliver a big glass mirror along Mount Road without breaking it.","பெரிய கண்ணாடியை உடையாமல் மவுண்ட் ரோடு வழியாகக் கொண்டு போ."
-SQ23_MIRROR,"Stop at the glass shop and load the mirror.","கண்ணாடிக் கடையில் நிறுத்தி ஏற்று."
-SQ23_ROUTE,"The small lane has sharp turns. The wide road is safer. Which way?","சிறிய சந்தில் கூர்மையான திருப்பங்கள். அகலச் சாலை பாதுகாப்பு. எந்த வழி?"
-SQ23_WIDE,"Wide road","அகலச் சாலை"
-SQ23_NARROW,"Small lane","சிறிய சந்து"
-SQ23_WARNING,"The lane is too tight for the mirror! Read the road sign.","சந்து கண்ணாடிக்குக் குறுகலாக உள்ளது! சாலைப் பலகையைப் படி."
-SQ23_PARK,"At the office: stop at the marker, shift to R, roll back a little, stop and tap Done.","அலுவலகத்தில்: குறியில் நிறுத்து, R-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிந்தது என்பதைத் தட்டு."
-SQ23_UNLOAD,"Unload the mirror here.","கண்ணாடியை இங்கே இறக்கு."
-SQ25_TITLE,Three Clues to Madras,மதராஸுக்கு மூன்று குறிப்புகள்
-SQ25_DESC,"An old postcard shows a Madras landmark. Follow the clues to find the spot.","பழைய அஞ்சலட்டையில் ஒரு மெட்ராஸ் இடம் உள்ளது. குறிப்புகளைப் பின்பற்று."
-SQ25_CLUE_1,"Drive to the old stone building and read the plaque.","பழைய கல் கட்டடத்துக்குப் போய்க் கல்வெட்டைப் படி."
-SQ25_GUESS,"The plaque shows an old clock. The postcard shows the same thing. Which one?","கல்வெட்டில் பழைய கடிகாரம். அஞ்சலட்டையிலும் அதே. எது?"
-SQ25_CLOCK,"The old clock","பழைய கடிகாரம்"
-SQ25_ARCH,"The market arch","சந்தை வளைவு"
-SQ25_HINT,"That arch is new. Read the clock tower sign.","அந்த வளைவு புதியது. கடிகாரக் கோபுரப் பலகையைப் படி."
-SQ25_CLUE_2,"Find the second clue on the painted wall.","வர்ணச் சுவரில் இரண்டாவது குறிப்பைத் தேடு."
-SQ25_REVEAL,"The wall points to the photo spot!","சுவர் படம் எடுக்கும் இடத்தைக் காட்டுகிறது!"
-SQ25_READY,"Go there","அங்கே போ"
-SQ25_VIEW,"Stop at the photo spot and take a picture.","படம் எடுக்கும் இடத்தில் நிறுத்திப் படம் எடு."
-QUEST_QUALITY_INSTRUMENT,"Drum safe: %d%%","மிருதங்கம் பாதுகாப்பு: %d%%"
-QUEST_QUALITY_LAMPS,"Lamps safe: %d%%","விளக்குகள் பாதுகாப்பு: %d%%"
-QUEST_QUALITY_PAPER,"Goods dry: %d%%","பொருட்கள் உலர்வு: %d%%"
-QUEST_QUALITY_SUPPLIES,"Supplies dry: %d%%","பொருட்கள் உலர்வு: %d%%"
-QUEST_QUALITY_TOOLS,"Tools safe: %d%%","கருவிகள் பாதுகாப்பு: %d%%"
-QUEST_QUALITY_MIRROR,"Mirror safe: %d%%","கண்ணாடி பாதுகாப்பு: %d%%"
-SQ01_JOB,"1. Go to the wedding hall.\n2. Find out whose pouch it is.\n3. Give it back at the help desk.","1. திருமண மண்டபத்துக்குப் போ.\n2. பை யாருடையது என்று கண்டுபிடி.\n3. உதவி மேசையில் ஒப்படை."
-SQ01_P_HALL,"Wedding Hall","திருமண மண்டபம்"
-SQ01_P_FLOWER,"Flower Seller","பூக்காரர்"
-SQ01_P_DESK,"Help Desk","உதவி மேசை"
-SQ02_JOB,"1. Pick which shop gets coffee first.\n2. Deliver to all three shops.\n3. Bumps and hard braking spill the coffee, so drive smoothly.","1. முதலில் எந்தக் கடை என்று தேர்வு செய்.\n2. மூன்று கடைகளுக்கும் கொடு.\n3. குலுக்கலும் திடீர் பிரேக்கும் காபியைச் சிந்தும். மெதுவாக ஓட்டு."
-SQ02_P_TAILOR,"Tailor Shop","தையல் கடை"
-SQ02_P_BOOKS,"Book Shop","புத்தகக் கடை"
-SQ02_P_TEA,"Tea Shop","டீக்கடை"
-SQ03_JOB,"1. Load the drum at the music shop.\n2. Drive to the music hall. Stay under 32 km/h.\n3. Bumps and crashes damage the drum.\nThe drum goes in by the back gate.","1. இசைக் கடையில் மிருதங்கத்தை ஏற்று.\n2. சபாவுக்குப் போ. 32 கி.மீ/மணிக்குள் ஓட்டு.\n3. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\nமிருதங்கம் பின் வாசல் வழியாகச் செல்லும்."
-SQ03_P_SHOP,"Music Shop","இசைக் கடை"
-SQ03_P_HALL,"Music Hall","சபா மண்டபம்"
-SQ03_P_NOTICE,"Notice Board","அறிவிப்புப் பலகை"
-SQ03_P_BACK,"Hall Back Gate","சபா பின் வாசல்"
-SQ04_JOB,"1. Drive Paati to the places she remembers.\n2. Stop and look around at each one.\n3. Take her to her granddaughter's home.","1. பாட்டிக்கு நினைவிருக்கும் இடங்களுக்கு ஓட்டு.\n2. ஒவ்வொரு இடத்திலும் நிறுத்திப் பார்.\n3. பேத்தியின் வீட்டில் சேர்."
-SQ04_P_STALL,"Flower Stall","பூக்கடை"
-SQ04_P_STEPS,"Tank Steps Corner","குளத்துப் படி முனை"
-SQ04_P_HOME,"Granddaughter's Home","பேத்தியின் வீடு"
-SQ05_JOB,"1. Load the lamps.\n2. Take the open road around the procession. Stay under 25 km/h.\n3. Back up at the store and unload.\nBumps and crashes can break the lamps.","1. விளக்குகளை ஏற்று.\n2. திறந்த சாலையில் சுற்றிப் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. கிடங்கில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் விளக்குகளை உடைக்கும்."
-SQ05_OUTER_GO,"Take the outer road. Drive slowly.","வெளிச் சாலையில் மெதுவாகப் போ."
-SQ05_P_SHOP,"Lamp Shop","விளக்குக் கடை"
-SQ05_P_SIGN,"Road Closed Sign","சாலை மூடல் பலகை"
-SQ05_P_OUTER,"Outer Road Corner","வெளிச் சாலை முனை"
-SQ05_P_STORE,"Temple Store","கோயில் கிடங்கு"
-SQ06_JOB,"1. Drive to the first photo spot and stop.\n2. Drive to the second photo spot and stop.\n3. Tap Take photo at each spot.\nBe quick, the light is going!","1. முதல் இடத்துக்குப் போய் நிறுத்து.\n2. இரண்டாவது இடத்துக்குப் போய் நிறுத்து.\n3. ஒவ்வொரு இடத்திலும் படம் எடு என்பதைத் தட்டு.\nவேகமாக, வெளிச்சம் குறைகிறது!"
-SQ06_P_SPOT1,"Beach Photo Spot","கடற்கரைப் பட இடம்"
-SQ06_P_SPOT2,"Lighthouse Photo Spot","கலங்கரை விளக்கப் பட இடம்"
-SQ07_JOB,"1. Drive along the beach road and look for him.\n2. Find the boy with the red kite.\n3. Bring the family to the help point in time.","1. கடற்கரைச் சாலையில் தேடு.\n2. சிவப்புப் பட்டம் வைத்திருக்கும் பையனைக் கண்டுபிடி.\n3. குடும்பத்தை உதவி மையத்துக்கு நேரத்தில் கொண்டு வா."
-SQ07_P_GATE1,"Beach Entrance","கடற்கரை நுழைவு"
-SQ07_P_GATE2,"Next Beach Entrance","அடுத்த கடற்கரை நுழைவு"
-SQ07_P_GATE3,"South Beach Entrance","தெற்கு கடற்கரை நுழைவு"
-SQ07_P_HELP,"Beach Help Point","கடற்கரை உதவி மையம்"
-SQ08_JOB,"1. Load goods from both sellers.\n2. Take everything to the shelter.\n3. Paper goods get wet in the rain, so be quick.","1. இருவரின் பொருட்களையும் ஏற்று.\n2. எல்லாவற்றையும் கூடாரத்துக்குக் கொண்டு போ.\n3. மழையில் காகிதம் நனையும். வேகமாகச் செய்."
-SQ08_P_PAPER,"Paper Seller","காகிதக் கடைக்காரர்"
-SQ08_P_BOXES,"Box Seller","பெட்டிக் கடைக்காரர்"
-SQ08_P_SHELTER,"Rain Shelter","மழைக் கூடாரம்"
-SQ09_JOB,"1. Take Kutty to the animal clinic.\n2. Don't use the horn.\n3. Bumps and hard braking scare him.\nYou can stop on the way to calm him.","1. குட்டியை விலங்கு மருத்துவமனைக்குக் கொண்டு போ.\n2. ஹாரன் அடிக்காதே.\n3. குலுக்கலும் திடீர் பிரேக்கும் அதைப் பயமுறுத்தும்.\nவழியில் நிறுத்தி அமைதிப்படுத்தலாம்."
-SQ09_P_CORNER,"Quiet Corner","அமைதியான முனை"
-SQ09_P_CLINIC,"Animal Clinic","விலங்கு மருத்துவமனை"
-SQ10_JOB,"1. Collect the blue and red bags.\n2. Unload them at the sorting point.\n3. Collect two more bags and unload them.\nYour auto holds three bags at a time.","1. நீல, சிவப்புப் பைகளைச் சேகரி.\n2. பிரிப்பு மையத்தில் இறக்கு.\n3. மேலும் இரண்டு பைகளைச் சேகரித்து இறக்கு.\nஒரு முறை மூன்று பைகள் மட்டுமே."
-SQ10_P_NORTH,"North Beach Entrance","வடக்கு கடற்கரை நுழைவு"
-SQ10_P_SOUTH,"South Beach Entrance","தெற்கு கடற்கரை நுழைவு"
-SQ10_P_SORT,"Sorting Point","பிரிப்பு மையம்"
-SQ10_P_WEST,"West Beach Entrance","மேற்கு கடற்கரை நுழைவு"
-SQ12_JOB,"1. Go to the sports shop.\n2. Pick the blue bag with the white stripe.\n3. Take it to the stadium gate.","1. விளையாட்டுக் கடைக்குப் போ.\n2. வெள்ளைக் கோடு உள்ள நீலப் பையை எடு.\n3. மைதான வாசலுக்குக் கொண்டு போ."
-SQ12_P_SHOP,"Sports Shop","விளையாட்டுக் கடை"
-SQ12_P_DESK,"Ticket Counter","டிக்கெட் கவுன்டர்"
-SQ12_P_GATE,"Stadium Gate","மைதான வாசல்"
-SQ14_JOB,"1. Read the notice at the school.\n2. Get the ID copy from the print shop.\n3. Reach the east gate before time runs out.","1. பள்ளியில் அறிவிப்பைப் படி.\n2. அச்சுக் கடையில் நகல் எடு.\n3. நேரம் முடியும் முன் கிழக்கு வாசலை அடை."
-SQ14_P_SCHOOL,"School Notice Board","பள்ளி அறிவிப்புப் பலகை"
-SQ14_P_PRINT,"Print Shop","அச்சுக் கடை"
-SQ14_P_GATE,"School East Gate","பள்ளி கிழக்கு வாசல்"
-SQ15_JOB,"1. Pick up both passengers.\n2. Choose who to drop first.\n3. Drop one at the clinic and one at the library.","1. இரண்டு பயணிகளையும் ஏற்று.\n2. முதலில் யாரை இறக்குவது என்று தேர்வு செய்.\n3. ஒருவரை மருத்துவமனையிலும், மற்றவரை நூலகத்திலும் இறக்கு."
-SQ15_P_STOP,"Bus Stop","பேருந்து நிறுத்தம்"
-SQ15_P_CLINIC,"Clinic","மருத்துவமனை"
-SQ15_P_LIBRARY,"Library","நூலகம்"
-SQ16_JOB,"At each of the three stops:\n1. Turn on your indicator.\n2. Stop on the marker.","மூன்று இடங்களிலும்:\n1. இண்டிகேட்டரைப் போடு.\n2. குறியில் நிறுத்து."
-SQ16_P_A,"Pull Over Here","இங்கே ஓரமாக நிறுத்து"
-SQ16_P_B,"Pull Over Here","இங்கே ஓரமாக நிறுத்து"
-SQ16_P_C,"Pull Over Here","இங்கே ஓரமாக நிறுத்து"
-SQ17_JOB,"1. Load the food and water.\n2. Read the flood sign.\n3. Deliver to the shelter and the relief desk.\nStay away from the flooded road.","1. உணவையும் நீரையும் ஏற்று.\n2. வெள்ளப் பலகையைப் படி.\n3. முகாமுக்கும் உதவி மேசைக்கும் கொடு.\nவெள்ளச் சாலைக்குப் போகாதே."
-SQ17_P_STORE,"Relief Store","நிவாரணக் கிடங்கு"
-SQ17_P_SIGN,"Flood Sign","வெள்ளப் பலகை"
-SQ17_P_SHELTER,"Shelter","முகாம்"
-SQ17_P_DESK,"Relief Desk","உதவி மேசை"
-SQ18_JOB,"1. Get ready: clean the seat or buy a charger.\n2. Give the quiet ride, then carry the suitcase.\n3. Finish at the charging stop.\nBumps, crashes and the horn upset passengers.","1. தயார் செய்: இருக்கையைச் சுத்தம் செய், அல்லது சார்ஜர் வாங்கு.\n2. அமைதியான பயணம், பிறகு பெட்டி.\n3. சார்ஜிங் இடத்தில் முடி.\nகுலுக்கல், மோதல், ஹாரன் பயணிகளை வருத்தும்."
-SQ18_QUIET_GO,"Drive your first neighbour home. Keep it quiet and smooth.","முதல் நபரை வீட்டில் சேர். அமைதியாக, மெதுவாக ஓட்டு."
-SQ18_P_SHOP,"Corner Shop","முனைக் கடை"
-SQ18_P_CHARGER,"Phone Shop","கைபேசிக் கடை"
-SQ18_P_HOME1,"Neighbour's House","அண்டை வீடு"
-SQ18_P_HOME2,"Suitcase Owner's House","பெட்டி உரிமையாளர் வீடு"
-SQ19_JOB,"1. Check which parcel is for which shop.\n2. Deliver the blue parcel to the tailor.\n3. Deliver the red parcel to the printer.","1. எந்தப் பொட்டலம் எந்தக் கடைக்கு என்று பார்.\n2. நீலப் பொட்டலத்தைத் தையல் கடைக்குக் கொடு.\n3. சிவப்புப் பொட்டலத்தை அச்சுக் கடைக்குக் கொடு."
-SQ19_P_OFFICE,"Courier Office","கூரியர் அலுவலகம்"
-SQ19_P_TAILOR,"Tailor Shop","தையல் கடை"
-SQ19_P_PRINTER,"Print Shop","அச்சுக் கடை"
-SQ20_JOB,"1. Load his tools.\n2. Read the warning sign.\n3. Take the lit road. Stay under 25 km/h.\n4. Unload at the power box.\nBumps and crashes damage the tools.","1. கருவிகளை ஏற்று.\n2. எச்சரிக்கைப் பலகையைப் படி.\n3. விளக்குள்ள சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n4. மின் பெட்டியில் இறக்கு.\nகுலுக்கலும் மோதலும் கருவிகளைச் சேதப்படுத்தும்."
-SQ20_P_MARKET,"Night Market","இரவுச் சந்தை"
-SQ20_P_SIGN,"Warning Sign","எச்சரிக்கைப் பலகை"
-SQ20_P_ROAD,"Lit Road","விளக்குள்ள சாலை"
-SQ20_P_BOX,"Power Box","மின் பெட்டி"
-SQ21_JOB,"1. Choose: get the old folder or print new copies.\n2. Stop there to collect the papers.\n3. Reach the interview office in time.","1. தேர்வு செய்: பழைய கோப்பு, அல்லது புதிய நகல்.\n2. அங்கே நிறுத்திக் காகிதங்களை வாங்கு.\n3. நேரத்தில் நேர்காணல் அலுவலகம் சேர்."
-SQ21_P_HOME,"His Home","அவர் வீடு"
-SQ21_P_PRINT,"Print Shop","அச்சுக் கடை"
-SQ21_P_OFFICE,"Interview Office","நேர்காணல் அலுவலகம்"
-SQ23_JOB,"1. Load the mirror.\n2. Take the wide road. Stay under 25 km/h.\n3. Back up at the office and unload.\nBumps and crashes can crack the mirror.","1. கண்ணாடியை ஏற்று.\n2. அகலச் சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. அலுவலகத்தில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் கண்ணாடியை உடைக்கும்."
-SQ23_WIDE_GO,"Take the wide road. Drive slowly.","அகலச் சாலையில் மெதுவாகப் போ."
-SQ23_P_SHOP,"Glass Shop","கண்ணாடிக் கடை"
-SQ23_P_SIGN,"Road Sign","சாலைப் பலகை"
-SQ23_P_ROAD,"Wide Road Corner","அகலச் சாலை முனை"
-SQ23_P_OFFICE,"Mount Road Office","மவுண்ட் ரோடு அலுவலகம்"
-SQ24_JOB,"1. Guess what is broken.\n2. Buy the part at the night workshop.\n3. Bring it back to the stuck auto in time.","1. என்ன பழுது என்று கண்டுபிடி.\n2. இரவுப் பட்டறையில் பாகம் வாங்கு.\n3. நேரத்தில் ஆட்டோவிடம் கொண்டு வா."
-SQ24_P_BOARD,"Electrician's Board","எலக்ட்ரீஷியன் பலகை"
-SQ24_P_SHOP,"Night Workshop","இரவுப் பட்டறை"
-SQ24_P_AUTO,"Stuck Auto","நின்ற ஆட்டோ"
-SQ25_JOB,"1. Stop at each clue on the map.\n2. Pick the right answer.\n3. Take a photo at the last spot.","1. வரைபடத்தில் உள்ள ஒவ்வொரு குறிப்பிலும் நிறுத்து.\n2. சரியான பதிலைத் தேர்வு செய்.\n3. கடைசி இடத்தில் படம் எடு."
-SQ25_P_STONE,"Old Stone Building","பழைய கல் கட்டடம்"
-SQ25_P_CLOCK,"Clock Tower Sign","கடிகாரக் கோபுரப் பலகை"
-SQ25_P_WALL,"Painted Wall","வர்ணச் சுவர்"
-SQ25_P_VIEW,"Postcard Photo Spot","அஞ்சலட்டை பட இடம்"
-SQ26_JOB,"1. Pick up jasmine and rose garlands.\n2. Bring both to the wedding hall.\n3. Stay under 38 km/h and don't crash.","1. மல்லிகை, ரோஜா மாலைகளை வாங்கு.\n2. இரண்டையும் மண்டபத்துக்குக் கொண்டு போ.\n3. 38 கி.மீ/மணிக்குள் ஓட்டு, மோதாதே."
-SQ26_P_JASMINE,"Jasmine Flower Shop","மல்லிகைப் பூக்கடை"
-SQ26_P_ROSE,"Rose Flower Shop","ரோஜாப் பூக்கடை"
-SQ26_P_HALL,"Wedding Hall","திருமண மண்டபம்"
+SQ10_DESC,Help the beach clean-up team carry rubbish bags to the sorting point.,கடற்கரை சுத்தம் செய்யும் குழுவின் குப்பைப் பைகளைப் பிரிப்பு மையத்துக்குக் கொண்டு போ.
+SQ10_SORT,Blue bags are for recycling. Red bags are for rubbish. Keep them apart.,நீலப் பைகள் ரீசைக்கிளிங்க்கு. சிவப்பு பைகள் குப்பைக்கு. தனித்தனியாக வை.
+SQ10_START,Let's start,ஆரம்பிக்கலாம்
+SQ10_BLUE,Go to the north entrance and load two blue bags.,வடக்கு நுழைவில் இரண்டு நீலப் பைகளை ஏற்று.
+SQ10_RED,Go to the south entrance and load one red bag.,தெற்கு நுழைவில் ஒரு சிவப்பு பையை ஏற்று.
+SQ10_FIRST_DUMP,Unload all three bags at the sorting point.,மூன்று பைகளையும் பிரிப்பு மையத்தில் இறக்கு.
+SQ10_SECOND_LOAD,Go to the west entrance and load two more bags.,மேற்கு நுழைவில் மேலும் இரண்டு பைகளை ஏற்று.
+SQ10_CATEGORY,These bags have a blue label. Where do they go?,இந்தப் பைகளில் நீல அடையாளம் உள்ளது. எங்கே போகும்?
+SQ10_RECYCLING,Recycling,ரீசைக்கிளிங்
+SQ10_GENERAL,Rubbish,குப்பை
+SQ10_CORRECTION,Blue means recycling! Ask the helper at the south entrance.,நீலம் என்றால் ரீசைக்கிளிங்! தெற்கு நுழைவில் உதவியாளரிடம் கேள்.
+SQ10_LAST_DUMP,Unload the last two bags at the sorting point.,கடைசி இரண்டு பைகளையும் பிரிப்பு மையத்தில் இறக்கு.
+SQ14_TITLE,"Exam Hall, Wrong Gate","எக்ஸாம் ஹால், தப்பான கேட்"
+SQ14_DESC,A student is late for an exam and needs a copy of her ID.,மாணவிக்குத் தேர்வுக்குத் லேட். அடையாள அட்டை நகல் தேவை.
+SQ14_NOTICE,Stop at the school and read the notice.,பள்ளியில் நிறுத்தி அறிவிப்பைப் படி.
+SQ14_COPY,The notice says: use the east gate and bring a copy of your ID. What now?,"அறிவிப்பு: கிழக்கு வாசல் வழியாக வா, அடையாள நகல் கொண்டு வா. இப்போ என்ன?"
+SQ14_PRINT,Get the ID copy,நகல் எடு
+SQ14_SKIP,Go without it,நகல் இல்லாமல் போ
+SQ14_VERIFY,"The guard says no copy, no entry. Look at the notice in the print shop window.",நகல் இல்லாமல் அனுமதி இல்லை என்கிறார் காவலர். அச்சுக் கடை அறிவிப்பைப் பார்.
+SQ14_PRINTER,Go to the print shop and collect the ID copy.,அச்சுக் கடையில் நகலை வாங்கு.
+SQ14_GATE,Hurry to the east gate!,கிழக்கு வாசலுக்கு சீக்கிரமா போ!
+SQ14_HANDOVER,Give the copy to the student.,நகலை மாணவியிடம் கொடு.
+SQ15_TITLE,"Last Stop, Extra Help",லாஸ்ட் ஸ்டாப்ல ஒரு உதவி
+SQ15_DESC,The bus broke down. Take two passengers where they need to go.,பஸ் பழுதானது. இரண்டு பயணிகளை அவர்கள் இடத்தில் சேர்.
+SQ15_BOARD,Stop at the bus stop and let both passengers in.,பஸ் நிறுத்தத்தில் நிறுத்தி இருவரையும் ஏற்று.
+SQ15_ORDER,One needs the clinic. One needs the library. Who first?,"ஒருவருக்கு மருத்துவமனை, ஒருவருக்கு நூலகம். முதலில் யார்?"
+SQ15_CLINIC,Clinic first,மருத்துவமனை முதலில்
+SQ15_LIBRARY,Library first,நூலகம் முதலில்
+SQ15_FIRST,Drive to the first stop and drop your passenger.,முதல் இடத்துக்குப் போய்ப் பயணியை இறக்கு.
+SQ15_SECOND,Now drop the last passenger.,இப்போ கடைசிப் பயணியை இறக்கு.
+SQ17_TITLE,The Monsoon Supply Run,மழைக்கால சப்ளை ரன்
+SQ17_DESC,Floods have closed a road. Carry food and water to people who need it.,வெள்ளத்தால் சாலை மூடப்பட்டது. தேவைப்படுவோருக்கு உணவும் நீரும் கொண்டு போ.
+SQ17_LOAD,Load the food and water.,உணவையும் நீரையும் ஏற்று.
+SQ17_WARNING,Stop and read the flood sign.,நிறுத்தி வெள்ளப் பலகையைப் படி.
+SQ17_ORDER,The shelter needs two bundles. The relief desk needs one. Who first?,"முகாமுக்கு இரண்டு மூட்டைகள், உதவி மேசைக்கு ஒன்று. முதலில் யார்?"
+SQ17_SHELTER,Shelter,முகாம்
+SQ17_DESK,Relief desk,உதவி மேசை
+SQ17_FIRST,Follow the route and deliver. Avoid the flood!,வழியைப் பின்பற்றிக் கொடு. வெள்ளத்தைத் தவிர்!
+SQ17_SECOND,Deliver the rest.,மீதியைக் கொடு.
+SQ18_TITLE,Five-Star Auto Anna,ஃபைவ் ஸ்டார் ஆட்டோ அண்ணா
+SQ18_DESC,Three neighbours need help in one trip. Keep them all happy.,மூன்று அண்டை வீட்டார்க்கு ஒரே பயணத்தில் உதவி வேண்டும். அனைவரையும் மகிழ்ச்சியாக வை.
+SQ18_PREP,What do you do first?,முதலில் என்ன செய்வாய்?
+SQ18_QUIET,Clean the seat,இருக்கையைச் சுத்தம் செய்
+SQ18_CHARGER,Buy a charger,சார்ஜர் வாங்கு
+SQ18_SUPPLY,Stop at the shop and get ready.,கடையில் நிறுத்தித் ரெடி செய்.
+SQ18_LUGGAGE,Stop here and load the suitcase.,இங்கே நிறுத்திப் பெட்டியை ஏற்று.
+SQ18_DROP,Take the suitcase to its owner's house.,பெட்டியை உரிமையாளரின் வீட்டில் சேர்.
+SQ18_CHARGE,Finish at the charging stop.,சார்ஜிங் இடத்தில் முடி.
+SQ20_TITLE,Blackout on the Corner,தெரு முனையில கரன்ட் கட்
+SQ20_DESC,The street lights are out. Take an electrician and his tools to fix them.,தெருவிளக்குகள் அணைந்தன. எலக்ட்ரீஷியனையும் கருவிகளையும் கொண்டு போ.
+SQ20_PICKUP,Stop at the night market and load the tools.,இரவுச் சந்தையில் நிறுத்திக் கருவிகளை ஏற்று.
+SQ20_MARKER,Stop and read the warning sign.,நிறுத்தி எச்சரிக்கைப் பலகையைப் படி.
+SQ20_BAY,Take the lit road. The dark corner is closed.,விளக்குள்ள சாலையில் போ. இருண்ட முனை மூடப்பட்டுள்ளது.
+SQ20_REPAIR,Stop at the power box and unload the tools.,மின் பெட்டியில் நிறுத்திக் கருவிகளை இறக்கு.
+SQ20_FINISH,The electrician fixes it. The lights are back on!,எலக்ட்ரீஷியன் சரிசெய்தார். விளக்குகள் எரிகின்றன!
+SQ20_THANKS,Thank you!,நன்றி!
+SQ23_TITLE,A Mirror Through Mount Road,மவுண்ட் ரோடுல ஒரு கண்ணாடி
+SQ23_DESC,Deliver a big glass mirror along Mount Road without breaking it.,பெரிய கண்ணாடியை உடையாமல் மவுண்ட் ரோடு வழியாகக் கொண்டு போ.
+SQ23_MIRROR,Stop at the glass shop and load the mirror.,கண்ணாடிக் கடையில் நிறுத்தி ஏற்று.
+SQ23_ROUTE,The small lane has sharp turns. The wide road is safer. Which way?,சிறிய சந்தில் கூர்மையான திருப்பங்கள். அகலச் சாலை பாதுகாப்பு. எந்த வழி?
+SQ23_WIDE,Wide road,அகலச் சாலை
+SQ23_NARROW,Small lane,சிறிய சந்து
+SQ23_WARNING,The lane is too tight for the mirror! Read the road sign.,சந்து கண்ணாடிக்குக் குறுகலாக உள்ளது! சாலைப் பலகையைப் படி.
+SQ23_PARK,"At the office: stop at the marker, shift to R, roll back a little, stop and tap Done.","அலுவலகத்தில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
+SQ23_UNLOAD,Unload the mirror here.,கண்ணாடியை இங்கே இறக்கு.
+SQ25_TITLE,Three Clues to Madras,மெட்ராஸோட மூணு க்ளூஸ்
+SQ25_DESC,An old postcard shows a Madras landmark. Follow the clues to find the spot.,பழைய அஞ்சலட்டையில் ஒரு மெட்ராஸ் இடம் உள்ளது. குறிப்புகளைப் பின்பற்று.
+SQ25_CLUE_1,Drive to the old stone building and read the plaque.,பழைய கல் கட்டடத்துக்குப் போய்க் கல்வெட்டைப் படி.
+SQ25_GUESS,The plaque shows an old clock. The postcard shows the same thing. Which one?,கல்வெட்டில் பழைய கடிகாரம். அஞ்சலட்டையிலும் அதே. எது?
+SQ25_CLOCK,The old clock,பழைய கடிகாரம்
+SQ25_ARCH,The market arch,சந்தை வளைவு
+SQ25_HINT,That arch is new. Read the clock tower sign.,அந்த வளைவு புதியது. கடிகாரக் கோபுரப் பலகையைப் படி.
+SQ25_CLUE_2,Find the second clue on the painted wall.,வர்ணச் சுவரில் இரண்டாவது குறிப்பைத் தேடு.
+SQ25_REVEAL,The wall points to the photo spot!,சுவர் படம் எடுக்கும் இடத்தைக் காட்டுகிறது!
+SQ25_READY,Go there,அங்கே போ
+SQ25_VIEW,Stop at the photo spot and take a picture.,படம் எடுக்கும் இடத்தில் நிறுத்திப் படம் எடு.
+QUEST_QUALITY_INSTRUMENT,Drum safe: %d%%,மிருதங்கம் பாதுகாப்பு: %d%%
+QUEST_QUALITY_LAMPS,Lamps safe: %d%%,விளக்குகள் பாதுகாப்பு: %d%%
+QUEST_QUALITY_PAPER,Goods dry: %d%%,பொருட்கள் உலர்வு: %d%%
+QUEST_QUALITY_SUPPLIES,Supplies dry: %d%%,பொருட்கள் உலர்வு: %d%%
+QUEST_QUALITY_TOOLS,Tools safe: %d%%,கருவிகள் பாதுகாப்பு: %d%%
+QUEST_QUALITY_MIRROR,Mirror safe: %d%%,கண்ணாடி பாதுகாப்பு: %d%%
+SQ01_JOB,1. Go to the wedding hall.\n2. Find out whose pouch it is.\n3. Give it back at the help desk.,1. திருமண மண்டபத்துக்குப் போ.\n2. பை யாருடையது என்று கண்டுபிடி.\n3. உதவி மேசையில் ஒப்படை.
+SQ01_P_HALL,Wedding Hall,திருமண மண்டபம்
+SQ01_P_FLOWER,Flower Seller,பூக்காரர்
+SQ01_P_DESK,Help Desk,உதவி மேசை
+SQ02_JOB,"1. Pick which shop gets coffee first.\n2. Deliver to all three shops.\n3. Bumps and hard braking spill the coffee, so drive smoothly.",1. முதலில் எந்தக் கடை என்று தேர்வு செய்.\n2. மூன்று கடைகளுக்கும் கொடு.\n3. குலுக்கலும் திடீர் பிரேக்கும் காபியைச் சிந்தும். மெதுவா ஓட்டு.
+SQ02_P_TAILOR,Tailor Shop,தையல் கடை
+SQ02_P_BOOKS,Book Shop,புத்தகக் கடை
+SQ02_P_TEA,Tea Shop,டீக்கடை
+SQ03_JOB,1. Load the drum at the music shop.\n2. Drive to the music hall. Stay under 32 km/h.\n3. Bumps and crashes damage the drum.\nThe drum goes in by the back gate.,1. இசைக் கடையில் மிருதங்கத்தை ஏற்று.\n2. சபாவுக்குப் போ. 32 கி.மீ/மணிக்குள் ஓட்டு.\n3. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\nமிருதங்கம் பின்னாடி கேட் வழியாகச் செல்லும்.
+SQ03_P_SHOP,Music Shop,இசைக் கடை
+SQ03_P_HALL,Music Hall,சபா மண்டபம்
+SQ03_P_NOTICE,Notice Board,அறிவிப்புப் பலகை
+SQ03_P_BACK,Hall Back Gate,சபா பின்னாடி கேட்
+SQ04_JOB,1. Drive Paati to the places she remembers.\n2. Stop and look around at each one.\n3. Take her to her granddaughter's home.,1. பாட்டிக்கு நினைவிருக்கும் இடங்களுக்கு ஓட்டு.\n2. ஒவ்வொரு இடத்திலும் நிறுத்திப் பார்.\n3. பேத்தியின் வீட்டில் சேர்.
+SQ04_P_STALL,Flower Stall,பூக்கடை
+SQ04_P_STEPS,Tank Steps Corner,குளத்துப் படி முனை
+SQ04_P_HOME,Granddaughter's Home,பேத்தியின் வீடு
+SQ05_JOB,1. Load the lamps.\n2. Take the open road around the procession. Stay under 25 km/h.\n3. Back up at the store and unload.\nBumps and crashes can break the lamps.,1. விளக்குகளை ஏற்று.\n2. திறந்த சாலையில் சுற்றிப் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. கிடங்கில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் விளக்குகளை உடைக்கும்.
+SQ05_OUTER_GO,Take the outer road. Drive slowly.,வெளிச் சாலையில் மெதுவாப் போ.
+SQ05_P_SHOP,Lamp Shop,விளக்குக் கடை
+SQ05_P_SIGN,Road Closed Sign,சாலை மூடல் பலகை
+SQ05_P_OUTER,Outer Road Corner,வெளிச் சாலை முனை
+SQ05_P_STORE,Temple Store,கோயில் கிடங்கு
+SQ06_JOB,"1. Drive to the first photo spot and stop.\n2. Drive to the second photo spot and stop.\n3. Tap Take photo at each spot.\nBe quick, the light is going!","1. முதல் இடத்துக்குப் போய் நிறுத்து.\n2. இரண்டாவது இடத்துக்குப் போய் நிறுத்து.\n3. ஒவ்வொரு இடத்திலும் படம் எடு என்பதைத் தட்டு.\nவேகமா, வெளிச்சம் குறைகிறது!"
+SQ06_P_SPOT1,Beach Photo Spot,கடற்கரைப் பட இடம்
+SQ06_P_SPOT2,Lighthouse Photo Spot,கலங்கரை விளக்கப் பட இடம்
+SQ07_JOB,1. Drive along the beach road and look for him.\n2. Find the boy with the red kite.\n3. Bring the family to the help point in time.,1. கடற்கரைச் சாலையில் தேடு.\n2. சிவப்பு பட்டம் வைத்திருக்கும் பையனைக் கண்டுபிடி.\n3. குடும்பத்தை உதவி மையத்துக்கு நேரத்தில் கொண்டு வா.
+SQ07_P_GATE1,Beach Entrance,கடற்கரை நுழைவு
+SQ07_P_GATE2,Next Beach Entrance,அடுத்த கடற்கரை நுழைவு
+SQ07_P_GATE3,South Beach Entrance,தெற்கு கடற்கரை நுழைவு
+SQ07_P_HELP,Beach Help Point,கடற்கரை உதவி மையம்
+SQ08_JOB,"1. Load goods from both sellers.\n2. Take everything to the shelter.\n3. Paper goods get wet in the rain, so be quick.",1. இருவரின் பொருட்களையும் ஏற்று.\n2. எல்லாவற்றையும் கூடாரத்துக்குக் கொண்டு போ.\n3. மழையில் காகிதம் நனையும். வேகமாச் செய்.
+SQ08_P_PAPER,Paper Seller,காகிதக் கடைக்காரர்
+SQ08_P_BOXES,Box Seller,பெட்டிக் கடைக்காரர்
+SQ08_P_SHELTER,Rain Shelter,மழைக் கூடாரம்
+SQ09_JOB,1. Take Kutty to the animal clinic.\n2. Don't use the horn.\n3. Bumps and hard braking scare him.\nYou can stop on the way to calm him.,1. குட்டியை விலங்கு மருத்துவமனைக்குக் கொண்டு போ.\n2. ஹாரன் அடிக்காதே.\n3. குலுக்கலும் திடீர் பிரேக்கும் அதைப் பயமுறுத்தும்.\nவழியில் நிறுத்தி அமைதிப்படுத்தலாம்.
+SQ09_P_CORNER,Quiet Corner,அமைதியான முனை
+SQ09_P_CLINIC,Animal Clinic,விலங்கு மருத்துவமனை
+SQ10_JOB,1. Collect the blue and red bags.\n2. Unload them at the sorting point.\n3. Collect two more bags and unload them.\nYour auto holds three bags at a time.,"1. நீல, சிவப்பு பைகளைச் சேகரி.\n2. பிரிப்பு மையத்தில் இறக்கு.\n3. மேலும் இரண்டு பைகளைச் சேகரித்து இறக்கு.\nஒரு முறை மூன்று பைகள் மட்டுமே."
+SQ10_P_NORTH,North Beach Entrance,வடக்கு கடற்கரை நுழைவு
+SQ10_P_SOUTH,South Beach Entrance,தெற்கு கடற்கரை நுழைவு
+SQ10_P_SORT,Sorting Point,பிரிப்பு மையம்
+SQ10_P_WEST,West Beach Entrance,மேற்கு கடற்கரை நுழைவு
+SQ12_JOB,1. Go to the sports shop.\n2. Pick the blue bag with the white stripe.\n3. Take it to the stadium gate.,1. விளையாட்டுக் கடைக்குப் போ.\n2. வெள்ளைக் கோடு உள்ள நீலப் பையை எடு.\n3. மைதான வாசலுக்குக் கொண்டு போ.
+SQ12_P_SHOP,Sports Shop,விளையாட்டுக் கடை
+SQ12_P_DESK,Ticket Counter,டிக்கெட் கவுன்டர்
+SQ12_P_GATE,Stadium Gate,மைதான வாசல்
+SQ14_JOB,1. Read the notice at the school.\n2. Get the ID copy from the print shop.\n3. Reach the east gate before time runs out.,1. பள்ளியில் அறிவிப்பைப் படி.\n2. அச்சுக் கடையில் நகல் எடு.\n3. நேரம் முடியும் முன் கிழக்கு வாசலை அடை.
+SQ14_P_SCHOOL,School Notice Board,பள்ளி அறிவிப்புப் பலகை
+SQ14_P_PRINT,Print Shop,அச்சுக் கடை
+SQ14_P_GATE,School East Gate,பள்ளி கிழக்கு வாசல்
+SQ15_JOB,1. Pick up both passengers.\n2. Choose who to drop first.\n3. Drop one at the clinic and one at the library.,"1. இரண்டு பயணிகளையும் ஏற்று.\n2. முதலில் யாரை இறக்குவது என்று தேர்வு செய்.\n3. ஒருவரை மருத்துவமனையிலும், மற்றவரை நூலகத்திலும் இறக்கு."
+SQ15_P_STOP,Bus Stop,பஸ் ஸ்டாப்
+SQ15_P_CLINIC,Clinic,மருத்துவமனை
+SQ15_P_LIBRARY,Library,நூலகம்
+SQ16_JOB,At each of the three stops:\n1. Turn on your indicator.\n2. Stop on the marker.,மூன்று இடங்களிலும்:\n1. இண்டிகேட்டரைப் போடு.\n2. குறியில் நிறுத்து.
+SQ16_P_A,Pull Over Here,இங்கே ஓரமாக நிறுத்து
+SQ16_P_B,Pull Over Here,இங்கே ஓரமாக நிறுத்து
+SQ16_P_C,Pull Over Here,இங்கே ஓரமாக நிறுத்து
+SQ17_JOB,1. Load the food and water.\n2. Read the flood sign.\n3. Deliver to the shelter and the relief desk.\nStay away from the flooded road.,1. உணவையும் நீரையும் ஏற்று.\n2. வெள்ளப் பலகையைப் படி.\n3. முகாமுக்கும் உதவி மேசைக்கும் கொடு.\nவெள்ளச் சாலைக்குப் போகாதே.
+SQ17_P_STORE,Relief Store,நிவாரணக் கிடங்கு
+SQ17_P_SIGN,Flood Sign,வெள்ளப் பலகை
+SQ17_P_SHELTER,Shelter,முகாம்
+SQ17_P_DESK,Relief Desk,உதவி மேசை
+SQ18_JOB,"1. Get ready: clean the seat or buy a charger.\n2. Give the quiet ride, then carry the suitcase.\n3. Finish at the charging stop.\nBumps, crashes and the horn upset passengers.","1. ரெடி செய்: இருக்கையைச் சுத்தம் செய், அல்லது சார்ஜர் வாங்கு.\n2. அமைதியான பயணம், பிறகு பெட்டி.\n3. சார்ஜிங் இடத்தில் முடி.\nகுலுக்கல், மோதல், ஹாரன் பயணிகளை வருத்தும்."
+SQ18_QUIET_GO,Drive your first neighbour home. Keep it quiet and smooth.,"முதல் நபரை வீட்டில் சேர். அமைதியா, மெதுவா ஓட்டு."
+SQ18_P_SHOP,Corner Shop,முனைக் கடை
+SQ18_P_CHARGER,Phone Shop,கைபேசிக் கடை
+SQ18_P_HOME1,Neighbour's House,அண்டை வீடு
+SQ18_P_HOME2,Suitcase Owner's House,பெட்டி உரிமையாளர் வீடு
+SQ19_JOB,1. Check which parcel is for which shop.\n2. Deliver the blue parcel to the tailor.\n3. Deliver the red parcel to the printer.,1. எந்தப் பொட்டலம் எந்தக் கடைக்கு என்று பார்.\n2. நீலப் பொட்டலத்தைத் தையல் கடைக்குக் கொடு.\n3. சிவப்பு பொட்டலத்தை அச்சுக் கடைக்குக் கொடு.
+SQ19_P_OFFICE,Courier Office,கூரியர் அலுவலகம்
+SQ19_P_TAILOR,Tailor Shop,தையல் கடை
+SQ19_P_PRINTER,Print Shop,அச்சுக் கடை
+SQ20_JOB,1. Load his tools.\n2. Read the warning sign.\n3. Take the lit road. Stay under 25 km/h.\n4. Unload at the power box.\nBumps and crashes damage the tools.,1. கருவிகளை ஏற்று.\n2. எச்சரிக்கைப் பலகையைப் படி.\n3. விளக்குள்ள சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n4. மின் பெட்டியில் இறக்கு.\nகுலுக்கலும் மோதலும் கருவிகளைச் சேதப்படுத்தும்.
+SQ20_P_MARKET,Night Market,இரவுச் சந்தை
+SQ20_P_SIGN,Warning Sign,எச்சரிக்கைப் பலகை
+SQ20_P_ROAD,Lit Road,விளக்குள்ள சாலை
+SQ20_P_BOX,Power Box,மின் பெட்டி
+SQ21_JOB,1. Choose: get the old folder or print new copies.\n2. Stop there to collect the papers.\n3. Reach the interview office in time.,"1. தேர்வு செய்: பழைய கோப்பு, அல்லது புதிய நகல்.\n2. அங்கே நிறுத்திக் காகிதங்களை வாங்கு.\n3. நேரத்தில் இன்டர்வியூ அலுவலகம் சேர்."
+SQ21_P_HOME,His Home,அவர் வீடு
+SQ21_P_PRINT,Print Shop,அச்சுக் கடை
+SQ21_P_OFFICE,Interview Office,இன்டர்வியூ அலுவலகம்
+SQ23_JOB,1. Load the mirror.\n2. Take the wide road. Stay under 25 km/h.\n3. Back up at the office and unload.\nBumps and crashes can crack the mirror.,1. கண்ணாடியை ஏற்று.\n2. அகலச் சாலையில் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. அலுவலகத்தில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் கண்ணாடியை உடைக்கும்.
+SQ23_WIDE_GO,Take the wide road. Drive slowly.,அகலச் சாலையில் மெதுவாப் போ.
+SQ23_P_SHOP,Glass Shop,கண்ணாடிக் கடை
+SQ23_P_SIGN,Road Sign,சாலைப் பலகை
+SQ23_P_ROAD,Wide Road Corner,அகலச் சாலை முனை
+SQ23_P_OFFICE,Mount Road Office,மவுண்ட் ரோடு அலுவலகம்
+SQ24_JOB,1. Guess what is broken.\n2. Buy the part at the night workshop.\n3. Bring it back to the stuck auto in time.,1. என்ன பழுது என்று கண்டுபிடி.\n2. இரவுப் பட்டறையில் பாகம் வாங்கு.\n3. நேரத்தில் ஆட்டோவிடம் கொண்டு வா.
+SQ24_P_BOARD,Electrician's Board,எலக்ட்ரீஷியன் பலகை
+SQ24_P_SHOP,Night Workshop,இரவுப் பட்டறை
+SQ24_P_AUTO,Stuck Auto,நின்ற ஆட்டோ
+SQ25_JOB,1. Stop at each clue on the map.\n2. Pick the right answer.\n3. Take a photo at the last spot.,1. வரைபடத்தில் உள்ள ஒவ்வொரு குறிப்பிலும் நிறுத்து.\n2. சரியான பதிலைத் தேர்வு செய்.\n3. கடைசி இடத்தில் படம் எடு.
+SQ25_P_STONE,Old Stone Building,பழைய கல் கட்டடம்
+SQ25_P_CLOCK,Clock Tower Sign,கடிகாரக் கோபுரப் பலகை
+SQ25_P_WALL,Painted Wall,வர்ணச் சுவர்
+SQ25_P_VIEW,Postcard Photo Spot,அஞ்சலட்டை பட இடம்
+SQ26_JOB,1. Pick up jasmine and rose garlands.\n2. Bring both to the wedding hall.\n3. Stay under 38 km/h and don't crash.,"1. மல்லிகை, ரோஜா மாலைகளை வாங்கு.\n2. இரண்டையும் மண்டபத்துக்குக் கொண்டு போ.\n3. 38 கி.மீ/மணிக்குள் ஓட்டு, மோதாதே."
+SQ26_P_JASMINE,Jasmine Flower Shop,மல்லிகைப் பூக்கடை
+SQ26_P_ROSE,Rose Flower Shop,ரோஜாப் பூக்கடை
+SQ26_P_HALL,Wedding Hall,திருமண மண்டபம்
 SQ27_JOB,"1. Choose the quick lane or the wide road.\n2. Stay under 25 km/h and don't crash.\n3. At the house, back up and park.","1. விரைவுச் சந்து அல்லது அகலச் சாலையைத் தேர்வு செய்.\n2. 25 கி.மீ/மணிக்குள் ஓட்டு, மோதாதே.\n3. வீட்டில் பின்னால் நகர்த்தி நிறுத்து."
-SQ27_P_LANE,"Small Lane","சிறிய சந்து"
-SQ27_P_ROAD,"Wide Road","அகலச் சாலை"
-SQ27_P_HOUSE,"Customer's House","வாடிக்கையாளர் வீடு"
-QUEST_ACT_LOAD,"Load","ஏற்று"
-QUEST_ACT_UNLOAD,"Unload","இறக்கு"
-QUEST_ACT_READ,"Read it","படி"
-QUEST_ACT_LOOK,"Look around","சுற்றிப் பார்"
-QUEST_ACT_COLLECT,"Collect","வாங்கு"
-QUEST_ACT_GIVE,"Hand over","ஒப்படை"
-QUEST_ACT_BOARD,"Let them in","ஏற்று"
-QUEST_ACT_DROP,"Drop off","இறக்கிவிடு"
-QUEST_ACT_READY,"Get ready","தயார் செய்"
-QUEST_NOT_NOW,"Not now","இப்போது வேண்டாம்"
-QUEST_NEARBY_TITLE,"SIDE QUEST","பக்கக் கதை"
-QUEST_REWARD,"Reward: ₹%s  ·  about %d min","பரிசு: ₹%s  ·  சுமார் %d நிமிடம்"
-QUEST_STOP_HERE,"You're here! Stop the auto.","வந்துவிட்டாய்! ஆட்டோவை நிறுத்து."
-QUEST_SLOW_DOWN,"Too fast! Slow down in %d s","மிக வேகம்! %d நொடிக்குள் குறை"
-QUEST_LEAVE_SURE,"Sure?","உறுதியா?"
-QUEST_KNOCK,"Careful! That hit did some damage.","கவனம்! அந்த மோதலில் சேதம் ஆனது."
-RIDER_IT_COMMUTER_NAME,"Office Worker","அலுவலக ஊழியர்"
+SQ27_P_LANE,Small Lane,சிறிய சந்து
+SQ27_P_ROAD,Wide Road,அகலச் சாலை
+SQ27_P_HOUSE,Customer's House,வாடிக்கையாளர் வீடு
+QUEST_ACT_LOAD,Load,ஏற்று
+QUEST_ACT_UNLOAD,Unload,இறக்கு
+QUEST_ACT_READ,Read it,படி
+QUEST_ACT_LOOK,Look around,சுற்றிப் பார்
+QUEST_ACT_COLLECT,Collect,வாங்கு
+QUEST_ACT_GIVE,Hand over,ஒப்படை
+QUEST_ACT_BOARD,Let them in,ஏற்று
+QUEST_ACT_DROP,Drop off,இறக்கிவிடு
+QUEST_ACT_READY,Get ready,ரெடி செய்
+QUEST_NOT_NOW,Not now,இப்போ வேண்டாம்
+QUEST_NEARBY_TITLE,SIDE QUEST,பக்கக் கதை
+QUEST_REWARD,Reward: ₹%s  ·  about %d min,பரிசு: ₹%s  ·  சுமார் %d நிமிடம்
+QUEST_STOP_HERE,You're here! Stop the auto.,வந்துவிட்டாய்! ஆட்டோவை நிறுத்து.
+QUEST_SLOW_DOWN,Too fast! Slow down in %d s,மிக வேகம்! %d நொடிக்குள் குறை
+QUEST_LEAVE_SURE,Sure?,உறுதியா?
+QUEST_KNOCK,Careful! That hit did some damage.,கவனம்! அந்த மோதலில் சேதம் ஆனது.
+RIDER_IT_COMMUTER_NAME,Office Worker,அலுவலக ஊழியர்
 RIDER_IT_COMMUTER_HAIL,"Anna, I need to reach the office. Can you go?","அண்ணா, ஆபீஸ் போகணும். வருவீங்களா?"
 RIDER_IT_COMMUTER_ACCEPT,"Okay, let's go fast.","சரி, சீக்கிரம் போகலாம்."
-RIDER_IT_COMMUTER_REJECT,"The app is cheaper. Leave it.","ஆப்ல கம்மி. விடுங்க."
+RIDER_IT_COMMUTER_REJECT,The app is cheaper. Leave it.,ஆப்ல கம்மி. விடுங்க.
 RIDER_IT_COMMUTER_HAPPY,"Perfect timing, thank you!","சரியான நேரம், நன்றி!"
 RIDER_IT_COMMUTER_UPSET,"Careful, I have a laptop!","மெதுவா, லேப்டாப் இருக்கு!"
-RIDER_COLLEGE_STUDENT_NAME,"College Student","கல்லூரி மாணவர்"
+RIDER_COLLEGE_STUDENT_NAME,College Student,கல்லூரி மாணவர்
 RIDER_COLLEGE_STUDENT_HAIL,"Anna, I'm late for class. Will you come?","அண்ணா, கிளாஸுக்கு லேட். வருவீங்களா?"
 RIDER_COLLEGE_STUDENT_ACCEPT,"Done, let's go!","சரி, போகலாம்!"
-RIDER_COLLEGE_STUDENT_REJECT,"Too much. I'll take the bus.","ரொம்ப அதிகம். பஸ்ல போறேன்."
-RIDER_COLLEGE_STUDENT_HAPPY,"Superb driving, anna!","சூப்பர் ஓட்டம் அண்ணா!"
+RIDER_COLLEGE_STUDENT_REJECT,Too much. I'll take the bus.,ரொம்ப அதிகம். பஸ்ல போறேன்.
+RIDER_COLLEGE_STUDENT_HAPPY,"Superb driving, anna!",சூப்பர் ஓட்டம் அண்ணா!
 RIDER_COLLEGE_STUDENT_UPSET,"I said go, not crash!","வேகம் சரி, மோதாதீங்க!"
-RIDER_TNAGAR_SHOPPER_NAME,"Silk Shopper","பட்டுக் கடை வாடிக்கையாளர்"
-RIDER_TNAGAR_SHOPPER_HAIL,"Auto! I have bags. Will you come?","ஆட்டோ! பைகள் இருக்கு. வருவீங்களா?"
+RIDER_TNAGAR_SHOPPER_NAME,Silk Shopper,பட்டுக் கடை வாடிக்கையாளர்
+RIDER_TNAGAR_SHOPPER_HAIL,Auto! I have bags. Will you come?,ஆட்டோ! பைகள் இருக்கு. வருவீங்களா?
 RIDER_TNAGAR_SHOPPER_ACCEPT,"Fine, load the bags.","சரி, பைகளை வையுங்க."
-RIDER_TNAGAR_SHOPPER_REJECT,"For that price I'll find another auto.","அந்த விலைக்கு வேற ஆட்டோ பாக்கறேன்."
+RIDER_TNAGAR_SHOPPER_REJECT,For that price I'll find another auto.,அந்த விலைக்கு வேற ஆட்டோ பாக்கறேன்.
 RIDER_TNAGAR_SHOPPER_HAPPY,"Nice and smooth, thank you.","நல்லா ஓட்டினீங்க, நன்றி."
 RIDER_TNAGAR_SHOPPER_UPSET,"Slowly, my bags are falling!","மெதுவா, பைகள் விழுது!"
-RIDER_TOURIST_NAME,"Tourist","சுற்றுலாப் பயணி"
-RIDER_TOURIST_HAIL,"Excuse me, can you take me there?","மன்னிக்கவும், அங்கே கொண்டு போவீங்களா?"
+RIDER_TOURIST_NAME,Tourist,சுற்றுலாப் பயணி
+RIDER_TOURIST_HAIL,"Excuse me, can you take me there?","சாரி, அங்கே கொண்டு போவீங்களா?"
 RIDER_TOURIST_ACCEPT,"Great, let's go.","சரி, போகலாம்."
-RIDER_TOURIST_REJECT,"That is too much, sorry.","அது அதிகம், மன்னிக்கவும்."
+RIDER_TOURIST_REJECT,"That is too much, sorry.","அது அதிகம், சாரி."
 RIDER_TOURIST_HAPPY,"What a lovely ride, thank you!","அருமையான பயணம், நன்றி!"
-RIDER_TOURIST_UPSET,"Please slow down a little.","கொஞ்சம் மெதுவா போங்க."
-RIDER_MONSOON_RIDER_NAME,"Stranded Rider","சிக்கிய பயணி"
+RIDER_TOURIST_UPSET,Please slow down a little.,கொஞ்சம் மெதுவா போங்க.
+RIDER_MONSOON_RIDER_NAME,Stranded Rider,சிக்கிய பயணி
 RIDER_MONSOON_RIDER_HAIL,"Anna, I'm stuck here. Please come!","அண்ணா, இங்க மாட்டிக்கிட்டேன். வாங்க!"
 RIDER_MONSOON_RIDER_ACCEPT,"Thank you, let's go.","நன்றி, போகலாம்."
-RIDER_MONSOON_RIDER_REJECT,"No, that is too much even today.","இன்னைக்கும் அது ரொம்ப அதிகம்."
+RIDER_MONSOON_RIDER_REJECT,"No, that is too much even today.",இன்னைக்கும் அது ரொம்ப அதிகம்.
 RIDER_MONSOON_RIDER_HAPPY,"You saved me, thank you!","காப்பாத்திட்டீங்க, நன்றி!"
 RIDER_MONSOON_RIDER_UPSET,"Careful, the road is bad!","கவனம், ரோடு மோசம்!"
-HAGGLE_METER,"Meter: ₹%d","மீட்டர்: ₹%d"
-HAGGLE_PATIENCE,"Patience","பொறுமை"
-HAGGLE_ACCEPT,"Accept","ஏற்றுக்கொள்"
-HAGGLE_THEIR_OFFER,"Rider's offer","பயணி சொன்ன விலை"
-HAGGLE_ASK_METER,"Ask the meter fare","மீட்டர் கட்டணம் கேள்"
-HAGGLE_ASK_MORE,"Ask a bit more","கொஞ்சம் அதிகம் கேள்"
-HAGGLE_ASK_HIGH,"Ask high","நிறைய கேள்"
-HAGGLE_PLUS,"₹%d more","₹%d கூட"
-HAGGLE_LET_GO,"Let this ride go","இந்தச் சவாரி வேண்டாம்"
+HAGGLE_METER,Meter: ₹%d,மீட்டர்: ₹%d
+HAGGLE_PATIENCE,Patience,பொறுமை
+HAGGLE_ACCEPT,Accept,ஏற்றுக்கொள்
+HAGGLE_THEIR_OFFER,Rider's offer,பயணி சொன்ன விலை
+HAGGLE_ASK_METER,Ask the meter fare,மீட்டர் கட்டணம் கேள்
+HAGGLE_ASK_MORE,Ask a bit more,கொஞ்சம் அதிகம் கேள்
+HAGGLE_ASK_HIGH,Ask high,நிறைய கேள்
+HAGGLE_PLUS,₹%d more,₹%d கூட
+HAGGLE_LET_GO,Let this ride go,இந்தச் சவாரி வேண்டாம்
 HAGGLE_COUNTER,"No no. ₹%d, okay?","இல்லை இல்லை. ₹%d, சரியா?"
 HAGGLE_COUNTER_ANGRY,"Are you joking? ₹%d, last offer!","விளையாடுறீங்களா? ₹%d, அவ்வளவுதான்!"
-HAGGLE_DEAL,"“%s”  Deal at ₹%d","“%s”  ₹%d-க்கு ஒப்பந்தம்"
-HAGGLE_STREAK,"%d good deals in a row! Bonus at the drop.","தொடர்ந்து %d நல்ல பேரம்! இறக்கும்போது போனஸ்."
-GOOD_DEAL_BONUS,"Good deal bonus","நல்ல பேர போனஸ்"
-CLUE_LATE,"Looks in a hurry","அவசரத்தில் இருக்கிறார்"
-CLUE_BAGS,"Carrying heavy bags","கனமான பைகள்"
-CLUE_RAIN,"It is raining","மழை பெய்கிறது"
+HAGGLE_DEAL,“%s”  Deal at ₹%d,“%s”  ₹%d-க்கு ஒப்பந்தம்
+HAGGLE_STREAK,%d good deals in a row! Bonus at the drop.,தொடர்ந்து %d நல்ல பேரம்! இறக்கும்போது போனஸ்.
+GOOD_DEAL_BONUS,Good deal bonus,நல்ல பேர போனஸ்
+CLUE_LATE,Looks in a hurry,அவசரத்தில் இருக்காங்க
+CLUE_BAGS,Carrying heavy bags,கனமான பைகள்
+CLUE_RAIN,It is raining,மழை பெய்கிறது
 CLUE_NIGHT,"It is late, few autos","நேரமாகிவிட்டது, ஆட்டோ குறைவு"
-CLUE_NEW,"New to the city","நகரத்துக்குப் புதியவர்"
-CLUE_FAMILY,"With family","குடும்பத்துடன்"
-CLUE_APP,"Checking a cab app","கேப் ஆப் பார்க்கிறார்"
-CLUE_BROKE,"Counting small change","சில்லறை எண்ணுகிறார்"
-CLUE_BUS,"A bus stop is close","பஸ் நிறுத்தம் அருகில்"
-MAP_LEGEND,"Legend","குறியீடுகள்"
-MAP_LEGEND_TITLE,"What the map shows","வரைபடத்தில் உள்ளவை"
-MAP_KEY_PLAYER,"Your auto","உன் ஆட்டோ"
-MAP_KEY_ROUTE,"GPS route","GPS வழி"
-MAP_KEY_DESTINATION,"Route end","வழியின் முடிவு"
-MAP_KEY_PIN,"Your pin","உன் குறி"
-MAP_KEY_HAIL,"Passenger waiting","காத்திருக்கும் பயணி"
-MAP_KEY_QUEST,"Side quest","பக்கக் கதை"
-MAP_KEY_QUEST_GROUP,"Quests close together","அருகருகே கதைகள்"
-MAP_KEY_QUEST_DONE,"Quest finished","முடிந்த கதை"
-MAP_KEY_LANDMARK,"Landmark","அடையாளச் சின்னம்"
-MAP_KEY_STAND,"Auto stand","ஆட்டோ ஸ்டாண்ட்"
-MAP_KEY_LPG,"LPG bunk","LPG பங்க்"
-MAP_KEY_EV,"EV charging","மின் சார்ஜிங்"
-MAP_KEY_GARAGE,"Garage","கேரேஜ்"
-MAP_KEY_MAIN_ROAD,"Main road","முக்கிய சாலை"
-MAP_KEY_CLOSED,"Road closed","சாலை மூடல்"
-MAP_KEY_WATER,"Canal / tank","கால்வாய் / குளம்"
-MAP_KEY_PARK,"Park","பூங்கா"
-MAP_KEY_SEA,"Sea","கடல்"
-MAP_PIN_AFTER_RIDE,"After drop-off","இறக்கிய பிறகு"
-MAP_PIN_HELP,"Tap or drag to place the pin","குறியை வைக்கத் தொடு அல்லது இழு"
-MAP_DROP_PIN_FIRST,"Drop a pin on the map first","முதலில் வரைபடத்தில் குறி வை"
-NAV_QUEUED_RIDE,"Rider on board. Your route starts after the drop-off.","பயணி உள்ளார். இறக்கிய பிறகு உன் வழி தொடங்கும்."
-NAV_BLOCKED_MISSION,"Finish the side quest first.","முதலில் பக்கக் கதையை முடி."
-DAILY_REMINDER,"Daily reminder","தினசரி நினைவூட்டல்"
-REMINDER_TEST,"Test reminder in 1 min","1 நிமிடத்தில் சோதனை நினைவூட்டல்"
-REMINDER_ASK_TITLE,"Daily reminder?","தினசரி நினைவூட்டல் வேணுமா?"
-REMINDER_ASK_BODY,"One reminder a day at 7 PM so you never miss your daily bonus. It stops by itself if you take a break.","தினசரி போனஸைத் தவறவிடாமல் இருக்க, தினமும் மாலை 7 மணிக்கு ஒரு நினைவூட்டல். நீ இடைவெளி எடுத்தால் தானாக நின்றுவிடும்."
+CLUE_NEW,New to the city,நகரத்துக்குப் புதியவர்
+CLUE_FAMILY,With family,குடும்பத்துடன்
+CLUE_APP,Checking a cab app,கேப் ஆப் பார்க்கிறார்
+CLUE_BROKE,Counting small change,சில்லறை எண்ணுகிறார்
+CLUE_BUS,A bus stop is close,பஸ் நிறுத்தம் அருகில்
+MAP_LEGEND,Legend,குறியீடுகள்
+MAP_LEGEND_TITLE,What the map shows,வரைபடத்தில் உள்ளவை
+MAP_KEY_PLAYER,Your auto,உன் ஆட்டோ
+MAP_KEY_ROUTE,GPS route,ஜிபிஎஸ் வழி
+MAP_KEY_DESTINATION,Route end,வழியின் முடிவு
+MAP_KEY_PIN,Your pin,உன் குறி
+MAP_KEY_HAIL,Passenger waiting,காத்திருக்கும் பயணி
+MAP_KEY_QUEST,Side quest,பக்கக் கதை
+MAP_KEY_QUEST_GROUP,Quests close together,அருகருகே கதைகள்
+MAP_KEY_QUEST_DONE,Quest finished,முடிந்த கதை
+MAP_KEY_LANDMARK,Landmark,அடையாளச் சின்னம்
+MAP_KEY_STAND,Auto stand,ஆட்டோ ஸ்டாண்ட்
+MAP_KEY_LPG,LPG bunk,எல்பிஜி பங்க்
+MAP_KEY_EV,EV charging,மின் சார்ஜிங்
+MAP_KEY_GARAGE,Garage,கேரேஜ்
+MAP_KEY_MAIN_ROAD,Main road,முக்கிய சாலை
+MAP_KEY_CLOSED,Road closed,சாலை மூடல்
+MAP_KEY_WATER,Canal / tank,கால்வாய் / குளம்
+MAP_KEY_PARK,Park,பூங்கா
+MAP_KEY_SEA,Sea,கடல்
+MAP_PIN_AFTER_RIDE,After drop-off,இறக்கிய பிறகு
+MAP_PIN_HELP,Tap or drag to place the pin,குறியை வைக்கத் தொடு அல்லது இழு
+MAP_DROP_PIN_FIRST,Drop a pin on the map first,முதலில் வரைபடத்தில் குறி வை
+NAV_QUEUED_RIDE,Rider on board. Your route starts after the drop-off.,பயணி உள்ளார். இறக்கிய பிறகு உன் வழி ஆரம்பிம்.
+NAV_BLOCKED_MISSION,Finish the side quest first.,முதலில் பக்கக் கதையை முடி.
+DAILY_REMINDER,Daily reminder,டெய்லி நினைவூட்டல்
+REMINDER_TEST,Test reminder in 1 min,1 நிமிடத்தில் சோதனை நினைவூட்டல்
+REMINDER_ASK_TITLE,Daily reminder?,டெய்லி நினைவூட்டல் வேணுமா?
+REMINDER_ASK_BODY,One reminder a day at 7 PM so you never miss your daily bonus. It stops by itself if you take a break.,"டெய்லி போனஸைத் தவறவிடாமல் இருக்க, டெய்லி மாலை 7 மணிக்கு ஒரு நினைவூட்டல். நீ இடைவெளி எடுத்தால் தானாக நின்றுவிடும்."
 REMINDER_YES,"Yes, remind me","சரி, நினைவூட்டு"
-REMINDER_NO,"Not now","இப்போது வேண்டாம்"
-REM_T_STREAK,"Keep your %d-day streak!","உன் %d நாள் தொடரைத் தொடரு!"
-REM_B_STREAK,"Day %d bonus ₹%d is waiting at the stand 🛺","நாள் %d போனஸ் ₹%d ஸ்டாண்டில் காத்திருக்கு 🛺"
-REM_T_JACKPOT,"Jackpot day!","ஜாக்பாட் நாள்!"
-REM_B_JACKPOT,"Day 7 bonus ₹%d is ready. Don't break your streak now!","நாள் 7 போனஸ் ₹%d தயார். இப்போ தொடரை உடைக்காதே!"
-REM_T_BONUS,"Daily bonus ready","தினசரி போனஸ் தயார்"
-REM_B_BONUS,"Your ₹%d daily bonus is waiting. Start a new streak today!","உன் ₹%d தினசரி போனஸ் காத்திருக்கு. இன்றே புதிய தொடரைத் தொடங்கு!"
-REM_T_PASSENGERS,"Passengers waiting!","பயணிகள் காத்திருக்காங்க!"
+REMINDER_NO,Not now,இப்போ வேண்டாம்
+REM_T_STREAK,Keep your %d-day streak!,உன் %d நாள் தொடரைத் தொடரு!
+REM_B_STREAK,Day %d bonus ₹%d is waiting at the stand 🛺,நாள் %d போனஸ் ₹%d ஸ்டாண்டில் காத்திருக்கு 🛺
+REM_T_JACKPOT,Jackpot day!,ஜாக்பாட் நாள்!
+REM_B_JACKPOT,Day 7 bonus ₹%d is ready. Don't break your streak now!,நாள் 7 போனஸ் ₹%d ரெடி. இப்போ தொடரை உடைக்காதே!
+REM_T_BONUS,Daily bonus ready,டெய்லி போனஸ் ரெடி
+REM_B_BONUS,Your ₹%d daily bonus is waiting. Start a new streak today!,உன் ₹%d டெய்லி போனஸ் காத்திருக்கு. இன்றே புதிய தொடரைத் ஆரம்பி!
+REM_T_PASSENGERS,Passengers waiting!,பயணிகள் காத்திருக்காங்க!
 REM_B_PASSENGERS,"Mylapore is busy today. Meter podu, let's go! 🛺","இன்று மயிலாப்பூர் பரபரப்பா இருக்கு. மீட்டர் போடு, கிளம்பலாம்! 🛺"
-REM_T_AUTO,"Your auto misses you","உன் ஆட்டோ உன்னைத் தேடுது"
-REM_B_AUTO,"Engine's warm and the tea kadai is open. One quick savari?","எஞ்சின் ரெடி, டீ கடை திறந்திருக்கு. ஒரு சின்ன சவாரி போகலாமா?"
-REM_T_MARINA,"Evening rush at Marina","மெரினாவில் மாலை கூட்டம்"
-REM_B_MARINA,"The beach crowd needs rides home. Good fares tonight!","கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!"
-REM_T_LAST,"Last reminder this week","இந்த வாரத்தின் கடைசி நினைவூட்டல்"
-REM_B_LAST,"We'll stop here. Your auto will be at the stand whenever you're ready.","இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்."
+REM_T_AUTO,Your auto misses you,உன் ஆட்டோ உன்னைத் தேடுது
+REM_B_AUTO,Engine's warm and the tea kadai is open. One quick savari?,"எஞ்சின் ரெடி, டீ கடை திறந்திருக்கு. ஒரு சின்ன சவாரி போகலாமா?"
+REM_T_MARINA,Evening rush at Marina,மெரினாவில் மாலை கூட்டம்
+REM_B_MARINA,The beach crowd needs rides home. Good fares tonight!,கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!
+REM_T_LAST,Last reminder this week,இந்த வாரத்தின் கடைசி நினைவூட்டல்
+REM_B_LAST,We'll stop here. Your auto will be at the stand whenever you're ready.,இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்.
