@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download the CC0 assets the game uses from hosts the dev sandbox can't reach, convert them
+"""Download the CC0 / CC BY assets the game uses from hosts the dev sandbox can't reach, convert them
 for mobile, and record their credits. Runs in CI (.github/workflows/fetch-assets.yml).
 
 Every entry is CC0 (public domain): BigSoundBank (Joseph Sardin) — https://bigsoundbank.com
@@ -8,6 +8,7 @@ Needs: ffmpeg. Usage: python3 tools/assets/fetch_assets.py
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import tempfile
@@ -50,17 +51,50 @@ THUNDER = [(2718, 23), (3113, 6), (3114, 12), (3115, 18), (3116, 22), (3179, 14)
            (3181, 42), (3182, 30), (3183, 31), (3184, 36)]
 for _n, (_id, _len) in enumerate(THUNDER, start=1):
     ASSETS.append((f"assets/audio/weather/thunder_{_n:02d}.ogg", f"https://bigsoundbank.com/UPLOAD/mp3/{_id:04d}.mp3",
-                   f"https://bigsoundbank.com/search?q=coup+de+tonnerre (sound {_id:04d})", 0, _len, f"Thunder #{_n}"))
+                   "https://bigsoundbank.com/search?q=coup+de+tonnerre", 0, _len, f"Thunder #{_n} (sound {_id:04d})"))
+# Those are all medium-to-far booms and rumbles (nothing above ~1 kHz). A strike close by starts
+# with a ripping crack, so the close set comes from Freesound field recordings of very close
+# strikes. "freesound:" URLs are resolved to the sound's public preview (og:audio on its page).
+ASSETS += [
+    ("assets/audio/weather/thunder_close_01.ogg", "freesound:https://freesound.org/people/TSP-Talk/sounds/844420/",
+     "https://freesound.org/people/TSP-Talk/sounds/844420/", 0, 40, "Close thunderclap, Munich-Trudering"),
+    ("assets/audio/weather/thunder_close_02.ogg", "freesound:https://freesound.org/people/InspectorJ/sounds/360328/",
+     "https://freesound.org/people/InspectorJ/sounds/360328/", 0, 14, "Thunder, Very Close, Rain, A.wav"),
+    ("assets/audio/weather/thunder_close_03.ogg", "freesound:https://freesound.org/people/kevp888/sounds/639273/",
+     "https://freesound.org/people/kevp888/sounds/639273/", 9, 32, "VOC_220619-2022-2_FR_LoudThunderclap.wav"),
+]
 
 
 # Sounds on BigSoundBank that are not Joseph Sardin's own recordings.
 AUTHORS = {
     "assets/audio/ambience/dogs_far.ogg": "DenisChardonnet (BigSoundBank)",
+    "assets/audio/weather/thunder_close_01.ogg": "TSP-Talk (Freesound)",
+    "assets/audio/weather/thunder_close_02.ogg": "InspectorJ, www.jshaw.co.uk (Freesound)",
+    "assets/audio/weather/thunder_close_03.ogg": "kevp888 / Kevin Luce (Freesound)",
+}
+# Everything else is CC0.
+LICENCES = {
+    "assets/audio/weather/thunder_close_02.ogg": "CC BY 4.0",
+    "assets/audio/weather/thunder_close_03.ogg": "CC BY 4.0",
 }
 
 
+def resolve(url: str) -> str:
+    """A "freesound:<page>" URL becomes the sound's public HQ preview (no login needed)."""
+    if not url.startswith("freesound:"):
+        return url
+    page = url[len("freesound:"):]
+    req = urllib.request.Request(page, headers={"User-Agent": "Mozilla/5.0 NammaAuto-asset-fetch/1.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        html = r.read().decode("utf-8", "replace")
+    m = re.search(r'https://cdn\.freesound\.org/previews/\d+/\d+_\d+-hq\.(?:mp3|ogg)', html)
+    if not m:
+        raise RuntimeError(f"no preview on {page}")
+    return m.group(0)
+
+
 def main() -> int:
-    credits = ["# Fetched assets (all CC0 — public domain)", "",
+    credits = ["# Fetched assets (CC0 — public domain — unless the Licence column says CC BY)", "",
                "| File | Source | Title | Author | Licence |", "|---|---|---|---|---|"]
     failed = 0
     force = "--force" in sys.argv
@@ -68,21 +102,21 @@ def main() -> int:
         dest = ROOT / out
         dest.parent.mkdir(parents=True, exist_ok=True)
         author = AUTHORS.get(out, "Joseph Sardin (BigSoundBank)")
-        line = f"| `{out}` | [{page}]({page}) | {title} | {author} | CC0 |"
+        line = f"| `{out}` | [{page}]({page}) | {title} | {author} | {LICENCES.get(out, 'CC0')} |"
         if dest.exists() and not force:
             print(f"KEEP {out} (already fetched; --force to replace)")
             credits.append(line)
             continue
         try:
             with tempfile.NamedTemporaryFile(suffix=".mp3") as tmp:
-                req = urllib.request.Request(url, headers={"User-Agent": "NammaAuto-asset-fetch/1.0"})
+                req = urllib.request.Request(resolve(url), headers={"User-Agent": "Mozilla/5.0 NammaAuto-asset-fetch/1.0"})
                 with urllib.request.urlopen(req, timeout=60) as r:
                     tmp.write(r.read())
                 tmp.flush()
                 # Mono, 44.1 kHz, ~80 kbps Vorbis; short fades so loops don't click.
                 fade_out = max(0.0, dur - 0.4)
-                # Thunder keeps its own attack (a fade-in would blunt the crack) and is
-                # peak-normalised, not loudness-normalised, so a crack stays louder than a rumble.
+                # Thunder keeps its own attack (a fade-in would blunt the crack); the game sets each
+                # strike's level from its distance, so every file is normalised the same way.
                 if "/weather/thunder_" in out:
                     fade_out = max(0.0, dur - 1.5)
                     filters = f"afade=t=out:st={fade_out}:d=1.5,loudnorm=I=-16:TP=-1"
