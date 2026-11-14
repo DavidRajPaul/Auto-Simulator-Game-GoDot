@@ -29,6 +29,11 @@ uniform float rays : hint_range(0.0, 1.0) = 0.0;
 uniform float night : hint_range(0.0, 1.0) = 0.0;
 uniform float overcast : hint_range(0.0, 1.0) = 0.0;
 uniform float wind_speed = 0.004;
+// Lightning (scripts/world/Thunderstorm.gd): the cloud deck lights up from inside, brightest
+// toward the strike. flash is 0 between strikes.
+uniform float flash = 0.0;
+uniform vec3 flash_dir = vec3(1.0, 0.2, 0.0);
+uniform vec3 flash_colour : source_color = vec3(0.78, 0.82, 1.0);
 
 const float SUN_R = 0.05;
 const float SUN_R_LOW = 0.09; // Near the horizon the sun reads as a huge ball.
@@ -141,6 +146,11 @@ void sky() {
 		float mask = smoothstep(0.004, 0.03, up) * (1.0 - smoothstep(0.08, 0.19, up));
 		vec3 band_col = mix(cloud_shade * 0.8, sun_glow_colour * 1.25, pow(sd, 18.0) * 0.8);
 		col = mix(col, band_col, smoothstep(0.5, 0.64, band) * mask * low_sun * (1.0 - overcast));
+	}
+	if (flash > 0.001) {
+		float toward_flash = max(dot(d, normalize(flash_dir)), 0.0);
+		float glow = flash * (0.22 + 0.78 * pow(toward_flash, 6.0)) * (0.4 + 0.6 * overcast);
+		col += flash_colour * glow * smoothstep(-0.04, 0.1, up);
 	}
 	COLOR = col;
 }
