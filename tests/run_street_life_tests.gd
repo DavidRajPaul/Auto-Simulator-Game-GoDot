@@ -30,6 +30,7 @@ func _run() -> void:
 	_test_birds()
 	_test_road_condition()
 	_test_wind()
+	_test_steering()
 	await _test_living_city()
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
@@ -240,6 +241,29 @@ func _test_road_condition() -> void:
 	var sh: String = FileAccess.get_file_as_string("res://shaders/street_surface.gdshader")
 	_check("Potholes and dust add no texture lookup", sh.count("texture(") == 2 and sh.contains("puddle"))
 
+## Lane changes steer: no sideways slide at a standstill, the nose turns into the move.
+func _test_steering() -> void:
+	var v: TrafficVehicleAI = TrafficVehicleAI.new()
+	v.archetype = TrafficVehicleAI.Archetype.HATCHBACK
+	v.current_speed_mps = 8.0
+	v._lat_vel = 1.6
+	var b: Basis = Basis.IDENTITY
+	for i: int in 30:
+		b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	var yaw: float = Vector3.FORWARD.signed_angle_to(-b.z, Vector3.UP)
+	_check("A car changing lanes turns its nose into the move", yaw > 0.1 and yaw <= TrafficVehicleAI.STEER_YAW_MAX + 0.001, "%.2f rad" % yaw)
+	v.archetype = TrafficVehicleAI.Archetype.TWO_WHEELER
+	v._steer_yaw = 0.0
+	for i: int in 30:
+		b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	_check("A two-wheeler leans into its lane change", b.y.dot(Vector3.UP) < 0.995)
+	v.current_speed_mps = 0.0
+	v._steer_yaw = 0.0
+	b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	_check("A stopped vehicle never turns on the spot", is_zero_approx(v._steer_yaw))
+	_check("A car can't slide sideways at a standstill", is_zero_approx(0.0 * TrafficVehicleAI.STEER_SIDEWAYS[1]) and TrafficVehicleAI.STEER_SIDEWAYS[1] < 0.4)
+	v.free()
+
 func _test_wind() -> void:
 	var morning: Vector2 = Wind.direction_at(7.0)
 	var afternoon: Vector2 = Wind.direction_at(16.0)
@@ -433,6 +457,74 @@ func _test_living_city() -> void:
 		auto._pothole_at(ray, out_pt, 0.016)
 		_check("Climbing out of it at speed is a jolt (thump, shake)", hits.size() == 1 and hits[0] > 0.1, str(hits))
 		SignalBus.pothole_hit.disconnect(cb)
+	# --- Shop people near a burning auto run off with everyone else.
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+	var near_fire: Vector3 = auto.global_position
+	var shown_near: int = 0
+	for s: Array in shops.shown:
+		if Vector2((s[0] as Vector3).x - near_fire.x, (s[0] as Vector3).z - near_fire.z).length() <= ShopPeople.FIRE_CLEAR_M:
+			shown_near += 1
+	var scattered: Array = []
+	var cb2: Callable = func(spots: Array) -> void: scattered.append_array(spots)
+	SignalBus.shop_people_scattered.connect(cb2)
+	SignalBus.player_pose_updated.emit(near_fire, Vector3.FORWARD)
+	SignalBus.vehicle_burning.emit(true)
+	for i: int in 30:
+		await get_tree().process_frame
+	var left_near: int = 0
+	for s: Array in shops.shown:
+		if Vector2((s[0] as Vector3).x - near_fire.x, (s[0] as Vector3).z - near_fire.z).length() <= ShopPeople.FIRE_CLEAR_M:
+			left_near += 1
+	var fleeing: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.fleeing:
+			fleeing += 1
+	_check("Shop people near a burning auto leave the static mesh (%d near)" % shown_near, left_near == 0 and scattered.size() == shown_near)
+	_check("... and run off as walkers with everyone else", shown_near == 0 or fleeing >= mini(shown_near, PedestrianManager.SCATTER_MAX) / 2, "%d fleeing" % fleeing)
+	SignalBus.vehicle_burning.emit(false)
+	SignalBus.shop_people_scattered.disconnect(cb2)
+	shops._clear_left = 0.0
+	shops._process(0.1)
+	_check("They come back once the fire is long over", not shops.clearing())
+	# --- Two people chatting at the kerb.
+	var chats: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.idle and o.role == "" and not o.fleeing and o.react == "":
+			if peds._start_chat(o):
+				chats += 1
+				break
+	for i: int in 10:
+		await get_tree().process_frame
+	var pair_ok: bool = false
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.partner != null:
+			var p: PedestrianManager.Walker = o.partner
+			var facing: float = o.heading.dot((p.pos - o.pos).normalized())
+			var talk_one: bool = o.talking != p.talking
+			pair_ok = absf(o.pos.distance_to(p.pos) - PedestrianManager.CHAT_GAP_M) < 0.15 and facing > 0.6 and talk_one and p.partner == o
+			break
+	var dbg: String = "chats %d, count %d" % [chats, peds.chat_count()]
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.partner != null:
+			dbg += " gap %.2f facing %.2f talk %s/%s" % [o.pos.distance_to(o.partner.pos), o.heading.dot((o.partner.pos - o.pos).normalized()), o.talking, o.partner.talking]
+			break
+	_check("Two people stop to chat face to face, one talking at a time", chats == 1 and pair_ok and peds.chat_count() >= 2, dbg)
+	var talker: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.talking:
+			talker = o
+	var playing: String = talker.anim.current_animation if talker != null and talker.anim != null else ""
+	_check("The talker plays one of the talking clips", playing in PedestrianManager.CHAT_CLIPS, playing)
+	if talker != null:
+		talker.chat_t = 0.0
+		for i: int in 3:
+			await get_tree().process_frame
+		_check("They take turns", not talker.talking and talker.partner != null and talker.partner.talking)
+		var other: PedestrianManager.Walker = talker.partner
+		peds._deactivate(talker)
+		for i: int in 3:
+			await get_tree().process_frame
+		_check("When one leaves, the other goes back to waiting alone", other.role == "" and other.partner == null)
 	# --- Early morning: women draw the kolam at the doorstep.
 	GameState.shift_minute = 360.0
 	var home: Vector3 = Vector3(-2351.0, 1.0, -217.0)
@@ -447,9 +539,16 @@ func _test_living_city() -> void:
 	for o: PedestrianManager.Walker in peds.people:
 		if PedestrianManager.WOMEN.has(o.id):
 			lady = o
-	var placed: bool = lady != null and not spots.is_empty() and peds.place_kolam(lady, spots[0])
+	# Dawn has already sent other women out to their doorsteps: use a spot nobody has taken.
+	var placed: bool = false
+	var spot_used: Array = []
+	for sp: Array in spots:
+		if lady != null and peds.place_kolam(lady, sp):
+			placed = true
+			spot_used = sp
+			break
 	_check("A woman bends over her kolam at dawn", placed and lady.role == "kolam" and lady.pose != null and lady.pose.mode == PoseModifier.Mode.KOLAM
-		and lady.pos.distance_to(spots[0][0] as Vector3) < 1.5)
+		and lady.pos.distance_to(spot_used[0] as Vector3) < 1.5)
 	GameState.shift_minute = 600.0
 	for i: int in 10:
 		await get_tree().process_frame

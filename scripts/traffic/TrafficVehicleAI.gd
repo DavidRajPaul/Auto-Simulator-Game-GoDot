@@ -760,10 +760,16 @@ func tick(delta: float) -> void:
 		_apply_turn_transform()
 		return
 	var target_lat: float = _kerb_lateral() if at_stop and stop_gap < 40.0 else manager.graph.sub_lane_offset(edge, dir, sub_lane)
-	# Sideways drift scales with forward speed: a bike creeping up to a red light edges over,
-	# it doesn't slide 5 m/s sideways on the spot.
-	var lat_rate: float = LATERAL_SPEED_MPS * 2.0 * clampf(0.35 + current_speed_mps / 4.0, 0.35, 1.0)
+	# Nov 14 device report: "the vehicles only slide left or right when getting through". A
+	# wheeled vehicle can only move sideways by steering while it rolls forward, so the sideways
+	# rate is capped by forward speed x the steering it can use (a car ~0.3, a bike ~0.55, plus a
+	# little foot-paddling for two-wheelers at a standstill) and the body turns into the move
+	# (STEER_YAW_MAX); two-wheelers also lean into it.
+	var steer: float = STEER_SIDEWAYS[archetype] if archetype < STEER_SIDEWAYS.size() else 0.3
+	var lat_rate: float = minf(LATERAL_SPEED_MPS * 2.0, current_speed_mps * steer + (0.25 if archetype == Archetype.TWO_WHEELER else 0.0))
+	var before: float = lateral
 	lateral = move_toward(lateral, target_lat, lat_rate * delta)
+	_lat_vel = (lateral - before) / maxf(delta, 0.001)
 	_apply_transform()
 
 func _setup_emergency() -> void:
@@ -901,6 +907,27 @@ func _pose_on(e: int, d: int, s: float, lat: float) -> Array[Vector3]:
 ## segment direction flips, which made the lane offset (and the body) step sideways.
 const SMOOTH_M: float = 2.5
 
+## Sideways share of forward speed each kind can steer into (indexed by Archetype; the rest 0.3).
+const STEER_SIDEWAYS: Array[float] = [0.55, 0.3, 0.35, 0.2, 0.25, 0.25, 0.25]
+const STEER_YAW_MAX: float = 0.35
+const STEER_YAW_RATE: float = 2.5
+const LEAN_PER_YAW: float = 0.7
+
+var _lat_vel: float = 0.0
+var _steer_yaw: float = 0.0
+
+## Heading offset (rad, + = left) that matches the sideways move, eased so the nose swings in
+## and out instead of snapping; two-wheelers also lean.
+func _steer_basis(fwd: Vector3, delta: float) -> Basis:
+	var want: float = 0.0
+	if current_speed_mps > 0.3:
+		want = clampf(atan2(_lat_vel, maxf(current_speed_mps, 0.5)), -STEER_YAW_MAX, STEER_YAW_MAX)
+	_steer_yaw = move_toward(_steer_yaw, want, STEER_YAW_RATE * delta)
+	var b: Basis = Basis.looking_at(fwd, Vector3.UP).rotated(Vector3.UP, _steer_yaw)
+	if archetype == Archetype.TWO_WHEELER and absf(_steer_yaw) > 0.001:
+		b = b.rotated(b.z.normalized(), -_steer_yaw * LEAN_PER_YAW * clampf(current_speed_mps / 6.0, 0.0, 1.0))
+	return b
+
 func _apply_transform() -> void:
 	var g: RoadGraph = manager.graph
 	var length: float = g.edges[edge].length
@@ -916,7 +943,7 @@ func _apply_transform() -> void:
 		fwd = Vector3.FORWARD
 	fwd = fwd.normalized()
 	var left: Vector3 = Vector3(fwd.z, 0.0, -fwd.x)
-	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), pd[0] + left * lateral + Vector3.UP * ROAD_VISUAL_Y)
+	global_transform = Transform3D(_steer_basis(fwd, get_physics_process_delta_time()), pd[0] + left * lateral + Vector3.UP * ROAD_VISUAL_Y)
 
 func _try_shift(step: int, from_horn: bool) -> bool:
 	if step == 0 or turning:

@@ -20,6 +20,13 @@ const SHOP_HOURS: Vector2 = Vector2(8.0, 22.0)
 const STALL_HOURS: Vector2 = Vector2(6.0, 21.0)
 ## Drawn heights of carriageway layers (WorldChunkStreamer.SURF_STYLE): nobody stands there.
 const ROAD_BAND: Vector2 = Vector2(0.045, 0.076)
+## Nov 14 device report: "the people in front of the shops don't run away when the auto is on
+## fire". They are a static mesh, so near a fire they are taken out of it and handed to pooled
+## walkers (SignalBus.shop_people_scattered), who run with everyone else. The spots stay empty
+## until the player has left (CLEAR_RETURN_M) or CLEAR_HOLD_S after the fire is out.
+const FIRE_CLEAR_M: float = 22.0
+const CLEAR_RETURN_M: float = 70.0
+const CLEAR_HOLD_S: float = 120.0
 
 var world: WorldChunkStreamer = null
 ## Per figure model: triangle soup at the chosen LOD (positions, normals, uvs).
@@ -33,12 +40,20 @@ var _check_s: float = 0.0
 var _material: Material = null
 ## Spots drawn in the last rebuild: [Vector3 position, yaw, kind] (tests, rain shelter).
 var shown: Array = []
+## Figure ids in model order (mesh names in shop_people.glb).
+var ids: Array[String] = []
+var _player: Vector3 = Vector3.ZERO
+var _burning: bool = false
+var _fire_at: Vector3 = Vector3.INF
+var _clear_left: float = 0.0
 
 func _ready() -> void:
 	name = "ShopPeople"
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mesh = ArrayMesh.new()
 	_load_models()
+	SignalBus.player_pose_updated.connect(func(p: Vector3, _f: Vector3) -> void: _player = p)
+	SignalBus.vehicle_burning.connect(_on_burning)
 
 func _load_models() -> void:
 	if not ResourceLoader.exists(MODEL):
@@ -52,6 +67,7 @@ func _load_models() -> void:
 			continue
 		if _material == null:
 			_material = src.surface_get_material(0)
+		ids.append(str(n.name))
 		var arrays: Array = src.surface_get_arrays(0)
 		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var nn: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
@@ -100,7 +116,31 @@ static func _lod_indices(src: Mesh, full: PackedInt32Array, vertex_count: int) -
 			best = idx
 	return best
 
+func _on_burning(on: bool) -> void:
+	_burning = on
+	if not on:
+		_clear_left = CLEAR_HOLD_S
+		return
+	_fire_at = Vector3(_player.x, 0.0, _player.z)
+	var leaving: Array = []
+	for s: Array in shown:
+		var p: Vector3 = s[0]
+		if Vector2(p.x - _fire_at.x, p.z - _fire_at.z).length() <= FIRE_CLEAR_M:
+			leaving.append([p, float(s[1]), str(s[3])])
+	rebuild(_centre if _centre.x != INF else _fire_at)
+	if not leaving.is_empty():
+		SignalBus.shop_people_scattered.emit(leaving)
+
+## True while the spots round the last fire are kept empty.
+func clearing() -> bool:
+	return _fire_at != Vector3.INF
+
 func _process(delta: float) -> void:
+	if _fire_at != Vector3.INF and not _burning:
+		_clear_left -= delta
+		if _clear_left <= 0.0 or Vector2(_player.x - _fire_at.x, _player.z - _fire_at.z).length() > CLEAR_RETURN_M:
+			_fire_at = Vector3.INF
+			_chunks = -1 # people come back on the next check
 	_check_s -= delta
 	if _check_s > 0.0 or world == null or _verts.is_empty():
 		return
@@ -130,6 +170,8 @@ func rebuild(centre: Vector3) -> void:
 			if (_open_state & (2 if kind == 2 else 1)) == 0:
 				continue
 			var p: Vector3 = s[0]
+			if _fire_at != Vector3.INF and Vector2(p.x - _fire_at.x, p.z - _fire_at.z).length() <= FIRE_CLEAR_M:
+				continue
 			var h: float = world.surface_height(p.x, p.z, -99.0)
 			if h < -50.0 or (h >= ROAD_BAND.x and h <= ROAD_BAND.y) or not world.is_walkable(p.x, p.z):
 				continue
@@ -148,7 +190,7 @@ func rebuild(centre: Vector3) -> void:
 		verts.append_array(Transform3D(basis, n[1] as Vector3) * _verts[m])
 		norms.append_array(Transform3D(basis, Vector3.ZERO) * _norms[m])
 		uvs.append_array(_uvs[m])
-		shown.append([n[1], n[2], n[3]])
+		shown.append([n[1], n[2], n[3], ids[m] if m < ids.size() else ""])
 	var am: ArrayMesh = mesh as ArrayMesh
 	am.clear_surfaces()
 	visible = not verts.is_empty()

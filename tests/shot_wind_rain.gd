@@ -45,6 +45,22 @@ func _run() -> void:
 	else:
 		for i: int in 60:
 			await get_tree().process_frame
+		if mode == "chat":
+			var pc: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
+			for w: PedestrianManager.Walker in pc.people:
+				if w.active and ((w.role == "chat" and w.partner != null) or (w.idle and w.role == "" and pc._start_chat(w))):
+					print("CHAT at ", w.pos)
+					var mid: Vector3 = (w.pos + w.partner.pos) * 0.5
+					var side: Vector3 = Vector3(w.heading.z, 0.0, -w.heading.x)
+					for i: int in 40:
+						await get_tree().process_frame
+					var road: Vector3 = (w.heading + w.partner.heading).normalized()
+					cam.global_position = mid + road * 4.0 + Vector3(0, 1.6, 0)
+					cam.look_at(mid + Vector3(0, 1.0, 0))
+					for i: int in 3:
+						await get_tree().process_frame
+					get_viewport().get_texture().get_image().save_png(dir.path_join("chat_0.png"))
+					break
 		if mode == "bags":
 			var pm: PedestrianManager = city.get_node("PedestrianManager") as PedestrianManager
 			var k: int = 0

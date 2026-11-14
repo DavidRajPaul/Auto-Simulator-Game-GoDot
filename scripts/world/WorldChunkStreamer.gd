@@ -474,7 +474,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
 		# Spots that live things use (kolam drawers, shop people, rain shelter): kept on the chunk.
-		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", [])})
+		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", []),
+			"trees": dress.get("trees", []), "poles": dress.get("poles", [])})
 		# Street life (kolams, dogs) stands on the drawn ground of this chunk.
 		if root.has_meta("surface_heights"):
 			dress["_heights"] = root.get_meta("surface_heights")

@@ -69,6 +69,17 @@ const DOWN_LIFT_MPS: float = 0.5
 ## Standing people now and then do one Mixamo gesture (talking on a phone, sipping, waving at an
 ## auto). A gesture plays once, then they go back to standing; the gap is random per person.
 const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
+## Two people chatting at the kerb (Nov 14, the owner's Talking_2 / Talking_4 Mixamo clips):
+## a share of idlers get a partner standing CHAT_GAP_M away, face to face; they take turns, one
+## talking (a talk clip) while the other listens (idle, now and then nodding into a talk clip
+## too), swapping every CHAT_TURN_S. Either one reacting, fleeing or leaving ends the chat.
+const CHAT_CLIPS: Array[String] = ["talk", "talk_2", "talk_4"]
+const CHAT_SHARE: float = 0.55
+const CHAT_GAP_M: float = 1.05
+const CHAT_TURN_S: Vector2 = Vector2(3.5, 8.0)
+## Shopkeepers and customers (ShopPeople, a static mesh) near a burning auto hand over to these
+## pooled walkers, who then run like everyone else (SignalBus.shop_people_scattered).
+const SCATTER_MAX: int = 8
 const GESTURE_GAP_S: Vector2 = Vector2(6.0, 14.0)
 ## A burning auto scares everyone within FIRE_SCARE_M: they run straight away from it for FLEE_S.
 const FIRE_SCARE_M: float = 22.0
@@ -221,12 +232,17 @@ class Walker:
 	var bag_sizes: Array[int] = [0, 0]
 	var skeleton: Skeleton3D = null
 	var hand_bones: Array[int] = [-1, -1]
+	## Chat partner (another Walker) while role == "chat"; talking now or listening; turn timer.
+	var partner: Walker = null
+	var talking: bool = false
+	var chat_t: float = 0.0
 	var height: float = 1.6
 
 func _ready() -> void:
 	rng.seed = 600028
 	_scream_rng.seed = 600029
 	SignalBus.vehicle_burning.connect(_on_vehicle_burning)
+	SignalBus.shop_people_scattered.connect(_on_shop_people_scattered)
 	_setup_screams()
 	_load_people()
 	var slots: Array[int] = []
@@ -420,7 +436,194 @@ func _spawn(w: Walker) -> bool:
 	_resume(w, 0.0)
 	if w.anim != null and w.anim.current_animation != "":
 		w.anim.seek(rng.randf() * w.anim.current_animation_length, true)
+	if w.idle and w.role == "" and not GameState.is_raining and rng.randf() < CHAT_SHARE:
+		_start_chat(w)
 	return true
+
+# --- People chatting ----------------------------------------------------------
+
+## Give the idler `w` a partner from the free part of the pool, standing CHAT_GAP_M along the
+## kerb, the two facing each other. False if nobody is free or there is no room.
+func _start_chat(w: Walker) -> bool:
+	if w.anim == null or not w.anim.has_animation("talk_2"):
+		return false
+	# A free walker, else one far off or out of view (the pool is usually all in use).
+	var p: Walker = _free_walker("", w)
+	if p == null or p.anim == null or not p.anim.has_animation("talk_2"):
+		return false
+	var along: Vector3 = Vector3(w.heading.z, 0.0, -w.heading.x) # w faces the road; along the kerb
+	if rng.randf() < 0.5:
+		along = -along
+	var at: Vector3 = w.pos + along * CHAT_GAP_M
+	if not SignalBus.walkable(at.x, at.z) or not _on_pavement(at) or not _clear_of_trunks(at) or not _clear_of_trunks(w.pos):
+		return false
+	# Turn a little towards the road, as people do when they stop to chat on a pavement.
+	var road: Vector3 = w.heading
+	w.heading = (along + road * 0.35).normalized()
+	if p.active:
+		_deactivate(p)
+	p.edge = w.edge
+	p.s = w.s
+	p.dir = w.dir
+	p.side = w.side
+	p.idle = true
+	p.running = false
+	p.startle = 0.0
+	p.dodge = Vector3.ZERO
+	p.recovery = 0.0
+	p.react = ""
+	p.fleeing = false
+	p.umbrella = false
+	p.sheltered = false
+	_roll_bags(p)
+	p.pos = Vector3(at.x, SignalBus.surface_height(at.x, at.z, WALK_Y), at.z)
+	p.heading = (-along + road * 0.35).normalized()
+	p.active = true
+	p.node.visible = true
+	if p.paintable:
+		var pal: Array[Color] = PaintSwap.palette_for_person(p.id)
+		p.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
+		PaintSwap.set_paint(p.node, p.paint)
+	for q: Walker in [w, p]:
+		q.role = "chat"
+		_set_pose(q)
+	w.partner = p
+	p.partner = w
+	w.talking = true
+	p.talking = false
+	w.chat_t = rng.randf_range(CHAT_TURN_S.x, CHAT_TURN_S.y)
+	p.chat_t = w.chat_t
+	_chat_clip(w)
+	_chat_clip(p)
+	if p.anim != null:
+		p.anim.seek(rng.randf() * maxf(p.anim.current_animation_length, 0.1), true)
+	_apply(w)
+	_apply(p)
+	return true
+
+## The talker plays a talk clip; the listener idles (a quarter of the time chiming in).
+func _chat_clip(w: Walker) -> void:
+	if w.anim == null:
+		return
+	var clip: String = "idle"
+	if w.talking or rng.randf() < 0.25:
+		var have: Array[String] = []
+		for c: String in CHAT_CLIPS:
+			if w.anim.has_animation(c):
+				have.append(c)
+		if not have.is_empty():
+			clip = have[rng.randi() % have.size()]
+	if not w.anim.has_animation(clip):
+		return
+	w.anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	w.anim.play(clip, 0.35)
+	w.anim.speed_scale = 1.0
+
+## No tree trunk or EB pole where a person would stand (the walk mask only holds buildings).
+func _clear_of_trunks(at: Vector3) -> bool:
+	return SignalBus.street_spots("trees", at, 0.9).is_empty() and SignalBus.street_spots("poles", at, 0.5).is_empty()
+
+func _step_chat(w: Walker, delta: float) -> void:
+	var p: Walker = w.partner
+	if p == null or not p.active or p.role != "chat" or p.partner != w or p.fleeing:
+		_end_chat(w)
+		w.idle = true
+		_resume(w, 0.3)
+		_apply(w)
+		return
+	# Turns are kept by the talker: when its time is up, both swap.
+	if w.talking:
+		w.chat_t -= delta
+		if w.chat_t <= 0.0:
+			w.talking = false
+			p.talking = true
+			p.chat_t = rng.randf_range(CHAT_TURN_S.x, CHAT_TURN_S.y)
+			_chat_clip(w)
+			_chat_clip(p)
+	_apply(w)
+
+## Leave a chat (the partner, if still in it, finishes on its next step).
+func _end_chat(w: Walker) -> void:
+	if w.role == "chat":
+		w.role = ""
+	w.partner = null
+	w.talking = false
+
+func chat_count() -> int:
+	var n: int = 0
+	for w: Walker in people:
+		if w.active and w.role == "chat":
+			n += 1
+	return n
+
+# --- Shop people running from a fire ---------------------------------------------
+
+## ShopPeople hid the shopkeepers and customers near a burning auto; stand pooled walkers in
+## their places (the same characters where the pool has them), so the fire scare runs them off
+## with everyone else. `spots`: [Vector3 position, yaw, figure id].
+func _on_shop_people_scattered(spots: Array) -> void:
+	var used: int = 0
+	for s: Array in spots:
+		if used >= SCATTER_MAX:
+			break
+		var w: Walker = _free_walker(String(s[2]))
+		if w == null:
+			break
+		var at: Vector3 = s[0]
+		if graph == null:
+			break
+		var cp: Dictionary = graph.closest_point(at)
+		if int(cp["edge"]) < 0:
+			continue
+		if w.active:
+			_deactivate(w)
+		w.edge = int(cp["edge"])
+		w.s = float(cp["s"])
+		w.dir = 1
+		w.idle = true
+		w.running = false
+		w.startle = 0.0
+		w.dodge = Vector3.ZERO
+		w.recovery = 0.0
+		w.react = ""
+		w.fleeing = false
+		w.role = ""
+		w.umbrella = false
+		w.fire_screamed = false
+		_roll_bags(w)
+		w.pos = Vector3(at.x, SignalBus.surface_height(at.x, at.z, WALK_Y), at.z)
+		w.heading = Vector3(sin(float(s[1])), 0.0, cos(float(s[1])))
+		w.active = true
+		w.node.visible = true
+		if w.anim != null:
+			w.anim.active = true
+		_set_pose(w)
+		_resume(w, 0.0)
+		_apply(w)
+		used += 1
+	# Run the scare check now, so they set off with the first screams, not a frame later.
+	_check_fire_scares()
+
+## A walker to borrow: a free one (the same character first), else one far off or out of view.
+func _free_walker(id: String, not_this: Walker = null) -> Walker:
+	var best: Walker = null
+	for w: Walker in people:
+		if w == not_this:
+			continue
+		if not w.active:
+			if w.id == id:
+				return w
+			if best == null:
+				best = w
+	if best != null:
+		return best
+	for w: Walker in people:
+		if w == not_this or w.fleeing or w.react != "" or w.role == "chat":
+			continue
+		var d: float = w.pos.distance_to(_player)
+		if d > FIRE_SCARE_M * 2.0 or not ViewCheck.on_screen(get_viewport(), w.pos + Vector3(0, 0.9, 0), 1.2):
+			return w
+	return null
 
 ## Back to the walker's own loop: idle, walk or (joggers) run, with playback matched to the pace.
 func _resume(w: Walker, blend: float) -> void:
@@ -450,6 +653,7 @@ func _deactivate(w: Walker) -> void:
 	w.active = false
 	w.react = ""
 	w.lift = 0.0
+	_end_chat(w)
 	w.role = ""
 	w.umbrella = false
 	_set_pose(w)
@@ -505,6 +709,9 @@ func _step(w: Walker, delta: float) -> void:
 		return
 	if w.role == "shelter":
 		_step_shelter(w, delta)
+		return
+	if w.role == "chat":
+		_step_chat(w, delta)
 		return
 	if w.role == "kolam":
 		if not _kolam_time():
@@ -808,6 +1015,8 @@ func _start_flee(w: Walker) -> bool:
 		native = float(_flee_pace.get(w.id, 2.2))
 	w.flee_pace = native * rng.randf_range(FLEE_PACE.x, FLEE_PACE.y)
 	w.flee_dir = away.normalized()
+	_end_chat(w)
+	w.role = ""
 	w.flee_t = rng.randf_range(FLEE_S.x, FLEE_S.y)
 	w.react = ""
 	w.fleeing = true

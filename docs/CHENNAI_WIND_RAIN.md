@@ -70,3 +70,24 @@ the owner's Tripo models with baked textures, not photographed leaf cards. To ma
 the owner can supply photo-textured tree models (CC0 sources: Poly Haven / ambientCG leaf
 photos, or Tripo models generated from real neem / rain tree / coconut photos); they go through
 `tools/assets/bake_trees.py` like today, and the wind and impostors apply automatically.
+
+## Device fixes (Nov 14, afternoon)
+
+* **Shopkeepers and customers now run from a fire.** They are a static merged mesh
+  (`ShopPeople`), so when the auto catches fire every shop person within 22 m is taken out of
+  it and handed to a pooled walker of the same character standing on the same spot
+  (`SignalBus.shop_people_scattered`, up to 8); the usual fire scare then runs them off with
+  screams. The spots stay empty until the player has left (70 m) or 2 minutes after the fire.
+* **Traffic steers instead of sliding.** A wheeled vehicle can only move sideways while it
+  rolls forward: the sideways rate is now capped by forward speed × how hard each kind can
+  steer (car 0.3, bike 0.55, plus a little foot-paddling for two-wheelers at a standstill), and
+  the body turns its nose into the lane change (up to 20°), easing in and out. Two-wheelers
+  lean into it. A stopped car never moves sideways.
+* **People chat.** The owner's Mixamo `Talking_2` and `Talking_4` were retargeted onto every
+  pedestrian (`add_mixamo_clips.py --only talk_2,talk_4`, +~100 KB per character). About half of
+  standing walkers get a partner 1.05 m away along the kerb, face to face, turned a little to the
+  road; they take turns (talker plays `talk` / `talk_2` / `talk_4`, the listener idles and now and
+  then chimes in), swapping every 3.5–8 s. A reaction, a fire or either one leaving ends the
+  chat. Pairs never stand in a tree trunk or an EB pole. `Talking_3.fbx` arrived truncated (its
+  Connections section is cut ~21 KB short) and converts to an empty file: re-download it from
+  Mixamo and it will be added the same way (`talk_3` is already listed).
