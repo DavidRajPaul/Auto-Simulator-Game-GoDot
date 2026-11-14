@@ -1,0 +1,102 @@
+{
+ "files": {
+  "thunder_01": {
+   "pool": "far",
+   "start": 0.0,
+   "length": 22.99,
+   "peak_s": 3.48,
+   "crack": 0.0
+  },
+  "thunder_02": {
+   "pool": "mid",
+   "start": 1.0,
+   "length": 5.09,
+   "peak_s": 1.38,
+   "crack": 0.0
+  },
+  "thunder_03": {
+   "pool": "mid",
+   "start": 0.84,
+   "length": 11.26,
+   "peak_s": 1.96,
+   "crack": 0.0
+  },
+  "thunder_04": {
+   "pool": "mid",
+   "start": 1.14,
+   "length": 17.26,
+   "peak_s": 1.5,
+   "crack": 0.0002
+  },
+  "thunder_05": {
+   "pool": "far",
+   "start": 0.0,
+   "length": 21.94,
+   "peak_s": 2.82,
+   "crack": 0.0002
+  },
+  "thunder_06": {
+   "pool": "mid",
+   "start": 0.44,
+   "length": 13.82,
+   "peak_s": 2.82,
+   "crack": 0.0
+  },
+  "thunder_07": {
+   "pool": "mid",
+   "start": 0.08,
+   "length": 12.98,
+   "peak_s": 4.8,
+   "crack": 0.0
+  },
+  "thunder_08": {
+   "pool": "far",
+   "start": 0.0,
+   "length": 41.71,
+   "peak_s": 2.8,
+   "crack": 0.0
+  },
+  "thunder_09": {
+   "pool": "far",
+   "start": 0.0,
+   "length": 29.5,
+   "peak_s": 1.82,
+   "crack": 0.0
+  },
+  "thunder_10": {
+   "pool": "far",
+   "start": 0.0,
+   "length": 30.79,
+   "peak_s": 12.02,
+   "crack": 0.0
+  },
+  "thunder_11": {
+   "pool": "far",
+   "start": 0.76,
+   "length": 35.26,
+   "peak_s": 17.0,
+   "crack": 0.0
+  },
+  "thunder_close_01": {
+   "pool": "mid",
+   "start": 0.66,
+   "length": 40.0,
+   "peak_s": 2.9,
+   "crack": 0.0002
+  },
+  "thunder_close_02": {
+   "pool": "close",
+   "start": 1.04,
+   "length": 13.95,
+   "peak_s": 1.6,
+   "crack": 0.0917
+  },
+  "thunder_close_03": {
+   "pool": "close",
+   "start": 0.0,
+   "length": 32.0,
+   "peak_s": 3.94,
+   "crack": 0.0237
+  }
+ }
+}

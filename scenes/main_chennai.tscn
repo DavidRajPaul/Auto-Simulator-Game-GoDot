@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/vehicle/ComfortAssist.gd" id="13"]
 [ext_resource type="Script" path="res://scripts/world/Atmosphere.gd" id="14"]
 [ext_resource type="Script" path="res://scripts/world/MonsoonFX.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/world/Thunderstorm.gd" id="26"]
 [ext_resource type="Script" path="res://scripts/world/AmbienceAudio.gd" id="16"]
 [ext_resource type="Script" path="res://scripts/ui/UISfx.gd" id="17"]
 [ext_resource type="Script" path="res://scripts/world/StreetSigns.gd" id="18"]
@@ -82,6 +83,10 @@ shadow_blur = 1.4
 script = ExtResource("14")
 environment_path = NodePath("../WorldEnvironment")
 sun_path = NodePath("../Sun")
+
+[node name="Thunderstorm" type="Node3D" parent="."]
+script = ExtResource("26")
+environment_path = NodePath("../WorldEnvironment")
 
 [node name="World" type="Node3D" parent="."]
 script = ExtResource("6")

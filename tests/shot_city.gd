@@ -2,7 +2,8 @@ extends Node
 ## Dev-only: renders the city scene to $SHOT_OUT. SHOT_CAM=0/1/2 camera mode, SHOT_DRIVE=seconds of throttle,
 ## SHOT_RIDE=1 starts a ride (to show the guide line + nav banner), SHOT_MAP=1 opens the full map;
 ## SHOT_MAP_PANEL=legend / journal / route then shows the map key, the last side-quest page, or
-## "Go there" on the first quest, or pin = Drop Pin mode with a pin placed.
+## "Go there" on the first quest, or pin = Drop Pin mode with a pin placed. SHOT_STRIKE=metres[,deg]
+## renders a lightning strike ahead in the rain (and the frame before it, *_dark.png).
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -173,5 +174,25 @@ func _run() -> void:
 		fm.queue_redraw()
 	for i: int in 20:
 		await get_tree().process_frame
+	if OS.has_environment("SHOT_STRIKE"):
+		# SHOT_STRIKE=metres[,degrees right of the view]: rain, a frame before the strike
+		# ($SHOT_OUT with _dark), then the flash at its peak ($SHOT_OUT).
+		var v: PackedStringArray = OS.get_environment("SHOT_STRIKE").split(",")
+		GameState.thunder_override = 0
+		GameState.set_rain(true, 300.0)
+		if OS.has_environment("SHOT_PITCH"):
+			rig._orbit_pitch = float(OS.get_environment("SHOT_PITCH"))
+		for i: int in 300:
+			await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(OS.get_environment("SHOT_OUT").replace(".png", "_dark.png"))
+		var cam: Camera3D = get_viewport().get_camera_3d()
+		var fwd: Vector3 = -cam.global_transform.basis.z
+		var ts: Thunderstorm = city.get_node("Thunderstorm") as Thunderstorm
+		var bearing: float = atan2(fwd.z, fwd.x) + deg_to_rad(float(v[1]) if v.size() > 1 else 0.0)
+		ts.strike(float(v[0]), bearing, true)
+		for i: int in 3:
+			await get_tree().process_frame
+		var smat: ShaderMaterial = ((city.get_node("WorldEnvironment") as WorldEnvironment).environment.sky.sky_material as ShaderMaterial)
+		print("strike: light %.2f sky flash %.2f overcast %.2f" % [ts.light.light_energy, float(smat.get_shader_parameter("flash")), float(smat.get_shader_parameter("overcast"))])
 	get_viewport().get_texture().get_image().save_png(OS.get_environment("SHOT_OUT"))
 	get_tree().quit()

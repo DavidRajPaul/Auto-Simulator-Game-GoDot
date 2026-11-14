@@ -163,6 +163,9 @@ signal recover_available(available: bool)
 signal recover_requested()
 signal hint_requested(text: String, seconds: float)
 signal weather_changed(raining: bool)
+## A lightning strike (Thunderstorm.gd): where it hit (world), how far from the player (m), and
+## whether it reached the ground (false = a flash inside the cloud). Thunder follows d / 343 s later.
+signal lightning_struck(at: Vector3, distance_m: float, to_ground: bool)
 ## Kick-start rhythm: one kick (good = kept the steady rhythm).
 signal kick_timed(good: bool)
 ## Android back button / Esc (GameState turns NOTIFICATION_WM_GO_BACK_REQUEST into this).

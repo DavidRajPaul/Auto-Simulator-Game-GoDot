@@ -110,6 +110,7 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 - Real reverse gear (D/R), indicators with lamps and relay tick that self-cancel after the turn, brake/reverse lamps, handbrake, three horn tiers that decide which traffic gives way.
 - Chase, cockpit (stabilised "neck") and top-down cameras; drag to orbit the chase camera freely; physics interpolation for smooth motion.
 - Monsoon flood spots stall the engine; kick-start back to life in a steady rhythm (mashing floods it).
+- Thunderstorms (most rainy days): lightning lights the street, the air and the clouds from the strike's side with a real flicker of return strokes, bolts with branches, and real thunder recordings that arrive distance / 343 s later — a close strike cracks loud and bright, a far one rumbles low and quiet, panned to its side (`docs/CHENNAI_THUNDERSTORMS.md`).
 - Collisions: sliding chamfered hull, crunch/scrape sounds, sparks, dust, camera jolt, haptics; crashes wear the auto's condition.
 - Comfort pack: auto-recover when flipped, "Reset auto" when stuck, compact guidance distance in the top HUD, gentle steering curve, speed-based FOV.
 

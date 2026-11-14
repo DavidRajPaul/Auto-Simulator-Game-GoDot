@@ -57,6 +57,9 @@ the in-game Credits text (`CREDITS` in `scripts/ui/MainMenu.gd`).
 | `vehicle/crash_light.ogg`, `crash_hard.ogg`, `scrape_loop.ogg` | Collisions (`CollisionFX.gd`) | synthesised for this project | CC0 |
 | `ambience/city_traffic_loop.ogg` | City road bed everywhere (`AmbienceAudio.gd`) | SoundQue field recording, Pixabay #446354 | Pixabay |
 | `ambience/sea_waves_loop.ogg` | Marina coast | BigSoundBank #0698 | CC0 |
+| `weather/thunder_01…11.ogg` | Thunderstorms, mid and far strikes (`Thunderstorm.gd`, pools in `weather/thunder.json` by `tools/assets/analyse_thunder.py`) | BigSoundBank "Thunder #1–#11" (Joseph Sardin), fetched by `fetch_assets.py` | CC0 |
+| `weather/thunder_close_01.ogg` | Thunderstorms, a strike just over a kilometre off | Freesound #844420 by TSP-Talk (public preview) | CC0 |
+| `weather/thunder_close_02.ogg`, `thunder_close_03.ogg` | Thunderstorms, close strikes (the crack) | Freesound #360328 by InspectorJ (www.jshaw.co.uk), #639273 by kevp888 (public previews) | CC BY 4.0 |
 | `ambience/market_loop.ogg` | Mylapore / T. Nagar / Anna Salai markets (placeholder, French market) | BigSoundBank #2728 | CC0 |
 | `ambience/rain_roof_loop.ogg` | Monsoon rain on the canopy | BigSoundBank #1293 | CC0 |
 | `ambience/crows_loop.ogg` | Crows by day, everywhere (placeholder: French crows, not Chennai house crows) | BigSoundBank #0754 | CC0 |
