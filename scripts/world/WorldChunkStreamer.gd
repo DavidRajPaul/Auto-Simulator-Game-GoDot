@@ -233,6 +233,8 @@ func _ready() -> void:
 	trees = StreetTrees.new()
 	trees.name = "StreetTrees"
 	add_child(trees)
+	if dressing_enabled:
+		add_child(BirdFlock.new()) # one draw call: crows, pigeons and kites over the street
 	_load_transformer_tank()
 	_stall_kit = StreetStallKit.arrays()
 	_cart_kit = BeachCartKit.arrays()
@@ -463,6 +465,10 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
+		# Street life (kolams, dogs) stands on the drawn ground of this chunk.
+		if root.has_meta("surface_heights"):
+			dress["_heights"] = root.get_meta("surface_heights")
+			dress["_key"] = k
 	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty() or not plot_walls.is_empty():
 		root.add_child(_buildings(blds, dress, walls, plot_walls, gates))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
@@ -1268,6 +1274,7 @@ func _street_dressing(m: MeshBuf, dress: Dictionary) -> void:
 		for k: int in 2:
 			var off: Vector3 = across * (float(k) - 0.5) * 1.1 + Vector3(0.0, POLE_ARM_Y + 0.05, 0.0)
 			_wire(m, a + off, b + off, 0.35 + 0.12 * float(k))
+	_street_life(m, dress)
 
 func _pole(m: MeshBuf, base: Vector3, along: Vector2, col: Color) -> void:
 	var u: Vector3 = Vector3(along.x, 0.0, along.y)
@@ -1298,6 +1305,148 @@ func _wire(m: MeshBuf, a: Vector3, b: Vector3, sag: float) -> void:
 		var q: Array[Vector3] = [prev, p, p + Vector3(0.0, 0.035, 0.0), prev + Vector3(0.0, 0.035, 0.0)]
 		_face(m, q, side, col)
 		_face(m, q, -side, col)
+		prev = p
+
+## Street life from tools/osm/place_street_life.py (Nov 13 owner request: "more lively, just like
+## the real Chennai"), merged into the chunk's one building mesh like the stalls: no nodes, no
+## draw calls. Kolams outside house gates, street dogs beside kerb stalls, festival flag strings
+## on the EB wires near temples and churches.
+const KOLAM_WHITE: Color = Color(1.0, 1.0, 0.97)
+const KOLAM_POWDER: Array[Color] = [Color(0.95, 0.2, 0.3), Color(1.0, 0.78, 0.1), Color(0.2, 0.62, 0.3), Color(0.95, 0.45, 0.1)]
+const DOG_COATS: Array[Color] = [Color(0.86, 0.62, 0.36), Color(0.17, 0.16, 0.15), Color(0.55, 0.35, 0.2), Color(1.0, 0.93, 0.76)]
+const FLAG_COLOURS: Array[Color] = [Color(1.0, 0.55, 0.1), Color(1.0, 0.85, 0.15), Color(0.9, 0.15, 0.2), Color(0.2, 0.65, 0.3), Color(0.95, 0.4, 0.7), Color(0.2, 0.45, 0.9), Color(1.0, 1.0, 0.95)]
+const KOLAM_LIFT_M: float = 0.014
+const KOLAM_SCALE: float = 1.25
+
+func _street_life(m: MeshBuf, dress: Dictionary) -> void:
+	var heights: PackedFloat32Array = dress.get("_heights", PackedFloat32Array())
+	var key: Vector2i = dress.get("_key", Vector2i.ZERO)
+	for kl: Array in dress.get("kolams", []):
+		var y: float = float(kl[4])
+		if y < -50.0:
+			y = _grid_height(heights, key, float(kl[0]), float(kl[1]))
+		_kolam(m, Vector3(float(kl[0]), y + KOLAM_LIFT_M, float(kl[1])), float(kl[2]), int(kl[3]))
+	for d: Array in dress.get("dogs", []):
+		var y: float = _grid_height(heights, key, float(d[0]), float(d[1]))
+		_dog(m, Vector3(float(d[0]), y, float(d[1])), float(d[2]), DOG_COATS[int(d[3]) % DOG_COATS.size()], int(d[4]))
+	for b: Array in dress.get("bunting", []):
+		_bunting(m, Vector3(float(b[0]), 0.0, float(b[1])), Vector3(float(b[2]), 0.0, float(b[3])), int(b[4]))
+
+func _grid_height(heights: PackedFloat32Array, k: Vector2i, x: float, z: float) -> float:
+	var n: int = int(ceil(chunk_size / SURFACE_CELL_M))
+	if heights.size() != n * n:
+		return SIDEWALK_Y
+	var ci: int = clampi(int((x - float(k.x) * chunk_size) / SURFACE_CELL_M), 0, n - 1)
+	var cj: int = clampi(int((z - float(k.y) * chunk_size) / SURFACE_CELL_M), 0, n - 1)
+	return heights[cj * n + ci]
+
+## Flat strip a→b (local kolam metres) of width w lying on the ground at `c`, turned by `yaw`.
+func _ground_strip(m: MeshBuf, c: Vector3, yaw: float, a: Vector2, b: Vector2, w: float, col: Color) -> void:
+	var d: Vector2 = b - a
+	if d.length() < 0.001:
+		return
+	var side: Vector2 = Vector2(-d.y, d.x).normalized() * w * 0.5
+	var q: Array[Vector3] = []
+	for p: Vector2 in [a - side, b - side, b + side, a + side]:
+		var r: Vector2 = (p * KOLAM_SCALE).rotated(-yaw)
+		q.append(c + Vector3(r.x, 0.0, r.y))
+	_face(m, q, Vector3.UP, col)
+
+## Closed loop through `pts` (local metres).
+func _ground_loop(m: MeshBuf, c: Vector3, yaw: float, pts: Array[Vector2], w: float, col: Color) -> void:
+	for i: int in pts.size():
+		_ground_strip(m, c, yaw, pts[i], pts[(i + 1) % pts.size()], w, col)
+
+static func _ring_pts(r: float, n: int, rot: float = 0.0, centre: Vector2 = Vector2.ZERO) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for i: int in n:
+		var a: float = rot + TAU * float(i) / float(n)
+		out.append(centre + Vector2(cos(a), sin(a)) * r)
+	return out
+
+## Rice-flour kolam (about 1.3 m across): four patterns, some with coloured powder.
+func _kolam(m: MeshBuf, c: Vector3, yaw: float, pattern: int) -> void:
+	var w: float = 0.045
+	match pattern:
+		0: # dot grid with a diamond loop round every dot (pulli kolam)
+			for i: int in 5:
+				for j: int in 5:
+					if absi(i - 2) + absi(j - 2) > 3:
+						continue
+					var p: Vector2 = Vector2(float(i - 2), float(j - 2)) * 0.2
+					_ground_strip(m, c, yaw, p - Vector2(0.025, 0.0), p + Vector2(0.025, 0.0), 0.05, KOLAM_WHITE)
+					if (i + j) % 2 == 0:
+						_ground_loop(m, c, yaw, _ring_pts(0.1, 4, 0.0, p), w * 0.8, KOLAM_WHITE)
+			_ground_loop(m, c, yaw, _ring_pts(0.68, 4, 0.0), w, KOLAM_WHITE)
+		1: # nested turned squares with petals at the corners
+			for k: int in 3:
+				_ground_loop(m, c, yaw, _ring_pts(0.22 + 0.2 * float(k), 4, PI * 0.25 * float(k % 2)), w, KOLAM_WHITE)
+			for p: Vector2 in _ring_pts(0.62, 4, PI * 0.25):
+				_ground_loop(m, c, yaw, _ring_pts(0.08, 6, 0.0, p), w, KOLAM_POWDER[0])
+		2: # eight-petal flower filled with coloured powder
+			for i: int in 8:
+				var a: float = TAU * float(i) / 8.0
+				var dir: Vector2 = Vector2(cos(a), sin(a))
+				var side: Vector2 = Vector2(-dir.y, dir.x)
+				var petal: Array[Vector2] = [dir * 0.12, dir * 0.34 + side * 0.11, dir * 0.55, dir * 0.34 - side * 0.11]
+				_ground_strip(m, c, yaw, dir * 0.18, dir * 0.48, 0.1, KOLAM_POWDER[i % KOLAM_POWDER.size()])
+				_ground_loop(m, c, yaw, petal, w, KOLAM_WHITE)
+			_ground_loop(m, c, yaw, _ring_pts(0.1, 8), w, KOLAM_WHITE)
+			_ground_loop(m, c, yaw, _ring_pts(0.66, 16), w, KOLAM_WHITE)
+		_: # star of two squares, dots in the points
+			_ground_loop(m, c, yaw, _ring_pts(0.55, 4, 0.0), w, KOLAM_WHITE)
+			_ground_loop(m, c, yaw, _ring_pts(0.55, 4, PI * 0.25), w, KOLAM_WHITE)
+			_ground_loop(m, c, yaw, _ring_pts(0.2, 8), w, KOLAM_POWDER[1])
+			for p: Vector2 in _ring_pts(0.42, 8, PI * 0.125):
+				_ground_strip(m, c, yaw, p - Vector2(0.025, 0.0), p + Vector2(0.025, 0.0), 0.05, KOLAM_WHITE)
+
+## Street dog: lying stretched out (pose 0) or sitting up (pose 1); +Z of `yaw` is its nose.
+func _dog(m: MeshBuf, at: Vector3, yaw: float, coat: Color, pose: int) -> void:
+	var f: Vector2 = Vector2(sin(yaw), cos(yaw))
+	var fw: Vector3 = Vector3(f.x, 0.0, f.y)
+	var sd: Vector3 = Vector3(-f.y, 0.0, f.x)
+	var dark: Color = coat.darkened(0.35)
+	if pose == 0:
+		_dbox(m, at + Vector3(0.0, 0.13, 0.0), Vector3(0.66, 0.22, 0.28), f, coat)
+		_dbox(m, at + fw * 0.4 + Vector3(0.0, 0.12, 0.0), Vector3(0.22, 0.17, 0.17), f, coat)
+		_dbox(m, at + fw * 0.55 + Vector3(0.0, 0.09, 0.0), Vector3(0.12, 0.09, 0.1), f, dark)
+		for s: float in [-1.0, 1.0]:
+			_dbox(m, at + fw * 0.38 + sd * s * 0.06 + Vector3(0.0, 0.22, 0.0), Vector3(0.05, 0.08, 0.04), f, dark)
+			_dbox(m, at + fw * 0.48 + sd * s * 0.09 + Vector3(0.0, 0.035, 0.0), Vector3(0.3, 0.06, 0.06), f, coat)
+			_dbox(m, at - fw * 0.2 + sd * s * 0.17 + Vector3(0.0, 0.06, 0.0), Vector3(0.32, 0.1, 0.07), f, coat)
+		_dbox(m, at - fw * 0.48 + sd * 0.06 + Vector3(0.0, 0.05, 0.0), Vector3(0.32, 0.05, 0.05), f, coat)
+	else:
+		_dbox(m, at - fw * 0.12 + Vector3(0.0, 0.16, 0.0), Vector3(0.32, 0.3, 0.3), f, coat)
+		_dbox(m, at + fw * 0.06 + Vector3(0.0, 0.34, 0.0), Vector3(0.22, 0.32, 0.24), f, coat)
+		_dbox(m, at + fw * 0.12 + Vector3(0.0, 0.57, 0.0), Vector3(0.22, 0.18, 0.17), f, coat)
+		_dbox(m, at + fw * 0.27 + Vector3(0.0, 0.54, 0.0), Vector3(0.12, 0.09, 0.1), f, dark)
+		for s: float in [-1.0, 1.0]:
+			_dbox(m, at + fw * 0.09 + sd * s * 0.06 + Vector3(0.0, 0.69, 0.0), Vector3(0.05, 0.1, 0.04), f, dark)
+			_dbox(m, at + fw * 0.14 + sd * s * 0.07 + Vector3(0.0, 0.17, 0.0), Vector3(0.06, 0.34, 0.06), f, coat)
+		_dbox(m, at - fw * 0.36 + Vector3(0.0, 0.03, 0.0), Vector3(0.3, 0.05, 0.05), f, coat)
+
+## Festival flags: a cord a little under the lower EB wire with small triangles on it.
+func _bunting(m: MeshBuf, a: Vector3, b: Vector3, seed_i: int) -> void:
+	var d: Vector3 = b - a
+	var length: float = d.length()
+	if length < 2.0:
+		return
+	var across: Vector3 = Vector3(-d.z, 0.0, d.x).normalized()
+	var lift: Vector3 = across * -0.55 + Vector3(0.0, POLE_ARM_Y - 0.25, 0.0)
+	var sag: float = 0.9
+	var n: int = int(length / 0.55)
+	var cord: Color = Color(0.85, 0.82, 0.75)
+	var prev: Vector3 = a + lift
+	for k: int in range(1, n + 1):
+		var t: float = float(k) / float(n)
+		var p: Vector3 = a.lerp(b, t) + lift - Vector3(0.0, sag * 4.0 * t * (1.0 - t), 0.0)
+		_face(m, [prev, p, p + Vector3(0.0, 0.025, 0.0), prev + Vector3(0.0, 0.025, 0.0)], across, cord)
+		var mid: Vector3 = prev.lerp(p, 0.5) - Vector3(0.0, 0.3, 0.0)
+		var col: Color = FLAG_COLOURS[(k + seed_i) % FLAG_COLOURS.size()]
+		var e0: Vector3 = prev.lerp(p, 0.1)
+		var e1: Vector3 = prev.lerp(p, 0.9)
+		_tri_facing(m, e0, e1, mid, across, col)
+		_tri_facing(m, e0, e1, mid, -across, col)
 		prev = p
 
 ## Reads the baked tank (one vertex-coloured surface) into flat triangle arrays.

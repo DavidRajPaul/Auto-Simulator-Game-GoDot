@@ -52,6 +52,7 @@ jobs:
           python3 tools/osm/classify_buildings.py
           # Paved plots, compound walls and gates (needs "t" / "fw" and every dressing pass).
           python3 tools/osm/build_plots.py
+          python3 tools/osm/place_street_life.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"

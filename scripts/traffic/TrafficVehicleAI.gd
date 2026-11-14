@@ -39,7 +39,16 @@ const MODEL_FILES: Array[String] = [
 ## the Kenney hatchback (green, flared grey arches) looked odd and is gone. White and silver
 ## come round most often, like on Chennai roads. Mahindra Boleros (the owner's model,
 ## tools/assets/bake_bolero.py) are real size and fitted uniformly: entries with a third `true`.
+## Nov 13: the Chennai bodies (tools/art/make_chennai_vehicles.py: small hatchback, tall-boy
+## hatchback, micro van, water-can mini truck) are real size, fitted uniformly, and repaint per
+## respawn from PaintSwap.CAR_PAINTS. Each car slot carries every variant and shows one per
+## respawn (pick_vehicle_variant), so the four car slots show the whole list over a drive.
+## Fourth field = spawn weight (default 1).
 const CAR_VARIANTS: Array = [
+ ["res://assets/models/traffic/chennai/hatchback.glb", Vector3(1.82, 1.52, 3.87), true, 4],
+ ["res://assets/models/traffic/chennai/tallboy.glb", Vector3(1.64, 1.71, 3.62), true, 3],
+ ["res://assets/models/traffic/chennai/micro_van.glb", Vector3(1.53, 1.64, 3.39), true, 1],
+ ["res://assets/models/traffic/chennai/mini_truck.glb", Vector3(1.64, 1.85, 3.82), true, 1],
  ["res://assets/models/traffic/cars/sedan_white.glb", Vector3(1.8, 1.5, 4.2)],
  ["res://assets/models/traffic/cars/bolero_white.glb", Vector3(1.75, 1.85, 4.3), true],
  ["res://assets/models/traffic/cars/suv_silver.glb", Vector3(1.95, 1.9, 4.6)],
@@ -76,8 +85,15 @@ const SERVICE_VARIANTS: Array = [
 ## SymetrikGames pack, split into single bikes by tools/assets/process_vehicle_packs.py (the raw
 ## pack is one merged showroom grid and must never be fitted to a traffic box as a whole).
 ## Each pool slot takes the next entry of the weighted cycle, so the mix stays stable.
+## Nov 13: the Chennai two-wheelers (tools/art/make_chennai_vehicles.py: step-through moped,
+## 100 cc commuter bike, classic cruiser) are built at real size facing +Z and repaint from
+## PaintSwap.TWO_WHEELER_PAINTS. Every two-wheeler slot carries all variants and shows one per
+## respawn (pick_vehicle_variant). The bicycle is parked only: it can't keep traffic speed.
 const TWO_WHEELER_VARIANTS: Array = [
 	["res://assets/models/traffic/two_wheeler.glb", Vector3(0.8, 1.0, 2.0), false, false, 5, Vector3(0.0, 0.72, 0.22)],
+	["res://assets/models/traffic/chennai/commuter_bike.glb", Vector3(0.68, 1.25, 1.92), true, true, 4, Vector3(0.0, 0.76, 0.22)],
+	["res://assets/models/traffic/chennai/moped.glb", Vector3(0.62, 1.23, 1.82), true, true, 2, Vector3(0.0, 0.68, 0.20)],
+	["res://assets/models/traffic/chennai/cruiser_bike.glb", Vector3(0.76, 1.26, 2.1), true, true, 2, Vector3(0.0, 0.78, 0.15)],
 	["res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
 	["res://assets/models/traffic/two_wheeler_pack/sport_bike_1.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
 	["res://assets/models/traffic/two_wheeler_pack/sport_bike_2.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
@@ -133,6 +149,13 @@ var electric: bool = false
 var _paintable: bool = false
 var bus_route: String = ""
 var _bus_models: Array[Node3D] = []
+## TWO_WHEELER / HATCHBACK: one holder per variant (null if it failed to load), the one shown
+## now, and whether each repaints.
+var _variant_models: Array[Node3D] = []
+var _variant_paint: Array[bool] = []
+var vehicle_variant: int = -1
+var _model: Node3D = null
+var _rider: Node3D = null
 var _route_board: Label3D = null
 var _dwell: float = 0.0
 var _served_edge: int = -1
@@ -209,31 +232,37 @@ func setup(owner_manager: ChennaiTrafficManager, kind: Archetype, material: Mate
 	var model_path: String = COW_FILES[cow] if kind == Archetype.STRAY_COW else MODEL_FILES[kind]
 	var flip: bool = COW_FLIP[cow] if kind == Archetype.STRAY_COW else MODEL_FLIP[kind]
 	var fit_size: Vector3 = Vector3(size.x, SCOOTER_MODEL_HEIGHT_M, size.z) if kind == Archetype.TWO_WHEELER else size
-	if kind == Archetype.HATCHBACK:
-		var car: Array = CAR_VARIANTS[_car_variant % CAR_VARIANTS.size()]
-		_car_variant += 1
-		if ResourceLoader.exists(str(car[0])):
-			model_path = str(car[0])
-			fit_size = car[1] as Vector3
-			body = fit_size
-			box.size = body
-			_shape.position.y = body.y * 0.5
-			_mesh.scale = body
-			_mesh.position.y = body.y * 0.5
-	var uniform: bool = kind == Archetype.HATCHBACK and CAR_VARIANTS[(_car_variant - 1) % CAR_VARIANTS.size()].size() > 2
-	if kind == Archetype.TWO_WHEELER:
-		var tw: Array = two_wheeler_variant(_two_wheeler_variant)
-		_two_wheeler_variant += 1
-		model_path = str(tw[0])
-		fit_size = tw[1] as Vector3
-		flip = tw[2] as bool
-		uniform = tw[3] as bool
-		rider_seat = tw[5] as Vector3
-	if TrafficModelFit.attach(self, model_path, fit_size, flip, uniform):
+	if kind in [Archetype.TWO_WHEELER, Archetype.HATCHBACK]:
+		# Every variant is loaded once here (no instancing while driving) and one shows per respawn.
+		var specs: Array = TWO_WHEELER_VARIANTS if kind == Archetype.TWO_WHEELER else CAR_VARIANTS
+		for i: int in specs.size():
+			var v: Array = specs[i]
+			var fit: Vector3 = v[1] as Vector3
+			var vflip: bool = (v[2] as bool) if kind == Archetype.TWO_WHEELER else flip
+			var vuniform: bool = (v[3] as bool) if kind == Archetype.TWO_WHEELER else v.size() > 2 and bool(v[2])
+			if TrafficModelFit.attach(self, str(v[0]), fit, vflip, vuniform):
+				var holder: Node3D = get_node("Model") as Node3D
+				holder.name = "Variant_%d" % i
+				holder.visible = false
+				_variant_models.append(holder)
+				_variant_paint.append(PaintSwap.prepare(holder, PaintSwap.key_of(str(v[0]))) > 0)
+			else:
+				_variant_models.append(null)
+				_variant_paint.append(false)
+		if kind == Archetype.HATCHBACK:
+			_show_variant(_car_variant % specs.size())
+			_car_variant += 1
+		else:
+			_show_variant(TWO_WHEELER_VARIANTS.find(two_wheeler_variant(_two_wheeler_variant)))
+			_two_wheeler_variant += 1
+		if _model != null:
+			_mesh.visible = false
+	elif TrafficModelFit.attach(self, model_path, fit_size, flip, false):
 		_mesh.visible = false
-		# Colour variety (Nov 1): two-wheelers and NPC autos repaint per respawn (PaintSwap).
-		if kind in [Archetype.TWO_WHEELER, Archetype.SHARE_AUTO]:
-			_paintable = PaintSwap.prepare(get_node("Model"), PaintSwap.key_of(model_path)) > 0
+		_model = get_node("Model") as Node3D
+		# Colour variety (Nov 1): NPC autos repaint per respawn (PaintSwap).
+		if kind == Archetype.SHARE_AUTO:
+			_paintable = PaintSwap.prepare(_model, PaintSwap.key_of(model_path)) > 0
 	# Autos should never look driverless.  Reuse the compact seated mesh used by
 	# scooters; its low-poly silhouette reads clearly through the open auto side.
 	if kind in [Archetype.TWO_WHEELER, Archetype.SHARE_AUTO]:
@@ -358,7 +387,9 @@ func pick_paint(rng: RandomNumberGenerator) -> void:
 			paint = PaintSwap.AUTO_ELECTRIC[rng.randi() % PaintSwap.AUTO_ELECTRIC.size()]
 		elif roll < 0.38:
 			paint = PaintSwap.AUTO_PINK
-	PaintSwap.set_paint(get_node("Model"), paint)
+	elif archetype == Archetype.HATCHBACK:
+		paint = PaintSwap.CAR_PAINTS[rng.randi() % PaintSwap.CAR_PAINTS.size()]
+	PaintSwap.set_paint(_model, paint)
 
 ## MTC_BUS: show one livery (weighted; college buses mostly at college rush hours), size the
 ## collision box to it and put a real route on the destination board: one that serves the MTC
@@ -470,6 +501,53 @@ func _add_rider() -> void:
 	# rider_seat is the old procedural mesh origin; the rider node's origin is the hip.
 	rider.position = rider_seat + PersonMesh.PROCEDURAL_HIP
 	add_child(rider)
+	_rider = rider
+
+## Show variant `i` of this slot's list (TWO_WHEELER / HATCHBACK): footprint, collision box,
+## rider seat and paintability follow it.
+func _show_variant(i: int) -> void:
+	if i < 0 or i >= _variant_models.size() or _variant_models[i] == null:
+		return
+	for k: int in _variant_models.size():
+		if _variant_models[k] != null:
+			_variant_models[k].visible = k == i
+	vehicle_variant = i
+	_model = _variant_models[i]
+	_paintable = _variant_paint[i]
+	if archetype == Archetype.TWO_WHEELER:
+		rider_seat = TWO_WHEELER_VARIANTS[i][5] as Vector3
+		if _rider != null:
+			_rider.position = rider_seat + PersonMesh.PROCEDURAL_HIP
+	else:
+		body = CAR_VARIANTS[i][1] as Vector3
+		var box: BoxShape3D = _shape.shape as BoxShape3D
+		box.size = body
+		_shape.position.y = body.y * 0.5
+		_mesh.scale = body
+		_mesh.position.y = body.y * 0.5
+
+## TWO_WHEELER / HATCHBACK: a weighted pick of the slot's variants on every respawn.
+func pick_vehicle_variant(rng: RandomNumberGenerator) -> void:
+	if _variant_models.is_empty():
+		return
+	var specs: Array = TWO_WHEELER_VARIANTS if archetype == Archetype.TWO_WHEELER else CAR_VARIANTS
+	var weights: Array[int] = []
+	var total: int = 0
+	for i: int in specs.size():
+		var v: Array = specs[i]
+		var w: int = 0
+		if _variant_models[i] != null:
+			w = int(v[4]) if archetype == Archetype.TWO_WHEELER else (int(v[3]) if v.size() > 3 else 1)
+		weights.append(w)
+		total += w
+	if total <= 0:
+		return
+	var roll: int = rng.randi() % total
+	for i: int in weights.size():
+		roll -= weights[i]
+		if roll < 0:
+			_show_variant(i)
+			return
 
 ## The n-th entry of the weighted two-wheeler cycle (weights from TWO_WHEELER_VARIANTS).
 static func two_wheeler_variant(n: int) -> Array:
@@ -518,6 +596,7 @@ func place(edge_idx: int, travelled: float, direction: int, lane: int) -> void:
 	visible = true
 	_apply_transform()
 	pick_bus_variant(manager.rng)
+	pick_vehicle_variant(manager.rng)
 	pick_paint(manager.rng)
 	reset_physics_interpolation() # a recycled vehicle must not smear across the map
 	# Teleport with collision off; re-enable next tick so Jolt never sweeps a
