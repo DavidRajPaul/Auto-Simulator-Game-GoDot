@@ -118,6 +118,7 @@ STAT_COMFORT,Comfort,கம்ஃபர்ட்
 STAT_TANK,LPG tank,எல்பிஜி டேங்க்
 GAME_PAUSED,Game paused,கேம் பாஸ்ல இருக்கு
 COMFORT_CUP,Tea cup,டீ கப்
+COMFORT_SHORT,Comfort,வசதி
 FARE_NEGOTIATION,Bargain,பேரம்
 CHANCE,chance,வாய்ப்பு
 SAVARI_COMPLETE,SAVARI COMPLETE!,சவாரி முடிஞ்சிடுச்சு!
@@ -164,8 +165,8 @@ TUT_PICK_UP,See the lady waving on the left? She's going to office. Stop right b
 TUT_PICK_UP_HINT,Follow the green arrow to her and stop next to the yellow beam.,பச்சை அம்பைப் பின்தொடர்ந்து மஞ்சள் ஒளி அருகில் நிறுத்து.
 TUT_HAGGLE,"Now the bargain! The rider offers a price. You can accept, or ask for more. Ask too much and they walk away. Tap Accept for now.","இப்போ பேரம்! பயணி ஒரு விலை சொல்வார். ஏற்கலாம், அல்லது அதிகம் கேட்கலாம். ரொம்ப அதிகம் கேட்டால் போய்விடுவார். இப்போ ஏற்றுக்கொள் என்பதைத் தட்டு."
 TUT_HAGGLE_HINT,Tap Accept on the card.,கார்டில் ஏற்றுக்கொள் என்பதைத் தட்டு.
-TUT_GPS,Follow the green line on the road and the map. Drive smooth: the tea cup shows her comfort.,ரோட்டுலயும் மேப்லயும் பச்சை கோட்டைப் பின்தொடர். மெதுவா ஓட்டு: டீ கப் அவங்க வசதியைக் காட்டுது.
-TUT_GPS_HINT,Turn where the banner shows. Hard braking spills the tea cup.,பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக் டீயைக் கொட்டும்.
+TUT_GPS,Follow the green line on the road and the map. Drive smooth: the Comfort bar at the top shows how she feels.,ரோட்டுலயும் மேப்லயும் பச்சை கோட்டைப் பின்தொடர். மெதுவா ஓட்டு: மேலே உள்ள வசதி பட்டை அவங்க வசதியைக் காட்டுது.
+TUT_GPS_HINT,Turn where the banner shows. Hard braking and bumps drain her comfort.,பேனர் காட்டுற இடத்தில் திரும்பு. திடீர் பிரேக்கும் குலுக்கலும் வசதியைக் குறைக்கும்.
 TUT_DROP_OFF,Almost there. Stop inside the green ring to drop her off.,வந்தாச்சு. பச்சை வட்டத்துக்குள் நிறுத்தி இறக்கு.
 TUT_DROP_OFF_HINT,Come to a full stop inside the green ring.,பச்சை வட்டத்துக்குள் முழுசா நிறுத்து.
 TUT_FREE_ROAM,"Ippo nee thaan boss! +₹100 first savari bonus. Tap the mini-map: gold ! marks side quests. Track one, then stop at its kerb to begin.",இப்போ நீ தான் பாஸ்! முதல் சவாரிக்கு +₹100 போனஸ். மினி மேப்பை தட்டு. தங்க நிற ! மார்க்கர் கூடுதல் சவாலைக் காட்டும். ஒண்ணை செலக்ட் பண்ணி அங்க போய் நிறுத்து.

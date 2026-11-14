@@ -231,21 +231,37 @@ func _build_chips() -> void:
 	_xp_bar = UIKit.bar(0.0, UIKit.GREEN, 160, 10)
 	_root.add_child(_xp_bar)
 
+## The ride strip at the top centre (Nov 14 device report: "the box can be simplified so that it
+## occupies less screen space"): one line "→ destination · km left · time left · fare" and, under
+## it, the rider's comfort (the old "Tea cup": it empties with hard braking, bumps and crashes,
+## and a full cup at the drop earns a better rating and tip) as a thin bar that turns amber, then
+## red, as it drains. About half the old card's height and width.
+const DEST_CHARS: int = 22
+
 func _build_ride_card() -> void:
-	_ride_card = UIKit.card()
+	_ride_card = PanelContainer.new()
+	var sb: StyleBoxFlat = (UIKit.card_box(UIKit.DUSK, 14) as StyleBoxFlat).duplicate() as StyleBoxFlat
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 7.0
+	sb.set_border_width_all(2)
+	sb.shadow_size = 0
+	_ride_card.add_theme_stylebox_override("panel", sb)
 	_ride_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ride_card.visible = false
 	_root.add_child(_ride_card)
 	var v: VBoxContainer = VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
+	v.add_theme_constant_override("separation", 4)
 	_ride_card.add_child(v)
-	_ride_text = UIKit.label("", 19, UIKit.JASMINE)
+	_ride_text = UIKit.label("", 16, UIKit.JASMINE)
 	v.add_child(_ride_text)
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 6)
 	v.add_child(row)
-	row.add_child(UIKit.label(tr("COMFORT_CUP"), 16, UIKit.YELLOW, true))
-	_comfort_bar = UIKit.bar(1.0, UIKit.GREEN, 180, 14)
+	row.add_child(UIKit.label(tr("COMFORT_SHORT"), 12, UIKit.YELLOW))
+	_comfort_bar = UIKit.bar(1.0, UIKit.GREEN, 80, 6)
+	_comfort_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_comfort_bar)
 
 func _build_haggle() -> void:
@@ -492,8 +508,7 @@ func _layout() -> void:
 	rank.position = Vector2(vp.x - 24.0 - rank.get_combined_minimum_size().x, 146.0)
 	_xp_bar.position = Vector2(vp.x - 24.0 - 160.0, 196.0)
 	_xp_bar.size = Vector2(160.0, 10.0)
-	_ride_card.custom_minimum_size = Vector2(420.0, 0.0)
-	_ride_card.position = Vector2(vp.x * 0.5 - 210.0, 12.0)
+	_place_ride_card()
 	# Sat-nav turn prompt: left, under the top button row (clear of the ride card).
 	nav_banner.position = Vector2(20.0, 118.0)
 	var hw: float = minf(960.0, vp.x - 40.0)
@@ -624,10 +639,24 @@ func _on_ride_updated(info: Dictionary) -> void:
 	_ride_card.visible = true
 	var t: float = float(info["time_left_s"])
 	var clock: String = "%d:%02d" % [int(absf(t)) / 60, int(absf(t)) % 60]
-	_ride_text.text = "%s → %s\n%.1f km   %s%s   ₹%d" % [info["archetype"], info["destination"],
+	var dest: String = str(info["destination"])
+	if dest.length() > DEST_CHARS:
+		dest = dest.left(DEST_CHARS - 1).strip_edges() + "…"
+	_ride_text.text = "→ %s  ·  %.1f km  ·  %s%s  ·  ₹%d" % [dest,
 		float(info["remaining_m"]) / 1000.0 * FareCalculator.REAL_KM_PER_GAME_KM, "-" if t < 0.0 else "", clock, int(info["fare"])]
 	_ride_text.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if t < 0.0 else UIKit.JASMINE)
-	_comfort_bar.value = float(info["comfort"])
+	var comfort: float = float(info["comfort"])
+	_comfort_bar.value = comfort
+	# Green while she's comfortable, amber, then red as the cup empties.
+	_comfort_bar.self_modulate = Color(1, 1, 1) if comfort > 0.6 else (Color(1.0, 0.75, 0.3) if comfort > 0.3 else Color(1.0, 0.4, 0.35))
+	_place_ride_card()
+
+## Top centre, as narrow as its text, never over the top-left buttons.
+func _place_ride_card() -> void:
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	_ride_card.reset_size()
+	var x: float = maxf(vp.x * 0.5 - _ride_card.size.x * 0.5, TouchHUD.top_left_end_x + 14.0)
+	_ride_card.position = Vector2(x, 12.0)
 
 ## 4F: stars pop in one by one, receipt rows, rolling total, XP bar, NEXT SAVARI.
 func _on_ride_completed(b: Dictionary) -> void:
