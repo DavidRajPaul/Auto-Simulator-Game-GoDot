@@ -24,6 +24,8 @@ const IGNITE_FILE: String = "res://assets/audio/vehicle/fire_ignite.ogg"
 const FIRE_VOLUME_DB: float = -5.0
 const STEAM_FILE: String = "res://assets/audio/vehicle/steam_hiss.ogg"
 const BODY_FILE: String = "res://assets/audio/vehicle/impact_body.ogg"
+## Pothole thump: the light crash knock, played low and quiet (the springs bottoming out).
+const POTHOLE_FILE: String = "res://assets/audio/vehicle/crash_light.ogg"
 ## Same threshold as the flames on screen (DamageFX stage 4 = FIRE_FROM and up, and the wreck).
 const FIRE_STAGE: int = 4
 const BURN_CHECK_S: float = 0.2
@@ -44,6 +46,7 @@ var _fire: AudioStreamPlayer3D
 var _ignite: AudioStreamPlayer3D
 var _steam: AudioStreamPlayer3D
 var _thud: AudioStreamPlayer3D
+var _pothole: AudioStreamPlayer3D
 var _burning: bool = false
 ## Wrecked: the engine is dead. Burning but not wrecked: it keeps running, quieter and coughing.
 var _dead: bool = false
@@ -62,6 +65,7 @@ func _ready() -> void:
 	_ignite = _make_player("EngineIgnite", stream_or(IGNITE_FILE, _build_ignite()), -2.0)
 	_steam = _make_player("SteamHiss", stream_or(STEAM_FILE, _build_ignite()), -6.0)
 	_thud = _make_player("BodyThud", stream_or(BODY_FILE, _build_clunk()), -2.0)
+	_pothole = _make_player("PotholeThump", stream_or(POTHOLE_FILE, _build_clunk()), -10.0)
 	SignalBus.pedestrian_bumped.connect(func(p: Vector3, _v: Vector3) -> void:
 		_thud.global_position = p
 		_thud.play()
@@ -87,6 +91,7 @@ func _ready() -> void:
 	SignalBus.engine_misfired.connect(func(s: float) -> void: _misfire_t = s)
 	SignalBus.engine_restarted.connect(func() -> void: _set_engine(true))
 	SignalBus.kick_start_attempt.connect(func(_r: float) -> void: _clunk.play())
+	SignalBus.pothole_hit.connect(_on_pothole)
 
 func _play_horn(tier: int) -> void:
 	(_horn_air if tier >= AIR_HORN_TIER else _horn).play()
@@ -126,6 +131,15 @@ func _build_ev_whine() -> AudioStreamWAV:
 		var t: float = float(i) / MIX_RATE
 		samples[i] = 0.35 * sin(TAU * 180.0 * t) + 0.15 * sin(TAU * 360.0 * t) + 0.05 * sin(TAU * 1080.0 * t)
 	return _to_wav(samples, true)
+
+## Suspension bottoming out of a pothole: the body thud, quieter and higher for small holes.
+func _on_pothole(pos: Vector3, severity: float) -> void:
+	if severity < 0.08 or (_pothole.playing and _pothole.get_playback_position() < 0.12):
+		return
+	_pothole.global_position = pos
+	_pothole.volume_db = lerpf(-20.0, -6.0, severity)
+	_pothole.pitch_scale = lerpf(0.75, 0.55, severity)
+	_pothole.play()
 
 func _on_speed(kmh: float) -> void:
 	_speed_kmh = kmh

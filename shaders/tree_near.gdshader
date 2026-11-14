@@ -12,8 +12,16 @@ uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable
 uniform vec3 eye_pos = vec3(0.0);
 uniform float fade_start = 50.0;
 uniform float fade_end = 62.0;
+// Height of the model (model units), set by StreetTrees: how far up the tree a vertex is.
+uniform float model_height = 8.0;
+
+// City wind (scripts/world/Wind.gd, project.godot [shader_globals]).
+global uniform vec2 wind_dir;
+global uniform float wind_strength;
+global uniform float wind_gust;
 
 varying float vis;
+varying float leafy;
 
 // Interleaved gradient noise: the same threshold per pixel in both tree shaders.
 float dither(vec2 p) {
@@ -24,6 +32,19 @@ void vertex() {
 	// MODEL_MATRIX already holds the MultiMesh instance transform: column 3 is the trunk base.
 	vec2 d = MODEL_MATRIX[3].xz - eye_pos.xz;
 	vis = 1.0 - smoothstep(fade_start, fade_end, length(d));
+	// Wind (Nov 14): the whole tree leans and sways with the wind, more at the top (bend grows
+	// with the square of height), each tree a little out of step; leaves flutter on top of that.
+	// Identical in the shadow pass, so shadows sway with the tree. The far card leans the same.
+	float h = clamp(VERTEX.y / max(model_height, 0.1), 0.0, 1.2);
+	leafy = smoothstep(0.32, 0.6, h);
+	float tree_h = model_height * length(MODEL_MATRIX[1].xyz);
+	float phase = dot(MODEL_MATRIX[3].xz, vec2(0.131, 0.077));
+	float push = wind_strength + 1.5 * wind_gust;
+	float sway = tree_h * 0.03 * push * (0.7 + 0.3 * sin(TIME * (0.8 + wind_strength) + phase));
+	vec3 w = vec3(wind_dir.x, 0.0, wind_dir.y);
+	float flutter = 0.045 * push * leafy * sin(TIME * (5.0 + 3.0 * wind_gust) + dot(VERTEX, vec3(2.9, 1.7, 3.3)) + phase);
+	vec3 disp = w * (sway * h * h + flutter) + vec3(0.0, flutter * 0.6 - sway * h * h * 0.12, 0.0);
+	VERTEX += inverse(mat3(MODEL_MATRIX)) * disp;
 }
 
 void fragment() {
@@ -31,6 +52,8 @@ void fragment() {
 		discard;
 	}
 	ALBEDO = texture(albedo_tex, UV).rgb * COLOR.rgb;
+	// Sun through the leaves: a thin crown glows when lit from behind (as in real foliage).
+	BACKLIGHT = ALBEDO * 0.35 * leafy;
 	METALLIC = 0.0;
 	SPECULAR = 0.2;
 	ROUGHNESS = 1.0;

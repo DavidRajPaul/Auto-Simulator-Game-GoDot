@@ -236,6 +236,8 @@ func _ready() -> void:
 	add_child(trees)
 	if dressing_enabled:
 		add_child(BirdFlock.new()) # one draw call: crows, pigeons and kites over the street
+		add_child(Wind.new()) # shader globals: trees, splashes and dust follow one wind
+		add_child(RainSplashes.new()) # one draw call while raining: splashes round the camera
 		shop_people = ShopPeople.new() # one draw call: shopkeepers and customers near the camera
 		shop_people.world = self
 		add_child(shop_people)
@@ -272,6 +274,7 @@ func _process(delta: float) -> void:
 ## Monsoon: roads darken and turn glossy while it rains, then dry off slowly.
 func _update_wetness(delta: float) -> void:
 	var target: float = 1.0 if GameState.is_raining else 0.0
+	_street_mat.set_shader_parameter("rain_rings", target)
 	if is_equal_approx(wetness, target):
 		return
 	wetness = move_toward(wetness, target, delta * (0.2 if target > wetness else 0.05))
@@ -471,7 +474,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
 		# Spots that live things use (kolam drawers, shop people, rain shelter): kept on the chunk.
-		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", [])})
+		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", []),
+			"trees": dress.get("trees", []), "poles": dress.get("poles", [])})
 		# Street life (kolams, dogs) stands on the drawn ground of this chunk.
 		if root.has_meta("surface_heights"):
 			dress["_heights"] = root.get_meta("surface_heights")

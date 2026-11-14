@@ -134,6 +134,21 @@ textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=0
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
 
+[shader_globals]
+
+wind_dir={
+"type": "vec2",
+"value": Vector2(-0.92, -0.38)
+}
+wind_strength={
+"type": "float",
+"value": 0.3
+}
+wind_gust={
+"type": "float",
+"value": 0.0
+}
+
 [sentry]
 
 ; Crash reporting — see docs/CRASH_REPORTING.md. Read by the Sentry addon (addons/sentry) at boot.

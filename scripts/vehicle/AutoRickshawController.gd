@@ -417,6 +417,33 @@ func _physics_process(delta: float) -> void:
 	_update_lamps(brake_in, delta)
 	_emit_telemetry(delta)
 
+## Pothole depth under a wheel this physics step; fires the edge jolt when the wheel climbs out.
+var _hole_depth: Dictionary = {} # RayCast3D -> depth last step
+const POTHOLE_JOLT_MPS: float = 0.6
+
+func _pothole_at(ray: RayCast3D, hit_pt: Vector3, _delta: float) -> float:
+	if not use_player_profile or not RoadWear.on_asphalt(hit_pt.x, hit_pt.z):
+		_hole_depth[ray] = 0.0
+		return 0.0
+	var depth: float = RoadWear.pothole_depth(hit_pt.x, hit_pt.z)
+	var before: float = float(_hole_depth.get(ray, 0.0))
+	_hole_depth[ray] = depth
+	var climb: float = before - depth
+	var speed: float = absf(forward_speed_mps)
+	if climb > 0.02 and speed > 2.0:
+		# The tyre hits the hole's far lip: an upward kick and a little drag, scaled by speed.
+		var severity: float = clampf(climb / RoadWear.MAX_DEPTH_M * speed / 10.0, 0.0, 1.0)
+		# Velocity change at the wheel: up to ~0.6 m/s up and ~0.2 m/s lost for a deep hole at
+		# 50 km/h (one wheel of three, so the body pitches and rolls rather than jumps).
+		var dv: float = POTHOLE_JOLT_MPS * climb / RoadWear.MAX_DEPTH_M * minf(speed, 14.0) / 14.0
+		apply_impulse((Vector3.UP * dv - linear_velocity.normalized() * dv * 0.3) * mass / 3.0, hit_pt - global_position)
+		SignalBus.pothole_hit.emit(hit_pt, severity)
+		if severity > 0.15:
+			SignalBus.camera_shake.emit(severity * 0.45)
+	elif climb < -0.02 and GameState.is_raining and speed > 1.5:
+		SignalBus.pothole_hit.emit(hit_pt, 0.0) # dropped into a puddle: splash only
+	return depth
+
 func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: float, handbrake_on: bool, delta: float) -> void:
 	ray.force_raycast_update()
 	var visual_name: String = "FrontWheelMesh" if is_front else ("RearLeftWheelMesh" if ray == rear_left_wheel_ray else "RearRightWheelMesh")
@@ -427,7 +454,10 @@ func _solve_wheel(ray: RayCast3D, is_front: bool, throttle_in: float, brake_in: 
 	var hit_pt: Vector3 = ray.get_collision_point()
 	var hit_n: Vector3 = ray.get_collision_normal()
 	var dist: float = ray.global_position.distance_to(hit_pt)
-	var spring_len: float = clampf(dist - stats.wheel_radius_m, 0.0, stats.suspension_rest_dist_m)
+	# Potholes (RoadWear): the same holes the road shader paints. The wheel drops into one and
+	# the spring sees the extra length; climbing out of the far edge at speed is a jolt.
+	var hole: float = _pothole_at(ray, hit_pt, delta)
+	var spring_len: float = clampf(dist - stats.wheel_radius_m + hole, 0.0, stats.suspension_rest_dist_m)
 	var compression: float = clampf(stats.suspension_rest_dist_m - spring_len, 0.0, stats.max_spring_compression_m)
 	_place_wheel_visual(visual_name, ray, spring_len)
 

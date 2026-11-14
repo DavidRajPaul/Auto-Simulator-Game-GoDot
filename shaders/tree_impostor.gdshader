@@ -13,6 +13,11 @@ uniform float fade_end = 62.0;
 uniform float card_tone = 0.75;
 uniform float sky_lean = 0.45;
 
+// City wind (Wind.gd): the card's top leans like the model's crown (same formula as tree_near).
+global uniform vec2 wind_dir;
+global uniform float wind_strength;
+global uniform float wind_gust;
+
 varying vec3 tint;
 varying float near_vis;
 varying vec2 atlas_uv;
@@ -45,6 +50,10 @@ void vertex() {
 	// Upright billboard: right = cross(view dir, up), the baked views' screen-right convention.
 	vec3 right = vec3(-v.y, 0.0, v.x);
 	vec3 world = origin + right * (qx * radius) + vec3(0.0, qy * height, 0.0);
+	float phase = dot(origin.xz, vec2(0.131, 0.077));
+	float push = wind_strength + 1.5 * wind_gust;
+	float sway = height * 0.03 * push * (0.7 + 0.3 * sin(TIME * (0.8 + wind_strength) + phase));
+	world += vec3(wind_dir.x, -0.12, wind_dir.y) * sway * qy * qy;
 	VERTEX = (VIEW_MATRIX * vec4(world, 1.0)).xyz;
 	vec3 n = normalize(-dir + vec3(0.0, sky_lean * 2.0, 0.0));
 	card_normal = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);

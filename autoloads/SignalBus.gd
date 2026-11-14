@@ -37,6 +37,9 @@ signal wiper_toggled(is_on: bool)
 signal camera_mode_changed(mode_name: String)
 ## Short camera kick on impacts, 0–1 strength.
 signal camera_shake(strength: float)
+## A player wheel climbed out of a pothole (severity 0..1), or dropped into a rain-filled one
+## (severity 0): VehicleAudio thuds, RainSplashes splashes.
+signal pothole_hit(pos: Vector3, severity: float)
 
 ## Hero and parked auto persist independently while walking.
 
@@ -173,6 +176,9 @@ signal pedestrian_startled(pos: Vector3)
 signal pedestrian_bumped(pos: Vector3, car_velocity: Vector3)
 ## The player's auto caught fire (true) or the fire was put out (false).
 signal vehicle_burning(on: bool)
+## ShopPeople took the shopkeepers / customers near the burning auto out of its static mesh:
+## [Vector3 position, yaw, figure id] each. PedestrianManager stands walkers there to flee.
+signal shop_people_scattered(spots: Array)
 ## The failing engine cut out for this long (limp mode under black smoke or fire).
 signal engine_misfired(seconds: float)
 # --- Controls (gear, indicators, lamps) --------------------------------------------

@@ -18,7 +18,9 @@ Clips (CLIPS below):
   flee_look  Run_Look_Back    in place, looking back over the shoulder (pace → flee_look_speed)
   flee       Running_3        in place, frightened run (pace → flee_speed)
 
-Usage: FBX2GLTF=… python3 tools/assets/add_mixamo_clips.py [raw_folder]
+Usage: FBX2GLTF=… python3 tools/assets/add_mixamo_clips.py [raw_folder] [--only clip,clip]
+  --only bakes just those clips and keeps every other clip and number already in the GLBs and
+  people.json (the raw files of the others need not be present).
 """
 from __future__ import annotations
 
@@ -50,6 +52,10 @@ CLIPS = {
     "get_up": ("Getting_Up", "inplace"),
     "wave": ("Waving_3", "inplace", 15),
     "talk": ("Talking", "inplace", 15),
+    # Nov 14: two people chatting at the kerb take turns with these (PedestrianManager CHAT_CLIPS).
+    "talk_2": ("Talking_2", "inplace", 15),
+    "talk_3": ("Talking_3", "inplace", 15),
+    "talk_4": ("Talking_4", "inplace", 15),
     "drink": ("Drinking", "inplace", 15),
     # Fleeing from a burning auto: a frightened run, and a run that looks back over the shoulder.
     "flee_look": ("Run_Look_Back", "inplace", 30),
@@ -150,10 +156,18 @@ def add_clips(path: Path, baked: dict) -> None:
 
 
 def main() -> int:
-    raw = Path(sys.argv[1]) if len(sys.argv) > 1 else RAW
+    args = [a for a in sys.argv[1:] if not a.startswith("--only")]
+    only = None
+    for i, a in enumerate(sys.argv[1:]):
+        if a.startswith("--only"):
+            only = set((a.split("=", 1)[1] if "=" in a else sys.argv[i + 2]).split(","))
+            args = [x for x in args if x != sys.argv[i + 2]] if "=" not in a else args
+    raw = Path(args[0]) if args else RAW
     conv = os.environ.get("FBX2GLTF", "FBX2glTF")
     sources = {}
     for name, (stem, mode, *_fps) in CLIPS.items():
+        if only is not None and name not in only:
+            continue
         fbx = next(iter(sorted(raw.glob(f"*{stem}.fbx"))), None)
         glb = raw / f"{stem}.glb"
         if fbx is not None and (not glb.exists() or glb.stat().st_mtime < fbx.stat().st_mtime):
@@ -172,13 +186,16 @@ def main() -> int:
         target = target_rig.pose(target_rig.rest)
         baked = {name: bake(target, src, mode, fps) for name, (src, mode, fps) in sources.items()}
         add_clips(path, baked)
-        info["run_speed"] = round(baked["run"]["speed"], 3)
-        info["moves"] = {n: [round(float(c["move"][0]), 3), round(float(c["move"][2]), 3), round(c["duration"], 3)]
-                         for n, c in baked.items() if n != "run"}
+        if "run" in baked:
+            info["run_speed"] = round(baked["run"]["speed"], 3)
+        moves = info.get("moves", {}) if only is not None else {}
+        moves.update({n: [round(float(c["move"][0]), 3), round(float(c["move"][2]), 3), round(c["duration"], 3)]
+                      for n, c in baked.items() if n != "run"})
+        info["moves"] = moves
         for n in ("flee_look", "flee"):
-            info[f"{n}_speed"] = round(baked[n]["speed"], 3)
-        print(f"OK   {pid}: +{', '.join(baked)}  run {info['run_speed']:.2f} m/s, "
-              f"dodge back {-info['moves']['dodge'][1]:.2f} m, {path.stat().st_size // 1024} KB")
+            if n in baked:
+                info[f"{n}_speed"] = round(baked[n]["speed"], 3)
+        print(f"OK   {pid}: +{', '.join(baked)}  {path.stat().st_size // 1024} KB")
     META.write_text(json.dumps(meta, indent=1, sort_keys=True))
     return 0
 

@@ -29,6 +29,8 @@ func _run() -> void:
 	_test_street_life_mesh()
 	_test_birds()
 	_test_road_condition()
+	_test_wind()
+	_test_steering()
 	await _test_living_city()
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
@@ -239,6 +241,62 @@ func _test_road_condition() -> void:
 	var sh: String = FileAccess.get_file_as_string("res://shaders/street_surface.gdshader")
 	_check("Potholes and dust add no texture lookup", sh.count("texture(") == 2 and sh.contains("puddle"))
 
+## Lane changes steer: no sideways slide at a standstill, the nose turns into the move.
+func _test_steering() -> void:
+	var v: TrafficVehicleAI = TrafficVehicleAI.new()
+	v.archetype = TrafficVehicleAI.Archetype.HATCHBACK
+	v.current_speed_mps = 8.0
+	v._lat_vel = 1.6
+	var b: Basis = Basis.IDENTITY
+	for i: int in 30:
+		b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	var yaw: float = Vector3.FORWARD.signed_angle_to(-b.z, Vector3.UP)
+	_check("A car changing lanes turns its nose into the move", yaw > 0.1 and yaw <= TrafficVehicleAI.STEER_YAW_MAX + 0.001, "%.2f rad" % yaw)
+	v.archetype = TrafficVehicleAI.Archetype.TWO_WHEELER
+	v._steer_yaw = 0.0
+	for i: int in 30:
+		b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	_check("A two-wheeler leans into its lane change", b.y.dot(Vector3.UP) < 0.995)
+	v.current_speed_mps = 0.0
+	v._steer_yaw = 0.0
+	b = v._steer_basis(Vector3.FORWARD, 1.0 / 60.0)
+	_check("A stopped vehicle never turns on the spot", is_zero_approx(v._steer_yaw))
+	_check("A car can't slide sideways at a standstill", is_zero_approx(0.0 * TrafficVehicleAI.STEER_SIDEWAYS[1]) and TrafficVehicleAI.STEER_SIDEWAYS[1] < 0.4)
+	v.free()
+
+func _test_wind() -> void:
+	var morning: Vector2 = Wind.direction_at(7.0)
+	var afternoon: Vector2 = Wind.direction_at(16.0)
+	_check("Mornings have the land breeze, afternoons the sea breeze", morning.dot(Wind.LAND_BREEZE.normalized()) > 0.99 and afternoon.dot(Wind.SEA_BREEZE.normalized()) > 0.99)
+	_check("The afternoon wind is the strongest of the day", Wind.strength_at(16.0) > Wind.strength_at(7.0) + 0.2 and Wind.strength_at(16.0) > Wind.strength_at(2.0))
+	Wind.direction = Vector2(0.6, 0.8)
+	Wind.strength = 0.7
+	Wind.gust = 0.4
+	Wind.push()
+	# The headless (dummy) renderer keeps no globals: check them only where a renderer does.
+	var got: Variant = RenderingServer.global_shader_parameter_get("wind_dir")
+	_check("The wind reaches every shader as globals", ProjectSettings.has_setting("shader_globals/wind_dir") and ProjectSettings.has_setting("shader_globals/wind_gust")
+		and (got == null or (got as Vector2).is_equal_approx(Vector2(0.6, 0.8))))
+	for path: String in ["res://shaders/tree_near.gdshader", "res://shaders/tree_impostor.gdshader", "res://shaders/rain_splash.gdshader"]:
+		_check("%s follows the city wind" % path.get_file(), FileAccess.get_file_as_string(path).contains("global uniform vec2 wind_dir"))
+	# Potholes: the CPU copy of the painted holes.
+	var deepest: float = 0.0
+	var holes: int = 0
+	var clean_holes: int = 0
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 9
+	for i: int in 20000:
+		var x: float = rng.randf_range(-3000.0, 3000.0)
+		var z: float = rng.randf_range(-2500.0, 2500.0)
+		var dd: float = RoadWear.pothole_depth(x, z)
+		deepest = maxf(deepest, dd)
+		if dd > 0.01:
+			holes += 1
+			if WorldChunkStreamer.road_condition(x, z) < 0.6:
+				clean_holes += 1
+	_check("Broken roads have potholes up to %.0f cm deep" % (RoadWear.MAX_DEPTH_M * 100.0), holes > 100 and deepest <= RoadWear.MAX_DEPTH_M + 0.0001 and deepest > 0.05, "%d holes, deepest %.3f" % [holes, deepest])
+	_check("Clean and dusty roads have no potholes", clean_holes == 0)
+
 ## Moving-traffic physics, fallen bodies, shop people, kolam drawing, rain: in the real city.
 func _test_living_city() -> void:
 	GameState.reset_profile()
@@ -333,6 +391,140 @@ func _test_living_city() -> void:
 		if o.active and (o.role == "shelter" or o.umbrella):
 			left += 1
 	_check("After the rain umbrellas close and everyone walks on", left == 0 and peds.umbrella_count() == 0)
+	# --- Rain splashes on the ground, rings on the road.
+	var splashes: RainSplashes = world.get_node("RainSplashes") as RainSplashes
+	GameState.set_rain(true, 60.0)
+	splashes.rain = 1.0
+	for i: int in 3:
+		await get_tree().process_frame
+	_check("Rain splashes on the ground round the camera (one MultiMesh)", splashes.splash_count() == RainSplashes.COUNT and (world._street_mat.get_shader_parameter("rain_rings") as float) > 0.5)
+	GameState.set_rain(false, 0.0)
+	splashes.rain = 0.0
+	for i: int in 3:
+		await get_tree().process_frame
+	_check("No splashes when it is dry", splashes.splash_count() == 0)
+	# --- Shopping bags.
+	var bagged: int = 0
+	var walkers: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		peds._roll_bags(o)
+		walkers += 1
+		bagged += 1 if o.bags > 0 else 0
+	_check("About a third of walkers carry shopping bags", bagged > 0 and bagged < walkers, "%d of %d" % [bagged, walkers])
+	for i: int in 5:
+		await get_tree().process_frame
+	var carrying: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.bags > 0 and o.role != "kolam":
+			carrying += o.bags
+	_check("Every carried bag is drawn, all in one MultiMesh", peds.bag_count() > 0 and peds.bag_count() <= carrying, "%d drawn, %d carried" % [peds.bag_count(), carrying])
+	# --- Potholes you can feel: the player's wheel drops in and the far lip is a jolt.
+	var auto: AutoRickshawController = city.get_node("AutoRickshaw") as AutoRickshawController
+	var hole_at: Vector3 = Vector3.INF
+	for r: int in range(0, 600):
+		var a: float = float(r) * 2.399
+		var p: Vector3 = Vector3(at.x + cos(a) * sqrt(float(r)) * 4.0, 0.0, at.z + sin(a) * sqrt(float(r)) * 4.0)
+		if RoadWear.pothole_depth(p.x, p.z) > 0.05 and RoadWear.on_asphalt(p.x, p.z):
+			hole_at = p
+			break
+	if hole_at == Vector3.INF:
+		# This street is a clean one: go to a broken stretch.
+		var broken: Vector3 = Vector3(-1675.7, 1.0, 1004.2)
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, broken))
+		world.update_streaming(true)
+		for i: int in 30:
+			await get_tree().physics_frame
+		for r: int in range(0, 1500):
+			var a: float = float(r) * 2.399
+			var p: Vector3 = Vector3(broken.x + cos(a) * sqrt(float(r)) * 4.0, 0.0, broken.z + sin(a) * sqrt(float(r)) * 4.0)
+			if RoadWear.pothole_depth(p.x, p.z) > 0.05 and RoadWear.on_asphalt(p.x, p.z):
+				hole_at = p
+				break
+	_check("A pothole is found on the asphalt", hole_at != Vector3.INF)
+	if hole_at != Vector3.INF:
+		var hits: Array[float] = []
+		var cb: Callable = func(_p: Vector3, sev: float) -> void: hits.append(sev)
+		SignalBus.pothole_hit.connect(cb)
+		var ray: RayCast3D = auto.rear_left_wheel_ray
+		auto.forward_speed_mps = 9.0
+		var inside: float = auto._pothole_at(ray, hole_at, 0.016)
+		_check("A wheel over a pothole drops into it", inside > 0.05, "%.3f m" % inside)
+		var out_pt: Vector3 = hole_at
+		for k: int in 40:
+			out_pt = hole_at + Vector3(0.1 * float(k), 0.0, 0.0)
+			if RoadWear.pothole_depth(out_pt.x, out_pt.z) == 0.0:
+				break
+		auto._pothole_at(ray, out_pt, 0.016)
+		_check("Climbing out of it at speed is a jolt (thump, shake)", hits.size() == 1 and hits[0] > 0.1, str(hits))
+		SignalBus.pothole_hit.disconnect(cb)
+	# --- Shop people near a burning auto run off with everyone else.
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+	var near_fire: Vector3 = auto.global_position
+	var shown_near: int = 0
+	for s: Array in shops.shown:
+		if Vector2((s[0] as Vector3).x - near_fire.x, (s[0] as Vector3).z - near_fire.z).length() <= ShopPeople.FIRE_CLEAR_M:
+			shown_near += 1
+	var scattered: Array = []
+	var cb2: Callable = func(spots: Array) -> void: scattered.append_array(spots)
+	SignalBus.shop_people_scattered.connect(cb2)
+	SignalBus.player_pose_updated.emit(near_fire, Vector3.FORWARD)
+	SignalBus.vehicle_burning.emit(true)
+	for i: int in 30:
+		await get_tree().process_frame
+	var left_near: int = 0
+	for s: Array in shops.shown:
+		if Vector2((s[0] as Vector3).x - near_fire.x, (s[0] as Vector3).z - near_fire.z).length() <= ShopPeople.FIRE_CLEAR_M:
+			left_near += 1
+	var fleeing: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.fleeing:
+			fleeing += 1
+	_check("Shop people near a burning auto leave the static mesh (%d near)" % shown_near, left_near == 0 and scattered.size() == shown_near)
+	_check("... and run off as walkers with everyone else", shown_near == 0 or fleeing >= mini(shown_near, PedestrianManager.SCATTER_MAX) / 2, "%d fleeing" % fleeing)
+	SignalBus.vehicle_burning.emit(false)
+	SignalBus.shop_people_scattered.disconnect(cb2)
+	shops._clear_left = 0.0
+	shops._process(0.1)
+	_check("They come back once the fire is long over", not shops.clearing())
+	# --- Two people chatting at the kerb.
+	var chats: int = 0
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.idle and o.role == "" and not o.fleeing and o.react == "":
+			if peds._start_chat(o):
+				chats += 1
+				break
+	for i: int in 10:
+		await get_tree().process_frame
+	var pair_ok: bool = false
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.partner != null:
+			var p: PedestrianManager.Walker = o.partner
+			var facing: float = o.heading.dot((p.pos - o.pos).normalized())
+			var talk_one: bool = o.talking != p.talking
+			pair_ok = absf(o.pos.distance_to(p.pos) - PedestrianManager.CHAT_GAP_M) < 0.15 and facing > 0.6 and talk_one and p.partner == o
+			break
+	var dbg: String = "chats %d, count %d" % [chats, peds.chat_count()]
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.partner != null:
+			dbg += " gap %.2f facing %.2f talk %s/%s" % [o.pos.distance_to(o.partner.pos), o.heading.dot((o.partner.pos - o.pos).normalized()), o.talking, o.partner.talking]
+			break
+	_check("Two people stop to chat face to face, one talking at a time", chats == 1 and pair_ok and peds.chat_count() >= 2, dbg)
+	var talker: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "chat" and o.talking:
+			talker = o
+	var playing: String = talker.anim.current_animation if talker != null and talker.anim != null else ""
+	_check("The talker plays one of the talking clips", playing in PedestrianManager.CHAT_CLIPS, playing)
+	if talker != null:
+		talker.chat_t = 0.0
+		for i: int in 3:
+			await get_tree().process_frame
+		_check("They take turns", not talker.talking and talker.partner != null and talker.partner.talking)
+		var other: PedestrianManager.Walker = talker.partner
+		peds._deactivate(talker)
+		for i: int in 3:
+			await get_tree().process_frame
+		_check("When one leaves, the other goes back to waiting alone", other.role == "" and other.partner == null)
 	# --- Early morning: women draw the kolam at the doorstep.
 	GameState.shift_minute = 360.0
 	var home: Vector3 = Vector3(-2351.0, 1.0, -217.0)
@@ -347,9 +539,16 @@ func _test_living_city() -> void:
 	for o: PedestrianManager.Walker in peds.people:
 		if PedestrianManager.WOMEN.has(o.id):
 			lady = o
-	var placed: bool = lady != null and not spots.is_empty() and peds.place_kolam(lady, spots[0])
+	# Dawn has already sent other women out to their doorsteps: use a spot nobody has taken.
+	var placed: bool = false
+	var spot_used: Array = []
+	for sp: Array in spots:
+		if lady != null and peds.place_kolam(lady, sp):
+			placed = true
+			spot_used = sp
+			break
 	_check("A woman bends over her kolam at dawn", placed and lady.role == "kolam" and lady.pose != null and lady.pose.mode == PoseModifier.Mode.KOLAM
-		and lady.pos.distance_to(spots[0][0] as Vector3) < 1.5)
+		and lady.pos.distance_to(spot_used[0] as Vector3) < 1.5)
 	GameState.shift_minute = 600.0
 	for i: int in 10:
 		await get_tree().process_frame
