@@ -20,6 +20,46 @@ RAW = ROOT / "data" / "osm" / "chennai_mvp.osm.json.gz"
 OUT = ROOT / "data" / "osm" / "streets"
 
 
+# Lane counts for roads OSM leaves untagged (Nov 14 device report: "why does Kamarajar Salai
+# have very small roads?"). Without a "lanes" tag osm2streets gives a one-way carriageway ONE
+# lane, so the Marina beach road - three lanes each way in reality, split by a median - came
+# out as two 4.5 m strips. Only ways with no lanes tag are touched; a mapped count always wins.
+# Per carriageway (one-way ways), by name prefix:
+NAMED_LANES = {
+    "Kamarajar Salai": 3,
+    "Dr Radhakrishnan Salai": 3,
+    "Anna Salai": 3,
+    "Uttamar Gandhi Salai": 2,
+    "Dr MGR Salai": 2,
+    "TTK Road": 2,
+    "Cathedral Road": 2,
+    "Peters Road": 2,
+    "McNichols Road": 2,
+    "Mc Nichols Road": 2,
+    "Anna Flyover": 2,
+    "Music Academy Flyover": 2,
+    "Gopathi Narayanaswami Flyover": 2,
+}
+# One-way carriageways of these classes get 2 lanes; two-way primaries 4 (2 each way).
+ONEWAY_DEFAULT = {"trunk": 2, "primary": 2, "secondary": 2}
+TWOWAY_DEFAULT = {"trunk": 4, "primary": 4}
+
+
+def lanes_for(tags: dict) -> int:
+    """The lane count to add for a way with no "lanes" tag (0 = leave it to osm2streets)."""
+    if "lanes" in tags:
+        return 0
+    hw = tags.get("highway", "")
+    oneway = tags.get("oneway", "no") in ("yes", "1", "true")
+    name = tags.get("name", "")
+    if oneway:
+        for prefix, n in NAMED_LANES.items():
+            if name.startswith(prefix):
+                return n
+        return ONEWAY_DEFAULT.get(hw, 0)
+    return TWOWAY_DEFAULT.get(hw, 0)
+
+
 def to_osm_xml(elements: list[dict]) -> bytes:
     """Rebuild a minimal .osm XML (nodes + highway ways) from Overpass `out geom` JSON."""
     nodes: dict[int, tuple[float, float]] = {}
@@ -41,6 +81,9 @@ def to_osm_xml(elements: list[dict]) -> bytes:
         out.append(f'<way id="{w["id"]}" version="1">')
         out.extend(f'<nd ref="{n}"/>' for n in w["nodes"])
         out.extend(f'<tag k={quoteattr(k)} v={quoteattr(str(v))}/>' for k, v in w["tags"].items())
+        extra = lanes_for(w["tags"])
+        if extra:
+            out.append(f'<tag k="lanes" v="{extra}"/>')
         out.append("</way>")
     out.append("</osm>")
     return "\n".join(out).encode()
