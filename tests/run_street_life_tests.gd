@@ -391,6 +391,64 @@ func _test_living_city() -> void:
 		if o.active and (o.role == "shelter" or o.umbrella):
 			left += 1
 	_check("After the rain umbrellas close and everyone walks on", left == 0 and peds.umbrella_count() == 0)
+	# --- Trees, poles, transformers and stalls are solid (Nov 14 device report).
+	var space: PhysicsDirectSpaceState3D = (city as Node3D).get_world_3d().direct_space_state
+	var kinds: Dictionary = {"trees": 0, "poles": 0, "xfmr": 0, "stalls": 0}
+	var solid: Dictionary = {"trees": 0, "poles": 0, "xfmr": 0, "stalls": 0}
+	for k: Vector2i in world.loaded:
+		var dpath: String = "res://data/world/dress/c_%d_%d.json" % [k.x, k.y]
+		if not FileAccess.file_exists(dpath):
+			continue
+		var dress: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dpath)) as Dictionary
+		for key: String in kinds:
+			for rec: Array in (dress.get(key, []) as Array).slice(0, 12):
+				kinds[key] = int(kinds[key]) + 1
+				# A concave collider has no inside: cross the object with a short ray at bumper height.
+				var p: Vector3 = Vector3(float(rec[0]), 0.8, float(rec[1]))
+				var hit: bool = false
+				for d: Vector3 in [Vector3(1.6, 0, 0), Vector3(0, 0, 1.6)]:
+					if not space.intersect_ray(PhysicsRayQueryParameters3D.create(p - d, p + d, 1)).is_empty():
+						hit = true
+				if hit:
+					solid[key] = int(solid[key]) + 1
+	for key: String in kinds:
+		_check("Every %s near the auto is solid at bumper height" % key, int(kinds[key]) == 0 or int(solid[key]) == int(kinds[key]), "%d of %d" % [solid[key], kinds[key]])
+	# Drive straight at a tree: the auto stops against the trunk instead of passing through.
+	var tree: Vector3 = Vector3.INF
+	var dir: Vector3 = Vector3.ZERO
+	for k: Vector2i in world.loaded:
+		var dpath: String = "res://data/world/dress/c_%d_%d.json" % [k.x, k.y]
+		if tree != Vector3.INF or not FileAccess.file_exists(dpath):
+			continue
+		for rec: Array in (JSON.parse_string(FileAccess.get_file_as_string(dpath)) as Dictionary).get("trees", []):
+			var t: Vector3 = Vector3(float(rec[0]), 0.0, float(rec[1]))
+			for a: int in 8:
+				var d: Vector3 = Vector3(sin(float(a) * TAU / 8.0), 0.0, cos(float(a) * TAU / 8.0))
+				var rq: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(t - d * 14.0 + Vector3.UP * 0.8, t - d * 0.9 + Vector3.UP * 0.8, 1)
+				var wide: bool = true
+				for side: float in [-0.8, 0.8]:
+					var off: Vector3 = Vector3(d.z, 0.0, -d.x) * side
+					if not space.intersect_ray(PhysicsRayQueryParameters3D.create(t - d * 14.0 + off + Vector3.UP * 0.8, t - d * 0.9 + off + Vector3.UP * 0.8, 1)).is_empty():
+						wide = false
+				if space.intersect_ray(rq).is_empty() and wide:
+					tree = t
+					dir = d
+					break
+			if tree != Vector3.INF:
+				break
+	_check("A tree with a clear run-up is found", tree != Vector3.INF)
+	if tree != Vector3.INF:
+		SignalBus.teleport_requested.emit(Transform3D(Basis.looking_at(dir, Vector3.UP), tree - dir * 12.0 + Vector3(0, 0.8, 0)))
+		for i: int in 20:
+			await get_tree().physics_frame
+		Input.action_press("accelerate")
+		for i: int in 300:
+			await get_tree().physics_frame
+		Input.action_release("accelerate")
+		var car: Node3D = city.get_node("AutoRickshaw") as Node3D
+		var past: float = (car.global_position - tree).dot(dir)
+		_check("Driving into a tree stops the auto at the trunk", past < -0.5, "auto ends %.2f m along past the trunk" % past)
+
 	# --- Rain splashes on the ground, rings on the road.
 	var splashes: RainSplashes = world.get_node("RainSplashes") as RainSplashes
 	GameState.set_rain(true, 60.0)
