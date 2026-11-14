@@ -24,6 +24,7 @@ Indicator tick: ProductionNow, Freesound (CC0). Air horn: goose278, Freesound (C
 Traffic models: Cars Bundle and Cow by Quaternius (CC0). Auto rickshaw by rSquare, "Bolero" by Waseem Kadri, Indian Scooter by Shiveloper, Cow - LowPoly by Fadly.W and "Two-Wheeler Vehicles Pack Low-Poly" by SymetrikGames (Sketchfab, CC BY 4.0).
 Tamil Nadu buses and lorry: "Tamilnadu TNSTC Bus 2009-2014" and "Tamilnadu SETC Bus 2017-2026" by Nobel Tech, "Tamilnadu Lorry" by Oren garage (Sketchfab, CC BY 4.0).
 People: "Indian Old man walking" by anandmohan662, "Alex Texel A-pose" by alex.texelsales, "Female test" by CloudHubOmniTeam, "South Indian Women" by alnmathew (Sketchfab, CC BY 4.0); "Indian Woman in Saree" by Pixel_Monster (Sketchfab Standard licence).
+Trees: "Realistic Trees Collection" by Jungle Jim, "Mango Tree" by stealth86, "Tree Animate" by RandyGF (Sketchfab, CC BY 4.0).
 City: "chennai central" by SudharsanArivalagan, "Chennai Water Tank" by TamilarasanRG, "Chennai Slum" by aswin.baskaran (Sketchfab, CC BY 4.0). Diesel auto: recordx_media; city road ambience: SoundQue (Pixabay).
 Build-time triangulation: earcut (ISC).
 

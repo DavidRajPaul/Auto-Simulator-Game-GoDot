@@ -14,6 +14,8 @@ uniform float fade_start = 50.0;
 uniform float fade_end = 62.0;
 // Height of the model (model units), set by StreetTrees: how far up the tree a vertex is.
 uniform float model_height = 8.0;
+// Leaf cards with alpha (the CC BY trees, bake_cc_trees.py): cut at 0.5, in the shadow pass too.
+uniform bool cutout = false;
 
 // City wind (scripts/world/Wind.gd, project.godot [shader_globals]).
 global uniform vec2 wind_dir;
@@ -51,7 +53,19 @@ void fragment() {
 	if (vis < 0.999 && dither(FRAGCOORD.xy) >= vis) {
 		discard;
 	}
-	ALBEDO = texture(albedo_tex, UV).rgb * COLOR.rgb;
+	vec4 tex = texture(albedo_tex, UV);
+	if (cutout) {
+		// Mipmaps average thin leaves with the gaps around them, so with a fixed 0.5 cut the crown
+		// goes bare a few metres away. Raise alpha with the mip level (as tree_impostor does).
+		vec2 texel = UV * vec2(textureSize(albedo_tex, 0));
+		vec2 ddx = dFdx(texel);
+		vec2 ddy = dFdy(texel);
+		float lod = max(0.0, 0.5 * log2(max(dot(ddx, ddx), dot(ddy, ddy))));
+		if (tex.a * (1.0 + lod * 0.4) < 0.5) {
+			discard;
+		}
+	}
+	ALBEDO = tex.rgb * COLOR.rgb;
 	// Sun through the leaves: a thin crown glows when lit from behind (as in real foliage).
 	BACKLIGHT = ALBEDO * 0.35 * leafy;
 	METALLIC = 0.0;

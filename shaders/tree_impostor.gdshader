@@ -64,7 +64,8 @@ void vertex() {
 	atlas_uv = view_uv(column, qx * 0.5 + 0.5, qy, INSTANCE_CUSTOM.x);
 	tint = COLOR.rgb;
 	vec2 d = origin.xz - eye_pos.xz;
-	near_vis = 1.0 - smoothstep(fade_start, fade_end, length(d));
+	// custom.y = 1: this tree has no model up close (StreetTrees.MAX_NEAR_SPECIES), stay solid.
+	near_vis = (1.0 - smoothstep(fade_start, fade_end, length(d))) * (1.0 - INSTANCE_CUSTOM.y);
 }
 
 void fragment() {
