@@ -43,6 +43,14 @@ ASSETS = [
     ("assets/audio/ambience/cycle_bell.ogg", "https://bigsoundbank.com/UPLOAD/mp3/0974.mp3",
      "https://bigsoundbank.com/search?q=bells", 0, 4, "Bicycle Bell #3 (sound 0974)"),
 ]
+# Nov 14 thunderstorms (scripts/world/Thunderstorm.gd): BigSoundBank "Thunder #1-#11", single real
+# thunderclaps recorded without rain (Joseph Sardin, CC0). Full length, no fade-in: the opening
+# crack IS the sound of a close strike. The game picks one by strike distance and filters it.
+THUNDER = [(2718, 23), (3113, 6), (3114, 12), (3115, 18), (3116, 22), (3179, 14), (3180, 13),
+           (3181, 42), (3182, 30), (3183, 31), (3184, 36)]
+for _n, (_id, _len) in enumerate(THUNDER, start=1):
+    ASSETS.append((f"assets/audio/weather/thunder_{_n:02d}.ogg", f"https://bigsoundbank.com/UPLOAD/mp3/{_id:04d}.mp3",
+                   f"https://bigsoundbank.com/search?q=coup+de+tonnerre (sound {_id:04d})", 0, _len, f"Thunder #{_n}"))
 
 
 # Sounds on BigSoundBank that are not Joseph Sardin's own recordings.
@@ -73,8 +81,15 @@ def main() -> int:
                 tmp.flush()
                 # Mono, 44.1 kHz, ~80 kbps Vorbis; short fades so loops don't click.
                 fade_out = max(0.0, dur - 0.4)
+                # Thunder keeps its own attack (a fade-in would blunt the crack) and is
+                # peak-normalised, not loudness-normalised, so a crack stays louder than a rumble.
+                if "/weather/thunder_" in out:
+                    fade_out = max(0.0, dur - 1.5)
+                    filters = f"afade=t=out:st={fade_out}:d=1.5,loudnorm=I=-16:TP=-1"
+                else:
+                    filters = f"afade=t=in:d=0.3,afade=t=out:st={fade_out}:d=0.4,loudnorm=I=-20"
                 subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-ss", str(start), "-t", str(dur), "-i", tmp.name,
-                                "-ac", "1", "-ar", "44100", "-af", f"afade=t=in:d=0.3,afade=t=out:st={fade_out}:d=0.4,loudnorm=I=-20",
+                                "-ac", "1", "-ar", "44100", "-af", filters,
                                 "-c:a", "libvorbis", "-q:a", "3", str(dest)], check=True)
             print(f"OK   {out} ({dest.stat().st_size // 1024} KB)")
             credits.append(line)
