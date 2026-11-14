@@ -55,12 +55,28 @@ const DRESS_PAINTS: Array[Color] = [
 	Color8(250, 150, 120), Color8(90, 160, 170),
 ]
 
+## Chennai vehicles built by tools/art/make_chennai_vehicles.py: no texture; the body panels
+## carry vertex alpha 0 and shaders/vehicle_paint.gdshader repaints them per instance.
+const VERTEX_PAINTED: Array[String] = ["moped", "commuter_bike", "cruiser_bike", "bicycle", "hatchback", "tallboy", "micro_van", "mini_truck"]
+const VERTEX_SHADER: Shader = preload("res://shaders/vehicle_paint.gdshader")
+## Car colours on Chennai roads: white and silver lead, then grey, red, maroon, dark blue, black,
+## and the brighter small-car colours (orange, sky blue, beige). NO_PAINT keeps the silver.
+const CAR_PAINTS: Array[Color] = [
+	Color8(236, 236, 232), Color8(240, 240, 236), Color8(232, 232, 228), Color(0, 0, 0, 0), Color8(176, 180, 186),
+	Color8(104, 108, 114), Color8(178, 30, 28), Color8(112, 26, 34), Color8(34, 58, 112), Color8(30, 31, 34),
+	Color8(214, 110, 36), Color8(96, 150, 196), Color8(206, 190, 160), Color8(236, 236, 232),
+]
+
 static var _materials: Dictionary = {} # "<key>|<texture rid>|<custom>" -> ShaderMaterial
 
 ## Config key for a model path ("" = not repaintable).
 static func key_of(path: String) -> String:
 	var k: String = path.get_file().get_basename()
-	return k if CONFIG.has(k) else ""
+	return k if CONFIG.has(k) or VERTEX_PAINTED.has(k) else ""
+
+## Palette for a vehicle key (cars vs two-wheelers).
+static func vehicle_palette(key: String) -> Array[Color]:
+	return CAR_PAINTS if key in ["hatchback", "tallboy", "micro_van", "mini_truck"] else TWO_WHEELER_PAINTS
 
 ## Palette for a person (sarees vs other dress), or [] if the model is not repaintable.
 static func palette_for_person(id: String) -> Array[Color]:
@@ -71,7 +87,7 @@ static func palette_for_person(id: String) -> Array[Color]:
 ## Put the paint_swap material on every textured surface under `root` (once per node).
 ## `multimesh` = the material reads INSTANCE_CUSTOM (parked vehicles). Returns surfaces set.
 static func prepare(root: Node, key: String, multimesh: bool = false) -> int:
-	if key == "" or not CONFIG.has(key):
+	if key == "" or not (CONFIG.has(key) or VERTEX_PAINTED.has(key)):
 		return 0
 	var n: int = 0
 	var meshes: Array[Node] = root.find_children("*", "MeshInstance3D", true, false)
@@ -90,6 +106,14 @@ static func prepare(root: Node, key: String, multimesh: bool = false) -> int:
 
 ## Shared ShaderMaterial for an imported material's albedo texture.
 static func material_for(src: Material, key: String, multimesh: bool) -> ShaderMaterial:
+	if VERTEX_PAINTED.has(key):
+		var vid: String = "vertex|%s" % multimesh
+		if not _materials.has(vid):
+			var vm: ShaderMaterial = ShaderMaterial.new()
+			vm.shader = VERTEX_SHADER
+			vm.set_shader_parameter("use_custom", multimesh)
+			_materials[vid] = vm
+		return _materials[vid]
 	var base: BaseMaterial3D = src as BaseMaterial3D
 	if base == null or base.albedo_texture == null:
 		return null

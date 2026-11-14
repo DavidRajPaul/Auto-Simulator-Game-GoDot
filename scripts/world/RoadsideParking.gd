@@ -10,21 +10,56 @@ extends RefCounted
 ## a fixed box, so parked scooters showed only seat and handlebar and cars sat half in the road.
 const MODELS: Array[String] = [
 	"res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
-	"res://assets/models/traffic/cars/sedan_white.glb", # kind 1 picks from CAR_FILES
+	"res://assets/models/traffic/cars/sedan_white.glb", # kinds 0 and 1 pick per chunk (files_for)
 	"res://assets/models/traffic/share_auto.glb"
 ]
-## Parked cars: the traffic cars' Chennai paint mix (tools/assets/bake_car_colours.py), one
-## MultiMesh (= one draw call) per file. Nov 1 device test: the Kenney hatchback looked odd.
+## Nov 13 owner request: "all the two wheelers that are parked are the same". A kerb now mixes
+## the Activa-style scooter with two of the Chennai two-wheelers (step-through moped, 100 cc
+## commuter bike, classic cruiser, roadster bicycle; tools/art/make_chennai_vehicles.py), picked
+## per chunk so the city shows all four while each chunk draws only three two-wheeler batches.
+## Cars: small hatchback, tall-boy hatchback, the white sedan and one of micro van / water-can
+## mini truck / SUV per chunk: four batches, two fewer than the six paint files used before,
+## because the new bodies repaint per instance (shaders/vehicle_paint.gdshader). Draw calls per
+## chunk stay where they were (8), with far more variety.
+## [file, share]: scooters stay the commonest two-wheeler, hatchbacks the commonest car.
+const SCOOTER_FILE: String = "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb"
+const BIKE_FILES: Array[String] = [
+	"res://assets/models/traffic/chennai/moped.glb",
+	"res://assets/models/traffic/chennai/commuter_bike.glb",
+	"res://assets/models/traffic/chennai/cruiser_bike.glb",
+	"res://assets/models/traffic/chennai/bicycle.glb",
+]
 const CAR_FILES: Array[String] = [
+	"res://assets/models/traffic/chennai/hatchback.glb",
+	"res://assets/models/traffic/chennai/tallboy.glb",
 	"res://assets/models/traffic/cars/sedan_white.glb",
-	"res://assets/models/traffic/cars/sedan_silver.glb",
-	"res://assets/models/traffic/cars/suv_white.glb",
-	"res://assets/models/traffic/cars/sedan_maroon.glb",
-	"res://assets/models/traffic/cars/sedan_blue.glb",
+]
+const CAR_EXTRA_FILES: Array[String] = [
+	"res://assets/models/traffic/chennai/micro_van.glb",
+	"res://assets/models/traffic/chennai/mini_truck.glb",
 	"res://assets/models/traffic/cars/suv_silver.glb",
 ]
 ## Real lengths: Activa-class scooter 1.83 m, compact car 3.8 m, Ape-type share auto 2.9 m.
 const LENGTHS_M: Array[float] = [1.83, 3.8, 2.9]
+## Models with their own real length (the Chennai set is built at real size).
+const FILE_LENGTHS_M: Dictionary = {
+	"moped": 1.82, "commuter_bike": 1.92, "cruiser_bike": 2.1, "bicycle": 1.8,
+	"hatchback": 3.87, "tallboy": 3.62, "micro_van": 3.39, "mini_truck": 3.82, "suv_silver": 4.4,
+}
+
+## The model files (and their shares of the kerb) a chunk uses for each parking kind.
+static func files_for(kind: int, key: Vector2i) -> Array:
+	var h: int = absi(key.x * 73856093 ^ key.y * 19349663)
+	match kind:
+		0:
+			var a: int = h % BIKE_FILES.size()
+			var b: int = (a + 1 + (h / 7) % (BIKE_FILES.size() - 1)) % BIKE_FILES.size()
+			return [[SCOOTER_FILE, 0.45], [BIKE_FILES[a], 0.3], [BIKE_FILES[b], 0.25]]
+		1:
+			return [[CAR_FILES[0], 0.35], [CAR_FILES[1], 0.22], [CAR_FILES[2], 0.23], [CAR_EXTRA_FILES[(h / 3) % CAR_EXTRA_FILES.size()], 0.2]]
+		_:
+			return [[MODELS[kind], 1.0]]
+
 const VISIBILITY_M: float = 165.0
 
 ## `ground` is (x, z, fallback) -> drawn-ground height (WorldChunkStreamer.surface_height).
@@ -47,24 +82,27 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 	var holder: ParkedVehicleSet = ParkedVehicleSet.new()
 	holder.name = "RoadsideParking"
 	chunk.add_child(holder)
-	# [kind, file, records]: cars are split across the paint files by spot order.
+	# [kind, file, records]: each kind is split across its files by a hash of the spot, so a
+	# vehicle keeps its model however the chunk loads.
 	var groups: Array = []
 	for kind: int in MODELS.size():
-		var files: Array[String] = []
-		if kind == 1:
-			files.assign(CAR_FILES)
-		else:
-			files.append(MODELS[kind])
+		var files: Array = files_for(kind, key)
 		var split: Array = []
-		for f: String in files:
+		for f: Array in files:
 			split.append([])
-		var n: int = 0
 		for record: Array in parking:
-			if int(record[3]) == kind and not _near(record, keep_clear):
-				(split[n % files.size()] as Array).append(record)
-				n += 1
+			if int(record[3]) != kind or _near(record, keep_clear):
+				continue
+			var roll: float = float(absi(int(float(record[0]) * 17.0) * 92821 + int(float(record[1]) * 11.0) * 68917) % 1000) / 1000.0
+			var pick: int = files.size() - 1
+			for i: int in files.size():
+				roll -= float(files[i][1])
+				if roll < 0.0:
+					pick = i
+					break
+			(split[pick] as Array).append(record)
 		for i: int in files.size():
-			groups.append([kind, files[i], split[i]])
+			groups.append([kind, str(files[i][0]), split[i]])
 	for group: Array in groups:
 		var kind: int = int(group[0])
 		var model_path: String = str(group[1])
@@ -91,7 +129,7 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 		source.rotation.y = correction
 		bounds = _local_bounds(meshes, holder)
 		var long_side: float = maxf(bounds.size.x, bounds.size.z)
-		var k: float = LENGTHS_M[kind] / long_side
+		var k: float = float(FILE_LENGTHS_M.get(model_path.get_file().get_basename(), LENGTHS_M[kind])) / long_side
 		var fit: Vector3 = Vector3(k, k, k)
 		# Centred on x/z, lowest point at y = 0 (then placed on the ground at each spot).
 		var anchor: Vector3 = Vector3(bounds.position.x + bounds.size.x * 0.5, bounds.position.y, bounds.position.z + bounds.size.z * 0.5)
@@ -99,6 +137,7 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 		# For tests: the fitted vehicle's box relative to its spot (lowest point must be y = 0).
 		var fitted: AABB = AABB((bounds.position - anchor) * k, bounds.size * k)
 		holder.set_meta("fit_%d" % kind, fitted)
+		holder.set_meta("fitlen_%d" % kind, k * long_side)
 		var group_id: int = holder.groups.size()
 		var group_info: Dictionary = {"mms": [] as Array[MultiMesh], "parts": []}
 		holder.groups.append(group_info)
@@ -139,7 +178,8 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 					if pkey == "share_auto":
 						pc = PaintSwap.AUTO_ELECTRIC[h % 2] if h % 3 == 0 else PaintSwap.NO_PAINT
 					else:
-						pc = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
+						var pal: Array[Color] = PaintSwap.vehicle_palette(pkey)
+						pc = pal[h % pal.size()]
 					mm.set_instance_custom_data(i, pc)
 		# One record per vehicle: static box until the auto comes close (ParkedVehicleSet).
 		for i: int in records.size():
@@ -151,7 +191,8 @@ static func populate(chunk: Node3D, world_dir: String, key: Vector2i, ground: Ca
 				if pkey_group == "share_auto":
 					paint = PaintSwap.AUTO_ELECTRIC[h % 2] if h % 3 == 0 else PaintSwap.NO_PAINT
 				else:
-					paint = PaintSwap.TWO_WHEELER_PAINTS[h % PaintSwap.TWO_WHEELER_PAINTS.size()]
+					var pal: Array[Color] = PaintSwap.vehicle_palette(pkey_group)
+					paint = pal[h % pal.size()]
 			holder.records.append({"kind": kind, "origin": origin, "yaw": float(rec[2]), "dim": dim,
 				"group": group_id, "inst": i, "paint": paint})
 		source.queue_free()

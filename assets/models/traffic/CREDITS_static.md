@@ -15,3 +15,9 @@
 |---|---|---|
 | `assets/models/traffic/two_wheeler_pack/sport_bike_0..3.glb` | "Two-Wheeler Vehicles Pack Low-Poly" (https://sketchfab.com/3d-models/two-wheeler-vehicles-pack-low-poly-4e7fb68bdbfd42719f4ba4353abd6a16) by SymetrikGames | CC BY 4.0 |
 | `assets/models/traffic/two_wheeler_pack/scooter_parked.glb` | "Indian Scooter" by Shiveloper (Sketchfab) | CC BY 4.0 |
+
+# Chennai street vehicles (made by tools/art/make_chennai_vehicles.py)
+
+| File | Source | Licence |
+|---|---|---|
+| `assets/models/traffic/chennai/*.glb` (moped, commuter bike, cruiser bike, bicycle, hatchback, tall-boy hatchback, micro van, water-can mini truck) | Built from primitives by the project's own script; generic shapes, no brand names or badges | Project's own |

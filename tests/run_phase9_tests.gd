@@ -233,7 +233,7 @@ func _test_grounding(city: Node) -> void:
 			var fit: AABB = park.get_meta("fit_%d" % kind)
 			fits_seen += 1
 			# Lowest point on the spot, real length, never stretched taller than it is long.
-			if absf(fit.position.y) > 0.005 or absf(fit.size.z - RoadsideParking.LENGTHS_M[kind]) > 0.05 or fit.size.y > fit.size.z:
+			if absf(fit.position.y) > 0.005 or absf(fit.size.z - float(park.get_meta("fitlen_%d" % kind, RoadsideParking.LENGTHS_M[kind]))) > 0.05 or fit.size.y > fit.size.z:
 				fits_ok = false
 				detail = "kind %d %s" % [kind, fit]
 		var body: StaticBody3D = park.get_node_or_null("ParkedVehicleCollision") as StaticBody3D
