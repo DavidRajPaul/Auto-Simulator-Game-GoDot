@@ -49,7 +49,8 @@ func gusting() -> bool:
 
 ## Prevailing wind turned a little at random, so no two gusts look the same.
 func _start_gust() -> void:
-	var dir_world: Vector3 = WIND_WORLD.rotated(Vector3.UP, _rng.randf_range(-0.6, 0.6)).normalized()
+	# The city wind (Wind.gd), turned a little at random: dust and trees move the same way.
+	var dir_world: Vector3 = Wind.world_vector().rotated(Vector3.UP, _rng.randf_range(-0.35, 0.35)).normalized()
 	# Ahead of the auto, a few metres to either side of its path, where the camera looks.
 	_haze.position = Vector3(_rng.randf_range(-5.0, 5.0), 0.35, _rng.randf_range(-17.0, -10.0))
 	_haze.direction = (global_basis.inverse() * dir_world).normalized()

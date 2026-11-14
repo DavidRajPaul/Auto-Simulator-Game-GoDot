@@ -15,6 +15,8 @@ render_mode cull_disabled;
 
 uniform sampler2D detail : filter_linear_mipmap, repeat_enable;
 uniform float wet = 0.0;
+// 1 while it is actually raining (rings stop as soon as the rain does; the road stays wet).
+uniform float rain_rings = 0.0;
 uniform bool rich = true;
 // The ground plane has no per-vertex data: it sets its kind and colour here.
 uniform float fixed_kind = -1.0;
@@ -113,6 +115,17 @@ void fragment() {
 	}
 	// A pothole in the rain is a brown puddle: darker and mirror-smooth.
 	float puddle = hole * wet;
+	// Raindrops ringing on the wet road (Nov 14): one ring per 0.6 m cell, each at its own
+	// time, brightest in the puddles; only near the camera (procedural, no texture lookup).
+	if (wet > 0.05 && rain_rings > 0.0 && distance(CAMERA_POSITION_WORLD.xz, wpos) < 28.0) {
+		vec2 cell = floor(wpos / 0.6);
+		float ph = hash21(cell);
+		float tt = fract(TIME * 1.7 + ph);
+		vec2 c = (cell + 0.2 + 0.6 * vec2(ph, hash21(cell + 3.1))) * 0.6;
+		float rr = length(wpos - c);
+		float ring = (1.0 - smoothstep(0.0, 0.028, abs(rr - tt * 0.26))) * (1.0 - tt);
+		col += vec3(0.3) * ring * wet * rain_rings * (0.45 + 0.55 * max(hole, 0.0));
+	}
 	ALBEDO = mix(col * mix(1.0, 0.78, wet), vec3(0.2, 0.17, 0.13), puddle * 0.8);
 	ROUGHNESS = mix(mix(rough, 0.3, wet), 0.06, puddle);
 	SPECULAR = mix(0.5, 0.9, wet);

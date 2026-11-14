@@ -332,6 +332,7 @@ func _near_material(mesh: Mesh, shader: Shader) -> ShaderMaterial:
 	var src: BaseMaterial3D = mesh.surface_get_material(0) as BaseMaterial3D
 	if src != null:
 		mat.set_shader_parameter("albedo_tex", src.albedo_texture)
+	mat.set_shader_parameter("model_height", maxf(mesh.get_aabb().end.y, 0.5))
 	_materials.append(mat)
 	return mat
 

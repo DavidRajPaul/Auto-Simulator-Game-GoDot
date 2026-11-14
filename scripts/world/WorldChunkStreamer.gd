@@ -236,6 +236,8 @@ func _ready() -> void:
 	add_child(trees)
 	if dressing_enabled:
 		add_child(BirdFlock.new()) # one draw call: crows, pigeons and kites over the street
+		add_child(Wind.new()) # shader globals: trees, splashes and dust follow one wind
+		add_child(RainSplashes.new()) # one draw call while raining: splashes round the camera
 		shop_people = ShopPeople.new() # one draw call: shopkeepers and customers near the camera
 		shop_people.world = self
 		add_child(shop_people)
@@ -272,6 +274,7 @@ func _process(delta: float) -> void:
 ## Monsoon: roads darken and turn glossy while it rains, then dry off slowly.
 func _update_wetness(delta: float) -> void:
 	var target: float = 1.0 if GameState.is_raining else 0.0
+	_street_mat.set_shader_parameter("rain_rings", target)
 	if is_equal_approx(wetness, target):
 		return
 	wetness = move_toward(wetness, target, delta * (0.2 if target > wetness else 0.05))

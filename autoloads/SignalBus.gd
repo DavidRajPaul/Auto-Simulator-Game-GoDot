@@ -37,6 +37,9 @@ signal wiper_toggled(is_on: bool)
 signal camera_mode_changed(mode_name: String)
 ## Short camera kick on impacts, 0–1 strength.
 signal camera_shake(strength: float)
+## A player wheel climbed out of a pothole (severity 0..1), or dropped into a rain-filled one
+## (severity 0): VehicleAudio thuds, RainSplashes splashes.
+signal pothole_hit(pos: Vector3, severity: float)
 
 ## Hero and parked auto persist independently while walking.
 
