@@ -115,7 +115,8 @@ The kerbside parking pass uses reproducible OSM road-edge sampling instead of un
 - Comfort pack: auto-recover when flipped, "Reset auto" when stuck, compact guidance distance in the top HUD, gentle steering curve, speed-based FOV.
 
 **Chennai**
-- Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads.
+- Real roads from OpenStreetMap through A/B Street's osm2streets (lanes, sidewalks, junctions, markings; left-hand driving), streamed in 250 m chunks on worker threads. Lane counts follow the real city across the whole map (`tools/osm/audit_road_widths.py`: three lanes each way on Anna Salai, Kamarajar Salai and Radhakrishnan Salai, at least two on every one-way arterial, four on two-way main roads).
+- Chennai's real roundabouts as raised traffic islands with black-and-yellow kerbs: Temple Tower in Nandanam, the College Road circle in Nungambakkam, and Gemini Circle under the Anna Flyover with its two bronze horse-tamer statues and fountains (`tools/osm/build_roundabouts.py`).
 - OSM building footprints plus procedural infill (28,355 total in the latest density build) with a Chennai facade atlas (grilled windows, sunshades, balconies, AC units, Tamil/English shop boards, temple stripes), parapets, stair head-rooms with black Sintex tanks, awnings; lit windows at night.
 - **Chennai building types** ([docs/CHENNAI_BUILDINGS.md](docs/CHENNAI_BUILDINGS.md)): every one of the 50,337 buildings is classified (shop row, showroom, flats on stilt parking, house, old tiled house, hamlet dwelling, tenement, school, hospital, bank, temple, church, mosque) from road class, bazaar street names, zone, footprint, real height and OSM places. Street fronts are built bay by bay: a shop per bay with Tamil-first boards, balconies with washing, staircase jaali, showroom name boards, rooftop hoardings, Mangalore-tile roofs. Still one mesh and one material per chunk, with fewer triangles than before.
 - **Chennai streets** ([docs/CHENNAI_STREETS.md](docs/CHENNAI_STREETS.md)): sun-bleached asphalt with repair patches and trench scars, chipped road paint, interlocking-paver footpaths, shops paved to the road, cement forecourts, 182 km of street-side compound walls with 12,592 gates (painted in their building's colour, kaavi stripes round temples), textured open ground. Street ambience: crows by day, birds at dawn, insects at night, temple and church bells near temples and churches, street dogs, a cycle bell.
@@ -239,7 +240,7 @@ flowchart LR
     OSM["OpenStreetMap<br/>Overpass API"] -->|"fetch_osm.py<br/>OSM Import"| RAW["data/osm/*.gz"]
     RAW -->|"osm2streets (Rust)<br/>run_osm2streets.py<br/>OSM Streets"| LANES["data/osm/streets/*.geojson.gz"]
     RAW & LANES -->|"build_world.py<br/>streets.py · earcut"| WD["data/world/<br/>chunks · road_graph · manifest"]
-    WD -->|"build_street_dressing.py<br/>place_city_props.py<br/>build_street_signs.py<br/>build_signal_posts.py · build_barricades.py<br/>build_beach_carts.py · build_beach_fence.py<br/>add_lodges_eateries.py<br/>build_medians.py · build_road_works.py<br/>fetch_pois.py → build_building_names.py"| WD2["dress/ · city_props · street_signs<br/>building_names"]
+    WD -->|"build_street_dressing.py<br/>place_city_props.py<br/>build_street_signs.py<br/>build_signal_posts.py · build_barricades.py<br/>build_beach_carts.py · build_beach_fence.py<br/>add_lodges_eateries.py<br/>build_medians.py · build_road_works.py<br/>build_roundabouts.py<br/>fetch_pois.py → build_building_names.py"| WD2["dress/ · city_props · street_signs<br/>building_names"]
   end
   subgraph Art["Assets"]
     DL["Downloads, recordings,<br/>Stitch art"] --> INC["assets_src/incoming/<br/>(not exported)"]
@@ -366,7 +367,7 @@ Suite numbers follow the order they were written, not the roadmap phases.
 | `run_phase5_tests` | 1 : 1 world, comfort pack, day/night, monsoon, menu, back button | 34 |
 | `run_phase6_tests` | Gears, indicators, give-way, driver levels, goals, facades, sounds | 66 |
 | `run_buildings_tests` | Chennai building types: classified data, facade atlas, styles, typed geometry, vertex budget | 36 |
-| `run_streets_tests` | Street shader and ground texture, paved plots, compound walls and gates, ambience layers and one-shots | 44 |
+| `run_streets_tests` | Street shader and ground texture, paved plots, compound walls and gates, ambience layers and one-shots, thunderstorms, roundabout islands (solid kerb, walk mask, drawn) | 81 |
 | `run_street_life_tests` | Chennai vehicles (size, one draw call, paint), parking mix per chunk, traffic variants, kolams / dogs / festival flags, bird flock, road condition, knocked traffic physics, fallen bodies, shop people, kolam drawing, rain shelter and umbrellas, wind, potholes, rain splashes, shopping bags, steering lane changes, shop people fleeing a fire, chatting pairs | 75 |
 | `run_phase7_tests` | UI kit and screens: home, haggle, ride complete, level-up, menus hide HUD | 22 |
 | `run_phase8_tests` | Play-test pass: camera, shadows, splash, riders, bargaining, time-of-day traffic, rewards, ads | 55 |

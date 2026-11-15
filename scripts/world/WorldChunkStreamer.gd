@@ -60,6 +60,15 @@ const MEDIAN_RED: Color = Color(0.85, 0.09, 0.07)
 const BARRICADE_GROUND_Y: float = 0.08 # on the footpath
 const BARRICADE_YELLOW: Color = Color(0.97, 0.78, 0.08)
 const BARRICADE_BLUE: Color = Color(0.1, 0.28, 0.62)
+## Roundabout traffic islands (tools/osm/build_roundabouts.py).
+const ISLAND_KERB_H: float = 0.3
+const ISLAND_COLLIDE_H: float = 1.1
+const ISLAND_GRASS: Color = Color(0.27, 0.45, 0.16)
+const ISLAND_HEDGE: Color = Color(0.13, 0.33, 0.12)
+const ISLAND_GRANITE: Color = Color(0.5, 0.47, 0.45)
+const ISLAND_BRONZE: Color = Color(0.46, 0.35, 0.21)
+const ISLAND_WATER: Color = Color(0.35, 0.62, 0.78)
+const ISLAND_CREAM: Color = Color(0.9, 0.86, 0.74)
 const FLOOR_M: float = 3.2
 const BAY_M: float = 3.4
 const ROOF_TILE_M: float = 6.0
@@ -461,8 +470,6 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var walls: Array = _compounds.get("%d,%d" % [k.x, k.y], [])
 	var plot_walls: Array = plot.get("walls", [])
 	var gates: Array = plot.get("gates", [])
-	# Walkers treat every wall and gate as solid, whoever built it.
-	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + gates))
 	if mesh != null:
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.name = "Roads"
@@ -474,6 +481,10 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	var df: FileAccess = FileAccess.open(world_dir.path_join("dress/c_%d_%d.json" % [k.x, k.y]), FileAccess.READ)
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
+	# Walkers treat every wall and gate as solid, whoever built it, and keep off roundabout islands.
+	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + gates,
+		dress.get("islands", []) as Array))
+	if df != null:
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
 		# Spots that live things use (kolam drawers, shop people, rain shelter): kept on the chunk.
 		root.set_meta("life", {"kolams": dress.get("kolams", []), "shop_people": dress.get("shop_people", []),
@@ -725,6 +736,7 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_wal
 			for p: Vector2 in [q0, q1, q2]:
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	_medians(m, faces, dress.get("medians", []))
+	_islands(m, faces, dress.get("islands", []))
 	_barricades(m, faces, dress.get("barricades", []))
 	# Marina / Santhome: the sand fenced off from the road (tools/osm/build_beach_fence.py).
 	_barricades(m, faces, dress.get("beach_fence", []))
@@ -1779,6 +1791,166 @@ func _medians(m: MeshBuf, faces: PackedVector3Array, medians: Array) -> void:
 				_dbox(m, Vector3(a.x, kerb_h + 0.58, a.y), Vector3(0.1, 0.12, 0.1), along, MEDIAN_WHITE)
 			_wall_faces(faces, a - along * 0.05, b + along * 0.05, 0.0, MEDIAN_COLLIDE_H if railing else MEDIAN_COLLIDE_H - 0.3, w)
 
+## Roundabout traffic islands (tools/osm/build_roundabouts.py): [kind, cx, cz, yaw, x0, z0, …],
+## the outline sitting on the inner edge of the drawn ring road. A raised island with Chennai's
+## black / yellow painted kerb, a grass bed and a centre-piece: "horse" = one side of Gemini Circle
+## under the Anna Flyover (a bronze horse-tamer statue on a granite plinth facing `yaw`, outwards,
+## and a fountain behind it), "garden" = a hedge ring and an ornamental lamp pillar. Merged into the
+## chunk mesh (no draw calls) and its collider, so traffic has to go round.
+func _islands(m: MeshBuf, faces: PackedVector3Array, islands: Array) -> void:
+	for rec: Array in islands:
+		var kind: String = str(rec[0])
+		var c: Vector2 = Vector2(float(rec[1]), float(rec[2]))
+		var yaw: float = float(rec[3])
+		var pts: PackedVector2Array = PackedVector2Array()
+		for i: int in range(4, rec.size() - 1, 2):
+			pts.append(Vector2(float(rec[i]), float(rec[i + 1])))
+		if pts.size() < 3:
+			continue
+		var n: int = pts.size()
+		var r_min: float = INF
+		for k: int in n:
+			var a: Vector2 = pts[k]
+			var b: Vector2 = pts[(k + 1) % n]
+			var seg: float = a.distance_to(b)
+			r_min = minf(r_min, c.distance_to(a))
+			if seg < 0.05:
+				continue
+			var along: Vector2 = (b - a) / seg
+			var inward: Vector2 = Vector2(-along.y, along.x)
+			if inward.dot(c - (a + b) * 0.5) < 0.0:
+				inward = -inward
+			# Painted kerb in ~1 m blocks, alternating black and yellow.
+			var blocks: int = maxi(1, roundi(seg))
+			for q: int in blocks:
+				var p0: Vector2 = a.lerp(b, float(q) / float(blocks))
+				var p1: Vector2 = a.lerp(b, float(q + 1) / float(blocks))
+				var mid: Vector2 = (p0 + p1) * 0.5 + inward * 0.15
+				var paint: Color = MEDIAN_BLACK if (k * 7 + q) % 2 == 0 else BARRICADE_YELLOW
+				_dbox(m, Vector3(mid.x, ISLAND_KERB_H * 0.5, mid.y), Vector3(p0.distance_to(p1) + 0.03, ISLAND_KERB_H, 0.3), along, paint)
+			_wall_faces(faces, a, b, 0.0, ISLAND_COLLIDE_H, 0.4)
+		# Grass bed just under the kerb top.
+		var tri: PackedInt32Array = Geometry2D.triangulate_polygon(pts)
+		for t: int in range(0, tri.size(), 3):
+			_tri(m, Vector3(pts[tri[t]].x, ISLAND_KERB_H - 0.03, pts[tri[t]].y),
+				Vector3(pts[tri[t + 1]].x, ISLAND_KERB_H - 0.03, pts[tri[t + 1]].y),
+				Vector3(pts[tri[t + 2]].x, ISLAND_KERB_H - 0.03, pts[tri[t + 2]].y), ISLAND_GRASS)
+		var y: float = ISLAND_KERB_H - 0.03
+		if kind == "horse":
+			var dir: Vector2 = Vector2.from_angle(yaw)
+			var ahead: float = _island_reach(pts, c, dir)
+			var behind: float = _island_reach(pts, c, -dir)
+			var spot: Vector2 = c + dir * clampf(ahead - 4.5, 0.0, ahead * 0.3)
+			_horse_statue(m, faces, Vector3(spot.x, y, spot.y), dir)
+			if behind > 5.5:
+				var fr: float = clampf(behind * 0.3, 1.2, 2.4)
+				var fc: Vector2 = c - dir * minf(behind - fr - 1.0, 2.5 + fr)
+				_fountain(m, faces, Vector3(fc.x, y, fc.y), fr)
+		else:
+			var hedge_r: float = clampf(r_min * 0.5, 1.2, 4.0)
+			var sides: int = 12 if hedge_r > 2.0 else 8
+			for k: int in sides:
+				var p0: Vector2 = c + Vector2.from_angle(TAU * float(k) / float(sides)) * hedge_r
+				var p1: Vector2 = c + Vector2.from_angle(TAU * float(k + 1) / float(sides)) * hedge_r
+				_dbox(m, Vector3((p0.x + p1.x) * 0.5, y + 0.3, (p0.y + p1.y) * 0.5), Vector3(p0.distance_to(p1) + 0.05, 0.6, 0.45),
+					(p1 - p0).normalized(), ISLAND_HEDGE)
+			_lamp_pillar(m, faces, Vector3(c.x, y, c.y), 7.0 if r_min > 5.0 else 4.5)
+
+## Distance from c along dir to the outline (for placing things inside an island).
+func _island_reach(pts: PackedVector2Array, c: Vector2, dir: Vector2) -> float:
+	var best: float = INF
+	var n: int = pts.size()
+	for k: int in n:
+		var hit: Variant = Geometry2D.segment_intersects_segment(c, c + dir * 200.0, pts[k], pts[(k + 1) % n])
+		if hit != null:
+			best = minf(best, c.distance_to(hit as Vector2))
+	return best if best < INF else 4.0
+
+func _at(p: Vector3, f: Vector3, s: Vector3, fw: float, up: float, side: float) -> Vector3:
+	return p + f * fw + s * side + Vector3.UP * up
+
+## Box between two points (a limb, a column): square section `t`.
+func _beam(m: MeshBuf, a: Vector3, b: Vector3, t: float, col: Color) -> void:
+	var d: Vector3 = b - a
+	var length: float = d.length()
+	if length < 0.01:
+		return
+	var x: Vector3 = d / length
+	var ref: Vector3 = Vector3.UP if absf(x.y) < 0.95 else Vector3.RIGHT
+	var z: Vector3 = x.cross(ref).normalized() * t * 0.5
+	var y: Vector3 = z.cross(x).normalized() * t * 0.5
+	var shade: Color = col.darkened(0.15)
+	for s: float in [-1.0, 1.0]:
+		_face(m, [a - z + y * s, b - z + y * s, b + z + y * s, a + z + y * s], y * s, col if s > 0.0 else shade)
+		_face(m, [a + z * s - y, b + z * s - y, b + z * s + y, a + z * s + y], z * s, col.darkened(0.06))
+	_face(m, [b - z - y, b + z - y, b + z + y, b - z + y], x, col)
+	_face(m, [a - z - y, a + z - y, a + z + y, a - z + y], -x, shade)
+
+## Gemini Circle's statue: a bronze man reining in a rearing horse on a granite plinth (the pair
+## was put up when horse racing was banned). Low-poly beams; `out` = where the horse faces.
+func _horse_statue(m: MeshBuf, faces: PackedVector3Array, base: Vector3, out: Vector2) -> void:
+	var f: Vector3 = Vector3(out.x, 0.0, out.y)
+	var s: Vector3 = Vector3(-out.y, 0.0, out.x)
+	var plinth_h: float = 1.9
+	_dbox(m, base + Vector3(0.0, plinth_h * 0.5, 0.0), Vector3(3.4, plinth_h, 2.0), out, ISLAND_GRANITE)
+	_dbox(m, base + Vector3(0.0, plinth_h + 0.06, 0.0), Vector3(3.6, 0.12, 2.2), out, ISLAND_GRANITE.lightened(0.1))
+	_dbox(m, base + Vector3(0.0, 0.12, 0.0), Vector3(3.7, 0.24, 2.3), out, ISLAND_GRANITE.darkened(0.15))
+	var p: Vector3 = base + Vector3(0.0, plinth_h + 0.12, 0.0)
+	var br: Color = ISLAND_BRONZE
+	# Horse, rearing: hind legs on the plinth, body raised ~35 degrees, forelegs folded in the air.
+	_beam(m, _at(p, f, s, -0.85, 1.05, 0.0), _at(p, f, s, 0.55, 2.0, 0.0), 0.72, br) # body
+	_beam(m, _at(p, f, s, 0.45, 1.95, 0.0), _at(p, f, s, 0.95, 2.75, 0.0), 0.4, br) # neck
+	_beam(m, _at(p, f, s, 0.9, 2.85, 0.0), _at(p, f, s, 1.4, 2.5, 0.0), 0.28, br) # head
+	_beam(m, _at(p, f, s, -1.0, 1.2, 0.0), _at(p, f, s, -1.35, 0.35, 0.0), 0.14, br) # tail
+	for side: float in [-0.2, 0.2]:
+		_beam(m, _at(p, f, s, -0.75, 1.0, side), _at(p, f, s, -0.6, 0.45, side), 0.2, br) # thigh
+		_beam(m, _at(p, f, s, -0.6, 0.45, side), _at(p, f, s, -0.85, 0.0, side), 0.13, br) # hock to hoof
+		_beam(m, _at(p, f, s, 0.45, 1.7, side), _at(p, f, s, 0.95, 1.55, side * 1.2), 0.15, br) # foreleg up
+		_beam(m, _at(p, f, s, 0.95, 1.55, side * 1.2), _at(p, f, s, 0.9, 1.1, side * 1.2), 0.12, br) # foreleg down
+	# The tamer, leaning back with one arm up to the bridle.
+	var side_m: float = 0.85
+	_beam(m, _at(p, f, s, -0.05, 0.0, side_m + 0.1), _at(p, f, s, 0.3, 0.95, side_m), 0.17, br) # back leg
+	_beam(m, _at(p, f, s, 0.75, 0.0, side_m - 0.05), _at(p, f, s, 0.35, 0.95, side_m), 0.17, br) # front leg
+	_beam(m, _at(p, f, s, 0.35, 0.9, side_m), _at(p, f, s, 0.15, 1.65, side_m - 0.05), 0.36, br) # torso
+	_beam(m, _at(p, f, s, 0.13, 1.65, side_m - 0.05), _at(p, f, s, 0.1, 1.95, side_m - 0.05), 0.24, br) # head
+	_beam(m, _at(p, f, s, 0.2, 1.55, side_m - 0.2), _at(p, f, s, 1.05, 2.55, 0.2), 0.11, br) # arm to the bridle
+	_beam(m, _at(p, f, s, 0.2, 1.55, side_m + 0.15), _at(p, f, s, -0.15, 1.05, side_m + 0.35), 0.11, br) # other arm
+	_wall_faces(faces, Vector2(base.x, base.z) - out * 1.8, Vector2(base.x, base.z) + out * 1.8, 0.0, 3.0, 2.2)
+
+## Round fountain: granite basin, water, a two-tier pedestal and a white spray.
+func _fountain(m: MeshBuf, faces: PackedVector3Array, base: Vector3, r: float) -> void:
+	var sides: int = 12
+	for k: int in sides:
+		var a0: float = TAU * float(k) / float(sides)
+		var a1: float = TAU * float(k + 1) / float(sides)
+		var p0: Vector3 = base + Vector3(cos(a0), 0.0, sin(a0)) * r
+		var p1: Vector3 = base + Vector3(cos(a1), 0.0, sin(a1)) * r
+		var mid: Vector3 = (p0 + p1) * 0.5
+		_dbox(m, mid + Vector3(0.0, 0.3, 0.0), Vector3(p0.distance_to(p1) + 0.05, 0.6, 0.35),
+			Vector2(p1.x - p0.x, p1.z - p0.z).normalized(), ISLAND_GRANITE)
+		_tri(m, base + Vector3(0.0, 0.45, 0.0), p0 * 0.92 + base * 0.08 + Vector3(0.0, 0.45, 0.0),
+			p1 * 0.92 + base * 0.08 + Vector3(0.0, 0.45, 0.0), ISLAND_WATER)
+		# Upper bowl and spray cone.
+		var q0: Vector3 = base + Vector3(cos(a0), 0.0, sin(a0)) * r * 0.35 + Vector3(0.0, 1.5, 0.0)
+		var q1: Vector3 = base + Vector3(cos(a1), 0.0, sin(a1)) * r * 0.35 + Vector3(0.0, 1.5, 0.0)
+		_tri(m, base + Vector3(0.0, 1.5, 0.0), q0, q1, ISLAND_WATER.lightened(0.15))
+		_tri(m, base + Vector3(0.0, 1.3, 0.0), q1, q0, ISLAND_GRANITE)
+		_tri(m, base + Vector3(0.0, 2.9, 0.0), q0 + Vector3(0.0, 0.02, 0.0) - (q0 - base - Vector3(0.0, 1.5, 0.0)) * 0.3,
+			q1 + Vector3(0.0, 0.02, 0.0) - (q1 - base - Vector3(0.0, 1.5, 0.0)) * 0.3, Color(0.92, 0.95, 0.97))
+	_beam(m, base + Vector3(0.0, 0.3, 0.0), base + Vector3(0.0, 1.35, 0.0), 0.5, ISLAND_GRANITE.lightened(0.05))
+	_wall_faces(faces, Vector2(base.x - r, base.z), Vector2(base.x + r, base.z), 0.0, 1.5, r * 2.0)
+
+## Ornamental lamp pillar on a small plinth (centre of a garden island).
+func _lamp_pillar(m: MeshBuf, faces: PackedVector3Array, base: Vector3, h: float) -> void:
+	_dbox(m, base + Vector3(0.0, 0.4, 0.0), Vector3(1.0, 0.8, 1.0), Vector2.RIGHT, ISLAND_CREAM)
+	_beam(m, base + Vector3(0.0, 0.8, 0.0), base + Vector3(0.0, h, 0.0), 0.22, ISLAND_CREAM.darkened(0.1))
+	for k: int in 4:
+		var d: Vector3 = Vector3(cos(TAU * float(k) / 4.0 + 0.4), 0.0, sin(TAU * float(k) / 4.0 + 0.4))
+		var tip: Vector3 = base + Vector3(0.0, h - 0.3, 0.0) + d * 0.9
+		_beam(m, base + Vector3(0.0, h - 0.6, 0.0), tip, 0.08, MEDIAN_BLACK)
+		_dbox(m, tip + Vector3(0.0, 0.15, 0.0), Vector3(0.3, 0.35, 0.3), Vector2(d.x, d.z), Color(1.0, 0.95, 0.75))
+	_wall_faces(faces, Vector2(base.x - 0.5, base.z), Vector2(base.x + 0.5, base.z), 0.0, 2.0, 1.0)
+
 ## Roadside barricades on the kerb (tools/osm/build_barricades.py): [x, z, yaw, type] with
 ## 0 = traffic-police steel (yellow/black), 1 = water-filled plastic (red/white), 2 = Corporation
 ## steel (blue/white). Merged into the chunk mesh and collider like the medians.
@@ -1950,7 +2122,7 @@ func is_walkable(x: float, z: float) -> bool:
 	return mask[cj * n + ci] == 0
 
 ## Worker-thread raster of this chunk's building footprints (same polygons as the walls).
-func _building_mask(k: Vector2i, blds: Array, walls: Array = []) -> PackedByteArray:
+func _building_mask(k: Vector2i, blds: Array, walls: Array = [], islands: Array = []) -> PackedByteArray:
 	var n: int = int(ceil(chunk_size / BLOCK_CELL_M))
 	var mask: PackedByteArray = PackedByteArray()
 	mask.resize(n * n)
@@ -1980,6 +2152,13 @@ func _building_mask(k: Vector2i, blds: Array, walls: Array = []) -> PackedByteAr
 	var tank: PackedVector2Array = _tank_blocks.get(k, PackedVector2Array())
 	for t: int in range(0, tank.size(), 3):
 		_mask_triangle(mask, n, origin, tank[t], tank[t + 1], tank[t + 2])
+	for rec: Array in islands:
+		var ipts: PackedVector2Array = PackedVector2Array()
+		for i: int in range(4, rec.size() - 1, 2):
+			ipts.append(Vector2(float(rec[i]), float(rec[i + 1])))
+		var itri: PackedInt32Array = Geometry2D.triangulate_polygon(ipts)
+		for t: int in range(0, itri.size(), 3):
+			_mask_triangle(mask, n, origin, ipts[itri[t]], ipts[itri[t + 1]], ipts[itri[t + 2]])
 	return mask
 
 func _mask_triangle(mask: PackedByteArray, n: int, origin: Vector2, a: Vector2, b: Vector2, c: Vector2) -> void:
