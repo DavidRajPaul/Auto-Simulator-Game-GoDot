@@ -40,6 +40,7 @@ func _run() -> void:
 		["sq_021", "SQ21_PRINT"], ["sq_026", "SQ26_ROSES_FIRST"]]:
 		_play(branch[0], branch[1])
 	check("pooled ambulance was requested", ambulance_requests > 0)
+	_check_wedding_gold()
 	director.queue_free()
 	SignalBus.scripted_ambulance_provider = Callable()
 	SignalBus.current_road_graph = null
@@ -81,3 +82,32 @@ func _play(id: String, alternate: String) -> void:
 	check(id + " completes", director.run == null and GameState.mission_completed.has(id))
 	check(id + " reward recorded once", GameState.wallet_inr > 500)
 	check(id + " Career restored", not GameState.mission_active and GameState.mission_run.is_empty())
+
+## SQ001 is opt-in and the final claimant changes both outcome copy and reward.
+func _check_wedding_gold() -> void:
+	GameState.reset_profile()
+	var quest: MissionDef = director.registry.get_mission("sq_001")
+	_pose(quest.start_anchor)
+	check("wedding stays inactive before Start", director.run == null and not GameState.mission_active)
+	check("wedding cannot accept choice before Start", not director.choose("sq_001", "decision", "SQ01_OWNER"))
+	check("wedding starts only on explicit request", director.start("sq_001"))
+	var intro: MissionStage = director.current_stage()
+	check("wedding begins with an in-auto stop", intro.id == "hall")
+	check("wedding cannot inspect out of order", not director.interact("sq_001", "receipt"))
+	for _step: int in 20:
+		if director.run == null or director.run.status != "active":
+			break
+		var stage: MissionStage = director.current_stage()
+		if stage.kind == "goto":
+			_pose(director._stage_target(stage))
+			director.tick(0.1)
+		elif stage.kind == "inspect":
+			_pose(director._stage_target(stage))
+			check("wedding receipt requires a tap", director.interact("sq_001", stage.id))
+		elif stage.kind == "dialogue":
+			var choice: String = "SQ01_OTHER" if stage.id == "decision" else stage.choices[0]
+			if stage.id == "resolution":
+				check("incorrect claimant has distinct ending", director._stage_objective(stage) == "SQ01_RESOLVED_WRONG")
+				check("incorrect claimant lowers reward", director._current_reward() == 45)
+			check("wedding dialogue advances", director.choose("sq_001", stage.id, choice))
+	check("wrong outcome is completed and saved", director.run == null and GameState.mission_completed.has("sq_001"))
