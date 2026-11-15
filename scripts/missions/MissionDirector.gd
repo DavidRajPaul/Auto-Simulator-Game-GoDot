@@ -166,7 +166,7 @@ func _announce_stage() -> void:
 		"action": stage.action_key, "place": _stage_place(stage), "target": _stage_target(stage),
 		"place_pos": _stage_place_pos(stage), "located": stage.kind in LOCATED_KINDS,
 		"title": registry.get_mission(run.quest_id).title_key,
-		"reward": registry.get_mission(run.quest_id).reward_inr,
+		"reward": _current_reward(),
 		"deadline": stage.deadline_s, "speed": stage.max_speed_kmh,
 		"damage": stage.max_condition_loss, "quality_key": stage.quality_key,
 		"quality": float(run.flags.get(stage.quality_key, 100.0))})
@@ -314,6 +314,13 @@ func _change_quality(delta: float) -> void:
 	_sync()
 	SignalBus.mission_quality_changed.emit(stage.quality_key, value)
 
+func _current_reward() -> int:
+	var definition: MissionDef = registry.get_mission(run.quest_id)
+	if definition.reward_choice_stage != "":
+		var choice: String = str(run.flags.get(definition.reward_choice_stage, ""))
+		return int(definition.reward_choice_inr.get(choice, definition.reward_inr))
+	return definition.reward_inr
+
 func _stage_objective(stage: MissionStage) -> String:
 	if run != null and stage.objective_choice_stage != "":
 		var choice: String = str(run.flags.get(stage.objective_choice_stage, ""))
@@ -435,10 +442,7 @@ func _complete() -> void:
 	# ledger key also protects replay after its display entry has been pruned.
 	GameState.mission_reward_transaction = true
 	GameState.mission_completed[id] = {"content_version": run.content_version, "completed": true}
-	var earned_inr: int = definition.reward_inr
-	if definition.reward_choice_stage != "":
-		var choice: String = str(run.flags.get(definition.reward_choice_stage, ""))
-		earned_inr = int(definition.reward_choice_inr.get(choice, earned_inr))
+	var earned_inr: int = _current_reward()
 	GameState.grant_reward("mission", earned_inr, definition.reward_xp, "mission:" + id + ":complete")
 	_finish("completed", "")
 
