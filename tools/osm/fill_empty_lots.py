@@ -61,7 +61,7 @@ def main() -> int:
         before = len(d.get("blds", []))
         d["blds"] = [b for b in d.get("blds", []) if b.get("f") != 2]
         chunks[path] = (d, before != len(d["blds"]))
-        for name in ("road", "walk", "junction"):
+        for name in ("road", "walk", "junction", "road_up", "lane_up", "junction_up"):  # flyovers are drawn flat
             v = d.get("surf", {}).get(name, {}).get("v", [])
             i = d.get("surf", {}).get(name, {}).get("i", [])
             for t in range(0, len(i), 3):

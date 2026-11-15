@@ -235,8 +235,17 @@ def main() -> int:
                     bgrid.setdefault((i, j), []).append(bi)
 
     graph = json.loads((WORLD / "road_graph.json").read_text())
+    # Edges the road works close (RoadWorks.apply_closures) are not roads to the game's checks.
+    works = WORLD / "road_works.json"
+    closed = {int(i) for i in (json.loads(works.read_text()).get("closed_edges", []) if works.exists() else [])}
     rgrid: dict = {}
-    for e in graph["edges"]:
+    cgrid: dict = {}
+    for ei, e in enumerate(graph["edges"]):
+        if ei not in closed:
+            for a, b in zip(e["pts"], e["pts"][1:]):
+                for i in range(int(min(a[0], b[0]) // CELL) - 1, int(max(a[0], b[0]) // CELL) + 2):
+                    for j in range(int(min(a[1], b[1]) // CELL) - 1, int(max(a[1], b[1]) // CELL) + 2):
+                        cgrid.setdefault((i, j), []).append((a, b))
         hw = float(e["w"]) * 0.5
         for a, b in zip(e["pts"], e["pts"][1:]):
             for i in range(int(min(a[0], b[0]) // CELL) - 1, int(max(a[0], b[0]) // CELL) + 2):
@@ -247,6 +256,13 @@ def main() -> int:
         best = 1e9
         for a, b, hw in rgrid.get((int(x // CELL), int(z // CELL)), ()):
             best = min(best, seg_dist(x, z, a, b) - hw)
+        return best
+
+    def centre_dist(x, z) -> float:
+        """Centre-line distance to the nearest open road: what the game's board check measures."""
+        best = 1e9
+        for a, b in cgrid.get((int(x // CELL), int(z // CELL)), ()):
+            best = min(best, seg_dist(x, z, a, b))
         return best
 
     def find_building(x, z, snap):
@@ -362,7 +378,8 @@ def main() -> int:
         pz = a[1] + (c[1] - a[1]) * t_mid + nz * 0.1
         # The edge's midpoint faced the street, but check the board's own spot too: on a long,
         # angled facade one end can be nearer a road behind it (phase 10 "Boards face the street").
-        if road_dist(px + nx * 2.0, pz + nz * 2.0) > road_dist(px - nx * 2.0, pz - nz * 2.0) + 0.6:
+        if (road_dist(px + nx * 2.0, pz + nz * 2.0) > road_dist(px - nx * 2.0, pz - nz * 2.0) + 0.6
+                or centre_dist(px + nx * 2.0, pz + nz * 2.0) > centre_dist(px - nx * 2.0, pz - nz * 2.0) + 0.6):
             stats["no_street"] += 1
             continue
         boards.append([round(px, 2), round(pz, 2), round(math.atan2(nx, nz), 3), round(width, 2), round(y, 2),

@@ -82,14 +82,23 @@ const NEAR_MISS_MIN_SPEED_KMH: float = 35.0
 const PLAYER_HALF_WIDTH_M: float = 0.65
 const SIGNAL_POOL_SIZE: int = 8
 ## Two-phase junctions: the main road's approaches get green together, then the cross road's.
-## Per phase: green, amber, then a short all-red so the junction clears.
-const SIGNAL_GREEN_S: float = 12.0
-const SIGNAL_AMBER_S: float = 2.5
-const SIGNAL_ALL_RED_S: float = 1.5
+## Per phase: green, amber, then a short all-red so the junction clears. Nov 15 device report
+## ("the traffic violation is very strict … I barely notice the signals"): 12 s green / 2.5 s amber
+## turned red under the auto; mobile bus sims draw the same complaint ("the light turns red, no
+## amber, I lose money"). Longer green and amber, and RED_GRACE_S below.
+const SIGNAL_GREEN_S: float = 18.0
+const SIGNAL_AMBER_S: float = 3.5
+const SIGNAL_ALL_RED_S: float = 2.0
 const SIGNAL_CYCLE_S: float = 2.0 * (SIGNAL_GREEN_S + SIGNAL_AMBER_S + SIGNAL_ALL_RED_S)
 const SIGNAL_BRAKE_MPS2: float = 3.5 # amber: stop only if this braking is enough
 enum Light { GREEN, AMBER, RED }
 const SIGNAL_ENFORCEMENT_FINE_INR: int = 200
+## No fine until the player's light has been red this long (ETS2 only fines a light that has been
+## red for 2 s): the all-red clearance and a late amber never cost money.
+const RED_GRACE_S: float = 2.0
+## The HUD signal chip (SignalChip): the next signal within this distance in front of the auto.
+const SIGNAL_AHEAD_M: float = 90.0
+const SIGNAL_AHEAD_DOT: float = 0.75
 const SIGNAL_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
 const SIGNAL_MIN_WIDTH_M: float = 6.0
 const SIGNAL_POSTS_FILE: String = "res://data/world/signal_posts.json"
@@ -416,6 +425,53 @@ func approach_light(node_id: int, edge_id: int) -> Light:
 		return Light.AMBER
 	return Light.RED
 
+## Seconds this approach has shown red (0 when it isn't red).
+func red_elapsed(node_id: int, edge_id: int) -> float:
+	var group: int = int((_signal_group.get(node_id, {}) as Dictionary).get(edge_id, 0))
+	var t: float = fposmod(_signal_phase(node_id) - float(group) * SIGNAL_CYCLE_S * 0.5, SIGNAL_CYCLE_S)
+	return maxf(0.0, t - SIGNAL_GREEN_S - SIGNAL_AMBER_S)
+
+## Seconds until this approach's light changes (green → amber, amber → red, red → green).
+func light_seconds_left(node_id: int, edge_id: int) -> float:
+	var group: int = int((_signal_group.get(node_id, {}) as Dictionary).get(edge_id, 0))
+	var t: float = fposmod(_signal_phase(node_id) - float(group) * SIGNAL_CYCLE_S * 0.5, SIGNAL_CYCLE_S)
+	if t < SIGNAL_GREEN_S:
+		return SIGNAL_GREEN_S - t
+	if t < SIGNAL_GREEN_S + SIGNAL_AMBER_S:
+		return SIGNAL_GREEN_S + SIGNAL_AMBER_S - t
+	return SIGNAL_CYCLE_S - t
+
+func is_enforced(node_id: int) -> bool:
+	return _enforced_signal_nodes.has(node_id)
+
+## The signal the player is driving towards: {} when none is within SIGNAL_AHEAD_M in front,
+## else {node, edge, light (Light), seconds, distance, enforced}. Chennai's own signals carry a
+## countdown, so the HUD chip shows one too.
+func signal_ahead(pos: Vector3, heading: Vector3) -> Dictionary:
+	var h: Vector2 = Vector2(heading.x, heading.z)
+	if graph == null or h.length() < 0.01:
+		return {}
+	h = h.normalized()
+	var best: int = -1
+	var best_d: float = SIGNAL_AHEAD_M
+	for node_id: int in _signal_nodes:
+		var c: Vector3 = graph.nodes[node_id]
+		var rel: Vector2 = Vector2(c.x - pos.x, c.z - pos.z)
+		var d: float = rel.length()
+		if d >= best_d or d <= float(_signal_stop_back.get(node_id, 0.0)):
+			continue # further than the best, or already over its stop line
+		if rel.normalized().dot(h) < SIGNAL_AHEAD_DOT:
+			continue
+		best = node_id
+		best_d = d
+	if best < 0:
+		return {}
+	var edge_id: int = player_approach_edge(best, pos)
+	if edge_id < 0:
+		return {}
+	return {"node": best, "edge": edge_id, "light": approach_light(best, edge_id),
+		"seconds": light_seconds_left(best, edge_id), "distance": best_d, "enforced": is_enforced(best)}
+
 func is_signal_junction(node_id: int) -> bool:
 	return _signal_set.has(node_id)
 
@@ -544,11 +600,12 @@ func _road_name(edge_id: int) -> String:
 		return e.road_name_ta
 	return e.road_name
 
-func _on_player_signal_pose(pos: Vector3, _heading: Vector3) -> void:
+func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 	if not _player_pose_seen:
 		_previous_player_pos = pos
 		_player_pose_seen = true
 		return
+	_update_signal_ahead(pos, heading)
 	if GameState.tutorial_active:
 		_previous_player_pos = pos
 		return
@@ -568,12 +625,31 @@ func _on_player_signal_pose(pos: Vector3, _heading: Vector3) -> void:
 		var from_edge: int = player_approach_edge(node_id, _previous_player_pos)
 		if from_edge < 0 or approach_light(node_id, from_edge) != Light.RED:
 			break
+		if red_elapsed(node_id, from_edge) < RED_GRACE_S:
+			break # it only just turned red: the all-red clearance covers you
 		if _player is RigidBody3D and (_player as RigidBody3D).linear_velocity.length() > 2.0:
-			# The full fine always stands: what the wallet can't cover now is owed (GameState).
-			GameState.issue_fine("red_light", SIGNAL_ENFORCEMENT_FINE_INR, _road_name(from_edge))
+			# First offence of the day is a warning; after that the fine stands (what the wallet
+			# can't cover now is owed). The "Traffic fines" setting can make it warnings only / off.
+			GameState.traffic_offence("red_light", SIGNAL_ENFORCEMENT_FINE_INR, _road_name(from_edge))
 			_last_player_ticket_s = now_s
 		break
 	_previous_player_pos = pos
+
+var _ahead_check_s: float = 0.0
+var _ahead_key: String = ""
+
+## Feeds the HUD chip: at most 5 updates a second, and only when what it shows changes.
+func _update_signal_ahead(pos: Vector3, heading: Vector3) -> void:
+	var now_s: float = float(Time.get_ticks_msec()) / 1000.0
+	if now_s - _ahead_check_s < 0.2 and signal_clock_override < 0.0:
+		return
+	_ahead_check_s = now_s
+	var info: Dictionary = {} if GameState.tutorial_active else signal_ahead(pos, heading)
+	var key: String = "" if info.is_empty() else "%d:%d:%d:%s" % [int(info["node"]), int(info["light"]), ceili(float(info["seconds"])), str(info["enforced"])]
+	if key == _ahead_key:
+		return
+	_ahead_key = key
+	SignalBus.signal_ahead_changed.emit(info)
 
 ## "Gap-la Gethu": the player squeezes past a moving vehicle with < 0.6 m to spare
 ## above 35 km/h without touching it. One event per vehicle per pass.

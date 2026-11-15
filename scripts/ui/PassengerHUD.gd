@@ -58,6 +58,7 @@ var _level_rewards: HBoxContainer
 var _level_timer: float = 0.0
 var _rays_spin: Tween
 var _toast: Label
+var signal_chip: SignalChip
 var _toast_timer: float = 0.0
 var minimap: MiniMap
 var _hint: Label
@@ -126,6 +127,9 @@ func _ready() -> void:
 	nav_banner = NavBanner.new()
 	nav_banner.name = "NavBanner"
 	_root.add_child(nav_banner)
+	signal_chip = SignalChip.new()
+	signal_chip.name = "SignalChip"
+	_root.add_child(signal_chip)
 	_build_ride_card()
 	_build_haggle()
 	_build_fare_card()
@@ -157,6 +161,13 @@ func _ready() -> void:
 	SignalBus.haggle_resolved.connect(_on_haggle_resolved)
 	SignalBus.ride_updated.connect(_on_ride_updated)
 	SignalBus.ride_completed.connect(_on_ride_completed)
+	# Fines and warnings never stop the ride: one line here; the full challan opens once parked.
+	SignalBus.traffic_fine_issued.connect(func(info: Dictionary) -> void:
+		toast(tr("FINE_TOAST") % [_inr(int(info.get("amount", 0))), tr("FINE_REASON_" + str(info.get("reason", "")).to_upper()),
+			_place(str(info.get("place", "")))], 5.0))
+	SignalBus.traffic_warning_issued.connect(func(info: Dictionary) -> void:
+		var next: String = tr("FINE_WARNING_NEXT") % _inr(int(info.get("amount", 0))) if int(GameState.settings.get("traffic_fines", 0)) == GameState.FINES_ON else ""
+		toast(("%s %s" % [tr("FINE_WARNING_TOAST") % [tr("FINE_REASON_" + str(info.get("reason", "")).to_upper()), _place(str(info.get("place", "")))], next]).strip_edges(), 5.0))
 	SignalBus.ride_abandoned.connect(func(line: String) -> void:
 		_ride_card.visible = false
 		toast(line, 4.5))
@@ -509,6 +520,8 @@ func _layout() -> void:
 	_xp_bar.position = Vector2(vp.x - 24.0 - 160.0, 196.0)
 	_xp_bar.size = Vector2(160.0, 10.0)
 	_place_ride_card()
+	# Next signal ahead: top centre, under the GPS distance.
+	signal_chip.position = Vector2(vp.x * 0.5 - SignalChip.W * 0.5, 118.0)
 	# Sat-nav turn prompt: left, under the top button row (clear of the ride card).
 	nav_banner.position = Vector2(20.0, 118.0)
 	var hw: float = minf(960.0, vp.x - 40.0)
@@ -575,6 +588,9 @@ func _refresh_wallet() -> void:
 
 func _inr(v: int) -> String:
 	return UIKit.inr(v)
+
+func _place(p: String) -> String:
+	return p if p != "" else tr("FINE_WHERE_UNKNOWN")
 
 func _on_haggle_started(info: Dictionary, seconds: float) -> void:
 	_fare_card.visible = false

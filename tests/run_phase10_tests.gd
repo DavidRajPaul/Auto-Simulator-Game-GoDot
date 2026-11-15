@@ -184,7 +184,8 @@ func _test_signals_work(city: Node) -> void:
 	var half: float = ChennaiTrafficManager.SIGNAL_CYCLE_S * 0.5
 	# Clock values (before the node's own offset) that put this approach at red / green.
 	var offset: float = float(node_id * 7)
-	var red_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + ChennaiTrafficManager.SIGNAL_AMBER_S + 0.5 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	var red_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + ChennaiTrafficManager.SIGNAL_AMBER_S + ChennaiTrafficManager.RED_GRACE_S + 0.5 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
+	var fresh_red_clock: float = fposmod(float(group) * half + ChennaiTrafficManager.SIGNAL_GREEN_S + ChennaiTrafficManager.SIGNAL_AMBER_S + 0.5 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
 	var green_clock: float = fposmod(float(group) * half + 1.0 - offset, ChennaiTrafficManager.SIGNAL_CYCLE_S)
 	tm.signal_clock_override = red_clock
 	_check("Clock helper: approach is red", tm.approach_light(node_id, approach) == ChennaiTrafficManager.Light.RED)
@@ -248,11 +249,50 @@ func _test_signals_work(city: Node) -> void:
 	GameState.add_inr(1000)
 	auto.freeze = false
 	auto.linear_velocity = -outward * 8.0
-	tm.signal_clock_override = red_clock
+	# Nov 15 ("the traffic violation is very strict"): a light that only just turned red is never fined.
+	GameState.warned_day = 0
+	tm.signal_clock_override = fresh_red_clock
 	var wallet: int = GameState.wallet_inr
+	var warnings: Array[Dictionary] = []
+	var on_warn: Callable = func(info: Dictionary) -> void: warnings.append(info)
+	SignalBus.traffic_warning_issued.connect(on_warn)
 	tm._previous_player_pos = before
 	tm._on_player_signal_pose(after, -outward)
-	_check("Running a red at a watched junction = ₹200 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
+	_check("A red that is under RED_GRACE_S old: no fine, no warning", GameState.wallet_inr == wallet and warnings.is_empty())
+	# The first offence of the day is a constable's warning: no money.
+	tm.signal_clock_override = red_clock
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("First red of the day = a warning, no money", GameState.wallet_inr == wallet and warnings.size() == 1 and bool(warnings[0].get("warning", false)), "%d warnings, ₹%d → ₹%d" % [warnings.size(), wallet, GameState.wallet_inr])
+	tm._last_player_ticket_s = -100.0
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Running a red again at a watched junction = ₹200 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
+	# Settings: warnings only / off.
+	GameState.settings["traffic_fines"] = GameState.FINES_WARN_ONLY
+	wallet = GameState.wallet_inr
+	tm._last_player_ticket_s = -100.0
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Traffic fines = warnings only: a warning, no money", GameState.wallet_inr == wallet and warnings.size() == 2)
+	GameState.settings["traffic_fines"] = GameState.FINES_OFF
+	tm._last_player_ticket_s = -100.0
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Traffic fines = off: nothing at all", GameState.wallet_inr == wallet and warnings.size() == 2)
+	GameState.settings["traffic_fines"] = GameState.FINES_ON
+	SignalBus.traffic_warning_issued.disconnect(on_warn)
+	# The HUD chip: the signal ahead, its light and a countdown.
+	var ahead: Dictionary = tm.signal_ahead(before + outward * 20.0, -outward)
+	_check("signal_ahead finds the junction in front with its light and countdown", int(ahead.get("node", -1)) == node_id
+		and int(ahead.get("light", -1)) == ChennaiTrafficManager.Light.RED and float(ahead.get("seconds", 0.0)) > 0.0 and bool(ahead.get("enforced", false)), str(ahead))
+	_check("…and nothing behind the auto", int(tm.signal_ahead(before + outward * 20.0, outward).get("node", -1)) != node_id)
+	var chip: SignalChip = (city.get_node("PassengerHUD") as PassengerHUD).signal_chip
+	SignalBus.signal_ahead_changed.emit(ahead)
+	_check("The HUD chip shows it (red, watched)", chip.visible and chip.light == ChennaiTrafficManager.Light.RED and chip.enforced and chip.seconds > 0)
+	SignalBus.signal_ahead_changed.emit({})
+	_check("…and hides with no signal ahead", not chip.visible)
+	wallet = GameState.wallet_inr
 	tm._last_player_ticket_s = -100.0
 	tm.signal_clock_override = green_clock
 	wallet = GameState.wallet_inr
@@ -270,8 +310,9 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	var police: Node = city.get_node_or_null("TrafficPolice")
 	_check("No hidden constable to step in front of the auto", police == null or police.find_child("HiddenSignalConstable", true, false) == null)
 	var ui: GarageUI = city.get_node("GarageUI") as GarageUI
-	# The ₹200 fine above opened its own notice: close it first.
+	# The ₹200 fine above queued its own notice: drop it first.
 	ui._fine_queue.clear()
+	ui._fines_waiting.clear()
 	if ui.is_open():
 		ui.close_modal()
 	var notices: Array[Dictionary] = []
@@ -293,8 +334,17 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	_check("The notice says what, where and when", str(info.get("reason", "")) == "red_light" and str(info.get("challan", "")).begins_with("TN-CHN-")
 			and info.has("place") and info.has("day") and info.has("minute"))
 	await get_tree().process_frame
+	_check("The challan never opens while the auto is moving", not ui.is_open() and not get_tree().paused and ui.fines_waiting() >= 1)
+	auto.linear_velocity = Vector3.ZERO
+	auto.freeze = true
+	for i: int in 200:
+		SignalBus.speed_updated.emit(0.0)
+		await get_tree().process_frame
+		if ui.is_open():
+			break
+	auto.freeze = false
 	var ok: Node = ui._modal_body.find_child("FineOk", true, false)
-	_check("…shown as a notice that pauses the game", ui.is_open() and ui._modal_title.text == tr("FINE_TITLE") and ok != null and get_tree().paused, "open %s title %s ok %s paused %s" % [ui.is_open(), ui._modal_title.text, ok != null, get_tree().paused])
+	_check("…it opens once parked, as a notice that pauses the game", ui.is_open() and ui._modal_title.text == tr("FINE_TITLE") and ok != null and get_tree().paused, "open %s title %s ok %s paused %s" % [ui.is_open(), ui._modal_title.text, ok != null, get_tree().paused])
 	var texts: String = ""
 	for l: Node in ui._modal_body.find_children("*", "Label", true, false):
 		texts += (l as Label).text + "|"
@@ -641,6 +691,7 @@ func _test_building_boards(city: Node) -> void:
 	_check("Building name boards from OSM places", bb.spot_count() > 800, "%d" % bb.spot_count())
 	var real_public: int = 0
 	var bad_face: int = 0
+	var bad_at: String = ""
 	var g: RoadGraph = SignalBus.current_road_graph
 	for i: int in range(0, bb.spot_count(), 11):
 		var s: Array = bb.spot(i)
@@ -649,8 +700,9 @@ func _test_building_boards(city: Node) -> void:
 		# The board faces the street: stepping out from it gets closer to a road, not further.
 		if float(g.closest_point(p + out * 2.0)["dist"]) > float(g.closest_point(p - out * 2.0)["dist"]) + 0.6:
 			bad_face += 1
+			bad_at += " (%.1f, %.1f) %s" % [p.x, p.z, str(s[6])]
 		real_public += 1 if int(s[8]) >= 9 else 0
-	_check("Boards face the street", bad_face == 0, "%d facing away" % bad_face)
+	_check("Boards face the street", bad_face == 0, "%d facing away:%s" % [bad_face, bad_at])
 	_check("Public places keep real names (some boards are public)", real_public > 5, "%d" % real_public)
 	var names: Dictionary = {}
 	for i: int in bb.spot_count():
