@@ -69,6 +69,9 @@ func _play(id: String, alternate: String) -> void:
 			"goto":
 				_pose(director._stage_target(stage))
 				director.tick(0.1)
+			"inspect":
+				_pose(director._stage_target(stage))
+				check(id + "/" + before + " inspect", director.interact(id, before))
 			"photo":
 				_pose(director._stage_target(stage), stage.facing)
 				check(id + "/" + before + " photo", director.interact(id, before))
