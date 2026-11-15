@@ -41,7 +41,8 @@ func _visible_damage(main: Node, model: AutoRickshawModel, auto: RigidBody3D) ->
 	check("Dent reaches the body shader", int(model.paint_material.get_shader_parameter("dent_count")) == 1)
 	check("Front hit cracks the windshield", float(model.glass_material.get_shader_parameter("crack")) > 0.0)
 	# A hard side hit on the left snaps the left mirror; the right one stays.
-	SignalBus.player_impact.emit({"speed_mps": 8.0, "point": auto.global_transform * Vector3(-0.7, 0.4, 0.0), "local_point": Vector3(-0.7, 0.4, 0.0)})
+	# (36 km/h: since the Nov 15 gentler damage curve a 29 km/h side knock no longer snaps a mirror.)
+	SignalBus.player_impact.emit({"speed_mps": 10.0, "point": auto.global_transform * Vector3(-0.7, 0.4, 0.0), "local_point": Vector3(-0.7, 0.4, 0.0)})
 	await get_tree().process_frame
 	await get_tree().process_frame
 	check("Hard left hit breaks the left mirror only", bool(model.paint_material.get_shader_parameter("mirror_l_broken")) and not bool(model.paint_material.get_shader_parameter("mirror_r_broken")))
@@ -96,9 +97,9 @@ func _visible_damage(main: Node, model: AutoRickshawModel, auto: RigidBody3D) ->
 	check("Repaired auto: mirrors back, glass clear, fire out", not bool(model.paint_material.get_shader_parameter("mirror_l_broken"))
 		and float(model.glass_material.get_shader_parameter("crack")) == 0.0 and not fx.fire.emitting)
 	# No money and no ad left: the patch-up gets the auto moving again.
-	SignalBus.player_collision.emit(14.0)
-	SignalBus.player_collision.emit(14.0)
-	SignalBus.player_collision.emit(14.0)
+	# Four 70 km/h crashes wreck it (each takes the 30-point maximum since Nov 15).
+	for i: int in 4:
+		SignalBus.player_collision.emit(20.0)
 	GameState.patch_up()
 	check("Patch-up un-wrecks at low condition", not GameState.is_wrecked() and GameState.condition == GameState.PATCH_UP_CONDITION)
 	# Dents survive a save and fade with a paid repair.

@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
+from build_street_signs import TriGrid
+
 ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "data" / "world"
 OUT = WORLD / "dress"
@@ -80,8 +82,24 @@ def point_in(px, pz, poly) -> bool:
 ROAD_RES = 0.5  # m per cell of the carriageway mask
 
 
+def road_tris(manifest: dict) -> TriGrid:
+    """Exact carriageway triangles (flyover decks included) for checks the 0.5 m raster can miss."""
+    grid = TriGrid()
+    for c in manifest["chunks"]:
+        d = json.loads((WORLD / "chunks" / f"c_{c[0]}_{c[1]}.json").read_text())
+        for kind, part in d.get("surf", {}).items():
+            if kind.removesuffix("_up") not in ("road", "lane", "junction", "centre"):
+                continue
+            v, idx = part["v"], part["i"]
+            for t in range(0, len(idx) - 2, 3):
+                grid.add(*[(v[2 * idx[t + k]], v[2 * idx[t + k] + 1]) for k in range(3)])
+    return grid
+
+
 def road_raster(manifest: dict) -> tuple[np.ndarray, tuple[float, float]]:
-    """ROAD_RES mask of every drawn carriageway triangle (road, lane, junction) and its origin."""
+    """ROAD_RES mask of every drawn carriageway triangle (road, lane, junction) and its origin.
+    Flyover decks ("_up") count: the game draws them flat on the ground (Nov 15 device report:
+    434 trees, 153 parked vehicles and 130 poles stood on flyover lanes)."""
     size = float(manifest["chunk_size"])
     ci = [c[0] for c in manifest["chunks"]]
     cj = [c[1] for c in manifest["chunks"]]
@@ -91,7 +109,7 @@ def road_raster(manifest: dict) -> tuple[np.ndarray, tuple[float, float]]:
     draw = ImageDraw.Draw(img)
     for c in manifest["chunks"]:
         d = json.loads((WORLD / "chunks" / f"c_{c[0]}_{c[1]}.json").read_text())
-        for kind in ("road", "lane", "junction"):
+        for kind in ("road", "lane", "junction", "road_up", "lane_up", "junction_up"):
             surf = d.get("surf", {}).get(kind)
             if not surf:
                 continue
@@ -112,6 +130,7 @@ def main() -> int:
     # roads, junction mouths, side roads): Nov 14, after the arterials got their real lane
     # counts, ~940 trees stood in the road. Nothing is placed where this raster is set.
     carriage, origin = road_raster(manifest)
+    exact = road_tris(manifest)
 
     def on_road(x: float, z: float, r: float) -> bool:
         i0, j0 = int((x - r - origin[0]) / ROAD_RES), int((z - r - origin[1]) / ROAD_RES)
@@ -235,7 +254,7 @@ def main() -> int:
             x, z, dx, dz = at(s)
             lx, lz = dz * side, -dx * side
             px, pz = x + lx * (half + POLE_KERB), z + lz * (half + POLE_KERB)
-            if not blocked(px, pz, 0.3) and not on_road(px, pz, 0.0):
+            if not blocked(px, pz, 0.3) and not on_road(px, pz, 0.0) and not exact.hit(px, pz, 0.05):
                 yaw = math.atan2(dx, dz)
                 item = [round(px, 2), round(pz, 2), round(yaw, 3)]
                 put("poles", px, pz, item)
@@ -262,7 +281,7 @@ def main() -> int:
                 tx, tz = x + lx * off, z + lz * off
                 if blocked(tx, tz, 1.4):
                     tx, tz = tx - lx * FOOTPATH_PULL, tz - lz * FOOTPATH_PULL
-                if (trng.random() < TREE_CHANCE and not blocked(tx, tz, 0.9) and not on_road(tx, tz, 0.3)
+                if (trng.random() < TREE_CHANCE and not blocked(tx, tz, 0.9) and not on_road(tx, tz, 0.6)
                         and (tside == -side or not near_pole(tx, tz))):
                     put("trees", tx, tz, tree_item(tx, tz))
                 s += step * trng.uniform(0.75, 1.25)

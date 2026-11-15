@@ -174,6 +174,12 @@ func _run() -> void:
 		fm.queue_redraw()
 	for i: int in 20:
 		await get_tree().process_frame
+	if OS.has_environment("SHOT_SIGNAL"):
+		# SHOT_SIGNAL=light (0 green, 1 amber, 2 red): the HUD's signal chip at a watched junction.
+		SignalBus.signal_ahead_changed.emit({"node": 0, "edge": 0, "light": int(OS.get_environment("SHOT_SIGNAL")),
+			"seconds": 14.0, "distance": 45.0, "enforced": true})
+		for i: int in 4:
+			await get_tree().process_frame
 	if OS.has_environment("SHOT_STRIKE"):
 		# SHOT_STRIKE=metres[,degrees right of the view]: rain, a frame before the strike
 		# ($SHOT_OUT with _dark), then the flash at its peak ($SHOT_OUT).

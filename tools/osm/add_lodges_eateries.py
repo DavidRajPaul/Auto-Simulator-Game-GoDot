@@ -93,7 +93,7 @@ def main() -> int:
         d["blds"] = kept
         removed += before - len(d["blds"])
         chunks[path] = d
-        for name in ("road", "walk", "junction"):
+        for name in ("road", "walk", "junction", "road_up", "lane_up", "junction_up"):  # flyovers are drawn flat
             part = d.get("surf", {}).get(name, {})
             v, i = part.get("v", []), part.get("i", [])
             for t in range(0, len(i), 3):
@@ -265,6 +265,23 @@ def main() -> int:
                 best = d
         return best
 
+    # Centre-line distance to ANY drivable edge, as the game's board check measures it (a board
+    # whose street wall faces a lane but backs onto a nearer main road reads as facing away).
+    all_segs: dict = {}
+    for e in graph["edges"]:
+        for a, b in zip(e["pts"], e["pts"][1:]):
+            for i in range(int(min(a[0], b[0]) // 40) - 1, int(max(a[0], b[0]) // 40) + 2):
+                for j in range(int(min(a[1], b[1]) // 40) - 1, int(max(a[1], b[1]) // 40) + 2):
+                    all_segs.setdefault((i, j), []).append((a, b))
+
+    def centre_dist(x, z):
+        best = 1e9
+        for a, b in all_segs.get((int(x // 40), int(z // 40)), ()):
+            L2 = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2
+            t = 0.0 if L2 < 1e-9 else max(0.0, min(1.0, ((x - a[0]) * (b[0] - a[0]) + (z - a[1]) * (b[1] - a[1])) / L2))
+            best = min(best, math.dist((x, z), (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)))
+        return best
+
     fillers = [(path, b) for path, d in chunks.items() for b in d["blds"] if b.get("f") == 2]
     rng.shuffle(fillers)
     converted = 0
@@ -295,6 +312,8 @@ def main() -> int:
             continue
         _gap, a, c, L, nx, nz = front
         mx, mz = (a[0] + c[0]) * 0.5, (a[1] + c[1]) * 0.5
+        if centre_dist(mx + nx * 2.0, mz + nz * 2.0) > centre_dist(mx - nx * 2.0, mz - nz * 2.0) + 0.6:
+            continue
         if any(math.dist((mx, mz), q) < MIN_GAP_M for q in placed):
             continue
         kind = rng.choice(wanted)

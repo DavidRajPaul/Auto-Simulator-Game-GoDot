@@ -7,7 +7,11 @@ from __future__ import annotations
 import json
 import math
 import random
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_street_dressing import ROAD_RES, road_raster  # noqa: E402
 
 WORLD = Path(__file__).resolve().parents[2] / "data/world"
 KINDS = {"residential": .64, "living_street": .56, "tertiary": .43,
@@ -56,6 +60,20 @@ def main():
                 return value
         return 1.0
 
+    # The graph width is often narrower than the drawn surface (and flyover decks are drawn flat):
+    # a parked vehicle must have its whole footprint off the DRAWN carriageway.
+    road, (rox, roz) = road_raster(manifest)
+
+    def on_road(px, pz, yaw, half_l, half_w):
+        fx, fz = -math.sin(yaw), -math.cos(yaw)
+        for a, b in ((0, 0), (1, 1), (1, -1), (-1, 1), (-1, -1), (1, 0), (-1, 0)):
+            x = px + fx * half_l * a + fz * half_w * b
+            z = pz + fz * half_l * a - fx * half_w * b
+            i, j = int((x - rox) / ROAD_RES), int((z - roz) / ROAD_RES)
+            if 0 <= j < road.shape[0] and 0 <= i < road.shape[1] and road[j, i]:
+                return True
+        return False
+
     dress = WORLD/"dress"
     occupied = set()
     out = {}
@@ -95,9 +113,13 @@ def main():
                     # Entire vehicle is outside the drivable road ribbon, beside kerb.
                     offset = width/2 + car_width/2 + .30
                     nx,nz = dz*side,-dx*side
-                    px,pz = x+nx*offset,z+nz*offset
+                    # The drawn kerb is often wider than the graph says: step out to it (≤ 2.5 m).
+                    for extra in (0.0, 0.5, 1.0, 1.5, 2.0, 2.5):
+                        px,pz = x+nx*(offset+extra),z+nz*(offset+extra)
+                        if not on_road(px, pz, math.atan2(-dx, -dz), car_length/2, car_width/2):
+                            break
                     cell = (round(px/3),round(pz/3))
-                    if not near_building(px,pz,math.hypot(car_length/2,car_width/2)+.35) and all(
+                    if not on_road(px, pz, math.atan2(-dx, -dz), car_length/2, car_width/2) and not near_building(px,pz,math.hypot(car_length/2,car_width/2)+.35) and all(
                         (cell[0]+ix,cell[1]+iz) not in occupied for ix in range(-2,3) for iz in range(-2,3)
                     ):
                         # Heading follows tangent, not random world rotations.

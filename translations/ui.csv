@@ -17,7 +17,7 @@ FINE_PAID_NOW,Paid now,இப்போ கட்டினது
 FINE_STILL_DUE,Still due,இன்னும் பாக்கி
 FINE_DUE_NOTE,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. இன்னும் %s பாக்கி இருக்கு. அடுத்து சம்பாதிக்கிற காசுல இருந்து பிடிச்சிடுவாங்க.
 FINE_BALANCE,Wallet now,வாலெட்டில் மீதி
-FINE_TIP_RED_LIGHT,Stop behind the line when your signal is red. Amber is never fined.,ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கு ஃபைன் கிடையாது.
+FINE_TIP_RED_LIGHT,"Watch the signal chip at the top of the screen: it shows the next light and its countdown, and a camera where fines are given. Stop behind the line on red. Amber is never fined.",ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கு ஃபைன் கிடையாது.
 FINE_RECOVERED_PART,₹%d taken for your pending fine. ₹%d still due.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி.
 FINE_RECOVERED_DONE,₹%d taken for your pending fine. Fine paid off.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. ஃபைன் முழுதும் கட்டியாச்சு.
 OK,OK,சரி
@@ -809,6 +809,12 @@ REM_T_MARINA,Evening rush at Marina,மெரினாவில் மாலை 
 REM_B_MARINA,The beach crowd needs rides home. Good fares tonight!,கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!
 REM_T_LAST,Last reminder this week,இந்த வாரத்தின் கடைசி நினைவூட்டல்
 REM_B_LAST,We'll stop here. Your auto will be at the stand whenever you're ready.,இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்.
+FINE_TOAST,Challan ₹%s: %s at %s. Details when you stop.,சலான் ₹%s: %s — %s. நிறுத்தியதும் விவரம்.
+FINE_WARNING_TOAST,Constable's warning: %s at %s.,போலீஸ் எச்சரிக்கை: %s — %s.
+FINE_WARNING_NEXT,Next time it's a ₹%s fine.,அடுத்த முறை ₹%s ஃபைன்.
+TRAFFIC_FINES,Traffic fines,டிராஃபிக் ஃபைன்
+FINES_ON,Fines,ஃபைன்
+FINES_WARN_ONLY,Warnings only,எச்சரிக்கை மட்டும்
 
 SQ01_HALL,"Stop by the wedding hall. The organiser is waiting to speak with you.","கல்யாண மண்டபம் அருகே நிறுத்து. ஏற்பாட்டாளர் உன்னிடம் பேசக் காத்திருக்கிறார்."
 SQ01_ORGANISER,"A gold pouch has gone missing. Two guests insist it belongs to them. Will you hear both stories before deciding?","ஒரு நகைப் பையைக் காணோம். இரண்டு பேரும் அது தங்களோடதுன்னு சொல்றாங்க. முடிவு செய்யும் முன் இருவர் சொல்வதையும் கேட்பியா?"

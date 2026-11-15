@@ -27,6 +27,13 @@ var _service_kind: String = ""
 var _service_info: Dictionary = {}
 var _fuel_level: float = 1.0
 var _speed_kmh: float = 0.0
+## Challans wait here until the auto is parked with no rider (FINE_PARKED_S at a standstill):
+## the HUD shows a one-line toast at once, the full notice never stops a ride (Nov 15 device
+## report: "the traffic violation … is affecting the riding performance").
+var _fines_waiting: Array[Dictionary] = []
+var _rider_aboard: bool = false
+var _parked_s: float = 0.0
+const FINE_PARKED_S: float = 2.5
 var _out_of_fuel_shown: bool = false
 var _current_tab: String = "TAB_REPAIR"
 var _dim: ColorRect
@@ -63,7 +70,10 @@ func _ready() -> void:
 		if _modal.visible and _modal_title.text == tr("GAME_PAUSED"):
 			open_pause())
 	SignalBus.service_unavailable.connect(_hide_service)
-	SignalBus.traffic_fine_issued.connect(show_fine)
+	SignalBus.traffic_fine_issued.connect(_on_fine_issued)
+	SignalBus.passenger_boarded.connect(func(_n: int, _kg: float) -> void: _rider_aboard = true)
+	SignalBus.passenger_alighted.connect(func() -> void: _rider_aboard = false)
+	SignalBus.ride_abandoned.connect(func(_l: String) -> void: _rider_aboard = false)
 	SignalBus.fuel_changed.connect(_on_fuel)
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
 	SignalBus.shift_ended.connect(_on_shift_ended)
@@ -387,7 +397,23 @@ func close_modal() -> void:
 
 # --- Traffic fine notice ----------------------------------------------------------------------
 
-## A traffic fine, shown as a notice that pauses the game until the player taps OK: what the
+func _on_fine_issued(info: Dictionary) -> void:
+	_fines_waiting.append(info)
+
+func _process(delta: float) -> void:
+	if _fines_waiting.is_empty():
+		_parked_s = 0.0
+		return
+	_parked_s = _parked_s + delta if _speed_kmh < 1.0 and not _rider_aboard else 0.0
+	if _parked_s >= FINE_PARKED_S and not _modal.visible and not get_tree().paused:
+		_parked_s = 0.0
+		show_fine(_fines_waiting.pop_front())
+
+## Challans not yet shown in full (they open once the auto is parked with no rider).
+func fines_waiting() -> int:
+	return _fines_waiting.size()
+
+## A traffic fine, shown (once parked, see _process) as a notice that pauses the game until OK: what the
 ## offence was, where and when, the fine, what was paid now and what is still owed (taken from
 ## the next money earned), and the balance left. Queued behind any modal already open.
 func show_fine(info: Dictionary) -> void:
@@ -557,6 +583,10 @@ func _render_settings() -> void:
 	_choice_row(tr("AUTO_REVERSE"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if bool(s.get("auto_reverse", true)) else 1,
 		func(i: int) -> void:
 			GameState.set_setting("auto_reverse", i == 0)
+			open_pause())
+	_choice_row(tr("TRAFFIC_FINES"), PackedStringArray([tr("FINES_ON"), tr("FINES_WARN_ONLY"), tr("OFF")]), int(s.get("traffic_fines", GameState.FINES_ON)),
+		func(i: int) -> void:
+			GameState.set_setting("traffic_fines", i)
 			open_pause())
 	if DailyReminder.is_supported():
 		_choice_row(tr("DAILY_REMINDER"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if DailyReminder.is_on() else 1,

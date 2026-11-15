@@ -66,6 +66,7 @@ var wallet_inr: int = 500
 ## Traffic fines not yet paid (the wallet was short); taken from the next money that comes in.
 var fine_due_inr: int = 0
 var fines_issued: int = 0 # challan numbers
+var warned_day: int = 0 # the last shift day a traffic offence was let off with a warning
 var stand_respect_xp: int = 100
 var star_rating: float = 4.5
 var completed_savaris: int = 0
@@ -113,7 +114,12 @@ var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs"
 
 var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
 	"vibration": true, "guidance_arrow": true, "first_ride_step": 0, "first_ride_done": false, "auto_reverse": true,
-	"daily_reminder": true, "reminder_asked": false}
+	"daily_reminder": true, "reminder_asked": false, "traffic_fines": FINES_ON}
+
+## "Traffic fines" setting (Settings): fines after a daily warning, warnings only, or off.
+const FINES_ON: int = 0
+const FINES_WARN_ONLY: int = 1
+const FINES_OFF: int = 2
 
 ## First-ride tutorial running (TutorialDirector sets it). While true: no interstitials, no fuel
 ## burn, thin traffic, no random riders, and crashes cannot wear the auto below tutorial_min_condition.
@@ -371,6 +377,22 @@ func add_inr(amount: int, collect_fines: bool = true) -> void:
 			return
 	wallet_inr = maxi(0, wallet_inr + amount)
 	SignalBus.wallet_balance_changed.emit(wallet_inr, amount)
+
+## A traffic offence the police saw. Like the constable at a Chennai signal, the first one of the
+## shift day is let off with a warning (traffic_warning_issued: a HUD line, no money); after that
+## it is a fine (issue_fine). Settings "traffic_fines" can make every offence a warning or turn
+## enforcement off (ETS2 has the same switch). Returns the notice, with "warning": true for one.
+func traffic_offence(reason: String, amount: int, place: String = "") -> Dictionary:
+	var mode: int = int(settings.get("traffic_fines", FINES_ON))
+	if mode == FINES_OFF:
+		return {}
+	if mode == FINES_WARN_ONLY or warned_day != day:
+		warned_day = day
+		var info: Dictionary = {"reason": reason, "place": place, "amount": amount, "day": day,
+			"minute": int(shift_minute), "warning": true}
+		SignalBus.traffic_warning_issued.emit(info)
+		return info
+	return issue_fine(reason, amount, place)
 
 ## A traffic fine. Takes what the wallet can pay now; the rest is owed (fine_due_inr) and comes out
 ## of the next money earned. Announces a notice (traffic_fine_issued) with everything the player
@@ -871,7 +893,7 @@ func to_dict() -> Dictionary:
 		"missions": {"schema": 1, "run": mission_run.duplicate(true), "completed": mission_completed.duplicate(true)},
 		"version": SAVE_VERSION, "wallet": wallet_inr,
 		"fine_due": fine_due_inr,
-		"fines_issued": fines_issued, "respect": stand_respect_xp, "rating": star_rating,
+		"fines_issued": fines_issued, "warned_day": warned_day, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
 		"fuel": fuel_level, "condition": condition, "parked": parked_autos.duplicate(true), "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
@@ -892,6 +914,7 @@ func from_dict(d: Dictionary) -> void:
 	wallet_inr = int(d.get("wallet", wallet_inr))
 	fine_due_inr = int(d.get("fine_due", 0))
 	fines_issued = int(d.get("fines_issued", 0))
+	warned_day = int(d.get("warned_day", 0))
 	stand_respect_xp = int(d.get("respect", stand_respect_xp))
 	star_rating = float(d.get("rating", star_rating))
 	completed_savaris = int(d.get("rides", completed_savaris))

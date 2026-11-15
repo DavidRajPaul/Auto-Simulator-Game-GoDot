@@ -115,7 +115,8 @@ def build_surfaces(project: Callable[[float, float], tuple[float, float]],
         for x, z in verts:
             bucket["v"].extend((round(x, 2), round(z, 2)))
         bucket["i"].extend(int(t) + base for t in tri)
-        if kind in ("road", "junction", "walk") and layer <= 0:
+        # Flyover roads count too: the game draws them flat, so a building under one stands in it.
+        if kind in ("road", "junction") or (kind == "walk" and layer <= 0):
             footprints.append((kind, rings[0]))
         stats[kind] += 1
 
