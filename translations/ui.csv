@@ -792,7 +792,7 @@ NAV_BLOCKED_MISSION,Finish the side quest first.,முதலில் பக்
 DAILY_REMINDER,Daily reminder,டெய்லி நினைவூட்டல்
 REMINDER_TEST,Test reminder in 1 min,1 நிமிடத்தில் சோதனை நினைவூட்டல்
 REMINDER_ASK_TITLE,Daily reminder?,டெய்லி நினைவூட்டல் வேணுமா?
-REMINDER_ASK_BODY,One reminder a day at 7 PM so you never miss your daily bonus. It stops by itself if you take a break.,"டெய்லி போனஸைத் தவறவிடாமல் இருக்க, டெய்லி மாலை 7 மணிக்கு ஒரு நினைவூட்டல். நீ இடைவெளி எடுத்தால் தானாக நின்றுவிடும்."
+REMINDER_ASK_BODY,Get daily reminders about your bonus and new rides. Reminders stop after a week away.,"டெய்லி போனஸ், புதிய சவாரிகள் பற்றி தினமும் நினைவூட்டுவோம். ஒரு வாரத்துக்குப் பிறகு நினைவூட்டல் நின்றுவிடும்."
 REMINDER_YES,"Yes, remind me","சரி, நினைவூட்டு"
 REMINDER_NO,Not now,இப்போ வேண்டாம்
 REM_T_STREAK,Keep your %d-day streak!,உன் %d நாள் தொடரைத் தொடரு!
