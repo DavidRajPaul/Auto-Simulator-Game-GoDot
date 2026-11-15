@@ -18,6 +18,9 @@ func _run() -> void:
 		scene_path = "res://scenes/main_chennai.tscn"
 	var main: Node = (load(scene_path) as PackedScene).instantiate()
 	add_child(main)
+	# PROBE_MINUTE=1260 probes the night (street lights, lit signs, headlights).
+	if OS.has_environment("PROBE_MINUTE"):
+		GameState.shift_minute = float(OS.get_environment("PROBE_MINUTE"))
 	var auto: AutoRickshawController = main.get_node("AutoRickshaw") as AutoRickshawController
 	var traffic: ChennaiTrafficManager = main.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
 	for i: int in 60:

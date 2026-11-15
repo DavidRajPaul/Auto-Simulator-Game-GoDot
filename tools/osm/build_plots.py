@@ -147,7 +147,7 @@ def main() -> int:
         keep_d.ellipse([cx - r / CELL, cz - r / CELL, cx + r / CELL, cz + r / CELL], fill=1)
 
     radii = {"poles": 0.7, "trees": 1.1, "parking": 1.7, "stalls": 2.3, "barricades": 1.3, "carts": 2.3,
-             "beach_fence": 1.2, "xfmr": 2.8}
+             "beach_fence": 1.2, "xfmr": 2.8, "lamps": 0.8, "booths": 3.2}
     for f in sorted((WORLD / "dress").glob("c_*.json")):
         for key, items in json.loads(f.read_text()).items():
             if key in radii:
