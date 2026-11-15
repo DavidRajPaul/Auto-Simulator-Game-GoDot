@@ -237,12 +237,16 @@ class Walker:
 	var talking: bool = false
 	var chat_t: float = 0.0
 	var height: float = 1.6
+	## role "shop": the ShopPeople spot this walker stands in for (SignalBus.awake_shop_spots key).
+	var shop_key: Vector3i = Vector3i.ZERO
 
 func _ready() -> void:
 	rng.seed = 600028
 	_scream_rng.seed = 600029
 	SignalBus.vehicle_burning.connect(_on_vehicle_burning)
 	SignalBus.shop_people_scattered.connect(_on_shop_people_scattered)
+	SignalBus.shop_people_woken.connect(_on_shop_people_woken)
+	SignalBus.shop_people_released.connect(_on_shop_people_released)
 	_setup_screams()
 	_load_people()
 	var slots: Array[int] = []
@@ -604,6 +608,69 @@ func _on_shop_people_scattered(spots: Array) -> void:
 	# Run the scare check now, so they set off with the first screams, not a frame later.
 	_check_fire_scares()
 
+## Shopkeepers and customers the player has come near (ShopPeople.WAKE_M) come alive: a pooled
+## walker of the same character takes each spot with role "shop". It stands there on the idle
+## clip with the odd gesture, and reacts to traffic like any walker (dodge, stumble, fall when the
+## auto hits it), so the auto no longer passes through a frozen figure. `spots`: [Vector3
+## position, yaw, figure id, Vector3i key].
+func _on_shop_people_woken(spots: Array) -> void:
+	if graph == null:
+		return
+	for s: Array in spots:
+		var key: Vector3i = s[3]
+		if SignalBus.awake_shop_spots.has(key):
+			continue
+		var w: Walker = _free_walker(String(s[2]))
+		if w == null:
+			return
+		var at: Vector3 = s[0]
+		var cp: Dictionary = graph.closest_point(at)
+		if int(cp["edge"]) < 0:
+			continue
+		if w.active:
+			_deactivate(w)
+		w.edge = int(cp["edge"])
+		w.s = float(cp["s"])
+		w.dir = 1
+		w.idle = true
+		w.running = false
+		w.startle = 0.0
+		w.dodge = Vector3.ZERO
+		w.recovery = 0.0
+		w.react = ""
+		w.fleeing = false
+		w.umbrella = false
+		w.sheltered = false
+		w.fire_screamed = false
+		w.role = "shop"
+		w.shop_key = key
+		w.gesture_in = rng.randf_range(1.0, GESTURE_GAP_S.y)
+		_roll_bags(w)
+		w.pos = Vector3(at.x, SignalBus.surface_height(at.x, at.z, WALK_Y), at.z)
+		w.heading = Vector3(sin(float(s[1])), 0.0, cos(float(s[1])))
+		w.active = true
+		w.node.visible = true
+		if w.anim != null:
+			w.anim.active = true
+		if w.paintable:
+			var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
+			w.paint = pal[rng.randi() % pal.size()]
+			PaintSwap.set_paint(w.node, w.paint)
+		_set_pose(w)
+		_resume(w, 0.0)
+		# Start each one at a different point of the idle clip, so a row of people never breathes in step.
+		if w.anim != null and w.anim.has_animation("idle"):
+			w.anim.seek(rng.randf() * w.anim.get_animation("idle").length, true)
+		_apply(w)
+		SignalBus.awake_shop_spots[key] = true
+
+func _on_shop_people_released(keys: Array) -> void:
+	for w: Walker in people:
+		if w.active and w.role == "shop" and keys.has(w.shop_key):
+			_deactivate(w)
+	for k: Variant in keys:
+		SignalBus.awake_shop_spots.erase(k)
+
 ## A walker to borrow: a free one (the same character first), else one far off or out of view.
 func _free_walker(id: String, not_this: Walker = null) -> Walker:
 	var best: Walker = null
@@ -618,7 +685,7 @@ func _free_walker(id: String, not_this: Walker = null) -> Walker:
 	if best != null:
 		return best
 	for w: Walker in people:
-		if w == not_this or w.fleeing or w.react != "" or w.role == "chat":
+		if w == not_this or w.fleeing or w.react != "" or w.role == "chat" or w.role == "shop":
 			continue
 		var d: float = w.pos.distance_to(_player)
 		if d > FIRE_SCARE_M * 2.0 or not ViewCheck.on_screen(get_viewport(), w.pos + Vector3(0, 0.9, 0), 1.2):
@@ -650,6 +717,8 @@ func _on_pavement(p: Vector3) -> bool:
 	return float(cp["dist"]) >= e.width * 0.5 + 0.4
 
 func _deactivate(w: Walker) -> void:
+	if w.role == "shop":
+		SignalBus.awake_shop_spots.erase(w.shop_key) # the static crowd shows the spot again
 	w.active = false
 	w.react = ""
 	w.lift = 0.0
@@ -1207,7 +1276,7 @@ func place_kolam(w: Walker, s: Array) -> bool:
 
 func _on_weather(raining: bool) -> void:
 	for w: Walker in people:
-		if not w.active:
+		if not w.active or w.role == "shop": # under the shop's awning already
 			continue
 		if raining:
 			if w.role == "kolam":

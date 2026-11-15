@@ -369,6 +369,10 @@ func _safe_margins() -> Vector4:
 	return Vector4(safe.position.x * k.x, safe.position.y * k.y,
 		(screen.x - safe.end.x) * k.x, (screen.y - safe.end.y) * k.y)
 
+## Right edge of the top-left button row (gear, horn, camera, indicators), for panels that share
+## the top of the screen (PassengerHUD's ride strip keeps clear of it).
+static var top_left_end_x: float = 0.0
+
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var safe: Vector4 = _safe_margins()
@@ -413,6 +417,7 @@ func _layout() -> void:
 	# Indicators: a separate pair on the top row so they never look like steering.
 	_place_button("IndicatorLeft", Rect2(cam.end.x + g * 2.0, mt, s * 0.85, s * 0.8))
 	_place_button("IndicatorRight", Rect2(cam.end.x + g * 2.5 + s * 0.85, mt, s * 0.85, s * 0.8))
+	top_left_end_x = cam.end.x + g * 2.5 + s * 1.7
 	_place_button("Wiper", Rect2(ml, gear_r.end.y + g, s, s * 0.8))
 
 	# Bottom centre: speedometer | mini-map (PassengerHUD) | LPG dial.

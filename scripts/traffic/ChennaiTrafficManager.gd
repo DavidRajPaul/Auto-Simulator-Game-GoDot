@@ -131,7 +131,10 @@ func _ready() -> void:
 	knocked = KnockedVehicles.new()
 	add_child(knocked)
 	SignalBus.horn_blasted.connect(_on_horn_blasted)
-	SignalBus.traffic_bumped.connect(_on_bumped)
+	# Deferred: the auto reports hits from inside its physics step (_integrate_forces), and a body
+	# moved or unfrozen there is ignored by Jolt: a knocked vehicle stayed parked under the map,
+	# so every hit vehicle "disappeared" (Nov 14 device report).
+	SignalBus.traffic_bumped.connect(_on_bumped, CONNECT_DEFERRED)
 	SignalBus.indicator_changed.connect(_on_player_indicator)
 	SignalBus.scripted_traffic_requested.connect(place_scripted_vehicle)
 	SignalBus.scripted_ambulance_provider = Callable(self, "place_quest_ambulance")
@@ -733,7 +736,7 @@ func _on_bumped(v: Node3D, impact_mps: float) -> void:
 		return
 	var push: Vector3 = (tv.global_position - _player.global_position).normalized() if _player != null else Vector3.ZERO
 	var player_mass: float = (_player as RigidBody3D).mass if _player is RigidBody3D else 365.0
-	if _player != null and knocked.knock(tv, impact_mps, push, player_mass, _player.global_position):
+	if _player != null and knocked.knock(tv, impact_mps, push, player_mass, _player.global_position, _player as PhysicsBody3D):
 		_respawn_queue.erase(tv)
 	else:
 		tv.bumped(impact_mps, push, player_mass)
