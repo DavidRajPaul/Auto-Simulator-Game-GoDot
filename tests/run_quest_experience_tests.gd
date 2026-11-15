@@ -213,7 +213,23 @@ func _check_hud() -> void:
 		pose(director._stage_target(director.current_stage()))
 		director.tick(0.05)
 		stage = director.current_stage()
-		check("Question stage shows its answers", stage.kind == "dialogue" and hud._buttons[0].visible and hud._buttons[1].visible)
+		check("Wedding introduction presents one response", stage.id == "organiser" and hud._buttons[0].visible and not hud._buttons[1].visible)
+		# The two-way decision now follows the witness and receipt investigation.
+		for _step: int in 15:
+			stage = director.current_stage()
+			if stage == null or stage.id == "decision":
+				break
+			match stage.kind:
+				"dialogue":
+					director.choose("sq_001", stage.id, stage.choices[0])
+				"goto":
+					pose(director._stage_target(stage))
+					director.tick(0.05)
+				"inspect":
+					pose(director._stage_target(stage))
+					director.interact("sq_001", stage.id)
+		stage = director.current_stage()
+		check("Wedding final decision shows both answers", stage != null and stage.id == "decision" and hud._buttons[0].visible and hud._buttons[1].visible)
 		var panel: Rect2 = Rect2(hud._card.position, Vector2(hud._card.custom_minimum_size.x, 300.0))
 		check("Panel stays on the left kerb at %s" % str(vp), panel.position.x + panel.size.x <= 0.27 * maxf(float(vp.x), 1280.0))
 		check("Panel starts below the top row", panel.position.y >= 100.0)

@@ -284,16 +284,16 @@ SQ27_WIDE,Wide road,அகலச் சாலை
 SQ27_LANE,Drive slowly along your road. Don't hit anything.,உன் சாலையில் மெதுவாப் போ. எதிலும் மோதாதே.
 SQ27_PARK,"At the house: stop at the marker, shift to R, roll back a little, stop and tap Done.","வீட்டில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
 SQ27_HANDOVER,Well parked! The neighbour takes the parcel.,நல்லா நிறுத்தினாய்! பக்கத்து வீட்டார் பொட்டலத்தை வாங்கினார்.
-SQ01_TITLE,The Wedding Gold,திருமண நகை
-SQ01_DESC,Someone lost a gold pouch at a wedding. Find the real owner.,கல்யாணத்துல ஒரு தங்கப் பை தொலைஞ்சிடுச்சு. அது யாரோடதுன்னு கண்டுபிடி.
-SQ01_RECEIPT,Go to the wedding hall and stop at the marker.,திருமண மண்டபத்துக்குப் போய்க் குறியில் நிறுத்து.
+SQ01_TITLE,"The Wedding Gold","கல்யாண நகை"
+SQ01_DESC,"Two guests claim a missing gold pouch. Help the family discover the truth from your auto.","காணாம போன நகைப் பையை இரண்டு பேர் சொந்தம்னு சொல்றாங்க. உண்மையைக் கண்டுபிடிக்க உதவு."
+SQ01_RECEIPT,"The organiser holds out the receipt at your auto. Stop and examine it.","ஏற்பாட்டாளர் ஆட்டோ அருகே ரசீதைக் காட்டுகிறார். நிறுத்திப் பார்."
 SQ01_CLAIMANT,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?",ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?
-SQ01_OWNER,"Meena, she knows the stamp","மீனா, முத்திரை தெரியும்"
-SQ01_OTHER,The other woman,மற்றொரு பெண்
-SQ01_VERIFY,She doesn't know the stamp. Ask the flower seller.,அவருக்கு முத்திரை தெரியல. பூக்காரரிடம் கேள்.
+SQ01_OWNER,"Return it to Meena","மீனாவிடம் ஒப்படை"
+SQ01_OTHER,"Give it to the other woman","மற்ற பெண்ணிடம் ஒப்படை"
+SQ01_VERIFY,"Drive to the flower seller and stop to ask about the gift.","பூக்காரரிடம் போய் பரிசைப் பற்றி விசாரிக்க நிறுத்து."
 SQ01_ASK,The flower seller knows Meena. It is her pouch.,பூக்காரருக்கு மீனாவைத் தெரியும். பை அவருடையதே.
 SQ01_CHECK_RECEIPT,Go to the help desk,உதவி மேசைக்குப் போ
-SQ01_HANDOVER,Take the pouch to the help desk.,பையை உதவி மேசைக்குக் கொண்டு போ.
+SQ01_HANDOVER,"Return to the wedding help desk. The claimants will meet you beside the auto.","கல்யாண உதவி மேசைக்குத் திரும்பு. இருவரும் ஆட்டோ அருகே வந்து பேசுவாங்க."
 SQ01_THANKS,Meena has her gold back. Her family says thank you!,மீனாவுக்குத் தங்கம் கிடைச்சிடுச்சு. குடும்பம் நன்றி சொல்கிறது!
 SQ06_TITLE,Before the Last Light,கடைசி வெளிச்சத்திற்கு முன்
 SQ06_DESC,A photographer wants two beach photos before the sun sets.,சூரியன் மறையுறதுக்குள்ள ஃபோட்டோகிராஃபருக்கு பீச்சுல ரெண்டு ஃபோட்டோ வேணும்.
@@ -589,7 +589,7 @@ QUEST_QUALITY_PAPER,Goods dry: %d%%,பொருட்கள் உலர்வ�
 QUEST_QUALITY_SUPPLIES,Supplies dry: %d%%,பொருட்கள் உலர்வு: %d%%
 QUEST_QUALITY_TOOLS,Tools safe: %d%%,கருவிகள் பாதுகாப்பு: %d%%
 QUEST_QUALITY_MIRROR,Mirror safe: %d%%,கண்ணாடி பாதுகாப்பு: %d%%
-SQ01_JOB,1. Go to the wedding hall.\n2. Find out whose pouch it is.\n3. Give it back at the help desk.,1. திருமண மண்டபத்துக்குப் போ.\n2. பை யாருடையது என்று கண்டுபிடி.\n3. உதவி மேசையில் ஒப்படை.
+SQ01_JOB,"1. Hear both women.\n2. Examine the receipt shown at your auto.\n3. Ask the flower seller about the gift.\n4. Return to the help desk and choose the owner.","1. இரண்டு பேரிடமும் பேசு.\n2. ஆட்டோ அருகே காட்டப்படும் ரசீதைப் பார்.\n3. பூக்காரரிடம் விசாரி.\n4. உதவி மேசைக்குத் திரும்பி உரிமையாளரைத் தேர்வு செய்."
 SQ01_P_HALL,Wedding Hall,திருமண மண்டபம்
 SQ01_P_FLOWER,Flower Seller,பூக்காரர்
 SQ01_P_DESK,Help Desk,உதவி மேசை
@@ -809,3 +809,19 @@ REM_T_MARINA,Evening rush at Marina,மெரினாவில் மாலை 
 REM_B_MARINA,The beach crowd needs rides home. Good fares tonight!,கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!
 REM_T_LAST,Last reminder this week,இந்த வாரத்தின் கடைசி நினைவூட்டல்
 REM_B_LAST,We'll stop here. Your auto will be at the stand whenever you're ready.,இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்.
+
+SQ01_HALL,"Stop by the wedding hall. The organiser is waiting to speak with you.","கல்யாண மண்டபம் அருகே நிறுத்து. ஏற்பாட்டாளர் உன்னிடம் பேசக் காத்திருக்கிறார்."
+SQ01_ORGANISER,"A gold pouch has gone missing. Two guests insist it belongs to them. Will you hear both stories before deciding?","ஒரு நகைப் பையைக் காணோம். இரண்டு பேரும் அது தங்களோடதுன்னு சொல்றாங்க. முடிவு செய்யும் முன் இருவர் சொல்வதையும் கேட்பியா?"
+SQ01_LISTEN,"Hear the first guest","முதல் நபரிடம் கேள்"
+SQ01_MEENA_STATEMENT,"Meena says the pouch was a wedding gift from her aunt. She remembers a blue lotus design, but has no proof with her.","அந்தப் பை அத்தை கொடுத்த கல்யாணப் பரிசுன்னு மீனா சொல்றாங்க. நீலத் தாமரை வடிவம் இருந்ததாம். ஆனா ஆதாரம் கையில் இல்லை."
+SQ01_ASK_OTHER,"Hear the second guest","இரண்டாவது நபரிடம் கேள்"
+SQ01_OTHER_STATEMENT,"The second guest says she left her jewellery at the hall entrance. She says the pouch is hers, but cannot describe its contents.","மண்டப வாசலில் நகையை வைத்ததா இன்னொரு பெண் சொல்றாங்க. பை அவருடையதாம். ஆனா உள்ளே என்ன இருந்ததுன்னு சொல்ல முடியல."
+SQ01_LOOK_RECEIPT,"Ask to see the receipt","ரசீதைக் காட்டச் சொல்"
+SQ01_VIEW_RECEIPT,"Examine receipt","ரசீதைப் பார்"
+SQ01_RECEIPT_CLUE,"The receipt has the initials M.R. and a blue lotus stamp. The flower seller supplied the wedding gifts and may know who collected them.","ரசீதில் மீ.ரா. என்ற எழுத்துகளும் நீலத் தாமரை முத்திரையும் இருக்கு. கல்யாணப் பரிசுகளைக் கொடுத்த பூக்காரருக்குத் தெரிந்திருக்கலாம்."
+SQ01_VISIT_FLOWER,"Visit the flower seller","பூக்காரரிடம் போ"
+SQ01_SELLER,"The seller recalls handing the blue-lotus gift pouch to Meena's aunt. The receipt matches that order. You now have a reliable clue.","நீலத் தாமரைப் பையை மீனாவின் அத்தையிடம் கொடுத்தது பூக்காரருக்கு ஞாபகம் இருக்கு. ரசீதும் அதே ஆர்டருக்குத்தான். இப்போ நம்பகமான ஆதாரம் கிடைச்சிருக்கு."
+SQ01_RETURN_TO_HALL,"Return with the clue","ஆதாரத்தோடு திரும்பு"
+SQ01_DECISION,"Both claimants are here. Who should receive the gold pouch? Your decision will affect the outcome.","இரண்டு பேரும் வந்தாச்சு. நகைப் பையை யாரிடம் ஒப்படைக்கணும்? உன் முடிவுதான் முக்கியம்."
+SQ01_RESOLVED_RIGHT,"Meena's aunt confirms the blue-lotus order. The family gets its gold back and thanks you for checking the evidence.","நீலத் தாமரைப் பரிசை வாங்கியதை மீனாவின் அத்தை உறுதி செய்றாங்க. நகை சரியானவரிடம் சேர்ந்ததால் குடும்பம் நன்றி சொல்றாங்க."
+SQ01_RESOLVED_WRONG,"The organiser checks the receipt again. The pouch went to the wrong person, and the family pays only for your time. Next time, trust the evidence.","ஏற்பாட்டாளர் ரசீதை மறுபடியும் பார்க்கிறார். பை தவறானவரிடம் போயிடுச்சு. செலவுக்குக் கொஞ்சம் பணம் மட்டும் தர்றாங்க. அடுத்த முறை ஆதாரத்தை நம்பு."
