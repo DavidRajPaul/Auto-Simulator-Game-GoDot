@@ -29,6 +29,11 @@ const SHAKE_DECAY: float = 5.0
 const SHAKE_MAX_M: float = 0.12
 var _shake: float = 0.0
 var _shake_t: float = 0.0
+## Ride height the cameras follow: the body's height low-passed, so suspension bounce, potholes
+## and kerbs never shake the view (Nov 15 owner report: "must not shake the screen while
+## riding"). Real slopes (a bridge, a flyover ramp) still come through, just smoothly.
+const RIDE_Y_RATE: float = 2.0
+var _ride_y: float = INF
 ## Free look for the chase camera. Drag to look around without changing the auto's heading.
 var _orbit_yaw: float = 0.0
 var _orbit_pitch: float = -0.12
@@ -71,7 +76,11 @@ func _process(delta: float) -> void:
 	_shake = maxf(0.0, _shake - _shake * SHAKE_DECAY * delta - delta * 0.2)
 	_shake_t += delta
 	var xf: Transform3D = _target_xform()
+	if _ride_y == INF or absf(xf.origin.y - _ride_y) > 3.0:
+		_ride_y = xf.origin.y
+	_ride_y = lerpf(_ride_y, xf.origin.y, 1.0 - exp(-RIDE_Y_RATE * delta))
 	var basis_flat: Basis = _flat_basis(xf)
+	xf.origin.y = _ride_y
 	var desired: Vector3
 	match mode:
 		Mode.COCKPIT:
@@ -166,7 +175,7 @@ func _update_cockpit(xf: Transform3D, delta: float) -> void:
 	var seat: Vector3 = xf * COCKPIT_OFFSET
 	_cockpit_pos.x = seat.x
 	_cockpit_pos.z = seat.z
-	_cockpit_pos.y = lerpf(_cockpit_pos.y, seat.y, 1.0 - exp(-14.0 * delta))
+	_cockpit_pos.y = lerpf(_cockpit_pos.y, seat.y, 1.0 - exp(-4.0 * delta))
 	if _cockpit_pos.distance_squared_to(seat) > 1.0:
 		_cockpit_pos = seat
 	_camera.global_transform = Transform3D(_cockpit_basis, _cockpit_pos + _cockpit_basis * _shake_offset()).rotated_local(Vector3.RIGHT, -0.16) # look down at bars & snout

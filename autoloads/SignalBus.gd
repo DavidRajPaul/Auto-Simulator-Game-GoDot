@@ -32,9 +32,6 @@ signal traffic_fine_issued(info: Dictionary)
 ## A traffic offence let off with a warning (the first of the day, or "warnings only" in Settings):
 ## {reason, place, amount (what the next one costs), day, minute}. HUD toast only, no money.
 signal traffic_warning_issued(info: Dictionary)
-## The next signal in front of the player for the HUD chip: {} = none, else {node, edge, light
-## (ChennaiTrafficManager.Light), seconds, distance, enforced}. Emitted only when it changes.
-signal signal_ahead_changed(info: Dictionary)
 ## Part of a pending fine was taken from money that just came in.
 signal fine_recovered(taken_inr: int, still_due_inr: int)
 

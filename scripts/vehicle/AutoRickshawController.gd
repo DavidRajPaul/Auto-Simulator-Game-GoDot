@@ -438,8 +438,8 @@ func _pothole_at(ray: RayCast3D, hit_pt: Vector3, _delta: float) -> float:
 		var dv: float = POTHOLE_JOLT_MPS * climb / RoadWear.MAX_DEPTH_M * minf(speed, 14.0) / 14.0
 		apply_impulse((Vector3.UP * dv - linear_velocity.normalized() * dv * 0.3) * mass / 3.0, hit_pt - global_position)
 		SignalBus.pothole_hit.emit(hit_pt, severity)
-		if severity > 0.15:
-			SignalBus.camera_shake.emit(severity * 0.45)
+		# No camera shake: the jolt is felt in the body, the sound and the haptics, never as a
+		# shaking screen while riding (Nov 15 owner report).
 	elif climb < -0.02 and GameState.is_raining and speed > 1.5:
 		SignalBus.pothole_hit.emit(hit_pt, 0.0) # dropped into a puddle: splash only
 	return depth

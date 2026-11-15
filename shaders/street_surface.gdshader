@@ -7,7 +7,7 @@
 //        3 cement forecourt           4 paver frontage    5 bare ground
 // Two lookups per pixel (one with `rich` off, the Low graphics preset).
 // UV.y is the road's condition (WorldChunkStreamer.road_condition, a slow world-space noise):
-// below ~0.45 a clean road, above it a dusty one (sand drifted in from the kerbs), above ~0.6 a
+// below ~0.45 a clean road, above it a dusty one (sand drifted in from the kerbs), above ~0.72 a
 // broken one with potholes. Potholes are a small procedural noise (no lookup), evaluated only on
 // broken stretches; in rain they fill with water.
 shader_type spatial;
@@ -81,10 +81,10 @@ void fragment() {
 		float drift = dusty * smoothstep(0.38, 0.62, d.b * 0.45 + wear * 0.65);
 		road = mix(road, vec3(0.43, 0.37, 0.28) * (0.75 + 0.5 * d.r), drift * 0.62 * (1.0 - wet * 0.5));
 		// Broken roads: potholes with a pale crumbled rim; puddles when it rains.
-		float broken = smoothstep(0.6, 0.7, cond) * (1.0 - patch);
+		float broken = smoothstep(0.72, 0.8, cond) * (1.0 - patch); // Nov 15: fewer, smaller holes (RoadWear)
 		if (broken > 0.01) {
 			float n = vnoise(wpos * 0.9) * 0.7 + vnoise(wpos * 2.3 + 7.0) * 0.3 + (d.r - 0.5) * 0.1;
-			float limit = 0.2 + 0.12 * broken;
+			float limit = 0.14 + 0.07 * broken;
 			hole = 1.0 - smoothstep(limit - 0.035, limit, n);
 			float rim = (1.0 - smoothstep(limit, limit + 0.06, n)) * (1.0 - hole);
 			road = mix(road, road * 1.3 + vec3(0.05, 0.045, 0.035), rim * 0.7);

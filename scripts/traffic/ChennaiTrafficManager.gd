@@ -72,7 +72,6 @@ var _signal_group: Dictionary = {} # node id -> {edge id: 0 main road / 1 cross 
 var _signal_stop_back: Dictionary = {} # node id -> stop line distance back from the node (m)
 var _signal_post_node: PackedInt32Array = PackedInt32Array()
 var _signal_post_edge: PackedInt32Array = PackedInt32Array()
-var _signal_lamp_meshes: Array[ArrayMesh] = []
 var _player_pose_seen: bool = false
 var _previous_player_pos: Vector3 = Vector3.ZERO
 var _last_player_ticket_s: float = -1000.0
@@ -92,13 +91,10 @@ const SIGNAL_ALL_RED_S: float = 2.0
 const SIGNAL_CYCLE_S: float = 2.0 * (SIGNAL_GREEN_S + SIGNAL_AMBER_S + SIGNAL_ALL_RED_S)
 const SIGNAL_BRAKE_MPS2: float = 3.5 # amber: stop only if this braking is enough
 enum Light { GREEN, AMBER, RED }
-const SIGNAL_ENFORCEMENT_FINE_INR: int = 200
+const SIGNAL_ENFORCEMENT_FINE_INR: int = 100
 ## No fine until the player's light has been red this long (ETS2 only fines a light that has been
 ## red for 2 s): the all-red clearance and a late amber never cost money.
 const RED_GRACE_S: float = 2.0
-## The HUD signal chip (SignalChip): the next signal within this distance in front of the auto.
-const SIGNAL_AHEAD_M: float = 90.0
-const SIGNAL_AHEAD_DOT: float = 0.75
 const SIGNAL_ROADS: PackedStringArray = ["trunk", "primary", "secondary"]
 const SIGNAL_MIN_WIDTH_M: float = 6.0
 const SIGNAL_POSTS_FILE: String = "res://data/world/signal_posts.json"
@@ -322,14 +318,24 @@ func _physics_process(delta: float) -> void:
 	else:
 		_update_signal_lamps()
 
-## Signal posts: per post one body mesh (pole, black housing, sun visors, white backboard rim) and
-## one lamp mesh, swapped between three pre-lit versions (red / amber / green on) as the phase
-## changes — two draw calls per post, shared meshes, no per-post materials.
+## Signal posts (Nov 15 owner request, after Chennai's LED poles): a tall cantilever pole whose
+## LED strips, lamps and countdown all glow in the current colour. Per post ONE body mesh (pole,
+## arm, black heads, visors, backboards) and ONE glow mesh (`shaders/signal_glow.gdshader`: lenses,
+## strips and the countdown digits; light and seconds are instance uniforms) — two draw calls per
+## post, shared meshes and materials. Local +Z faces the waiting traffic, +X runs over the road.
+const SIGNAL_POLE_H: float = 6.4
+const SIGNAL_ARM_Y: float = 6.0
+const SIGNAL_ARM_M: float = 4.8
+const SIGNAL_NEAR_HEAD_Y: float = 3.5 # the pole head, at a driver's eye line
+const SIGNAL_LENS_R: float = 0.15
+const SIGNAL_LENS_STEP: float = 0.4
+var _signal_glow_mesh: ArrayMesh
+var _signal_shown_lit: PackedInt32Array = PackedInt32Array()
+var _signal_shown_secs: PackedInt32Array = PackedInt32Array()
+
 func _build_signal_pool() -> void:
 	var body: ArrayMesh = _signal_body_mesh()
-	_signal_lamp_meshes.clear()
-	for lit: int in 3:
-		_signal_lamp_meshes.append(_signal_lamp_mesh(lit))
+	_signal_glow_mesh = _signal_lamp_mesh()
 	for i: int in SIGNAL_POOL_SIZE:
 		var post: Node3D = Node3D.new()
 		post.name = "TrafficSignal_%d" % i
@@ -340,40 +346,108 @@ func _build_signal_pool() -> void:
 		post.add_child(shell)
 		var lamps: MeshInstance3D = MeshInstance3D.new()
 		lamps.name = "Lamps"
-		lamps.mesh = _signal_lamp_meshes[0]
+		lamps.mesh = _signal_glow_mesh
 		lamps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		post.add_child(lamps)
 		add_child(post)
 		_signal_posts.append(post)
 		_signal_post_node.append(-1)
 		_signal_post_edge.append(-1)
+		_signal_shown_lit.append(-1)
+		_signal_shown_secs.append(-1)
+
+## Centres of the two signal heads (pole head, arm-end head) in post space.
+static func signal_head_centres() -> Array[Vector3]:
+	return [Vector3(0.0, SIGNAL_NEAR_HEAD_Y, 0.2), Vector3(SIGNAL_ARM_M - 0.35, SIGNAL_ARM_Y - 0.72, 0.2)]
 
 static func _signal_body_mesh() -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	var grey: Color = Color(0.2, 0.22, 0.23)
-	var black: Color = Color(0.04, 0.05, 0.05)
-	var white: Color = Color(0.9, 0.9, 0.88)
-	MeshKit.tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 4.2, 0.0), 0.09, grey, 8)
-	MeshKit.box(st, Vector3(0.0, 0.25, 0.0), Vector3(0.34, 0.5, 0.34), Color(0.95, 0.85, 0.1)) # yellow base collar
-	MeshKit.box(st, Vector3(0.0, 4.8, 0.06), Vector3(0.62, 1.78, 0.06), white) # backboard rim
-	MeshKit.box(st, Vector3(0.0, 4.8, 0.12), Vector3(0.48, 1.62, 0.36), black) # housing
-	for k: int in 3:
-		MeshKit.box(st, Vector3(0.0, 5.33 - float(k) * 0.53 + 0.16, 0.42), Vector3(0.4, 0.03, 0.24), black) # visor
+	var steel: Color = Color(0.46, 0.48, 0.5)
+	var black: Color = Color(0.035, 0.04, 0.04)
+	var yellow: Color = Color(0.95, 0.8, 0.08)
+	MeshKit.box(st, Vector3(0.0, SIGNAL_POLE_H * 0.5, 0.0), Vector3(0.2, SIGNAL_POLE_H, 0.2), steel)
+	MeshKit.box(st, Vector3(0.0, 0.35, 0.0), Vector3(0.42, 0.7, 0.42), yellow) # painted base guard
+	MeshKit.box(st, Vector3(0.0, 0.73, 0.0), Vector3(0.44, 0.06, 0.44), black)
+	MeshKit.box(st, Vector3(SIGNAL_ARM_M * 0.5, SIGNAL_ARM_Y, 0.0), Vector3(SIGNAL_ARM_M, 0.16, 0.14), steel) # cantilever
+	MeshKit.tube(st, Vector3(0.05, SIGNAL_ARM_Y - 0.85, 0.0), Vector3(1.6, SIGNAL_ARM_Y - 0.06, 0.0), 0.04, steel, 6) # brace
+	MeshKit.box(st, Vector3(0.0, SIGNAL_POLE_H + 0.03, 0.0), Vector3(0.24, 0.06, 0.24), black) # cap
+	for c: Vector3 in signal_head_centres():
+		MeshKit.box(st, c + Vector3(0.0, 0.0, -0.13), Vector3(0.6, 1.5, 0.04), black) # backboard
+		MeshKit.box(st, c, Vector3(0.44, 1.32, 0.3), black) # housing
+		for k: int in 3:
+			var ly: float = c.y + SIGNAL_LENS_STEP * (1.0 - float(k))
+			MeshKit.box(st, Vector3(c.x, ly + 0.17, c.z + 0.27), Vector3(0.38, 0.025, 0.24), black) # visor
+			MeshKit.box(st, Vector3(c.x - 0.18, ly + 0.03, c.z + 0.27), Vector3(0.02, 0.26, 0.24), black)
+			MeshKit.box(st, Vector3(c.x + 0.18, ly + 0.03, c.z + 0.27), Vector3(0.02, 0.26, 0.24), black)
+	# Hanger from the arm to the far head, and the countdown box under the pole head.
+	var far: Vector3 = signal_head_centres()[1]
+	MeshKit.box(st, Vector3(far.x, SIGNAL_ARM_Y - 0.04, far.z * 0.5), Vector3(0.1, 0.1, far.z + 0.1), black)
+	MeshKit.box(st, Vector3(0.0, SIGNAL_NEAR_HEAD_Y - 0.98, 0.16), Vector3(0.5, 0.4, 0.2), black)
+	MeshKit.box(st, Vector3(far.x - 0.58, far.y + 0.4, 0.16), Vector3(0.5, 0.4, 0.2), black)
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.6
+	mat.vertex_color_is_srgb = true
+	mat.metallic = 0.3
+	mat.roughness = 0.5
 	return MeshKit.finish(st, mat)
 
-## Three lamp discs on the housing's +Z face; `lit` 0 = red, 1 = amber, 2 = green.
-static func _signal_lamp_mesh(lit: int) -> ArrayMesh:
+## The part id goes in the vertex colour's alpha (part / 8) for signal_glow.gdshader.
+static func _glow_colour(part: int, rgb: Color = Color.BLACK) -> Color:
+	return Color(rgb.r, rgb.g, rgb.b, float(part) / 8.0)
+
+static func _glow_quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, part: int, uv: Array[Vector2]) -> void:
+	# a b c d counter-clockwise seen from the front.
+	st.set_color(_glow_colour(part))
+	st.set_smooth_group(-1)
+	var p: Array[Vector3] = [a, b, c, d]
+	for t: PackedInt32Array in [PackedInt32Array([0, 2, 1]), PackedInt32Array([0, 3, 2])]:
+		for k: int in t:
+			st.set_uv(uv[k])
+			st.add_vertex(p[k])
+
+static func _glow_lens(st: SurfaceTool, centre: Vector3, part: int) -> void:
+	st.set_color(_glow_colour(part))
+	st.set_smooth_group(-1)
+	var n: int = 16
+	for s: int in n:
+		var a0: float = TAU * float(s) / float(n)
+		var a1: float = TAU * float(s + 1) / float(n)
+		var p0: Vector2 = Vector2(cos(a0), sin(a0))
+		var p1: Vector2 = Vector2(cos(a1), sin(a1))
+		# Godot's front face is clockwise on screen: centre, p1, p0 faces +Z.
+		st.set_uv(Vector2(0.5, 0.5))
+		st.add_vertex(centre)
+		st.set_uv(p1 * 0.5 + Vector2(0.5, 0.5))
+		st.add_vertex(centre + Vector3(p1.x, p1.y, 0.0) * SIGNAL_LENS_R)
+		st.set_uv(p0 * 0.5 + Vector2(0.5, 0.5))
+		st.add_vertex(centre + Vector3(p0.x, p0.y, 0.0) * SIGNAL_LENS_R)
+
+static func _glow_strip(st: SurfaceTool, centre: Vector3, size: Vector3) -> void:
+	st.set_uv(Vector2(0.0, 0.0))
+	MeshKit.box(st, centre, size, _glow_colour(3))
+
+## Lenses (red top, amber, green) on both heads, LED strips down every corner of the pole and
+## along the arm, and two countdown faces. One surface; signal_glow.gdshader colours it.
+static func _signal_lamp_mesh() -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	var colours: Array[Color] = [Color(1.0, 0.08, 0.05), Color(1.0, 0.6, 0.05), Color(0.08, 1.0, 0.3)]
-	for k: int in 3:
-		var c: Color = colours[k] if k == lit else colours[k].darkened(0.82)
-		MeshKit.disc(st, Vector3(0.0, 5.33 - float(k) * 0.53, 0.305), Vector3.BACK, 0.16, c, 14)
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # lamps glow, day and night
+	st.set_uv(Vector2.ZERO)
+	for c: Vector3 in signal_head_centres():
+		for k: int in 3:
+			_glow_lens(st, Vector3(c.x, c.y + SIGNAL_LENS_STEP * (1.0 - float(k)), c.z + 0.155), k)
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			_glow_strip(st, Vector3(sx * 0.095, 3.65, sz * 0.095), Vector3(0.06, 5.3, 0.06))
+	for sz: float in [-1.0, 1.0]:
+		for sy: float in [-1.0, 1.0]:
+			_glow_strip(st, Vector3(SIGNAL_ARM_M * 0.5 + 0.08, SIGNAL_ARM_Y + sy * 0.078, sz * 0.068), Vector3(SIGNAL_ARM_M - 0.3, 0.05, 0.05))
+	_glow_strip(st, Vector3(0.0, 0.78, 0.0), Vector3(0.46, 0.04, 0.46)) # ring on the base guard
+	var uv: Array[Vector2] = [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+	var faces: Array[Vector3] = [Vector3(0.0, SIGNAL_NEAR_HEAD_Y - 0.98, 0.262),
+		Vector3(signal_head_centres()[1].x - 0.58, signal_head_centres()[1].y + 0.4, 0.262)]
+	for f: Vector3 in faces:
+		_glow_quad(st, f + Vector3(-0.22, -0.17, 0.0), f + Vector3(0.22, -0.17, 0.0), f + Vector3(0.22, 0.17, 0.0), f + Vector3(-0.22, 0.17, 0.0), 4, uv)
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = load("res://shaders/signal_glow.gdshader") as Shader
 	return MeshKit.finish(st, mat)
 
 ## Tests freeze the signal clock (seconds) with this; < 0 = real time.
@@ -443,34 +517,6 @@ func light_seconds_left(node_id: int, edge_id: int) -> float:
 
 func is_enforced(node_id: int) -> bool:
 	return _enforced_signal_nodes.has(node_id)
-
-## The signal the player is driving towards: {} when none is within SIGNAL_AHEAD_M in front,
-## else {node, edge, light (Light), seconds, distance, enforced}. Chennai's own signals carry a
-## countdown, so the HUD chip shows one too.
-func signal_ahead(pos: Vector3, heading: Vector3) -> Dictionary:
-	var h: Vector2 = Vector2(heading.x, heading.z)
-	if graph == null or h.length() < 0.01:
-		return {}
-	h = h.normalized()
-	var best: int = -1
-	var best_d: float = SIGNAL_AHEAD_M
-	for node_id: int in _signal_nodes:
-		var c: Vector3 = graph.nodes[node_id]
-		var rel: Vector2 = Vector2(c.x - pos.x, c.z - pos.z)
-		var d: float = rel.length()
-		if d >= best_d or d <= float(_signal_stop_back.get(node_id, 0.0)):
-			continue # further than the best, or already over its stop line
-		if rel.normalized().dot(h) < SIGNAL_AHEAD_DOT:
-			continue
-		best = node_id
-		best_d = d
-	if best < 0:
-		return {}
-	var edge_id: int = player_approach_edge(best, pos)
-	if edge_id < 0:
-		return {}
-	return {"node": best, "edge": edge_id, "light": approach_light(best, edge_id),
-		"seconds": light_seconds_left(best, edge_id), "distance": best_d, "enforced": is_enforced(best)}
 
 func is_signal_junction(node_id: int) -> bool:
 	return _signal_set.has(node_id)
@@ -559,17 +605,27 @@ func _refresh_signal_lights() -> void:
 		_signal_post_edge[i] = int(near[i][3])
 	_update_signal_lamps()
 
-## Lamps follow each post's own approach every frame (placement only changes once a second).
+## The glow follows each post's own approach every frame (placement only changes once a second):
+## instance uniforms `lit` (0 red, 1 amber, 2 green) and `seconds`, set only when they change.
 func _update_signal_lamps() -> void:
 	for i: int in _signal_posts.size():
 		var post: Node3D = _signal_posts[i]
 		if not post.visible:
 			continue
 		var light: Light = approach_light(_signal_post_node[i], _signal_post_edge[i])
-		var lamp: int = 2 if light == Light.GREEN else (1 if light == Light.AMBER else 0)
+		var lit: int = signal_lit_index(light)
+		var secs: int = ceili(light_seconds_left(_signal_post_node[i], _signal_post_edge[i]))
+		if lit == _signal_shown_lit[i] and secs == _signal_shown_secs[i]:
+			continue
+		_signal_shown_lit[i] = lit
+		_signal_shown_secs[i] = secs
 		var mi: MeshInstance3D = post.get_node("Lamps") as MeshInstance3D
-		if mi.mesh != _signal_lamp_meshes[lamp]:
-			mi.mesh = _signal_lamp_meshes[lamp]
+		mi.set_instance_shader_parameter("lit", float(lit))
+		mi.set_instance_shader_parameter("seconds", float(secs))
+
+## Light → the glow shader's `lit` (0 red, 1 amber, 2 green).
+static func signal_lit_index(light: Light) -> int:
+	return 2 if light == Light.GREEN else (1 if light == Light.AMBER else 0)
 
 ## Which road the player came in on: the arm whose direction out of the junction best matches
 ## where the player was. -1 if the player isn't near any arm.
@@ -605,8 +661,8 @@ func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 		_previous_player_pos = pos
 		_player_pose_seen = true
 		return
-	_update_signal_ahead(pos, heading)
-	if GameState.tutorial_active:
+	if GameState.tutorial_active or GameState.mission_active:
+		# No signal offences in the tutorial or while a side quest is running.
 		_previous_player_pos = pos
 		return
 	var now_s: float = float(Time.get_ticks_msec()) / 1000.0
@@ -634,22 +690,6 @@ func _on_player_signal_pose(pos: Vector3, heading: Vector3) -> void:
 			_last_player_ticket_s = now_s
 		break
 	_previous_player_pos = pos
-
-var _ahead_check_s: float = 0.0
-var _ahead_key: String = ""
-
-## Feeds the HUD chip: at most 5 updates a second, and only when what it shows changes.
-func _update_signal_ahead(pos: Vector3, heading: Vector3) -> void:
-	var now_s: float = float(Time.get_ticks_msec()) / 1000.0
-	if now_s - _ahead_check_s < 0.2 and signal_clock_override < 0.0:
-		return
-	_ahead_check_s = now_s
-	var info: Dictionary = {} if GameState.tutorial_active else signal_ahead(pos, heading)
-	var key: String = "" if info.is_empty() else "%d:%d:%d:%s" % [int(info["node"]), int(info["light"]), ceili(float(info["seconds"])), str(info["enforced"])]
-	if key == _ahead_key:
-		return
-	_ahead_key = key
-	SignalBus.signal_ahead_changed.emit(info)
 
 ## "Gap-la Gethu": the player squeezes past a moving vehicle with < 0.6 m to spare
 ## above 35 km/h without touching it. One event per vehicle per pass.

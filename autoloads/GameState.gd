@@ -381,11 +381,12 @@ func add_inr(amount: int, collect_fines: bool = true) -> void:
 ## A traffic offence the police saw. Like the constable at a Chennai signal, the first one of the
 ## shift day is let off with a warning (traffic_warning_issued: a HUD line, no money); after that
 ## it is a fine (issue_fine). Settings "traffic_fines" can make every offence a warning or turn
-## enforcement off (ETS2 has the same switch). Returns the notice, with "warning": true for one.
+## enforcement off (ETS2 has the same switch). Nothing at all while a side quest runs
+## (mission_active). Returns the notice, with "warning": true for one.
 func traffic_offence(reason: String, amount: int, place: String = "") -> Dictionary:
 	var mode: int = int(settings.get("traffic_fines", FINES_ON))
-	if mode == FINES_OFF:
-		return {}
+	if mode == FINES_OFF or mission_active:
+		return {} # side quests are never interrupted by traffic offences
 	if mode == FINES_WARN_ONLY or warned_day != day:
 		warned_day = day
 		var info: Dictionary = {"reason": reason, "place": place, "amount": amount, "day": day,
