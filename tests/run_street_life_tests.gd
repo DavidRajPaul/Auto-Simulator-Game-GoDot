@@ -297,6 +297,57 @@ func _test_wind() -> void:
 	_check("Broken roads have potholes up to %.0f cm deep" % (RoadWear.MAX_DEPTH_M * 100.0), holes > 100 and deepest <= RoadWear.MAX_DEPTH_M + 0.0001 and deepest > 0.05, "%d holes, deepest %.3f" % [holes, deepest])
 	_check("Clean and dusty roads have no potholes", clean_holes == 0)
 
+## Nov 14 device report: "the people near the shops stand idle without animation and the auto
+## passes through them". Near the player they are pooled walkers (role "shop"): animated, and
+## they react to the auto; further away they stay in the one static mesh.
+func _test_shop_people_wake(shops: ShopPeople, peds: PedestrianManager, at: Vector3) -> void:
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+	if shops._cand.is_empty():
+		_check("Shop spots near the test street", false)
+		return
+	var spot: Vector3 = shops._cand[0][0]
+	SignalBus.player_pose_updated.emit(spot + Vector3(3.0, 0.0, 0.0), Vector3.FORWARD)
+	shops.rebuild(Vector3(spot.x, 0.0, spot.z))
+	for i: int in 3:
+		await get_tree().process_frame
+	var key: Vector3i = ShopPeople.spot_key(spot)
+	var w: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in peds.people:
+		if o.active and o.role == "shop" and o.shop_key == key:
+			w = o
+	_check("Shop people next to the auto come alive as walkers", w != null and SignalBus.awake_shop_spots.has(key)
+		and SignalBus.awake_shop_spots.size() <= ShopPeople.WAKE_MAX, "%d awake" % SignalBus.awake_shop_spots.size())
+	if w == null:
+		return
+	var in_mesh: bool = false
+	for s: Array in shops.shown:
+		in_mesh = in_mesh or ShopPeople.spot_key(s[0] as Vector3) == key
+	_check("... standing where the figure stood, no longer in the static mesh", not in_mesh and Vector2(w.pos.x - spot.x, w.pos.z - spot.z).length() < 0.2)
+	_check("... on a playing idle clip, so they breathe and gesture", w.anim != null and w.anim.active and w.anim.is_playing() and w.idle)
+	# The auto drives straight through where they stand: they are hit and go down (or jump clear).
+	var dir: Vector3 = Vector3(1.0, 0.0, 0.0)
+	for f: int in 24:
+		var p: Vector3 = w.pos - dir * (3.0 - float(f) * 0.12)
+		SignalBus.player_pose_updated.emit(Vector3(p.x, 0.0, p.z), dir)
+		await get_tree().process_frame
+	_check("The auto can't pass through them: they react (%s)" % w.react, w.react in PedestrianManager.DOWN_CLIPS or w.react == "dodge" or w.recovery > 0.0)
+	# Drive off: they go back into the static crowd.
+	SignalBus.player_pose_updated.emit(spot + Vector3(ShopPeople.RELEASE_M + 20.0, 0.0, 0.0), Vector3.FORWARD)
+	shops._check_s = 0.0
+	shops._process(0.1)
+	await get_tree().process_frame
+	_check("Left behind, they return to the static crowd", not SignalBus.awake_shop_spots.has(key) and not (w.active and w.role == "shop" and w.shop_key == key))
+	SignalBus.player_pose_updated.emit(Vector3(at.x, 0.0, at.z), Vector3.FORWARD)
+	shops.rebuild(Vector3(at.x, 0.0, at.z))
+
+## Close any pausing notice (a red-light challan from a test drive) so the world keeps running.
+func _close_notices(city: Node) -> void:
+	var garage: GarageUI = city.get_node_or_null("GarageUI") as GarageUI
+	if garage != null and garage._modal.visible:
+		garage._fine_queue.clear()
+		garage.close_modal()
+	get_tree().paused = false
+
 ## Moving-traffic physics, fallen bodies, shop people, kolam drawing, rain: in the real city.
 func _test_living_city() -> void:
 	GameState.reset_profile()
@@ -335,6 +386,54 @@ func _test_living_city() -> void:
 		_check("A knocked vehicle is never respawned while it lies there", not traffic._respawn_queue.has(bike))
 		traffic.knocked.give_back(slot)
 		_check("Handing it back returns the model to its traffic slot", not bike.knocked and model.get_parent() == bike and traffic.knocked.busy_count() == 0 and slot.body.freeze)
+	# --- Nov 14 device report: "when I go fast and hit a vehicle, it disappears". The hit comes
+	# from inside the auto's physics step; a hand-over made there left the body under the map.
+	var auto_body: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D
+	for kind: String in ["two_wheeler", "car"]:
+		var tv: TrafficVehicleAI = traffic.place_scripted_vehicle(kind, 25.0)
+		if tv == null:
+			_check("A %s to hit at speed" % kind, false)
+			continue
+		for i: int in 3:
+			await get_tree().physics_frame
+		tv.cruise_speed_mps = 0.0
+		tv.current_speed_mps = 0.0
+		# Come up behind it in its own lane (traffic faces -Z), so nothing on the kerb is in the way.
+		var fwd: Vector3 = -tv.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized()
+		var hit_at: Vector3 = tv.global_position
+		auto_body.global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), hit_at - fwd * 14.0 + Vector3(0.0, 0.6, 0.0))
+		auto_body.linear_velocity = fwd * 16.0
+		var knocked_body: RigidBody3D = null
+		var closest: float = INF
+		var log_: String = ""
+		for f: int in 120:
+			# Driving straight at it can run a red light: the challan notice pauses the game.
+			_close_notices(city)
+			closest = minf(closest, auto_body.global_position.distance_to(tv.global_position))
+			if f % 15 == 0:
+				log_ += " f%d:%.1fm/%.1fms" % [f, auto_body.global_position.distance_to(tv.global_position), auto_body.linear_velocity.length()]
+			if not tv.knocked and auto_body.global_position.distance_to(hit_at) > 4.0:
+				auto_body.linear_velocity = fwd * 16.0
+			await get_tree().physics_frame
+			for q: KnockedVehicles.Slot in traffic.knocked.slots:
+				if q.owner == tv:
+					knocked_body = q.body
+			if knocked_body != null and f > 60:
+				break
+		var bp: Vector3 = knocked_body.global_position if knocked_body != null else Vector3.INF
+		_check("A %s hit at 58 km/h is thrown along the road, not lost under the map" % kind.replace("_", "-"),
+			knocked_body != null and knocked_body.visible and bp.y > -0.5 and Vector2(bp.x - hit_at.x, bp.z - hit_at.z).length() < 15.0,
+			"at %s, %.1f m from the hit; closest %.1f; knocked %s;%s" % [bp, Vector2(bp.x - hit_at.x, bp.z - hit_at.z).length() if knocked_body != null else -1.0, closest, tv.knocked, log_])
+		for q: KnockedVehicles.Slot in traffic.knocked.slots:
+			if q.owner != null:
+				traffic.knocked.give_back(q)
+		auto_body.linear_velocity = Vector3.ZERO
+	_close_notices(city)
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at))
+	for i: int in 10:
+		await get_tree().physics_frame
 	var bus: TrafficVehicleAI = null
 	for v: TrafficVehicleAI in traffic.pool:
 		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS:
@@ -342,8 +441,10 @@ func _test_living_city() -> void:
 	_check("An auto can't throw a bus: buses keep the stop-and-honk recoil", bus != null and not traffic.knocked.knock(bus, 9.0, Vector3.FORWARD, 365.0, Vector3.ZERO))
 	# --- A fallen body lies on top of the ground.
 	var w: PedestrianManager.Walker = peds.people[0]
+	var best: float = INF
 	for o: PedestrianManager.Walker in peds.people:
-		if o.active:
+		if o.active and o.role == "" and not o.fleeing and o.pos.distance_to(peds._player) < best:
+			best = o.pos.distance_to(peds._player)
 			w = o
 	if w.active:
 		w.react = "fallen"
@@ -368,7 +469,9 @@ func _test_living_city() -> void:
 	GameState.shift_minute = 150.0
 	shops.rebuild(Vector3(at.x, 0.0, at.z))
 	_check("At 2:30 am the shops are shut and nobody stands there", shops.shown.is_empty() and not shops.visible)
+	_check("... and nobody stays awake at a shut shop", SignalBus.awake_shop_spots.is_empty())
 	GameState.shift_minute = 630.0
+	await _test_shop_people_wake(shops, peds, at)
 	# --- Rain: shelter, umbrellas, and back to normal after it.
 	GameState.set_rain(true, 60.0)
 	for i: int in 20:

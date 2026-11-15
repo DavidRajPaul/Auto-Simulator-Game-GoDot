@@ -182,6 +182,13 @@ signal vehicle_burning(on: bool)
 ## ShopPeople took the shopkeepers / customers near the burning auto out of its static mesh:
 ## [Vector3 position, yaw, figure id] each. PedestrianManager stands walkers there to flee.
 signal shop_people_scattered(spots: Array)
+## Shop people near the player come alive (ShopPeople → PedestrianManager): [Vector3 position,
+## yaw, figure id, Vector3i key] each; and back into the static crowd by key.
+signal shop_people_woken(spots: Array)
+signal shop_people_released(keys: Array)
+## Shop spots a pooled walker stands in now (key -> true). PedestrianManager adds and erases
+## them (it can also give a walker back on its own); ShopPeople leaves them out of its mesh.
+var awake_shop_spots: Dictionary = {}
 ## The failing engine cut out for this long (limp mode under black smoke or fire).
 signal engine_misfired(seconds: float)
 # --- Controls (gear, indicators, lamps) --------------------------------------------

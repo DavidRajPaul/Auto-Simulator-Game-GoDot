@@ -27,6 +27,15 @@ const ROAD_BAND: Vector2 = Vector2(0.045, 0.076)
 const FIRE_CLEAR_M: float = 22.0
 const CLEAR_RETURN_M: float = 70.0
 const CLEAR_HOLD_S: float = 120.0
+## Nov 14 device report: "the people standing near the shops stand idle without animation and the
+## auto passes through them". Everyone within WAKE_M of the player is handed to a pooled walker
+## (SignalBus.shop_people_woken, PedestrianManager role "shop"): the same character on the same
+## spot, breathing through the idle clip, gesturing now and then, and dodging, stumbling or
+## falling when a vehicle comes at them, like any walker. Past RELEASE_M (or when the shop shuts)
+## they go back into the merged mesh. The static crowd is only ever what is further away.
+const WAKE_M: float = 15.0
+const RELEASE_M: float = 24.0
+const WAKE_MAX: int = 6
 
 var world: WorldChunkStreamer = null
 ## Per figure model: triangle soup at the chosen LOD (positions, normals, uvs).
@@ -44,6 +53,10 @@ var shown: Array = []
 var ids: Array[String] = []
 var _player: Vector3 = Vector3.ZERO
 var _burning: bool = false
+## Open spots round the last rebuild centre, nearest first: [Vector3 position, yaw, kind,
+## model index, Vector3i key].
+var _cand: Array = []
+var _awake_seen: int = -1
 var _fire_at: Vector3 = Vector3.INF
 var _clear_left: float = 0.0
 
@@ -151,14 +164,49 @@ func _process(delta: float) -> void:
 	var at: Vector3 = cam.global_position
 	var state: int = open_state(WorldChunkStreamer.clock_hour(GameState.shift_minute))
 	if Vector2(at.x - _centre.x, at.z - _centre.z).length() < REBUILD_M and world.loaded.size() == _chunks and state == _open_state:
+		if _update_wake() or SignalBus.awake_shop_spots.size() != _awake_seen:
+			_draw()
 		return
 	rebuild(Vector3(at.x, 0.0, at.z))
+
+static func spot_key(p: Vector3) -> Vector3i:
+	return Vector3i(roundi(p.x * 10.0), 0, roundi(p.z * 10.0))
+
+## Wake the people the player has come close to, release those left behind. True if the set changed.
+func _update_wake() -> bool:
+	var awake: Dictionary = SignalBus.awake_shop_spots
+	var before: int = awake.size()
+	var in_cand: Dictionary = {}
+	for c: Array in _cand:
+		in_cand[c[4]] = true
+	var release: Array = []
+	for key: Vector3i in awake:
+		var p: Vector2 = Vector2(float(key.x) * 0.1, float(key.z) * 0.1)
+		if not in_cand.has(key) or p.distance_to(Vector2(_player.x, _player.z)) > RELEASE_M:
+			release.append(key)
+	if not release.is_empty():
+		SignalBus.shop_people_released.emit(release)
+	var wake: Array = []
+	if not _burning and _fire_at == Vector3.INF:
+		for c: Array in _cand:
+			if awake.size() + wake.size() >= WAKE_MAX:
+				break
+			var p: Vector3 = c[0]
+			if awake.has(c[4]) or Vector2(p.x - _player.x, p.z - _player.z).length() > WAKE_M:
+				continue
+			var m: int = int(c[3])
+			wake.append([p, float(c[1]), ids[m] if m < ids.size() else "", c[4]])
+	if not wake.is_empty():
+		SignalBus.shop_people_woken.emit(wake)
+	return not release.is_empty() or awake.size() != before
 
 ## Bit 0 = shops open, bit 1 = stalls open.
 static func open_state(hour: float) -> int:
 	return (1 if hour >= SHOP_HOURS.x and hour < SHOP_HOURS.y else 0) | (2 if hour >= STALL_HOURS.x and hour < STALL_HOURS.y else 0)
 
 func rebuild(centre: Vector3) -> void:
+	if _verts.is_empty():
+		return
 	_centre = centre
 	_chunks = world.loaded.size()
 	_open_state = open_state(WorldChunkStreamer.clock_hour(GameState.shift_minute))
@@ -177,13 +225,28 @@ func rebuild(centre: Vector3) -> void:
 				continue
 			near.append([p.distance_squared_to(centre), Vector3(p.x, h, p.z), float(s[1]), kind, int(rec[3])])
 	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
-	if near.size() > MAX_PEOPLE:
-		near.resize(MAX_PEOPLE)
+	# Room for the static MAX_PEOPLE plus everyone who may be awake (they are not drawn here).
+	if near.size() > MAX_PEOPLE + WAKE_MAX:
+		near.resize(MAX_PEOPLE + WAKE_MAX)
+	_cand.clear()
+	for n: Array in near:
+		_cand.append([n[1], n[2], n[3], int(n[4]) % _verts.size(), spot_key(n[1] as Vector3)])
+	_update_wake()
+	_draw()
+
+## Merge every candidate that is not awake (up to MAX_PEOPLE) into the one mesh.
+func _draw() -> void:
+	_awake_seen = SignalBus.awake_shop_spots.size()
 	var verts: PackedVector3Array = PackedVector3Array()
 	var norms: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
 	shown.clear()
-	for n: Array in near:
+	for c: Array in _cand:
+		if shown.size() >= MAX_PEOPLE:
+			break
+		if SignalBus.awake_shop_spots.has(c[4]):
+			continue
+		var n: Array = [0.0, c[0], c[1], c[2], c[3]]
 		var m: int = int(n[4]) % _verts.size()
 		var basis: Basis = Basis(Vector3.UP, float(n[2]))
 		# Transform * PackedVector3Array runs natively: no per-vertex script work.
