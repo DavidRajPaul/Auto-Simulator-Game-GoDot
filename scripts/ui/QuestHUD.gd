@@ -43,6 +43,7 @@ var _action_ready: bool = false
 var _in_range: bool = false
 var _speed_warning: float = 0.0
 var _modal: bool = false
+var _cinematic: bool = false
 var _map_open: bool = false
 var _deadline: float = 0.0
 var _speed_limit: float = 0.0
@@ -120,6 +121,9 @@ func _ready() -> void:
 	_map_start.visible = false
 	add_child(_map_start)
 	SignalBus.mission_stage_info.connect(_on_stage)
+	SignalBus.quest_cinematic_changed.connect(func(active: bool) -> void:
+		_cinematic = active
+		_refresh())
 	SignalBus.mission_timer_updated.connect(_on_timer)
 	SignalBus.mission_quality_changed.connect(func(kind: String, value: float) -> void: _set_quality(kind, value))
 	SignalBus.mission_action_ready.connect(_on_action_ready)
@@ -189,7 +193,7 @@ func _begin_prompt() -> void:
 			SignalBus.hint_requested.emit(tr("QUEST_NOT_ON_FIRE") if GameState.is_on_fire() else tr("QUEST_STOP_AT_KERB"), 3.0)
 
 func _refresh() -> void:
-	var hidden: bool = _modal or _map_open or GameState.tutorial_active
+	var hidden: bool = _modal or _cinematic or _map_open or GameState.tutorial_active
 	var showing_prompt: bool = _quest_id == "" and not _prompt.is_empty()
 	_card.visible = (_quest_id != "" or showing_prompt) and not hidden
 	_map_start.visible = showing_prompt and not hidden

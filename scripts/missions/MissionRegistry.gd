@@ -22,6 +22,14 @@ func load_pack(pack: MissionPack) -> bool:
 			errors.append("Invalid reward/scenario: " + mission.id)
 		if mission.discoverable and (not mission.start_anchor.is_finite() or mission.start_anchor == Vector3.ZERO or mission.description_key.is_empty() or mission.job_key.is_empty() or mission.estimated_minutes < 1):
 			errors.append("Invalid discovery anchor/metadata: " + mission.id)
+		if mission.reward_choice_stage != "":
+			var reward_source: int = mission.stage_index(mission.reward_choice_stage)
+			if reward_source < 0 or mission.stages[reward_source] == null or mission.stages[reward_source].kind != "dialogue":
+				errors.append("Invalid reward choice stage: " + mission.id)
+			else:
+				for reward_choice: String in mission.reward_choice_inr:
+					if not mission.stages[reward_source].choices.has(reward_choice) or not mission.reward_choice_inr[reward_choice] is int or int(mission.reward_choice_inr[reward_choice]) < 0:
+						errors.append("Invalid choice reward: " + mission.id)
 		var ids: Dictionary = {}
 		for stage: MissionStage in mission.stages:
 			if stage == null:
@@ -54,6 +62,14 @@ func load_pack(pack: MissionPack) -> bool:
 			var stage: MissionStage = mission.stages[i]
 			if stage == null:
 				continue
+			if stage.objective_choice_stage != "":
+				var objective_source: int = mission.stage_index(stage.objective_choice_stage)
+				if objective_source < 0 or objective_source >= i or mission.stages[objective_source] == null or mission.stages[objective_source].kind != "dialogue":
+					errors.append("Invalid objective choice source: " + stage.id)
+				else:
+					for option: String in stage.objective_options:
+						if not mission.stages[objective_source].choices.has(option) or str(stage.objective_options[option]).is_empty():
+							errors.append("Invalid objective choice: " + stage.id)
 			for key: String in stage.next_by_choice:
 				if not stage.choices.has(key) or mission.stage_index(str(stage.next_by_choice[key])) <= i:
 					errors.append("Invalid forward choice: " + stage.id)

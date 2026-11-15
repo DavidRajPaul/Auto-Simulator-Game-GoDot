@@ -4,6 +4,9 @@ extends Resource
 @export var id: String = ""
 @export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo") var kind: String = "goto"
 @export var objective_key: String = ""
+## A previous dialogue may select an alternate localized objective/outcome.
+@export var objective_choice_stage: String = ""
+@export var objective_options: Dictionary = {}
 @export var target: Vector3 = Vector3.ZERO
 @export var radius_m: float = 6.0
 @export var arrival_speed_kmh: float = 2.0

@@ -272,6 +272,7 @@ signal mission_finished(quest_id: String, status: String, reason: String)
 var quest_rider_aboard_provider: Callable = Callable()
 signal mission_profile_loaded
 signal mission_interact_requested(quest_id: String, stage_id: String)
+signal quest_cinematic_changed(active: bool)
 signal mission_stage_info(info: Dictionary)
 signal mission_timer_updated(seconds_remaining: float)
 signal mission_quality_changed(kind: String, value: float)
