@@ -1,63 +1,112 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=13 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+
+[sub_resource type="Resource" id="hall"]
+script = ExtResource("stage")
+id = "hall"
+kind = "goto"
+objective_key = "SQ01_HALL"
+target = Vector3(1231.4, 0, 1644.5)
+radius_m = 9.0
+place_key = "SQ01_P_HALL"
+place_pos = Vector3(1229.2, 0, 1652.6)
+
+[sub_resource type="Resource" id="organiser"]
+script = ExtResource("stage")
+id = "organiser"
+kind = "dialogue"
+objective_key = "SQ01_ORGANISER"
+choices = PackedStringArray("SQ01_LISTEN")
+
+[sub_resource type="Resource" id="meena"]
+script = ExtResource("stage")
+id = "meena"
+kind = "dialogue"
+objective_key = "SQ01_MEENA_STATEMENT"
+choices = PackedStringArray("SQ01_ASK_OTHER")
+
+[sub_resource type="Resource" id="other"]
+script = ExtResource("stage")
+id = "other"
+kind = "dialogue"
+objective_key = "SQ01_OTHER_STATEMENT"
+choices = PackedStringArray("SQ01_LOOK_RECEIPT")
+
 [sub_resource type="Resource" id="receipt"]
 script = ExtResource("stage")
 id = "receipt"
-kind = "goto"
+kind = "inspect"
 objective_key = "SQ01_RECEIPT"
 target = Vector3(1231.4, 0, 1644.5)
 radius_m = 9.0
 place_key = "SQ01_P_HALL"
 place_pos = Vector3(1229.2, 0, 1652.6)
-[sub_resource type="Resource" id="claimant"]
+action_key = "SQ01_VIEW_RECEIPT"
+
+[sub_resource type="Resource" id="receipt_clue"]
 script = ExtResource("stage")
-id = "claimant"
+id = "receipt_clue"
 kind = "dialogue"
-objective_key = "SQ01_CLAIMANT"
-choices = PackedStringArray("SQ01_OWNER", "SQ01_OTHER")
-next_by_choice = {"SQ01_OWNER": "handover", "SQ01_OTHER": "verify"}
-[sub_resource type="Resource" id="verify"]
+objective_key = "SQ01_RECEIPT_CLUE"
+choices = PackedStringArray("SQ01_VISIT_FLOWER")
+
+[sub_resource type="Resource" id="flower"]
 script = ExtResource("stage")
-id = "verify"
+id = "flower"
 kind = "goto"
 objective_key = "SQ01_VERIFY"
 target = Vector3(1126.9, 0, 1727.3)
 radius_m = 9.0
 place_key = "SQ01_P_FLOWER"
 place_pos = Vector3(1135.7, 0, 1721.2)
-[sub_resource type="Resource" id="ask"]
+
+[sub_resource type="Resource" id="seller"]
 script = ExtResource("stage")
-id = "ask"
+id = "seller"
 kind = "dialogue"
-objective_key = "SQ01_ASK"
-choices = PackedStringArray("SQ01_CHECK_RECEIPT")
-[sub_resource type="Resource" id="handover"]
+objective_key = "SQ01_SELLER"
+choices = PackedStringArray("SQ01_RETURN_TO_HALL")
+
+[sub_resource type="Resource" id="return"]
 script = ExtResource("stage")
-id = "handover"
+id = "return"
 kind = "goto"
 objective_key = "SQ01_HANDOVER"
 target = Vector3(974.0, 0, 1517.5)
 radius_m = 9.0
 place_key = "SQ01_P_DESK"
 place_pos = Vector3(976.2, 0, 1513.1)
-[sub_resource type="Resource" id="thanks"]
+
+[sub_resource type="Resource" id="decision"]
 script = ExtResource("stage")
-id = "thanks"
+id = "decision"
 kind = "dialogue"
-objective_key = "SQ01_THANKS"
+objective_key = "SQ01_DECISION"
+choices = PackedStringArray("SQ01_OWNER", "SQ01_OTHER")
+
+[sub_resource type="Resource" id="resolution"]
+script = ExtResource("stage")
+id = "resolution"
+kind = "dialogue"
+objective_key = "SQ01_RESOLVED_RIGHT"
+objective_choice_stage = "decision"
+objective_options = {"SQ01_OWNER": "SQ01_RESOLVED_RIGHT", "SQ01_OTHER": "SQ01_RESOLVED_WRONG"}
 choices = PackedStringArray("QUEST_DONE_CHOICE")
+
 [resource]
 script = ExtResource("def")
 id = "sq_001"
-content_version = 2
+content_version = 3
 title_key = "SQ01_TITLE"
 description_key = "SQ01_DESC"
 job_key = "SQ01_JOB"
 discoverable = true
 start_anchor = Vector3(1145.6, 0, 1621.0)
-estimated_minutes = 5
+estimated_minutes = 8
 category = "mystery"
 reward_inr = 155
 reward_xp = 15
-stages = Array[ExtResource("stage")]([SubResource("receipt"), SubResource("claimant"), SubResource("verify"), SubResource("ask"), SubResource("handover"), SubResource("thanks")])
+reward_choice_stage = "decision"
+reward_choice_inr = {"SQ01_OWNER": 155, "SQ01_OTHER": 45}
+stages = Array[ExtResource("stage")]([SubResource("hall"), SubResource("organiser"), SubResource("meena"), SubResource("other"), SubResource("receipt"), SubResource("receipt_clue"), SubResource("flower"), SubResource("seller"), SubResource("return"), SubResource("decision"), SubResource("resolution")])
