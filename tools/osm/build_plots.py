@@ -14,7 +14,7 @@ from classify_buildings.py) out to the real road surface. It is drawn just under
 so roads and footpaths cover its edge. Walls stand parallel to a street front, at least
 WALL_KERB_M behind the real road surface (rastered from the osm2streets polygons, never
 "graph width / 2"), and are cut wherever anything already stands: trees, poles, parked vehicles,
-stalls, carts, transformers, bus stops, signs, signal posts, props, auto stands, service
+stalls, carts, transformers, roundabout islands, bus stops, signs, signal posts, props, auto stands, service
 points, landmarks, quest places, water, parks, other buildings, other walls.
 
 type / seed / zone let the game paint the wall in its building's colour
@@ -153,6 +153,9 @@ def main() -> int:
             if key in radii:
                 for it in items:
                     disc(float(it[0]), float(it[1]), radii[key])
+            elif key == "islands":  # roundabout islands (build_roundabouts.py): [kind, cx, cz, yaw, x0, z0, ...]
+                for it in items:
+                    keep_d.polygon([grid.px(float(it[k]), float(it[k + 1])) for k in range(4, len(it) - 1, 2)], fill=1)
     areas = json.loads((WORLD / "areas.json").read_text())
     area_polys = []
     for polys in areas.values():

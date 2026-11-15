@@ -198,7 +198,61 @@ func _test_city() -> void:
 	GameState.set_rain(false, 0.0)
 	_check("No nodes are created for one-shots while driving", amb._shot_voices.size() == AmbienceAudio.SHOT_VOICES)
 	await _test_thunderstorm(city)
+	await _test_roundabouts(city)
 	city.queue_free()
+
+## Nov 15 roundabouts (tools/osm/build_roundabouts.py): every real circle in the box has a raised
+## island in its hole - Temple Tower, College Road and both sides of Gemini Circle with their horse
+## statues - drawn into the chunk mesh, solid to the auto, kept off by walkers, and the graph's
+## ground-level roads go round it.
+func _test_roundabouts(city: Node) -> void:
+	var f: FileAccess = FileAccess.open("res://data/world/roundabouts.json", FileAccess.READ)
+	_check("roundabouts.json exists", f != null)
+	if f == null:
+		return
+	var islands: Array = (JSON.parse_string(f.get_as_text()) as Dictionary)["islands"]
+	var names: Dictionary = {}
+	var horses: int = 0
+	for isl: Dictionary in islands:
+		names[str(isl["name"])] = true
+		if str(isl["kind"]) == "horse":
+			horses += 1
+	_check("Temple Tower, College Road and Gemini Circle all have islands",
+		names.has("Temple Tower roundabout, Nandanam") and names.has("College Road circle, Nungambakkam") and names.has("Gemini Circle"), str(names.keys()))
+	_check("Gemini Circle has a horse-tamer statue each side of the flyover", horses == 2, str(horses))
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var space: PhysicsDirectSpaceState3D = (city as Node3D).get_world_3d().direct_space_state
+	for isl: Dictionary in islands:
+		var c: Vector3 = Vector3(float(isl["x"]), 0.0, float(isl["z"]))
+		SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, c + Vector3(0.0, 1.0, 40.0)))
+		await get_tree().physics_frame
+		world.update_streaming(true)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		# A ray from the ring road into the island hits the kerb.
+		var poly: Array = isl["poly"]
+		var edge: Vector3 = Vector3(float(poly[0]), 0.0, float(poly[1]))
+		var out: Vector3 = (edge - c).normalized()
+		var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(edge + out * 2.0 + Vector3.UP * 0.5, c + Vector3.UP * 0.5, 1)
+		var hit: Dictionary = space.intersect_ray(q)
+		_check("%s (%s): the island's kerb is solid" % [isl["name"], isl["kind"]], not hit.is_empty()
+			and Vector2(float(hit["position"].x), float(hit["position"].z)).distance_to(Vector2(edge.x, edge.z)) < 2.5,
+			str(hit.get("position", "no hit")))
+		_check("%s (%s): walkers keep off the island" % [isl["name"], isl["kind"]], not SignalBus.walkable(c.x + out.x, c.z + out.z))
+		# Something is drawn there: the island's grass sits above the road in the chunk mesh.
+		var k: Vector2i = Vector2i(floori(c.x / world.chunk_size), floori(c.z / world.chunk_size))
+		var chunk: Node3D = world.loaded.get(k) as Node3D
+		var drawn: bool = false
+		if chunk != null:
+			for n: Node in chunk.get_children():
+				for mi: Node in n.get_children():
+					if mi is MeshInstance3D and mi.name == "BuildingMeshes":
+						var arr: Array = (mi as MeshInstance3D).mesh.surface_get_arrays(0)
+						for v: Vector3 in arr[Mesh.ARRAY_VERTEX] as PackedVector3Array:
+							if absf(v.y - (WorldChunkStreamer.ISLAND_KERB_H - 0.03)) < 0.005 and Vector2(v.x - edge.x, v.z - edge.z).length() < 0.05:
+								drawn = true
+								break
+		_check("%s (%s): the island is drawn in the chunk mesh" % [isl["name"], isl["kind"]], drawn)
 
 ## Nov 14 thunder and lightning (scripts/world/Thunderstorm.gd): storms only in rain, the flash
 ## lights the street, the ambient, the fog and the sky and then lets go, thunder comes d / 343 s

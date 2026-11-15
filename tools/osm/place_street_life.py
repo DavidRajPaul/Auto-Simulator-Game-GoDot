@@ -99,6 +99,8 @@ def main() -> None:
         occupied = [Point(float(s[0]), float(s[1])).buffer(1.6) for s in dress.get("stalls", []) + dress.get("carts", [])]
         occupied += [Point(float(p[0]), float(p[1])).buffer(0.6) for p in dress.get("poles", []) + dress.get("trees", [])]
         occupied += [Point(float(p[0]), float(p[1])).buffer(1.2) for p in dress.get("parking", [])]
+        occupied += [Polygon([(float(it[k]), float(it[k + 1])) for k in range(4, len(it) - 1, 2)]).buffer(1.0)
+                     for it in dress.get("islands", [])]  # roundabout islands
 
         def clear(p: Point) -> bool:
             if tree is not None and len(tree.query(p.buffer(0.7), predicate="intersects")) > 0:
