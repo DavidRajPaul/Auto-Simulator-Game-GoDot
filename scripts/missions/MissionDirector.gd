@@ -162,7 +162,7 @@ func _announce_stage() -> void:
 	_publish_route()
 	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, stage.objective_key, stage.choices)
 	SignalBus.mission_stage_info.emit({"id": run.quest_id, "stage": stage.id,
-		"kind": stage.kind, "objective": stage.objective_key, "choices": stage.choices,
+		"kind": stage.kind, "objective": _stage_objective(stage), "choices": stage.choices,
 		"action": stage.action_key, "place": _stage_place(stage), "target": _stage_target(stage),
 		"place_pos": _stage_place_pos(stage), "located": stage.kind in LOCATED_KINDS,
 		"title": registry.get_mission(run.quest_id).title_key,
@@ -314,6 +314,13 @@ func _change_quality(delta: float) -> void:
 	_sync()
 	SignalBus.mission_quality_changed.emit(stage.quality_key, value)
 
+func _stage_objective(stage: MissionStage) -> String:
+	if run != null and stage.objective_choice_stage != "":
+		var choice: String = str(run.flags.get(stage.objective_choice_stage, ""))
+		if stage.objective_options.has(choice):
+			return str(stage.objective_options[choice])
+	return stage.objective_key
+
 func _stage_place(stage: MissionStage) -> String:
 	if run != null and stage.place_options.has(str(run.flags.get(stage.target_choice_stage, ""))):
 		return str(stage.place_options[str(run.flags[stage.target_choice_stage])])
@@ -428,7 +435,11 @@ func _complete() -> void:
 	# ledger key also protects replay after its display entry has been pruned.
 	GameState.mission_reward_transaction = true
 	GameState.mission_completed[id] = {"content_version": run.content_version, "completed": true}
-	GameState.grant_reward("mission", definition.reward_inr, definition.reward_xp, "mission:" + id + ":complete")
+	var earned_inr: int = definition.reward_inr
+	if definition.reward_choice_stage != "":
+		var choice: String = str(run.flags.get(definition.reward_choice_stage, ""))
+		earned_inr = int(definition.reward_choice_inr.get(choice, earned_inr))
+	GameState.grant_reward("mission", earned_inr, definition.reward_xp, "mission:" + id + ":complete")
 	_finish("completed", "")
 
 func abandon(reason: String = "abandoned") -> void:
