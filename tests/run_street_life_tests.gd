@@ -340,6 +340,14 @@ func _test_shop_people_wake(shops: ShopPeople, peds: PedestrianManager, at: Vect
 	SignalBus.player_pose_updated.emit(Vector3(at.x, 0.0, at.z), Vector3.FORWARD)
 	shops.rebuild(Vector3(at.x, 0.0, at.z))
 
+## Close any pausing notice (a red-light challan from a test drive) so the world keeps running.
+func _close_notices(city: Node) -> void:
+	var garage: GarageUI = city.get_node_or_null("GarageUI") as GarageUI
+	if garage != null and garage._modal.visible:
+		garage._fine_queue.clear()
+		garage.close_modal()
+	get_tree().paused = false
+
 ## Moving-traffic physics, fallen bodies, shop people, kolam drawing, rain: in the real city.
 func _test_living_city() -> void:
 	GameState.reset_profile()
@@ -390,7 +398,8 @@ func _test_living_city() -> void:
 			await get_tree().physics_frame
 		tv.cruise_speed_mps = 0.0
 		tv.current_speed_mps = 0.0
-		var fwd: Vector3 = tv.global_position - auto_body.global_position
+		# Come up behind it in its own lane (traffic faces -Z), so nothing on the kerb is in the way.
+		var fwd: Vector3 = -tv.global_transform.basis.z
 		fwd.y = 0.0
 		fwd = fwd.normalized()
 		var hit_at: Vector3 = tv.global_position
@@ -400,6 +409,8 @@ func _test_living_city() -> void:
 		var closest: float = INF
 		var log_: String = ""
 		for f: int in 120:
+			# Driving straight at it can run a red light: the challan notice pauses the game.
+			_close_notices(city)
 			closest = minf(closest, auto_body.global_position.distance_to(tv.global_position))
 			if f % 15 == 0:
 				log_ += " f%d:%.1fm/%.1fms" % [f, auto_body.global_position.distance_to(tv.global_position), auto_body.linear_velocity.length()]
@@ -419,6 +430,7 @@ func _test_living_city() -> void:
 			if q.owner != null:
 				traffic.knocked.give_back(q)
 		auto_body.linear_velocity = Vector3.ZERO
+	_close_notices(city)
 	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at))
 	for i: int in 10:
 		await get_tree().physics_frame
@@ -429,8 +441,10 @@ func _test_living_city() -> void:
 	_check("An auto can't throw a bus: buses keep the stop-and-honk recoil", bus != null and not traffic.knocked.knock(bus, 9.0, Vector3.FORWARD, 365.0, Vector3.ZERO))
 	# --- A fallen body lies on top of the ground.
 	var w: PedestrianManager.Walker = peds.people[0]
+	var best: float = INF
 	for o: PedestrianManager.Walker in peds.people:
-		if o.active:
+		if o.active and o.role == "" and not o.fleeing and o.pos.distance_to(peds._player) < best:
+			best = o.pos.distance_to(peds._player)
 			w = o
 	if w.active:
 		w.react = "fallen"

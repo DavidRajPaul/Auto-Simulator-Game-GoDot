@@ -44,21 +44,15 @@ jobs:
       - name: Rebuild world chunks with the new geometry
         run: |
           pip install mapbox-earcut numpy pillow scipy shapely
-          python3 tools/osm/build_world.py
-          python3 tools/osm/build_water.py
-          python3 tools/osm/build_bus_stops.py
-          python3 tools/osm/build_compounds.py
-          # Last: building types + street-facing walls (docs/CHENNAI_BUILDINGS.md).
-          python3 tools/osm/classify_buildings.py
-          # Paved plots, compound walls and gates (needs "t" / "fw" and every dressing pass).
-          python3 tools/osm/build_plots.py
-          python3 tools/osm/place_street_life.py
+          # The whole chain, in dependency order (AGENTS.md lessons): the road surfaces moved,
+          # so everything that stands beside a road is placed again.
+          python3 tools/osm/rebuild_after_streets.py
       - name: Commit results
         run: |
           git config user.name "osm-streets[bot]"
           git config user.email "osm-streets@users.noreply.github.com"
-          git add -A data/osm/streets data/world
+          git add -A data/osm/streets data/osm/building_names_review.csv data/world
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "data(osm): osm2streets road geometry (© OpenStreetMap contributors, ODbL)"
-          git pull --rebase
+          git pull --rebase --autostash
           git push
