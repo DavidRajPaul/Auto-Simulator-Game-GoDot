@@ -825,3 +825,4 @@ SQ01_RETURN_TO_HALL,"Return with the clue","ஆதாரத்தோடு த�
 SQ01_DECISION,"Both claimants are here. Who should receive the gold pouch? Your decision will affect the outcome.","இரண்டு பேரும் வந்தாச்சு. நகைப் பையை யாரிடம் ஒப்படைக்கணும்? உன் முடிவுதான் முக்கியம்."
 SQ01_RESOLVED_RIGHT,"Meena's aunt confirms the blue-lotus order. The family gets its gold back and thanks you for checking the evidence.","நீலத் தாமரைப் பரிசை வாங்கியதை மீனாவின் அத்தை உறுதி செய்றாங்க. நகை சரியானவரிடம் சேர்ந்ததால் குடும்பம் நன்றி சொல்றாங்க."
 SQ01_RESOLVED_WRONG,"The organiser checks the receipt again. The pouch went to the wrong person, and the family pays only for your time. Next time, trust the evidence.","ஏற்பாட்டாளர் ரசீதை மறுபடியும் பார்க்கிறார். பை தவறானவரிடம் போயிடுச்சு. செலவுக்குக் கொஞ்சம் பணம் மட்டும் தர்றாங்க. அடுத்த முறை ஆதாரத்தை நம்பு."
+QUEST_CINEMATIC_SKIP,Skip,தவிர்
