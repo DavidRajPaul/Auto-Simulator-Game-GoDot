@@ -23,7 +23,7 @@ func _run() -> void:
 	_test_signs(city)
 	await _test_signals_falls_medians(city)
 	_test_fx(city)
-	_test_police_service_gas(city)
+	await _test_police_service_gas(city)
 	_test_building_boards(city)
 	_test_touch_layout()
 	await _test_traffic_smooth(city)
@@ -651,15 +651,47 @@ func _test_new_people_and_slum() -> void:
 
 func _test_police_service_gas(city: Node) -> void:
 	var tp: TrafficPolice = city.get_node("TrafficPolice") as TrafficPolice
-	_check("Traffic-police junctions found (big roads, ≥ 3 arms)", tp.junctions.size() > 50, "%d" % tp.junctions.size())
+	# Nov 15 (owner: "remove the traffic police and his umbrella podium from the middle of the roads
+	# and place it in the sides … make sure the names match the area"): kerbside booths.
+	_check("Police booths at the big junctions (≥ 3 arms, two big roads)", tp.booths.size() > 150, "%d" % tp.booths.size())
 	var g: RoadGraph = SignalBus.current_road_graph
-	tp._player = g.nodes[tp.junctions[0]]
+	var streamer: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var on_road: int = 0
+	for i: int in tp.booths.size():
+		var c: Vector3 = tp.booth_pos(i)
+		var ni: int = int((tp.booths[i] as Array)[4])
+		# Off the carriageway: further from the junction centre than its drawn mouth, and
+		# no closer than 1.5 m to any graph edge's own half width.
+		var cp: Dictionary = g.closest_point(c)
+		if float(cp["dist"]) < 2.0 or c.distance_to(Vector3(g.nodes[ni].x, 0.0, g.nodes[ni].z)) < 6.0:
+			on_road += 1
+	_check("Every booth stands off the road, beside its junction", on_road == 0, "%d in the road" % on_road)
+	var mambalam: int = -1
+	for i: int in tp.booths.size():
+		if tp.booth_name(i) == "R-1 MAMBALAM":
+			mambalam = i
+			break
+	_check("Booths carry their area's station (R-1 Mambalam in T Nagar)", mambalam >= 0 and tp.booth_pos(mambalam).x < -1500.0, tp.booth_name(maxi(mambalam, 0)))
+	var b0: Vector3 = tp.booth_pos(0)
+	tp._player = b0
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, b0 + tp.booth_front(0) * 12.0 + Vector3(0.0, 1.0, 0.0)))
+	await get_tree().physics_frame
+	streamer.update_streaming(true)
+	await get_tree().physics_frame
 	tp.refresh()
 	var post: Node3D = null
 	for p: Node3D in tp._posts:
-		if p.visible and p.global_position.distance_to(g.nodes[tp.junctions[0]]) < 0.1:
+		if p.visible and Vector2(p.global_position.x, p.global_position.z).distance_to(Vector2(tp.officer_spot(0).x, tp.officer_spot(0).z)) < 0.1:
 			post = p
-	_check("A police post stands on the junction with an officer", post != null and post.get_node_or_null("Officer") != null and post.global_position.distance_to(g.nodes[tp.junctions[0]]) < 0.1)
+	_check("A constable stands on the kerb in front of the nearest booth (no podium in the junction)", post != null and post.get_node_or_null("Officer") != null
+		and post.get_node_or_null("Stand") == null and Vector2(post.global_position.x, post.global_position.z).distance_to(Vector2(g.nodes[int((tp.booths[0] as Array)[4])].x, g.nodes[int((tp.booths[0] as Array)[4])].z)) > 5.0)
+	_check("The nearby booths' signs are drawn (one MultiMesh)", tp.sign_panels() >= TrafficPolice.PANELS_PER_BOOTH)
+	# The booth is solid: a ray from the road at kerb height hits it.
+	var space: PhysicsDirectSpaceState3D = (city as Node3D).get_world_3d().direct_space_state
+	var from: Vector3 = b0 + tp.booth_front(0) * 4.0 + Vector3(0.0, 1.0, 0.0)
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(from, b0 + Vector3(0.0, 1.0, 0.0), 1))
+	_check("The booth is solid", not hit.is_empty() and (hit["position"] as Vector3).distance_to(b0 + Vector3(0.0, 1.0, 0.0)) < 1.6, str(hit.get("position", "no hit")))
+	_check("Walkers keep out of the booth", not SignalBus.walkable(b0.x, b0.z))
 	var traffic: ChennaiTrafficManager = city.get_node("ChennaiTrafficManager") as ChennaiTrafficManager
 	var svc: TrafficVehicleAI = null
 	for v: TrafficVehicleAI in traffic.pool:

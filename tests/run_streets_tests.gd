@@ -199,7 +199,54 @@ func _test_city() -> void:
 	_check("No nodes are created for one-shots while driving", amb._shot_voices.size() == AmbienceAudio.SHOT_VOICES)
 	await _test_thunderstorm(city)
 	await _test_roundabouts(city)
+	await _test_street_lights(city)
 	city.queue_free()
+
+## Nov 15 street lights (owner: "there does not seem to be street light posts … the light must be
+## very photo realistic"): poles on every kind of road, solid, and lit only at night.
+func _test_street_lights(city: Node) -> void:
+	var kinds: Dictionary = {}
+	var total: int = 0
+	var kerb_pole: Array = []
+	for path: String in DirAccess.get_files_at("res://data/world/dress"):
+		if not path.ends_with(".json"):
+			continue
+		var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dress/" + path)) as Dictionary
+		for l: Array in d.get("lamps", []):
+			total += 1
+			kinds[int(l[3])] = true
+			if int(l[3]) == 0 and kerb_pole.is_empty():
+				kerb_pole = l
+	_check("Street lights across the city: median double-arm, kerb single-arm, EB-pole brackets",
+		total > 5000 and kinds.has(0) and kinds.has(1) and kinds.has(2), "%d lamps, kinds %s" % [total, str(kinds.keys())])
+	_check("Lamps are on from dusk to dawn only", StreetLights.lit(21.0 * 60.0) > 0.99 and StreetLights.lit(12.0 * 60.0) < 0.01 and StreetLights.lit(5.0 * 60.0) > 0.99)
+	var world: WorldChunkStreamer = city.get_node("World") as WorldChunkStreamer
+	var at: Vector3 = Vector3(float(kerb_pole[0]), 0.0, float(kerb_pole[1]))
+	var dir: Vector3 = Vector3(sin(float(kerb_pole[2])), 0.0, cos(float(kerb_pole[2])))
+	SignalBus.teleport_requested.emit(Transform3D(Basis.IDENTITY, at + dir * 6.0 + Vector3(0.0, 1.0, 0.0)))
+	await get_tree().physics_frame
+	world.update_streaming(true)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var lights: StreetLights = world.lights
+	_check("Loaded chunks hand their lamps to StreetLights", lights.lamp_count() > 0)
+	var was: float = GameState.shift_minute
+	GameState.shift_minute = 21.0 * 60.0
+	lights.refill(at)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var pools: MultiMeshInstance3D = lights.get_node("LightPools") as MultiMeshInstance3D
+	var lenses: MultiMeshInstance3D = lights.get_node("LampLenses") as MultiMeshInstance3D
+	_check("At night every nearby lamp throws a pool of light and shows its lens", pools.visible and lenses.visible and lights.pool_count() > 0 and lights.lens_count() >= lights.pool_count())
+	GameState.shift_minute = 12.0 * 60.0
+	await get_tree().process_frame
+	_check("By day the light layers are off (no draw calls)", not pools.visible and not lenses.visible)
+	GameState.shift_minute = was
+	# The pole is solid: a ray across its foot hits it.
+	var space: PhysicsDirectSpaceState3D = (city as Node3D).get_world_3d().direct_space_state
+	var side: Vector3 = Vector3(dir.z, 0.0, -dir.x)
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(at + side * 2.0 + Vector3.UP, at - side * 2.0 + Vector3.UP, 1))
+	_check("A street-light pole is solid", not hit.is_empty() and (hit["position"] as Vector3).distance_to(at + Vector3.UP) < 0.6, str(hit.get("position", "no hit")))
 
 ## Nov 15 roundabouts (tools/osm/build_roundabouts.py): every real circle in the box has a raised
 ## island in its hole - Temple Tower, College Road and both sides of Gemini Circle with their horse

@@ -183,6 +183,9 @@ func apply(minute: float, rain: float) -> void:
 		_sun.shadow_opacity = lerpf(1.0, 0.18, rain)
 		# ...and makes no hot spot on the wet road (it showed as a white glare near the camera).
 		_sun.light_specular = lerpf(0.5, 0.04, rain)
+		# Night: under the street lights moon shadows are lost in the city glow, and the shadow
+		# pass is a whole extra draw of everything near the camera (Nov 15: night drew 151 / 150).
+		_sun.shadow_enabled = day > 0.02
 
 	if _env != null:
 		# Night stays readable: sodium-lit Chennai streets, never pitch black.
@@ -217,8 +220,40 @@ func apply(minute: float, rain: float) -> void:
 			_sky.set_shader_parameter("wind_speed", lerpf(0.004, 0.012, rain))
 
 	var lights_on: bool = day < 0.55 or rain > 0.5
+	# GL Compatibility draws every object a light touches again (multi-pass): there the headlight
+	# is a lit patch on the road (headlight_beam.gdshader) instead of a real SpotLight3D.
+	var compat: bool = RenderingServer.get_current_rendering_method() == "gl_compatibility"
 	for n: Node in get_tree().get_nodes_in_group("headlight"):
-		(n as Light3D).visible = lights_on
+		(n as Light3D).visible = lights_on and not compat
+		var beam: MeshInstance3D = _headlight_beam(n as Node3D)
+		if beam != null:
+			beam.visible = lights_on and compat
 		if not n.has_meta("undamaged_energy"):
 			n.set_meta("undamaged_energy", (n as Light3D).light_energy)
 		(n as Light3D).light_energy = float(n.get_meta("undamaged_energy")) * lerpf(1.0, 0.25, float(GameState.damage_state()["lights"]) / 100.0)
+		if beam != null:
+			(beam.material_override as ShaderMaterial).set_shader_parameter("energy", (n as Light3D).light_energy / 3.0)
+
+## One lit patch per headlight (built once, at the first dusk), on the road ahead of the vehicle.
+func _headlight_beam(light: Node3D) -> MeshInstance3D:
+	var host: Node3D = light.get_parent() as Node3D
+	if host == null:
+		return null
+	var beam: MeshInstance3D = host.get_node_or_null("HeadlightBeam") as MeshInstance3D
+	if beam != null:
+		return beam
+	beam = MeshInstance3D.new()
+	beam.name = "HeadlightBeam"
+	var q: PlaneMesh = PlaneMesh.new()
+	q.size = Vector2(2.0, 2.0)
+	beam.mesh = q
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = load("res://shaders/headlight_beam.gdshader") as Shader
+	beam.material_override = mat
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# 18 m wide × 32 m long, starting at the lamp, just above the road.
+	beam.scale = Vector3(9.0, 1.0, 16.0)
+	beam.position = Vector3(light.position.x, AutoRickshawModel.GROUND_Y + 0.08, light.position.z - 16.0)
+	beam.visible = false
+	host.add_child(beam)
+	return beam

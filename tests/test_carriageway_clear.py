@@ -4,7 +4,8 @@
 The game draws flyovers flat on the ground, so flyover decks ("_up" surfaces) are carriageway too:
 434 trees, 153 parked vehicles, 130 poles and 41 stalls once stood on them because the dressing
 passes only rastered ground-level roads. Checks every tree trunk (with a 0.25 m margin), pole,
-parked vehicle, stall, cart and transformer against every road / lane / junction triangle.
+parked vehicle, stall, cart, transformer, street-light pole and police booth against every
+road / lane / junction triangle.
 """
 from __future__ import annotations
 
@@ -20,7 +21,8 @@ from build_street_signs import TriGrid  # noqa: E402
 WORLD = ROOT / "data" / "world"
 CARRIAGEWAY = ("road", "lane", "junction", "centre")
 # Item key -> clearance radius (m) its centre must keep from the carriageway.
-ITEMS = {"trees": 0.25, "poles": 0.0, "parking": 0.0, "stalls": 0.0, "carts": 0.0, "xfmr": 0.0}
+ITEMS = {"trees": 0.25, "poles": 0.0, "parking": 0.0, "stalls": 0.0, "carts": 0.0, "xfmr": 0.0,
+         "lamps": 0.15, "booths": 1.0}
 
 
 def main() -> int:

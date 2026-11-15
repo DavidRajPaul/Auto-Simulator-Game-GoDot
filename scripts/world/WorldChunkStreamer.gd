@@ -60,6 +60,91 @@ const MEDIAN_RED: Color = Color(0.85, 0.09, 0.07)
 const BARRICADE_GROUND_Y: float = 0.08 # on the footpath
 const BARRICADE_YELLOW: Color = Color(0.97, 0.78, 0.08)
 const BARRICADE_BLUE: Color = Color(0.1, 0.28, 0.62)
+## Booth footprints as island-style records ([kind, cx, cz, yaw, x0, z0, …]) for the walk mask.
+static func _booth_outlines(booths: Array) -> Array:
+	var out: Array = []
+	for b: Array in booths:
+		var c: Vector2 = Vector2(float(b[0]), float(b[1]))
+		var f: Vector2 = Vector2(sin(float(b[2])), cos(float(b[2]))) * (BOOTH_D * 0.5 + 0.2)
+		var sd: Vector2 = Vector2(f.y, -f.x).normalized() * (BOOTH_W * 0.5 + 0.2)
+		out.append(["booth", c.x, c.y, 0.0, (c - sd - f).x, (c - sd - f).y, (c + sd - f).x, (c + sd - f).y,
+			(c + sd + f).x, (c + sd + f).y, (c - sd + f).x, (c - sd + f).y])
+	return out
+
+## Police assistance booths on junction kerbs (tools/osm/build_police_booths.py): [x, z, yaw,
+## station], local +Z = the front (towards the junction). The body: yellow concrete plinth, navy
+## cabin painted red over purple below the windows, white-framed glass all round, a flat roof.
+## The station's sign panels are drawn over it by TrafficPolice (one MultiMesh, police_signs.png).
+const BOOTH_W: float = 2.0
+const BOOTH_D: float = 1.5
+const BOOTH_H: float = 2.75
+const BOOTH_PLINTH: float = 0.3
+const BOOTH_RED: Color = Color(0.84, 0.11, 0.13)
+const BOOTH_PURPLE: Color = Color(0.2, 0.12, 0.43)
+
+func _booths(m: MeshBuf, faces: PackedVector3Array, booths: Array) -> void:
+	for b: Array in booths:
+		var c: Vector3 = Vector3(float(b[0]), 0.0, float(b[1]))
+		var yaw: float = float(b[2])
+		var f: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
+		var along: Vector2 = Vector2(f.z, -f.x) # the booth's width runs across its front
+		var y0: float = BOOTH_PLINTH
+		_dbox(m, c + Vector3(0.0, y0 * 0.5, 0.0), Vector3(BOOTH_W + 0.3, y0, BOOTH_D + 0.3), along, Color(0.93, 0.76, 0.16))
+		# Painted lower body: purple then red, up to the window sill.
+		_dbox(m, c + Vector3(0.0, y0 + 0.19, 0.0), Vector3(BOOTH_W, 0.38, BOOTH_D), along, BOOTH_PURPLE)
+		_dbox(m, c + Vector3(0.0, y0 + 0.69, 0.0), Vector3(BOOTH_W, 0.62, BOOTH_D), along, BOOTH_RED)
+		# Glass band with white frames and mullions.
+		_dbox(m, c + Vector3(0.0, 1.675, 0.0), Vector3(BOOTH_W - 0.08, 0.75, BOOTH_D - 0.08), along, Color(0.32, 0.42, 0.5))
+		var s: Vector3 = Vector3(along.x, 0.0, along.y)
+		for k: int in 3:
+			var u: float = (float(k) - 1.0) * BOOTH_W * 0.5
+			_dbox(m, c + s * u + f * (BOOTH_D * 0.5 - 0.01) + Vector3(0.0, 1.675, 0.0), Vector3(0.07, 0.75, 0.05), along, Color(0.95, 0.95, 0.94))
+		for yy: float in [1.31, 2.04]:
+			_dbox(m, c + Vector3(0.0, yy, 0.0), Vector3(BOOTH_W + 0.02, 0.06, BOOTH_D + 0.02), along, Color(0.95, 0.95, 0.94))
+		# Sign band (the panels go over it) and a flat roof with a slight overhang.
+		_dbox(m, c + Vector3(0.0, 2.4, 0.0), Vector3(BOOTH_W, 0.7, BOOTH_D), along, BOOTH_PURPLE)
+		_dbox(m, c + Vector3(0.0, BOOTH_H + 0.04, 0.0), Vector3(BOOTH_W + 0.3, 0.08, BOOTH_D + 0.3), along, Color(0.55, 0.56, 0.58))
+		_obox_faces(faces, Vector2(c.x, c.z), Vector2(BOOTH_W * 0.5 + 0.15, BOOTH_D * 0.5 + 0.15), yaw, COLLIDER_H_M)
+
+## Street light poles (tools/osm/build_street_lights.py): [x, z, yaw, type, reach]. Type 1 = tall
+## double-arm LED pole in a median (yaw = road direction, arms both ways), 0 = single-arm kerb pole
+## (yaw = arm direction, over the road), 2 = LED bracket on a concrete EB pole. Galvanised steel,
+## merged into the chunk mesh and collider; the glow is StreetLights (heads at StreetLights.heads).
+const LAMP_STEEL: Color = Color(0.6, 0.62, 0.64)
+const LAMP_HOUSING: Color = Color(0.28, 0.29, 0.31)
+
+func _lamps(m: MeshBuf, faces: PackedVector3Array, lamps: Array) -> void:
+	for l: Array in lamps:
+		var base: Vector3 = Vector3(float(l[0]), 0.0, float(l[1]))
+		var yaw: float = float(l[2])
+		var kind: int = int(l[3])
+		var reach: float = float(l[4])
+		var dir: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
+		var h: float = StreetLights.HEIGHT[kind]
+		if kind == 2:
+			# Bracket clamped to the EB pole (the pole itself is already drawn).
+			var top: Vector3 = base + Vector3(0.0, h - 0.35, 0.0)
+			_beam(m, top, top + dir * reach * 0.6 + Vector3(0.0, 0.3, 0.0), 0.06, LAMP_STEEL)
+			_beam(m, top + dir * reach * 0.6 + Vector3(0.0, 0.3, 0.0), top + dir * reach + Vector3(0.0, 0.35, 0.0), 0.06, LAMP_STEEL)
+			_dbox(m, base + dir * reach + Vector3(0.0, h - 0.02, 0.0), Vector3(0.5, 0.1, 0.22), Vector2(dir.x, dir.z), LAMP_HOUSING)
+			continue
+		# Concrete footing, tapered galvanised pole (two sections).
+		_dbox(m, base + Vector3(0.0, 0.2, 0.0), Vector3(0.55, 0.4, 0.55), Vector2(dir.x, dir.z), Color(0.62, 0.61, 0.58))
+		_beam(m, base + Vector3(0.0, 0.4, 0.0), base + Vector3(0.0, h * 0.55, 0.0), 0.22, LAMP_STEEL)
+		_beam(m, base + Vector3(0.0, h * 0.55, 0.0), base + Vector3(0.0, h - 0.3, 0.0), 0.15, LAMP_STEEL)
+		var arms: Array[Vector3] = [dir]
+		if kind == 1:
+			arms = [Vector3(dir.z, 0.0, -dir.x), Vector3(-dir.z, 0.0, dir.x)]
+		for a: Vector3 in arms:
+			var top: Vector3 = base + Vector3(0.0, h - 0.4, 0.0)
+			var elbow: Vector3 = base + a * reach * 0.45 + Vector3(0.0, h + 0.05, 0.0)
+			var tip: Vector3 = base + a * reach + Vector3(0.0, h + 0.1, 0.0)
+			_beam(m, top, elbow, 0.1, LAMP_STEEL)
+			_beam(m, elbow, tip, 0.08, LAMP_STEEL)
+			# Flat LED luminaire, tilted a touch up along the arm like the real fittings.
+			_dbox(m, tip + a * 0.3 + Vector3(0.0, -0.02, 0.0), Vector3(0.75, 0.12, 0.32), Vector2(a.x, a.z), LAMP_HOUSING)
+		_obox_faces(faces, Vector2(base.x, base.z), Vector2(0.3, 0.3), yaw, COLLIDER_H_M)
+
 ## Roundabout traffic islands (tools/osm/build_roundabouts.py).
 const ISLAND_KERB_H: float = 0.3
 const ISLAND_COLLIDE_H: float = 1.1
@@ -174,6 +259,8 @@ var _ground_mat: ShaderMaterial
 var _bld_mat: ShaderMaterial
 ## Roadside and park trees (owner's models, near model + far impostors, see StreetTrees.gd).
 var trees: StreetTrees
+## Street light glow at night: pools of light on the road + lamp lenses / halos (StreetLights.gd).
+var lights: StreetLights
 ## Baked transformer tank as plain triangles (sRGB vertex colours), read once in _ready and
 ## only read afterwards (chunk meshes are built on worker threads).
 var _xfmr_verts: PackedVector3Array = PackedVector3Array()
@@ -244,6 +331,9 @@ func _ready() -> void:
 	trees = StreetTrees.new()
 	trees.name = "StreetTrees"
 	add_child(trees)
+	lights = StreetLights.new()
+	lights.name = "StreetLights"
+	add_child(lights)
 	if dressing_enabled:
 		add_child(BirdFlock.new()) # one draw call: crows, pigeons and kites over the street
 		add_child(Wind.new()) # shader globals: trees, splashes and dust follow one wind
@@ -334,6 +424,8 @@ func update_streaming(blocking: bool) -> void:
 			loaded.erase(k)
 			if trees != null:
 				trees.remove_chunk(k)
+			if lights != null:
+				lights.remove_chunk(k)
 			_heights.erase(k)
 			_blocked.erase(k)
 
@@ -392,6 +484,13 @@ func _attach(k: Vector2i, node: Node3D) -> void:
 			recs[i + 1] = surface_height(recs[i], recs[i + 2], 0.0) - StreetTrees.SINK_M
 		if trees != null:
 			trees.add_chunk(k, recs)
+	if node.has_meta("lamps"):
+		var heads: PackedFloat32Array = node.get_meta("lamps")
+		node.remove_meta("lamps")
+		for i: int in range(0, heads.size(), StreetLights.REC):
+			heads[i + 6] = surface_height(heads[i], heads[i + 2], 0.06) # the ground under the lamp
+		if lights != null:
+			lights.add_chunk(k, heads)
 	if node.has_meta("building_mask"):
 		_blocked[k] = node.get_meta("building_mask")
 		node.remove_meta("building_mask")
@@ -483,7 +582,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 	# Walkers treat every wall and gate as solid, whoever built it, and keep off roundabout islands.
 	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + gates,
-		dress.get("islands", []) as Array))
+		(dress.get("islands", []) as Array) + _booth_outlines(dress.get("booths", []) as Array)))
 	if df != null:
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
 		# Spots that live things use (kolam drawers, shop people, rain shelter): kept on the chunk.
@@ -497,6 +596,8 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		root.add_child(_buildings(blds, dress, walls, plot_walls, gates))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
 		root.set_meta("trees", StreetTrees.records(dress["trees"] as Array))
+	if not (dress.get("lamps", []) as Array).is_empty():
+		root.set_meta("lamps", StreetLights.heads(dress["lamps"] as Array))
 	return root
 
 ## Pre-triangulated osm2streets polygons → one flat, vertex-coloured mesh.
@@ -737,6 +838,8 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_wal
 				m.add(Vector3(p.x, h, p.y), Vector3.UP, roof, p / ROOF_TILE_M, rcell)
 	_medians(m, faces, dress.get("medians", []))
 	_islands(m, faces, dress.get("islands", []))
+	_lamps(m, faces, dress.get("lamps", []))
+	_booths(m, faces, dress.get("booths", []))
 	_barricades(m, faces, dress.get("barricades", []))
 	# Marina / Santhome: the sand fenced off from the road (tools/osm/build_beach_fence.py).
 	_barricades(m, faces, dress.get("beach_fence", []))
