@@ -23,6 +23,8 @@ var _container: Control
 var _subtitle: Label
 var _skip: Button
 var _actors: Array[Node3D] = []
+var _actor_start: Array[Vector3] = []
+var _actor_end: Array[Vector3] = []
 var _running: bool = false
 var _elapsed: float = 0.0
 var _was_frozen: bool = false
@@ -161,7 +163,9 @@ func _make_actors() -> void:
 		at.y = SignalBus.surface_height(at.x, at.z, _auto.global_position.y)
 		# Source rigs are at different origin heights; ground the visible feet.
 		var lift: float = -QuestMarkers.lowest_point(person)
-		person.global_position = at + Vector3.UP * lift
+		var destination: Vector3 = at + Vector3.UP * lift
+		var origin: Vector3 = destination + forward * 1.1
+		person.global_position = origin
 		var face: Vector3 = _auto.global_position - person.global_position
 		face.y = 0.0
 		if face.length_squared() > 0.01:
@@ -173,6 +177,8 @@ func _make_actors() -> void:
 					animation.play(clip)
 					break
 		_actors.append(person)
+		_actor_start.append(origin)
+		_actor_end.append(destination)
 
 func _process(delta: float) -> void:
 	if not _running:
@@ -181,6 +187,10 @@ func _process(delta: float) -> void:
 	var t: float = smoothstep(0.0, SHOT_SECONDS, _elapsed)
 	_camera.global_position = _from.lerp(_to, t)
 	_camera.look_at(_focus, Vector3.UP)
+	var approach: float = smoothstep(0.0, 1.35, _elapsed)
+	for i: int in _actors.size():
+		if is_instance_valid(_actors[i]):
+			_actors[i].global_position = _actor_start[i].lerp(_actor_end[i], approach)
 	if _elapsed >= SHOT_SECONDS:
 		skip()
 
@@ -193,6 +203,8 @@ func skip() -> void:
 		if is_instance_valid(actor):
 			actor.queue_free()
 	_actors.clear()
+	_actor_start.clear()
+	_actor_end.clear()
 	if _auto != null and is_instance_valid(_auto):
 		_auto.freeze = _was_frozen
 	if _rig != null and is_instance_valid(_rig) and _rig._camera != null:
