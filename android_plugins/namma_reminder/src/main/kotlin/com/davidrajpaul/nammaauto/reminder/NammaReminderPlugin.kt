@@ -61,6 +61,7 @@ class NammaReminderPlugin(godot: Godot) : GodotPlugin(godot) {
 	@UsedByGodot
 	fun cancelAll() {
 		val ctx = context ?: return
+		Reminders.setActive(ctx, false)
 		WorkManager.getInstance(ctx).cancelAllWorkByTag(WORK_TAG)
 	}
 
@@ -76,6 +77,7 @@ class NammaReminderPlugin(godot: Godot) : GodotPlugin(godot) {
 
 	private fun enqueue(id: Int, delayMs: Long, title: String, body: String) {
 		val ctx = context ?: return
+		Reminders.setActive(ctx, true)
 		Reminders.ensureChannel(ctx)
 		val data = Data.Builder()
 			.putInt(Reminders.KEY_ID, id)
