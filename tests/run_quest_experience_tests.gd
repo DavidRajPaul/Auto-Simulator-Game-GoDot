@@ -46,6 +46,7 @@ func _run() -> void:
 		action_in_range = in_range)
 	SignalBus.quest_prompt_changed.connect(func(quest: Dictionary) -> void: prompt = quest)
 	_check_words()
+	_check_cutscene_gate()
 	for id: String in director.registry.definitions:
 		_play(id, false)
 		_play(id, true)
@@ -260,3 +261,31 @@ func _check_markers() -> void:
 	markers._refresh()
 	check("Job stop clears after leaving", not markers._person.visible)
 	check("Budget: one multimesh for all markers", QuestMarkers.MAX_MARKERS <= 4)
+
+## Cinematic presentation is opt-in, preserves the in-auto player and does not advance missions.
+func _check_cutscene_gate() -> void:
+	GameState.reset_profile()
+	var root: Node3D = Node3D.new()
+	add_child(root)
+	var auto: RigidBody3D = RigidBody3D.new()
+	auto.name = "AutoRickshaw"
+	root.add_child(auto)
+	var rig: CameraRig = CameraRig.new()
+	rig.name = "CameraRig"
+	rig.target_path = NodePath("../AutoRickshaw")
+	root.add_child(rig)
+	var cinema: QuestCutsceneDirector = QuestCutsceneDirector.new()
+	root.add_child(cinema)
+	check("Wedding intro is registered for cinematics", QuestCutsceneDirector.is_cinematic_stage("sq_001", "organiser"))
+	check("Unrelated quests never start a cinematic", not QuestCutsceneDirector.is_cinematic_stage("sq_002", "organiser"))
+	var info: Dictionary = {"id": "sq_001", "stage": "organiser", "objective": "SQ01_ORGANISER"}
+	cinema._on_stage(info)
+	check("No cinematic before Start", not cinema._running and not auto.freeze)
+	GameState.mission_active = true
+	cinema._on_stage(info)
+	check("Accepted quest starts in-auto cinematic", cinema._running and auto.freeze and cinema._overlay.visible)
+	cinema.skip()
+	check("Skip restores camera and vehicle", not cinema._running and not auto.freeze and rig._camera.current)
+	check("Skip never advances quest", director.run == null)
+	GameState.mission_active = false
+	root.queue_free()
