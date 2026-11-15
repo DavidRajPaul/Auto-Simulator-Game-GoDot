@@ -559,11 +559,16 @@ func _test_living_city() -> void:
 	for i: int in 3:
 		await get_tree().process_frame
 	_check("Rain splashes on the ground round the camera (one MultiMesh)", splashes.splash_count() == RainSplashes.COUNT and (world._street_mat.get_shader_parameter("rain_rings") as float) > 0.5)
+	_check("Falling rain: lit streaks round the camera, one MultiMesh, world-anchored", splashes._streaks.visible and splashes._streaks.multimesh.instance_count == RainSplashes.STREAKS
+		and splashes._streak_mat.shader.resource_path.ends_with("rain_streaks.gdshader") and not (splashes._streak_mat.shader.code.contains("unshaded")))
+	_check("Tyre spray is soft mist that fades before the camera, not boxes", (splashes._spray.mesh as QuadMesh).material is ShaderMaterial
+		and ((splashes._spray.mesh as QuadMesh).material as ShaderMaterial).shader.code.contains("cam_fade"))
 	GameState.set_rain(false, 0.0)
 	splashes.rain = 0.0
 	for i: int in 3:
 		await get_tree().process_frame
 	_check("No splashes when it is dry", splashes.splash_count() == 0)
+	_check("No falling rain when it is dry", not splashes._streaks.visible)
 	# --- Shopping bags.
 	var bagged: int = 0
 	var walkers: int = 0
