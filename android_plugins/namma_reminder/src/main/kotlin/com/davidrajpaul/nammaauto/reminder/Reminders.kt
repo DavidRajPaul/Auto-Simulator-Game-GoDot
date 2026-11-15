@@ -19,6 +19,14 @@ internal object Reminders {
 	const val KEY_ID = "id"
 	const val KEY_TITLE = "title"
 	const val KEY_BODY = "body"
+	private const val KEY_ACTIVE = "reminders_active"
+
+	fun setActive(ctx: Context, active: Boolean) {
+		ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_ACTIVE, active).commit()
+	}
+
+	fun isActive(ctx: Context): Boolean =
+		ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ACTIVE, false)
 
 	/** Brand yellow (UIKit.YELLOW) for the small icon's accent. */
 	private const val ACCENT = 0xFFFFC21A.toInt()
@@ -55,7 +63,7 @@ internal object Reminders {
 	/** Posts one reminder; tapping it opens (or brings back) the game. Silently skips if notifications are off. */
 	@SuppressLint("MissingPermission") // checked by enabled() just below
 	fun show(ctx: Context, id: Int, title: String, body: String) {
-		if (!enabled(ctx)) return
+		if (!enabled(ctx) || !isActive(ctx)) return
 		ensureChannel(ctx)
 		val builder = NotificationCompat.Builder(ctx, CHANNEL_ID)
 			.setSmallIcon(R.drawable.namma_reminder_icon)
