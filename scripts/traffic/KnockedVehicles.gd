@@ -25,6 +25,12 @@ const SPIN_PER_MPS: float = 0.35
 const TOPPLE_RAD_S: float = 2.6
 const TOPPLE_LEAN_RAD: float = 0.45
 const COM_HEIGHT: Array[float] = [0.55, 0.4, 0.45, 0.4, 0.4, 0.4, 0.4]
+## At speed the auto is already inside the vehicle's box when the hit is reported. The new body
+## starts in that same box, so for this long it ignores the auto (the hit is already in its
+## velocity); otherwise Jolt pushes the overlap apart at a violent speed.
+const NO_REHIT_S: float = 0.3
+const MAX_THROW_MPS: float = 18.0
+const MAX_SPIN_RAD_S: float = 9.0
 
 class Slot:
 	var body: RigidBody3D
@@ -33,6 +39,8 @@ class Slot:
 	var nodes: Array[Node3D] = []
 	var locals: Array[Transform3D] = []
 	var held: float = 0.0
+	## The player's auto, kept out of this body's collisions for the first moments (see knock).
+	var ignoring: PhysicsBody3D = null
 
 var slots: Array[Slot] = []
 
@@ -66,7 +74,7 @@ func _ready() -> void:
 		slots.append(s)
 
 ## True if `v` was handed to a rigid body (the caller then skips the kinematic recoil).
-func knock(v: TrafficVehicleAI, impact_mps: float, push: Vector3, player_mass: float, player_pos: Vector3) -> bool:
+func knock(v: TrafficVehicleAI, impact_mps: float, push: Vector3, player_mass: float, player_pos: Vector3, player: PhysicsBody3D = null) -> bool:
 	var limit: float = KNOCK_MPS[v.archetype]
 	if limit < 0.0 or impact_mps < limit or v.knocked or v.emergency_active or GameState.tutorial_active:
 		return false
@@ -113,14 +121,17 @@ func knock(v: TrafficVehicleAI, impact_mps: float, push: Vector3, player_mass: f
 	s.shape.disabled = false
 	b.freeze = false
 	b.sleeping = false
-	b.linear_velocity = drive + flat * dv
+	if player != null:
+		b.add_collision_exception_with(player)
+		s.ignoring = player
+	b.linear_velocity = (drive + flat * dv).limit_length(MAX_THROW_MPS)
 	# Spin: a hit off the centre line turns the body; a two-wheeler also goes over on its side.
 	var arm: Vector3 = xf.origin - player_pos
 	var yaw_sign: float = signf(Vector3(arm.x, 0.0, arm.z).cross(flat).y)
 	var spin: Vector3 = Vector3.UP * yaw_sign * dv * SPIN_PER_MPS
 	if v.archetype == TrafficVehicleAI.Archetype.TWO_WHEELER:
 		spin += forward * -lean_side * TOPPLE_RAD_S
-	b.angular_velocity = spin
+	b.angular_velocity = spin.limit_length(MAX_SPIN_RAD_S)
 	return true
 
 func _free_slot() -> Slot:
@@ -142,6 +153,8 @@ func _physics_process(delta: float) -> void:
 		if s.owner == null:
 			continue
 		s.held += delta
+		if s.ignoring != null and s.held >= NO_REHIT_S:
+			_stop_ignoring(s)
 		if s.held < HOLD_S:
 			continue
 		var p: Vector3 = s.body.global_position
@@ -149,8 +162,14 @@ func _physics_process(delta: float) -> void:
 		if far or p.y < -20.0 or not ViewCheck.on_screen(get_viewport(), p + Vector3.UP, 3.0):
 			give_back(s)
 
+func _stop_ignoring(s: Slot) -> void:
+	if is_instance_valid(s.ignoring):
+		s.body.remove_collision_exception_with(s.ignoring)
+	s.ignoring = null
+
 ## Hand the model nodes back to their traffic slot and park the rigid body under the map.
 func give_back(s: Slot) -> void:
+	_stop_ignoring(s)
 	var v: TrafficVehicleAI = s.owner
 	for i: int in s.nodes.size():
 		var n: Node3D = s.nodes[i]
