@@ -289,7 +289,7 @@ SQ01_DESC,"Two guests claim a missing gold pouch. Help the family discover the t
 SQ01_RECEIPT,"The organiser holds out the receipt at your auto. Stop and examine it.","ஏற்பாட்டாளர் ஆட்டோ அருகே ரசீதைக் காட்டுகிறார். நிறுத்திப் பார்."
 SQ01_CLAIMANT,"The receipt says Meena, with a blue lotus stamp. Two women say the pouch is theirs. Who is the owner?",ரசீதில் மீனா என்றும் நீலத் தாமரை முத்திரையும் உள்ளது. இருவர் பை தங்களுடையது என்கிறார்கள். உரிமையாளர் யார்?
 SQ01_OWNER,"Return it to Meena","மீனாவிடம் ஒப்படை"
-SQ01_OTHER,"Give it to the other claimant","மற்ற பெண்ணிடம் ஒப்படை"
+SQ01_OTHER,"Give it to the other woman","மற்ற பெண்ணிடம் ஒப்படை"
 SQ01_VERIFY,"Drive to the flower seller and stop to ask about the gift.","பூக்காரரிடம் போய் பரிசைப் பற்றி விசாரிக்க நிறுத்து."
 SQ01_ASK,The flower seller knows Meena. It is her pouch.,பூக்காரருக்கு மீனாவைத் தெரியும். பை அவருடையதே.
 SQ01_CHECK_RECEIPT,Go to the help desk,உதவி மேசைக்குப் போ
@@ -589,7 +589,7 @@ QUEST_QUALITY_PAPER,Goods dry: %d%%,பொருட்கள் உலர்வ�
 QUEST_QUALITY_SUPPLIES,Supplies dry: %d%%,பொருட்கள் உலர்வு: %d%%
 QUEST_QUALITY_TOOLS,Tools safe: %d%%,கருவிகள் பாதுகாப்பு: %d%%
 QUEST_QUALITY_MIRROR,Mirror safe: %d%%,கண்ணாடி பாதுகாப்பு: %d%%
-SQ01_JOB,"1. Hear both claimants.\n2. Examine the receipt shown at your auto.\n3. Verify the story with the flower seller.\n4. Return to the help desk and choose the owner.","1. இரண்டு பேரிடமும் பேசு.\n2. ஆட்டோ அருகே காட்டப்படும் ரசீதைப் பார்.\n3. பூக்காரரிடம் விசாரி.\n4. உதவி மேசைக்குத் திரும்பி உரிமையாளரைத் தேர்வு செய்."
+SQ01_JOB,"1. Hear both women.\n2. Examine the receipt shown at your auto.\n3. Ask the flower seller about the gift.\n4. Return to the help desk and choose the owner.","1. இரண்டு பேரிடமும் பேசு.\n2. ஆட்டோ அருகே காட்டப்படும் ரசீதைப் பார்.\n3. பூக்காரரிடம் விசாரி.\n4. உதவி மேசைக்குத் திரும்பி உரிமையாளரைத் தேர்வு செய்."
 SQ01_P_HALL,Wedding Hall,திருமண மண்டபம்
 SQ01_P_FLOWER,Flower Seller,பூக்காரர்
 SQ01_P_DESK,Help Desk,உதவி மேசை
