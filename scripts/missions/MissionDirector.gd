@@ -160,7 +160,7 @@ func _enter_stage(index: int) -> void:
 func _announce_stage() -> void:
 	var stage: MissionStage = current_stage()
 	_publish_route()
-	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, stage.objective_key, stage.choices)
+	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, _stage_objective(stage), stage.choices)
 	SignalBus.mission_stage_info.emit({"id": run.quest_id, "stage": stage.id,
 		"kind": stage.kind, "objective": _stage_objective(stage), "choices": stage.choices,
 		"action": stage.action_key, "place": _stage_place(stage), "target": _stage_target(stage),
