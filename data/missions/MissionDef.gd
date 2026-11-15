@@ -22,6 +22,9 @@ extends Resource
 @export var rider_scale: float = 1.0
 @export var reward_inr: int = 0
 @export var reward_xp: int = 0
+## Optional final-dialogue choice determines earned cash; default remains reward_inr.
+@export var reward_choice_stage: String = ""
+@export var reward_choice_inr: Dictionary = {}
 @export var scenario_minute: float = -1.0
 @export_enum("unchanged", "dry", "rain") var scenario_weather: String = "unchanged"
 
