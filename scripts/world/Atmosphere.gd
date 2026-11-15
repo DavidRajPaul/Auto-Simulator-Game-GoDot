@@ -179,6 +179,10 @@ func apply(minute: float, rain: float) -> void:
 				_sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP if absf(to_sun.y) < 0.99 else Vector3.FORWARD), _sun.global_position)
 		_sun.light_color = c[8].lerp(Color(0.9, 0.9, 0.92), rain * 0.6)
 		_sun.light_energy = lerpf(0.28, 0.85, day) * lerpf(1.0, 0.35, rain)
+		# Under rain cloud the sun is a diffuse glow: shadows almost vanish (Nov 14 rain pass).
+		_sun.shadow_opacity = lerpf(1.0, 0.18, rain)
+		# ...and makes no hot spot on the wet road (it showed as a white glare near the camera).
+		_sun.light_specular = lerpf(0.5, 0.04, rain)
 
 	if _env != null:
 		# Night stays readable: sodium-lit Chennai streets, never pitch black.
