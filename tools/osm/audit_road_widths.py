@@ -71,7 +71,7 @@ def main() -> int:
         r["cls"].add(hw)
         why = ""
         mapped = "lanes" in tags and not lanes_for(tags)
-        if oneway and n < 2 and (hw != "tertiary" or not mapped):
+        if oneway and n < 2 and tags.get("junction") != "roundabout" and (hw != "tertiary" or not mapped):
             # A mapped single lane on a one-way tertiary is believed (CIT Nagar's 5th Main Road).
             why = "one-way, 1 lane"
         elif not oneway and n < 2:

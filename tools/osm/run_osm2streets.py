@@ -32,7 +32,8 @@ OUT = ROOT / "data" / "osm" / "streets"
 #     are 11-13 m kerb to kerb, not 6 m);
 #   * NAMED_TWOWAY widens two-way roads OSM under-classes;
 #   * a mapped "width" gives width / 3.4 m lanes when that is more;
-#   * a roundabout ring is one-way whatever its oneway tag says.
+#   * a roundabout ring is one-way whatever its oneway tag says, and keeps its mapped size (only a
+#     mapped width widens it: class defaults filled the small College Road circle).
 # A plausible mapped count always wins.
 # Per carriageway (one-way ways), by name prefix:
 NAMED_LANES = {
@@ -84,6 +85,10 @@ def lanes_for(tags: dict) -> int:
             named = n
             break
     from_width = _lanes_from_width(tags["width"], 1 if oneway else 2) if "width" in tags else 0
+    if tags.get("junction") == "roundabout":
+        # A ring keeps its mapped size: class defaults made the small College Road circle's ring
+        # two lanes wide and filled its whole middle. Only a mapped width widens it (Temple Tower).
+        return from_width if from_width > max(tagged, 1) else 0
     if oneway:
         want = max(named or ONEWAY_DEFAULT.get(hw, 0), from_width)
         if tagged:
