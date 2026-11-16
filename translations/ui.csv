@@ -17,7 +17,7 @@ FINE_PAID_NOW,Paid now,இப்போ கட்டினது
 FINE_STILL_DUE,Still due,இன்னும் பாக்கி
 FINE_DUE_NOTE,Your wallet was short. %s is still owed and will be taken from the next money you earn.,வாலெட்டில் காசு பத்தல. இன்னும் %s பாக்கி இருக்கு. அடுத்து சம்பாதிக்கிற காசுல இருந்து பிடிச்சிடுவாங்க.
 FINE_BALANCE,Wallet now,வாலெட்டில் மீதி
-FINE_TIP_RED_LIGHT,"Watch the signal chip at the top of the screen: it shows the next light and its countdown, and a camera where fines are given. Stop behind the line on red. Amber is never fined.",ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கு ஃபைன் கிடையாது.
+FINE_TIP_RED_LIGHT,"Signal poles light up red, amber or green, with a countdown. Stop behind the line on red. Amber is never fined, and side quests are never fined.","சிக்னல் கம்பம் சிவப்பு, மஞ்சள், பச்சை நிறத்தில் ஒளிரும். ரெட் சிக்னல் வந்தா ஸ்டாப் லைனுக்கு முன்னாடியே நிறுத்து. மஞ்சள் சிக்னலுக்கும் சைடு குவெஸ்ட்டுக்கும் ஃபைன் கிடையாது."
 FINE_RECOVERED_PART,₹%d taken for your pending fine. ₹%d still due.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. இன்னும் ₹%d பாக்கி.
 FINE_RECOVERED_DONE,₹%d taken for your pending fine. Fine paid off.,பாக்கி ஃபைனுக்கு ₹%d எடுக்கப்பட்டது. ஃபைன் முழுதும் கட்டியாச்சு.
 OK,OK,சரி

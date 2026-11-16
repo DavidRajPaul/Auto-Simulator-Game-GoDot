@@ -292,9 +292,10 @@ func _test_wind() -> void:
 		deepest = maxf(deepest, dd)
 		if dd > 0.01:
 			holes += 1
-			if WorldChunkStreamer.road_condition(x, z) < 0.6:
+			if WorldChunkStreamer.road_condition(x, z) < 0.72:
 				clean_holes += 1
-	_check("Broken roads have potholes up to %.0f cm deep" % (RoadWear.MAX_DEPTH_M * 100.0), holes > 100 and deepest <= RoadWear.MAX_DEPTH_M + 0.0001 and deepest > 0.05, "%d holes, deepest %.3f" % [holes, deepest])
+	# Nov 15 ("the potholes can be reduced"): only the worst roads, fewer, at most 5 cm.
+	_check("Broken roads have potholes up to %.0f cm deep" % (RoadWear.MAX_DEPTH_M * 100.0), holes > 10 and holes < 400 and deepest <= RoadWear.MAX_DEPTH_M + 0.0001 and deepest > 0.03, "%d holes, deepest %.3f" % [holes, deepest])
 	_check("Clean and dusty roads have no potholes", clean_holes == 0)
 
 ## Nov 14 device report: "the people near the shops stand idle without animation and the auto
@@ -590,7 +591,7 @@ func _test_living_city() -> void:
 	for r: int in range(0, 600):
 		var a: float = float(r) * 2.399
 		var p: Vector3 = Vector3(at.x + cos(a) * sqrt(float(r)) * 4.0, 0.0, at.z + sin(a) * sqrt(float(r)) * 4.0)
-		if RoadWear.pothole_depth(p.x, p.z) > 0.05 and RoadWear.on_asphalt(p.x, p.z):
+		if RoadWear.pothole_depth(p.x, p.z) > 0.03 and RoadWear.on_asphalt(p.x, p.z):
 			hole_at = p
 			break
 	if hole_at == Vector3.INF:
@@ -600,10 +601,10 @@ func _test_living_city() -> void:
 		world.update_streaming(true)
 		for i: int in 30:
 			await get_tree().physics_frame
-		for r: int in range(0, 1500):
+		for r: int in range(0, 6000):
 			var a: float = float(r) * 2.399
 			var p: Vector3 = Vector3(broken.x + cos(a) * sqrt(float(r)) * 4.0, 0.0, broken.z + sin(a) * sqrt(float(r)) * 4.0)
-			if RoadWear.pothole_depth(p.x, p.z) > 0.05 and RoadWear.on_asphalt(p.x, p.z):
+			if RoadWear.pothole_depth(p.x, p.z) > 0.03 and RoadWear.on_asphalt(p.x, p.z):
 				hole_at = p
 				break
 	_check("A pothole is found on the asphalt", hole_at != Vector3.INF)
@@ -614,14 +615,19 @@ func _test_living_city() -> void:
 		var ray: RayCast3D = auto.rear_left_wheel_ray
 		auto.forward_speed_mps = 9.0
 		var inside: float = auto._pothole_at(ray, hole_at, 0.016)
-		_check("A wheel over a pothole drops into it", inside > 0.05, "%.3f m" % inside)
+		_check("A wheel over a pothole drops into it", inside > 0.03, "%.3f m" % inside)
+		var shakes: Array[float] = []
+		var shake_cb: Callable = func(s: float) -> void: shakes.append(s)
+		SignalBus.camera_shake.connect(shake_cb)
 		var out_pt: Vector3 = hole_at
 		for k: int in 40:
 			out_pt = hole_at + Vector3(0.1 * float(k), 0.0, 0.0)
 			if RoadWear.pothole_depth(out_pt.x, out_pt.z) == 0.0:
 				break
 		auto._pothole_at(ray, out_pt, 0.016)
-		_check("Climbing out of it at speed is a jolt (thump, shake)", hits.size() == 1 and hits[0] > 0.1, str(hits))
+		_check("Climbing out of it at speed is a jolt (thump)", hits.size() == 1 and hits[0] > 0.05, str(hits))
+		_check("…that never shakes the screen", shakes.is_empty(), str(shakes))
+		SignalBus.camera_shake.disconnect(shake_cb)
 		SignalBus.pothole_hit.disconnect(cb)
 	# --- Shop people near a burning auto run off with everyone else.
 	shops.rebuild(Vector3(at.x, 0.0, at.z))

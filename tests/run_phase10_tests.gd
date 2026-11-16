@@ -89,7 +89,12 @@ func _test_signals_falls_medians(city: Node) -> void:
 		junctions_with_posts >= int(tm._signal_nodes.size() * 0.95), "%d / %d" % [junctions_with_posts, tm._signal_nodes.size()])
 	_check("No signal post stands in a carriageway", spots > 300 and in_road == 0, "%d of %d in a lane" % [in_road, spots])
 	_check("Signal lamps face the approaching traffic", facing_ok >= int(spots * 0.95), "%d / %d" % [facing_ok, spots])
-	_check("Signal post = 2 draw calls (body + swapped lamp mesh)", tm._signal_posts[0].get_child_count() == 2)
+	_check("Signal post = 2 draw calls (body + one glow mesh shared by every post)", tm._signal_posts[0].get_child_count() == 2
+		and (tm._signal_posts[0].get_node("Lamps") as MeshInstance3D).mesh == (tm._signal_posts[1].get_node("Lamps") as MeshInstance3D).mesh
+		and (tm._signal_posts[0].get_node("Lamps") as MeshInstance3D).mesh.get_surface_count() == 1)
+	var arm_tip: Vector3 = Vector3(ChennaiTrafficManager.SIGNAL_ARM_M, ChennaiTrafficManager.SIGNAL_ARM_Y, 0.0)
+	_check("The cantilever arm reaches over the road at a bus-clear height", ChennaiTrafficManager.SIGNAL_ARM_Y > 5.0
+		and (tm._signal_posts[0].get_node("Body") as MeshInstance3D).mesh.get_aabb().has_point(arm_tip - Vector3(0.05, 0.0, 0.0)))
 	# Boards: the auto lives on physics layer 2; the impact sensor must see it, and one real hit flattens the board.
 	var ss: StreetSigns = city.get_node("StreetSigns") as StreetSigns
 	var area: Area3D = ss._pool[0].get_node("ImpactArea") as Area3D
@@ -235,10 +240,13 @@ func _test_signals_work(city: Node) -> void:
 			continue
 		shown += 1
 		var l: int = tm.approach_light(tm._signal_post_node[i], tm._signal_post_edge[i])
-		var want: ArrayMesh = tm._signal_lamp_meshes[2 if l == 0 else (1 if l == 1 else 0)]
-		shown_ok += 1 if (post.get_node("Lamps") as MeshInstance3D).mesh == want else 0
-	_check("Each signal post shows its own road's light", shown > 0 and shown_ok == shown, "%d / %d" % [shown_ok, shown])
-	# 4. Red-light fine: crossing the stop line on red at a watched junction costs ₹200; green is free.
+		var lamps: MeshInstance3D = post.get_node("Lamps") as MeshInstance3D
+		var lit: float = float(lamps.get_instance_shader_parameter("lit"))
+		var secs: float = float(lamps.get_instance_shader_parameter("seconds"))
+		var want_s: float = float(ceili(tm.light_seconds_left(tm._signal_post_node[i], tm._signal_post_edge[i])))
+		shown_ok += 1 if is_equal_approx(lit, float(ChennaiTrafficManager.signal_lit_index(l))) and is_equal_approx(secs, want_s) else 0
+	_check("Each LED pole glows in its own road's light, with its countdown", shown > 0 and shown_ok == shown, "%d / %d" % [shown_ok, shown])
+	# 4. Red-light fine: crossing the stop line on red at a watched junction costs ₹100; green is free.
 	tm._enforced_signal_nodes[node_id] = true
 	tm._last_player_ticket_s = -100.0
 	var outward: Vector3 = (edge.points[1] - edge.points[0]) if edge.a == node_id else (edge.points[edge.points.size() - 2] - edge.points[edge.points.size() - 1])
@@ -267,7 +275,7 @@ func _test_signals_work(city: Node) -> void:
 	tm._last_player_ticket_s = -100.0
 	tm._previous_player_pos = before
 	tm._on_player_signal_pose(after, -outward)
-	_check("Running a red again at a watched junction = ₹200 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
+	_check("Running a red again at a watched junction = ₹100 fine", GameState.wallet_inr == wallet - ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR, "₹%d → ₹%d" % [wallet, GameState.wallet_inr])
 	# Settings: warnings only / off.
 	GameState.settings["traffic_fines"] = GameState.FINES_WARN_ONLY
 	wallet = GameState.wallet_inr
@@ -281,17 +289,18 @@ func _test_signals_work(city: Node) -> void:
 	tm._on_player_signal_pose(after, -outward)
 	_check("Traffic fines = off: nothing at all", GameState.wallet_inr == wallet and warnings.size() == 2)
 	GameState.settings["traffic_fines"] = GameState.FINES_ON
+	# Owner request (Nov 15): no traffic offences during a side quest.
+	GameState.mission_active = true
+	wallet = GameState.wallet_inr
+	var warns_before: int = warnings.size()
+	tm._last_player_ticket_s = -100.0
+	tm._previous_player_pos = before
+	tm._on_player_signal_pose(after, -outward)
+	_check("Running a red during a side quest: no fine, no warning", GameState.wallet_inr == wallet and warnings.size() == warns_before)
+	_check("…and GameState.traffic_offence ignores it too", GameState.traffic_offence("red_light", 100, "").is_empty() and GameState.wallet_inr == wallet)
+	GameState.mission_active = false
 	SignalBus.traffic_warning_issued.disconnect(on_warn)
-	# The HUD chip: the signal ahead, its light and a countdown.
-	var ahead: Dictionary = tm.signal_ahead(before + outward * 20.0, -outward)
-	_check("signal_ahead finds the junction in front with its light and countdown", int(ahead.get("node", -1)) == node_id
-		and int(ahead.get("light", -1)) == ChennaiTrafficManager.Light.RED and float(ahead.get("seconds", 0.0)) > 0.0 and bool(ahead.get("enforced", false)), str(ahead))
-	_check("…and nothing behind the auto", int(tm.signal_ahead(before + outward * 20.0, outward).get("node", -1)) != node_id)
-	var chip: SignalChip = (city.get_node("PassengerHUD") as PassengerHUD).signal_chip
-	SignalBus.signal_ahead_changed.emit(ahead)
-	_check("The HUD chip shows it (red, watched)", chip.visible and chip.light == ChennaiTrafficManager.Light.RED and chip.enforced and chip.seconds > 0)
-	SignalBus.signal_ahead_changed.emit({})
-	_check("…and hides with no signal ahead", not chip.visible)
+	_check("The red-light fine is ₹100 (halved, Nov 15)", ChennaiTrafficManager.SIGNAL_ENFORCEMENT_FINE_INR == 100)
 	wallet = GameState.wallet_inr
 	tm._last_player_ticket_s = -100.0
 	tm.signal_clock_override = green_clock
@@ -310,7 +319,7 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	var police: Node = city.get_node_or_null("TrafficPolice")
 	_check("No hidden constable to step in front of the auto", police == null or police.find_child("HiddenSignalConstable", true, false) == null)
 	var ui: GarageUI = city.get_node("GarageUI") as GarageUI
-	# The ₹200 fine above queued its own notice: drop it first.
+	# The ₹100 fine above queued its own notice: drop it first.
 	ui._fine_queue.clear()
 	ui._fines_waiting.clear()
 	if ui.is_open():
@@ -318,9 +327,9 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	var notices: Array[Dictionary] = []
 	var on_fine: Callable = func(info: Dictionary) -> void: notices.append(info)
 	SignalBus.traffic_fine_issued.connect(on_fine)
-	# A short wallet: ₹50 of the ₹200 now, ₹150 owed.
+	# A short wallet: ₹30 of the ₹100 now, ₹70 owed.
 	GameState.fine_due_inr = 0
-	GameState.wallet_inr = 50
+	GameState.wallet_inr = 30
 	auto.linear_velocity = -outward * 8.0
 	var speed: float = auto.linear_velocity.length()
 	tm._last_player_ticket_s = -100.0
@@ -328,8 +337,8 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	tm._previous_player_pos = before
 	tm._on_player_signal_pose(after, -outward)
 	var info: Dictionary = notices[0] if notices.size() == 1 else {}
-	_check("A red with ₹50 in the wallet: ₹50 paid now, ₹150 still due", GameState.wallet_inr == 0 and GameState.fine_due_inr == 150
-			and int(info.get("amount", 0)) == 200 and int(info.get("paid", 0)) == 50 and int(info.get("due", 0)) == 150, str(info))
+	_check("A red with ₹30 in the wallet: ₹30 paid now, ₹70 still due", GameState.wallet_inr == 0 and GameState.fine_due_inr == 70
+			and int(info.get("amount", 0)) == 100 and int(info.get("paid", 0)) == 30 and int(info.get("due", 0)) == 70, str(info))
 	_check("The fine doesn't stop the auto", is_equal_approx(auto.linear_velocity.length(), speed))
 	_check("The notice says what, where and when", str(info.get("reason", "")) == "red_light" and str(info.get("challan", "")).begins_with("TN-CHN-")
 			and info.has("place") and info.has("day") and info.has("minute"))
@@ -348,14 +357,14 @@ func _test_fine_notice(city: Node, tm: ChennaiTrafficManager, auto: AutoRickshaw
 	var texts: String = ""
 	for l: Node in ui._modal_body.find_children("*", "Label", true, false):
 		texts += (l as Label).text + "|"
-	_check("…listing the fine, paid now, still due and what happens next", "₹200" in texts and "₹50" in texts and "₹150" in texts and (tr("FINE_DUE_NOTE") % "₹150") in texts, texts)
+	_check("…listing the fine, paid now, still due and what happens next", "₹100" in texts and "₹30" in texts and "₹70" in texts and (tr("FINE_DUE_NOTE") % "₹70") in texts, texts)
 	ui.close_modal()
 	_check("OK closes it and the game carries on", not ui.is_open() and not get_tree().paused)
 	# The rest comes out of the next earnings.
-	GameState.add_inr(100)
-	_check("₹100 earned: all of it pays the fine (₹50 still due)", GameState.fine_due_inr == 50 and GameState.wallet_inr == 0)
-	GameState.add_inr(100)
-	_check("₹100 more: the last ₹50 of the fine, ₹50 to the wallet", GameState.fine_due_inr == 0 and GameState.wallet_inr == 50)
+	GameState.add_inr(50)
+	_check("₹50 earned: all of it pays the fine (₹20 still due)", GameState.fine_due_inr == 20 and GameState.wallet_inr == 0)
+	GameState.add_inr(70)
+	_check("₹70 more: the last ₹20 of the fine, ₹50 to the wallet", GameState.fine_due_inr == 0 and GameState.wallet_inr == 50)
 	GameState.fine_due_inr = 80
 	GameState.add_inr(150, false)
 	_check("Money that is already spoken for (the tow ad) isn't taken", GameState.fine_due_inr == 80 and GameState.wallet_inr == 200)

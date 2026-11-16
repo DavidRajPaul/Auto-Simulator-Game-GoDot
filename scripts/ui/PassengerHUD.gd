@@ -58,7 +58,6 @@ var _level_rewards: HBoxContainer
 var _level_timer: float = 0.0
 var _rays_spin: Tween
 var _toast: Label
-var signal_chip: SignalChip
 var _toast_timer: float = 0.0
 var minimap: MiniMap
 var _hint: Label
@@ -127,9 +126,6 @@ func _ready() -> void:
 	nav_banner = NavBanner.new()
 	nav_banner.name = "NavBanner"
 	_root.add_child(nav_banner)
-	signal_chip = SignalChip.new()
-	signal_chip.name = "SignalChip"
-	_root.add_child(signal_chip)
 	_build_ride_card()
 	_build_haggle()
 	_build_fare_card()
@@ -521,7 +517,6 @@ func _layout() -> void:
 	_xp_bar.size = Vector2(160.0, 10.0)
 	_place_ride_card()
 	# Next signal ahead: top centre, under the GPS distance.
-	signal_chip.position = Vector2(vp.x * 0.5 - SignalChip.W * 0.5, 118.0)
 	# Sat-nav turn prompt: left, under the top button row (clear of the ride card).
 	nav_banner.position = Vector2(20.0, 118.0)
 	var hw: float = minf(960.0, vp.x - 40.0)
