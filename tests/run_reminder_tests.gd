@@ -13,6 +13,7 @@ func _run() -> void:
 	print("\n=== Namma Auto — Daily reminder tests ===")
 	TranslationServer.set_locale("en")
 	_test_schedule_times()
+	_test_same_day_schedule()
 	_test_streak_messages()
 	_test_broken_streak_messages()
 	_test_translations()
@@ -31,6 +32,19 @@ func _test_schedule_times() -> void:
 	for i: int in week.size():
 		ok_days = ok_days and int(week[i]["days_ahead"]) == i + 1 and int(week[i]["hour"]) == 19
 	_check("One per day at 7 PM local, starting tomorrow (never today)", ok_days)
+
+func _test_same_day_schedule() -> void:
+	var week: Array[Dictionary] = DailyReminder.build_reminders({"available": true, "streak": 0}, true)
+	_check("First reminder scheduled for today when exiting before 7 PM", int(week[0]["days_ahead"]) == 0)
+	_check("First-day message does not advertise tomorrow's streak", str(week[0]["title"]) == tr("REM_T_BONUS"))
+	_check("Seven reminders remain with distinct day offsets", week.size() == 7 and int(week[6]["days_ahead"]) == 6)
+	var csv: String = FileAccess.get_file_as_string("res://translations/ui.csv")
+	var prompt: String = ""
+	for line: String in csv.split("\n"):
+		if line.begins_with("REMINDER_ASK_BODY,"):
+			prompt = line
+			break
+	_check("Permission prompt avoids fixed notification time in both languages", not prompt.is_empty() and not prompt.contains("7 PM") and not prompt.contains("7 மணிக்கு"))
 
 func _test_streak_messages() -> void:
 	var r: Array[Dictionary] = DailyReminder.build_reminders({"available": false, "streak": 3})

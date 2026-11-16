@@ -89,7 +89,9 @@ func reschedule() -> void:
 	if not is_on():
 		cancel_all()
 		return
-	for r: Dictionary in build_reminders(GameState.daily_reward_status()):
+	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var before_seven: bool = int(now["hour"]) < REMIND_HOUR
+	for r: Dictionary in build_reminders(GameState.daily_reward_status(), before_seven):
 		_plugin.call("scheduleAt", int(r["id"]), int(r["days_ahead"]), int(r["hour"]), str(r["title"]), str(r["body"]))
 
 ## Debug builds: one reminder in a minute (press Home and wait).
@@ -98,18 +100,22 @@ func send_test() -> void:
 		return
 	if not notifications_allowed():
 		request_permission()
+		return
 	_plugin.call("schedule", TEST_ID, TEST_DELAY_S, tr("REM_T_PASSENGERS"), tr("REM_B_PASSENGERS"))
 
 ## Pure: the reminders to schedule, given today's daily-bonus status (GameState.daily_reward_status()).
 ## Each: {id, days_ahead, hour, title, body}. Reminder k fires at REMIND_HOUR local time k calendar
 ## days after today: never today, because the player is playing today.
-func build_reminders(status: Dictionary) -> Array[Dictionary]:
+func build_reminders(status: Dictionary, include_today: bool = false) -> Array[Dictionary]:
 	var claimed_today: bool = not bool(status.get("available", true))
 	var streak: int = int(status.get("streak", 0))
 	var out: Array[Dictionary] = []
 	for day: int in range(1, DAYS + 1):
+		var days_ahead: int = day - 1 if include_today else day
 		var msg: PackedStringArray = _message(day, claimed_today, streak)
-		out.append({"id": day, "days_ahead": day, "hour": REMIND_HOUR, "title": msg[0], "body": msg[1]})
+		if days_ahead == 0:
+			msg = PackedStringArray([tr("REM_T_BONUS"), tr("REM_B_BONUS") % RewardsEngine.DAILY_INR[0]])
+		out.append({"id": day, "days_ahead": days_ahead, "hour": REMIND_HOUR, "title": msg[0], "body": msg[1]})
 	return out
 
 func _message(day: int, claimed_today: bool, streak: int) -> PackedStringArray:

@@ -6,14 +6,14 @@ No server, no Firebase, no data leaves the phone, so the Play Data Safety form i
 ## Behaviour
 
 - **Leaving the game** (`NOTIFICATION_APPLICATION_PAUSED` / close) schedules one reminder at **7 PM**
-  on each of the next **7 days** (ids 1–7). **Coming back** cancels them all.
+  for **7 days** (ids 1–7), starting today if the game is left before 7 PM, otherwise tomorrow. **Coming back** cancels them all.
 - **7 PM is the phone's own local time**, in every country: the plugin computes it with `java.util.Calendar`
   in the device time zone, adding calendar days, so a daylight-saving change still lands on 7 PM.
   It is fixed when the player leaves the game; if they then fly to another time zone, that week's reminders
   keep the old moment until they next open the game (which reschedules them).
-  A player who drives every day never sees one; someone who stops gets one a day for a week, the last
+  A player who stays in the game at reminder time never sees one; someone who stops gets one a day for a week, the last
   one saying "we'll stop here", then nothing.
-- **Day 1 message** follows the 7-day login calendar (`RewardsEngine`): "Keep your 3-day streak! Day 4 bonus ₹125…",
+- **Future-day streak message** follows the 7-day login calendar (`RewardsEngine`): "Keep your 3-day streak! Day 4 bonus ₹125…",
   or the day-7 jackpot. If today's bonus wasn't claimed, or on later days (streak already broken), it
   offers a fresh ₹50 streak or rotates Chennai lines (passengers in Mylapore, tea kadai, Marina rush).
 - Messages are `tr()` keys `REM_T_*` / `REM_B_*` in `translations/ui.csv`, so they follow the game language.
@@ -25,7 +25,7 @@ Never asked at launch. The "Daily reminder?" card shows once, after the first ri
 or after a daily-bonus claim, whichever comes first. "Yes" opens the system dialog; if Android won't show
 it again (denied twice) the app's notification settings open instead. Android 12 and older allow
 notifications by default, so no card. Settings (main menu and pause menu) has a **Daily reminder ON/OFF** toggle.
-Debug builds also get **Test reminder in 1 min** in main-menu Settings: tap it, press Home, wait.
+The permission prompt does not promise a specific time because WorkManager delivery may be delayed. Debug builds also get **Test reminder in 1 min** in main-menu Settings: tap it, press Home, wait.
 
 ## Code
 
