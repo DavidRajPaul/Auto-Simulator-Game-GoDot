@@ -1,0 +1,3 @@
+{
+  "_note": "Speaker -> ElevenLabs voice_id. Filled in by pick_voices.py (Actions -> Generate quest voices). Delete a speaker's line to have a new voice picked; 'Driver' (the hero) is locked in cast.json and stays the same in every quest."
+}

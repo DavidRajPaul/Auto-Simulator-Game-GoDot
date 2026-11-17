@@ -1,0 +1,10 @@
+{
+  "_note": "Who each speaker is. pick_voices.py finds a Tamil voice in the ElevenLabs Voice Library for every speaker that has no voice in voices.json yet. 'locked' speakers are never re-picked: the hero keeps one voice for the whole game.",
+  "Driver": {"gender": "male", "age": ["middle_aged", "young"], "search": ["casual", "conversational", "friendly"], "locked": true},
+  "Lakshmi": {"gender": "female", "age": ["middle_aged", "young"], "search": ["warm", "emotional", "conversational"]},
+  "Karthik": {"gender": "male", "age": ["young"], "search": ["child", "kid", "boy"], "child": true},
+  "Priya": {"gender": "female", "age": ["young"], "search": ["child", "kid", "girl"], "child": true},
+  "Kid 2": {"gender": "male", "age": ["young"], "search": ["child", "kid", "boy"], "child": true},
+  "Tea Kadai Anna": {"gender": "male", "age": ["old", "middle_aged"], "search": ["deep", "raspy", "casual"]},
+  "Flower Akka": {"gender": "female", "age": ["middle_aged", "old"], "search": ["soft", "calm"]}
+}

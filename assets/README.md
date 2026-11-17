@@ -33,6 +33,7 @@ the in-game Credits text (`CREDITS` in `scripts/ui/MainMenu.gd`).
 | Vehicle sounds, horns, ambience | `audio/vehicle`, `audio/ambience`, `audio/traffic` | `python3 tools/assets/process_incoming.py` (cut, loop crossfade, normalise, mono Vorbis 96 kbps) | whole `audio/` ≤ 5 MB |
 | CC0 sounds that can be downloaded by CI | `audio/ambience`, `audio/traffic` | `tools/assets/fetch_assets.py` → **Actions → Fetch Assets** | |
 | UI sounds | `audio/ui` | copied from Kenney Interface Sounds | |
+| Quest voice lines (Tamil + English) | `audio/voice/<quest>` | ElevenLabs via **Actions → Generate quest voices** (`docs/voice/README.md`); free-plan output is non-commercial, regenerate on a paid plan before launch | counts toward `audio/` |
 | Traffic and player auto models | `models/traffic`, `models/vehicles` | `python3 tools/assets/process_models.py` (gltf-transform: decimate, 256–1024 px textures) | 1.4k–6.3k tris each |
 | People (walk + idle) | `models/people` | `python3 tools/assets/process_people.py` (22-bone rig, retargeted walk/idle, one atlas, `people.json`) | 1 draw call each |
 | Landmarks, police, service vehicles | `models/city`, `models/people/police_*`, `models/traffic/svc_*` | `python3 tools/assets/process_city.py` (one-draw-call static GLB) | |

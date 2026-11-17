@@ -1,0 +1,65 @@
+name: Generate quest voices
+
+# Picks a Tamil ElevenLabs voice for every speaker that has none yet (tools/voice/pick_voices.py,
+# the hero "Driver" stays locked once chosen), then voices every line of every script in
+# docs/voice/ that has no .ogg yet (tools/voice/generate_quest_voices.py) and commits the audio
+# to assets/audio/voice/<quest>/ on the same branch.
+# Runs on a push that changes a voice script, or by hand: Actions -> Generate quest voices.
+# Needs the ELEVENLABS_API_KEY repository secret. ElevenLabs is not reachable from the dev sandbox.
+
+on:
+  push:
+    paths:
+      - "docs/voice/**"
+      - "tools/voice/*.py"
+      - "tools/voice/cast.json"
+      - ".github/workflows/generate-voices.yml"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Optional: comma-separated line ids to redo (e.g. sq07_l01,sq07_l02)"
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voices-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Pick voices
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: python3 tools/voice/pick_voices.py
+      - name: Generate lines
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          status=0
+          for script in docs/voice/SQ*_*.md; do
+            quest=$(basename "$script" | cut -d_ -f1 | tr 'A-Z' 'a-z')
+            args="$script --voices tools/voice/voices.json --out assets/audio/voice/$quest"
+            if [ -n "$ONLY" ]; then args="$args --only $ONLY --force"; fi
+            python3 tools/voice/generate_quest_voices.py $args || status=1
+          done
+          du -sh assets/audio/voice || true
+          exit $status
+      - name: Commit voices
+        if: always()
+        run: |
+          git config user.name "voice-bot"
+          git config user.email "voice-bot@users.noreply.github.com"
+          git add tools/voice/voices.json assets/audio/voice 2>/dev/null || true
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "voice: generate quest voice lines"
+          git pull --rebase
+          git push
