@@ -1,3 +1,10 @@
 {
-  "_note": "Speaker -> ElevenLabs voice_id. Filled in by pick_voices.py (Actions -> Generate quest voices). Delete a speaker's line to have a new voice picked; 'Driver' (the hero) is locked in cast.json and stays the same in every quest."
+  "_note": "Speaker -> ElevenLabs voice_id. Filled in by pick_voices.py (Actions -> Generate quest voices). Delete a speaker's line to have a new voice picked; 'Driver' (the hero) is locked in cast.json and stays the same in every quest.",
+  "Driver": "8J24wCDJGSNy9xjbiMla",
+  "Lakshmi": "mGboHvCVOXWYeFL8KTR0",
+  "Karthik": "2nnOurMrHn7IFbLfsAKx",
+  "Priya": "a49ffQsGpRBw28CL67GF",
+  "Kid 2": "nzFihrBIvB34imQBuxub",
+  "Tea Kadai Anna": "wAGzRVkxKEs8La0lmdrE",
+  "Flower Akka": "hhPtGvkQC1ce5z3pPhYh"
 }
