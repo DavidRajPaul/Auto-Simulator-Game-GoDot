@@ -50,8 +50,10 @@
 - sq07_b01 Karthik: [sobbing] சாரி அம்மா… அவங்க என் பட்டத்த அறுத்துட்டாங்க… / [sobbing] Sorry amma… they cut my kite…
 - sq07_l17 Lakshmi: [sighs, softening] பட்டம் போனா போகட்டும்டா. நீ கிடைச்சதே போதும். / [sighs, softening] Forget the kite. Finding you is enough.
 - sq07_b02 Karthik: [sniffling, hopeful] ஆனா அது என் லக்கி பட்டம்மா… / [sniffling, hopeful] But it's my lucky kite, amma…
-- Choice A (no voice): "Kite's gone, let's go home". Then sq07_d03 Driver: [gentle] பட்டம் போச்சுடா தம்பி. வீட்டுக்குப் போலாம். / [gentle] The kite's gone, thambi. Let's go home.
-- Choice B (no voice): "I know where your kite is". Then sq07_d04 Driver: [warm, playful] உன் பட்டம் எங்க இருக்குன்னு எனக்குத் தெரியும்! / [warm, playful] I know where your kite is!
+- Choice A (no voice, subtitle only): "Kite's gone, let's go home".
+- sq07_d03 Driver: [gentle] பட்டம் போச்சுடா தம்பி. வீட்டுக்குப் போலாம். / [gentle] The kite's gone, thambi. Let's go home.
+- Choice B (no voice, subtitle only): "I know where your kite is".
+- sq07_d04 Driver: [warm, playful] உன் பட்டம் எங்க இருக்குன்னு எனக்குத் தெரியும்! / [warm, playful] I know where your kite is!
 - sq07_b03 Karthik (after B): [excited gasp] நிஜமாவா அண்ணா?! / [excited gasp] Really, anna?!
 
 ## Scene 7: Kite rescue (bonus, precision park)
@@ -80,4 +82,4 @@
 - sq07_l25 Lakshmi (on the phone): [tired, relieved] …கிடைச்சுட்டானா? பக்கத்து வீட்டு அக்கா கூடவா? சரி… சரி… அண்ணா, என்னை வீட்ல விட்டுடுங்க. / [tired, relieved] …You found him? He's with the neighbour? Okay… okay… anna, please drop me home.
 
 ---
-Total: 40 voiced lines × 2 languages = 80 files.
+Total: 42 voiced lines × 2 languages = 84 files.

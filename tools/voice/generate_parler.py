@@ -46,6 +46,54 @@ def split_tags(text):
     return re.sub(r"\s+", " ", re.sub(r"\[[^\]]*\]", "", text)).strip(), tags
 
 
+# Normal speech here is ~0.07 s per character. Parler sometimes cuts a line short (0.5 s for a
+# whole sentence) or rambles: retry with another seed, up to ATTEMPTS times.
+MIN_S_PER_CHAR = 0.035
+MAX_S_PER_CHAR = 0.2
+ATTEMPTS = 4
+TRIM = ("silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
+        "silenceremove=start_periods=1:start_threshold=-50dB,areverse")
+
+
+def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch):
+    """Generate, trim, check the length, encode. Returns seconds; raises if every attempt is off."""
+    best = None
+    for attempt in range(ATTEMPTS):
+        torch.manual_seed(seed + 1000 * attempt)
+        d = desc_tok(desc, return_tensors="pt")
+        p = tok(text, return_tensors="pt")
+        with torch.inference_mode():
+            audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
+                                   prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
+        raw = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+        trimmed = raw[:-4] + "_t.wav"
+        sf.write(raw, audio.cpu().numpy().squeeze(), rate)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af", TRIM, trimmed], check=True)
+        os.remove(raw)
+        seconds = sf.info(trimmed).duration
+        per_char = seconds / max(1, len(text))
+        if MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+            if best:
+                os.remove(best[1])
+            best = (seconds, trimmed)
+            break
+        print(f"  {os.path.basename(ogg)}: {seconds:.1f}s for {len(text)} chars, retrying", flush=True)
+        if best is None or abs(per_char - 0.07) < abs(best[0] / max(1, len(text)) - 0.07):
+            if best:
+                os.remove(best[1])
+            best = (seconds, trimmed)
+        else:
+            os.remove(trimmed)
+    seconds, trimmed = best
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", trimmed, "-ac", "1", "-ar", "32000",
+                    "-c:a", "libvorbis", "-q:a", "1", ogg], check=True)
+    os.remove(trimmed)
+    per_char = seconds / max(1, len(text))
+    if not MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+        raise RuntimeError(f"still {seconds:.1f}s for {len(text)} chars after {ATTEMPTS} tries (kept best, check it)")
+    return seconds
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
@@ -100,19 +148,8 @@ def main():
     failed = 0
     for i, (ogg, text, desc, seed) in enumerate(jobs, 1):
         try:
-            torch.manual_seed(seed)
-            d = desc_tok(desc, return_tensors="pt")
-            p = tok(text, return_tensors="pt")
-            with torch.inference_mode():
-                audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
-                                       prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                sf.write(tmp.name, audio.cpu().numpy().squeeze(), rate)
-            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp.name, "-ac", "1", "-ar", "32000",
-                            "-af", "silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-50dB,areverse",
-                            "-c:a", "libvorbis", "-q:a", "1", ogg], check=True)
-            os.remove(tmp.name)
-            print(f"[{i}/{len(jobs)}] ok {os.path.basename(ogg)}", flush=True)
+            seconds = voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch)
+            print(f"[{i}/{len(jobs)}] ok {os.path.basename(ogg)} {seconds:.1f}s", flush=True)
         except Exception as e:  # keep going: one bad line must not lose the rest
             failed += 1
             print(f"[{i}/{len(jobs)}] FAIL {os.path.basename(ogg)}: {e}", file=sys.stderr, flush=True)
