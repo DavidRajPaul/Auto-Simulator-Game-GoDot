@@ -58,6 +58,9 @@ jobs:
           # torch and torchaudio must come from the same build or _torchaudio.so fails to load
           pip install -q torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           pip install -q git+https://github.com/huggingface/parler-tts.git soundfile
+          # audiotools pins an old protobuf; newer sentencepiece needs protobuf.runtime_version
+          pip install -q "sentencepiece==0.2.0"
+          python3 -c "from sentencepiece import sentencepiece_model_pb2; print('sentencepiece ok')"
           python3 -c "import torch, torchaudio; print(torch.__version__, torchaudio.__version__)"
           python3 -c "from parler_tts import ParlerTTSForConditionalGeneration; print('parler ok')"
       - name: Pick voices (ElevenLabs)
