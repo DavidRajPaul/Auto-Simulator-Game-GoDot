@@ -55,8 +55,11 @@ jobs:
       - name: Install Parler-TTS
         if: env.ENGINE == 'parler'
         run: |
-          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          # torch and torchaudio must come from the same build or _torchaudio.so fails to load
+          pip install -q torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
           pip install -q git+https://github.com/huggingface/parler-tts.git soundfile
+          python3 -c "import torch, torchaudio; print(torch.__version__, torchaudio.__version__)"
+          python3 -c "from parler_tts import ParlerTTSForConditionalGeneration; print('parler ok')"
       - name: Pick voices (ElevenLabs)
         if: env.ENGINE == 'elevenlabs'
         env:
