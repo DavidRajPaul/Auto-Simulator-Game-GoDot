@@ -114,6 +114,22 @@ func _play(id: String, last_answers: bool) -> void:
 		if stage.kind == "dialogue":
 			director.choose(id, stage.id, stage.choices[stage.choices.size() - 1 if last_answers else 0])
 			continue
+		if stage.kind == "cutscene":
+			director.tick(stage.duration_s + 0.05)
+			if director.run != null and director.run.stage_id == before and director.run.status == "active":
+				problems.append("cutscene never ends at " + stage.id)
+				break
+			continue
+		if stage.kind == "spot":
+			at = Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z)
+			pose(at + Vector3(stage.spot_range_m + 30.0, 0.0, 0.0))
+			if director.spot(id, stage.id):
+				problems.append("found from too far at " + stage.id)
+			pose(at)
+			if not director.spot(id, stage.id):
+				problems.append("not found up close at " + stage.id)
+				break
+			continue
 		var target: Vector3 = director._stage_target(stage)
 		if stage.avoid_radius_m > 0.0:
 			var route: Dictionary = SignalBus.current_road_graph.find_route(at, target)

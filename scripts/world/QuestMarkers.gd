@@ -71,7 +71,8 @@ func _ready() -> void:
 		_refresh())
 
 func _on_stage(info: Dictionary) -> void:
-	_job = info if bool(info.get("located", false)) else {}
+	# A search circle has no stop to mark: the thing must be found.
+	_job = info if bool(info.get("located", false)) and str(info.get("kind", "")) != "spot" else {}
 	_refresh()
 
 func _process(delta: float) -> void:
@@ -125,7 +126,8 @@ func _refresh_sign(entries: Array[Dictionary]) -> void:
 	var by_road: Vector3 = at
 	if not _job.is_empty():
 		by_road = at.move_toward(_job["target"] as Vector3, 1.3) # In front of the shop, not inside.
-	_show_person(not _job.is_empty() and _job["place_pos"] != Vector3.ZERO, by_road)
+	# A story's own people stand at its stops (QuestStory); no stand-in there.
+	_show_person(not _job.is_empty() and _job["place_pos"] != Vector3.ZERO and not bool(_job.get("story", false)), by_road)
 
 ## Lowest mesh point of `node` in its own space (0 for a model whose origin is at its feet).
 static func lowest_point(node: Node3D) -> float:

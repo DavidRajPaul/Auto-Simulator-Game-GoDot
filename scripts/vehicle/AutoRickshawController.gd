@@ -32,6 +32,7 @@ var rear_left_wheel_ray: RayCast3D
 var rear_right_wheel_ray: RayCast3D
 
 var _cockpit_view: bool = false
+var _cinematic_eye: bool = false
 var current_speed_kmh: float = 0.0
 var forward_speed_mps: float = 0.0
 var current_steer_rad: float = 0.0
@@ -174,7 +175,12 @@ func apply_stats(new_stats: VehicleStats) -> void:
 func _update_driver_visibility() -> void:
 	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel
 	if model != null and model.driver != null:
-		model.driver.visible = not _cockpit_view
+		model.driver.visible = not (_cockpit_view or _cinematic_eye)
+
+## A quest cutscene looks out through the driver's eyes (QuestStory): hide him like the cockpit view.
+func set_cinematic_eye(on: bool) -> void:
+	_cinematic_eye = on
+	_update_driver_visibility()
 
 func _recolour() -> void:
 	var model: AutoRickshawModel = get_node_or_null("Model") as AutoRickshawModel

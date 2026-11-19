@@ -488,16 +488,88 @@ SQ05_WRONG,That road is closed! Read the sign.,அந்தச் ரோடு �
 SQ05_BAY,"At the store: stop at the marker, shift to R, roll back a little, stop and tap Done.","கிடங்கில்: குறியில் நிறுத்து, ஆர்-க்கு மாற்று, சற்று பின்னால் நகர்த்தி நிறுத்து, முடிஞ்சிடுச்சு என்பதைத் தட்டு."
 SQ05_UNLOAD,Unload the lamps here.,விளக்குகளை இங்கே இறக்கு.
 SQ07_TITLE,The Little Red Kite,சின்னச் சிவப்பு பட்டம்
-SQ07_DESC,A child with a red kite is lost on the beach. Help the family find him.,சிவப்பு பட்டம் வச்சிருந்த ஒரு பையன் பீச்சுல காணாம போயிட்டான். அவனைக் கண்டுபிடிக்க வீட்டுக்காரங்களுக்கு ஹெல்ப் பண்ணு.
-SQ07_BRIEF,The boy has a red kite and a striped shirt. Let's look from the beach road.,"பையனிடம் சிவப்பு பட்டம், கோடு போட்ட சட்டை. கடற்கரைச் சாலையிலிருந்து தேடுவோம்."
-SQ07_LOOK,Start looking,தேடத் ஆரம்பி
-SQ07_SCAN,Stop at the beach entrance and look at the crowd.,கடற்கரை நுழைவில் நிறுத்திக் கூட்டத்தைப் பார்.
-SQ07_GUESS,You see two groups of children. Which one?,இரண்டு குழந்தைகள் கூட்டம் தெரிகிறது. எது?
-SQ07_STRIPED,"Red kite, striped shirt","சிவப்பு பட்டம், கோடு சட்டை"
-SQ07_BLUE,Blue kite group,நீலப் பட்டக் கூட்டம்
-SQ07_VERIFY,Wrong group! Look near the next entrance.,தப்பான கூட்டம்! அடுத்த நுழைவில் பார்.
-SQ07_CONFIRM,Drive to the south entrance and look for the boy.,தெற்கு நுழைவுக்குப் போய்ப் பையனைத் தேடு.
-SQ07_REUNITE,You found him! Drive to the help point.,கண்டுபிடித்துவிட்டாய்! உதவி மையத்துக்குப் போ.
+SQ07_DESC,A boy ran after his red kite and got lost. Help his mother Lakshmi find him.,சிவப்பு பட்டத்துக்குப் பின்னால் ஓடிய ஒரு பையன் காணாமல் போனான். அவன் அம்மா லட்சுமிக்கு அவனைக் கண்டுபிடிக்க உதவு.
+SQ07_JOB,"1. Ask people where the boy went.
+2. Look for his red kite and tap it.
+3. Find the boy (blue shirt, no kite) and tap him.
+4. Take them home gently.","1. பையன் எங்கே போனான் என்று கேள்.
+2. அவனுடைய சிவப்பு பட்டத்தைத் தேடித் தொடு.
+3. பையனைக் கண்டுபிடித்துத் தொடு (நீலச் சட்டை, கையில் பட்டம் இல்லை).
+4. அவர்களை மெதுவாக வீட்டில் விடு."
+SQ07_INTRO,A red kite!,ஒரு சிவப்பு பட்டம்!
+SQ07_ASK,Ask the tea stall man. Stop beside him.,டீக்கடைக்காரரிடம் கேள். அவர் பக்கத்தில் நிறுத்து.
+SQ07_TEA,The tea stall man saw him.,டீக்கடைக்காரர் அவனைப் பார்த்தார்.
+SQ07_FIND_KITE,"Search near the church. Look up, and tap the red kite when you see it.",சர்ச் பக்கத்தில் தேடு. மேலே பார். சிவப்பு பட்டம் தெரிந்ததும் அதைத் தொடு.
+SQ07_KIDS,The children know something.,குழந்தைகளுக்கு ஏதோ தெரியும்.
+SQ07_FIND_BOY,"Search the beach. Tap the boy: blue shirt, no kite.","கடற்கரையில் தேடு. நீலச் சட்டை, கையில் பட்டம் இல்லாத பையனைத் தொடு."
+SQ07_REUNION,Karthik is found!,கார்த்திக் கிடைத்துவிட்டான்!
+SQ07_CHOICE,Karthik wants his lucky kite. What do you say?,கார்த்திக்குக்கு அவன் லக்கி பட்டம் வேண்டும். நீ என்ன சொல்கிறாய்?
+SQ07_CHOICE_HOME,The kite's gone. Let's go home.,பட்டம் போச்சு. வீட்டுக்குப் போகலாம்.
+SQ07_CHOICE_KITE,I know where your kite is!,உன் பட்டம் எங்கே என்று எனக்குத் தெரியும்!
+SQ07_PROMISE,Back to the kite.,மீண்டும் பட்டத்திடம்.
+SQ07_RESCUE,Park right under the kite so Karthik can reach it.,கார்த்திக் எட்டும்படி பட்டத்துக்கு நேர் கீழே நிறுத்து.
+SQ07_CLIMB,Karthik climbs up for his kite.,கார்த்திக் பட்டத்தை எடுக்க மேலே ஏறுகிறான்.
+SQ07_HOME_LINE,Time to go home.,வீட்டுக்குப் போகும் நேரம்.
+SQ07_RIDE,Drive them home gently. A child is in the back.,அவர்களை மெதுவாக வீட்டில் விடு. பின்னால் ஒரு குழந்தை இருக்கிறான்.
+SQ07_HOME,Home at last.,ஒருவழியாக வீடு.
+SQ07_PAYOFF,Lakshmi wants to pay you.,லட்சுமி உனக்குக் காசு தர விரும்புகிறார்.
+SQ07_TAKE_FARE,Take the fare,காசை வாங்கிக்கொள்
+SQ07_REFUSE_FARE,"No need, akka",வேண்டாம் அக்கா
+SQ07_THANKS,"Goodbye, Karthik.","போய் வா, கார்த்திக்."
+SQ07_P_TEA,Tea Stall,டீக்கடை
+SQ07_P_CHURCH,Santhome Church,சாந்தோம் சர்ச்
+SQ07_P_BEACH,Santhome Beach,சாந்தோம் கடற்கரை
+SQ07_P_KITE,Under the Kite,பட்டத்துக்குக் கீழே
+SQ07_P_HOME,Lakshmi's House,லட்சுமியின் வீடு
+VO_SPK_LAKSHMI,Lakshmi,லட்சுமி
+VO_SPK_KARTHIK,Karthik,கார்த்திக்
+VO_SPK_DRIVER,You,நீங்கள்
+VO_SPK_TEA,Tea stall anna,டீக்கடை அண்ணா
+VO_SPK_FLOWER,Flower seller,பூக்கார அக்கா
+VO_SPK_PRIYA,Priya,பிரியா
+VO_SPK_KID,Little boy,சின்னப் பையன்
+VO_SQ07_D01,Whoa! What was that…!,ஐயோ! என்னது இது…!
+VO_SQ07_L01,"Auto! Auto! Brother, please stop!","ஆட்டோ! ஆட்டோ! அண்ணா, கொஞ்சம் நில்லுங்க!"
+VO_SQ07_L02,"My son Karthik… he ran after that red kite. He's only nine, brother!",என் பையன் கார்த்திக்… அந்த சிவப்பு பட்டத்துக்குப் பின்னாடியே ஓடிட்டான். ஒன்பது வயசுதான் அண்ணா!
+VO_SQ07_L03,"Please, help me find him. I'm coming with you.","ப்ளீஸ், கொஞ்சம் தேடிக் குடுங்க. நானும் உங்க கூட வரேன்."
+VO_SQ07_D02,"Get in, akka. Quick!","ஏறுங்கக்கா, சீக்கிரம்!"
+VO_SQ07_L04,"Look up. If the kite's stuck somewhere, he'll be close by.","மேல பாருங்க. பட்டம் எங்கயாவது மாட்டியிருந்தா, அவன் பக்கத்துலதான் இருப்பான்."
+VO_SQ07_L05,God… where did you go…,கடவுளே… எங்கடா போன…
+VO_SQ07_L06,"Go slow, brother. We have to check both sides.","மெதுவா போங்க அண்ணா, ரெண்டு பக்கமும் பாக்கணும்."
+VO_SQ07_L07,"Ask the tea stall man, he sees everything.","அந்த டீக்கடைக்காரர்கிட்ட கேளுங்க, அவருக்கு எல்லாம் தெரியும்."
+VO_SQ07_T01,"Red kite? Yes pa, a small boy ran toward the church. Really fast!","சிவப்பு பட்டமா? ஆமா பா, ஒரு சின்னப் பையன் சர்ச் பக்கமா ஓடுனான். ரொம்ப வேகமா!"
+VO_SQ07_F01,"A boy? I think he went toward the bus depot… I'm not sure, ma.",பையனா? பஸ் டிப்போ பக்கம் போனான்னு நினைக்கிறேன்… சரியா தெரியல மா.
+VO_SQ07_L08,He's not here… we wasted time.,இங்க இல்ல… நேரம் வீணாப் போச்சு.
+VO_SQ07_L09,There! On the power line! That's his kite!,அதோ! அந்த கரண்ட் கம்பியில! அது அவனோட பட்டம்தான்!
+VO_SQ07_L10,"No brother, not that.","இல்ல அண்ணா, அது இல்ல."
+VO_SQ07_K01,"Akka, is that Karthik's kite? The big boys cut his string!","அக்கா, அது கார்த்திக்கோட பட்டமா? பெரிய பசங்க அவனோட மாஞ்சாவ அறுத்துட்டாங்க!"
+VO_SQ07_K02,"He ran to the beach, crying!",அவன் அழுதுகிட்டே பீச் பக்கம் ஓடுனான்!
+VO_SQ07_L11,"To the beach? Ayyo… Brother, hurry!","பீச்சுக்கா? ஐயோ… அண்ணா, சீக்கிரம் போங்க!"
+VO_SQ07_L12,So many kids… he's wearing a blue shirt. School uniform.,எவ்ளோ பசங்க… நீல சட்டை போட்டிருப்பான். ஸ்கூல் யூனிஃபார்ம்.
+VO_SQ07_L13,He won't have a kite… he'll be crying.,அவன் கையில பட்டம் இருக்காது… அழுதுட்டு இருப்பான்.
+VO_SQ07_L14,"No, that's not him.","இல்ல, அவன் இல்ல."
+VO_SQ07_L15,Karthik! Karthik!!,கார்த்திக்! கார்த்திக்!!
+VO_SQ07_L16,Where did you go?! Do you know how scared I was?,எங்கடா போன?! நான் எவ்ளோ பயந்துட்டேன் தெரியுமா?
+VO_SQ07_B01,Sorry amma… they cut my kite…,சாரி அம்மா… அவங்க என் பட்டத்த அறுத்துட்டாங்க…
+VO_SQ07_L17,Forget the kite. Finding you is enough.,பட்டம் போனா போகட்டும்டா. நீ கிடைச்சதே போதும்.
+VO_SQ07_B02,"But it's my lucky kite, amma…",ஆனா அது என் லக்கி பட்டம்மா…
+VO_SQ07_D03,"The kite's gone, thambi. Let's go home.",பட்டம் போச்சுடா தம்பி. வீட்டுக்குப் போலாம்.
+VO_SQ07_D04,I know where your kite is!,உன் பட்டம் எங்க இருக்குன்னு எனக்குத் தெரியும்!
+VO_SQ07_B03,"Really, brother?!",நிஜமாவா அண்ணா?!
+VO_SQ07_L18,A bit more forward… stop right under the wire.,இன்னும் கொஞ்சம் முன்னாடி… கரெக்டா கம்பிக்குக் கீழ நிறுத்துங்க.
+VO_SQ07_B04,"I can't reach, brother!",எட்டல அண்ணா!
+VO_SQ07_L19,"Careful, slowly!","பாத்து டா, மெதுவா!"
+VO_SQ07_B05,Got it!!,கிடைச்சுடுச்சு!!
+VO_SQ07_B06,"Brother, can your auto go really fast?","அண்ணா, உங்க ஆட்டோ ரொம்ப ஸ்பீடா போகுமா?"
+VO_SQ07_L20,"No need, let it go slow!","ஒண்ணும் வேணாம், மெதுவாவே போகட்டும்!"
+VO_SQ07_L21,Brother! There's a child in here!,அண்ணா! குழந்தை இருக்கான்!
+VO_SQ07_B07,"Whee, jump!","ஹையா, ஜம்ப்!"
+VO_SQ07_L22,"Thank you so much, brother. I don't know what would've happened without you.",ரொம்ப நன்றி அண்ணா. நீங்க இல்லன்னா என்ன ஆயிருக்குமோ.
+VO_SQ07_L23,"Here, please take the fare.","இந்தாங்க, காசு வச்சுக்கோங்க."
+VO_SQ07_L24,You have a good heart. God bless you.,நல்ல மனசு உங்களுக்கு. கடவுள் நல்லா வைப்பார்.
+VO_SQ07_B08,Thanks brother! This sticker is for you!,தேங்க்ஸ் அண்ணா! இந்த ஸ்டிக்கர் உங்களுக்கு!
+VO_SQ07_B09,"Auto brother! Look, my kite!","ஆட்டோ அண்ணா! பாருங்க, என் பட்டம்!"
+VO_SQ07_L25,"…You found him? He's with the neighbour? Okay… okay… Brother, please drop me home.","…கிடைச்சுட்டானா? பக்கத்து வீட்டு அக்கா கூடவா? சரி… சரி… அண்ணா, என்னை வீட்ல விட்டுடுங்க."
 SQ08_TITLE,Rain Before Pack-Up,மழைக்கு முன் கடை மூடல்
 SQ08_DESC,Rain is coming! Help two beach sellers save their goods.,மழை வருது! இரண்டு கடைக்காரர்களின் பொருட்களைக் காப்பாற்று.
 SQ08_ORDER,One seller has paper goods. The other has sealed boxes. Who first?,ஒருவரிடம் காகிதப் பொருட்கள். மற்றவரிடம் மூடிய பெட்டிகள். முதலில் யார்?
@@ -615,11 +687,6 @@ SQ05_P_STORE,Temple Store,கோயில் கிடங்கு
 SQ06_JOB,"1. Drive to the first photo spot and stop.\n2. Drive to the second photo spot and stop.\n3. Tap Take photo at each spot.\nBe quick, the light is going!","1. முதல் இடத்துக்குப் போய் நிறுத்து.\n2. இரண்டாவது இடத்துக்குப் போய் நிறுத்து.\n3. ஒவ்வொரு இடத்திலும் படம் எடு என்பதைத் தட்டு.\nவேகமா, வெளிச்சம் குறைகிறது!"
 SQ06_P_SPOT1,Beach Photo Spot,கடற்கரைப் பட இடம்
 SQ06_P_SPOT2,Lighthouse Photo Spot,கலங்கரை விளக்கப் பட இடம்
-SQ07_JOB,1. Drive along the beach road and look for him.\n2. Find the boy with the red kite.\n3. Bring the family to the help point in time.,1. கடற்கரைச் சாலையில் தேடு.\n2. சிவப்பு பட்டம் வைத்திருக்கும் பையனைக் கண்டுபிடி.\n3. குடும்பத்தை உதவி மையத்துக்கு நேரத்தில் கொண்டு வா.
-SQ07_P_GATE1,Beach Entrance,கடற்கரை நுழைவு
-SQ07_P_GATE2,Next Beach Entrance,அடுத்த கடற்கரை நுழைவு
-SQ07_P_GATE3,South Beach Entrance,தெற்கு கடற்கரை நுழைவு
-SQ07_P_HELP,Beach Help Point,கடற்கரை உதவி மையம்
 SQ08_JOB,"1. Load goods from both sellers.\n2. Take everything to the shelter.\n3. Paper goods get wet in the rain, so be quick.",1. இருவரின் பொருட்களையும் ஏற்று.\n2. எல்லாவற்றையும் கூடாரத்துக்குக் கொண்டு போ.\n3. மழையில் காகிதம் நனையும். வேகமாச் செய்.
 SQ08_P_PAPER,Paper Seller,காகிதக் கடைக்காரர்
 SQ08_P_BOXES,Box Seller,பெட்டிக் கடைக்காரர்
@@ -832,3 +899,6 @@ SQ01_DECISION,"Both claimants are here. Who should receive the gold pouch? Your 
 SQ01_RESOLVED_RIGHT,"Meena's aunt confirms the blue-lotus order. The family gets its gold back and thanks you for checking the evidence.","நீலத் தாமரைப் பரிசை வாங்கியதை மீனாவின் அத்தை உறுதி செய்றாங்க. நகை சரியானவரிடம் சேர்ந்ததால் குடும்பம் நன்றி சொல்றாங்க."
 SQ01_RESOLVED_WRONG,"The organiser checks the receipt again. The pouch went to the wrong person, and the family pays only for your time. Next time, trust the evidence.","ஏற்பாட்டாளர் ரசீதை மறுபடியும் பார்க்கிறார். பை தவறானவரிடம் போயிடுச்சு. செலவுக்குக் கொஞ்சம் பணம் மட்டும் தர்றாங்க. அடுத்த முறை ஆதாரத்தை நம்பு."
 QUEST_CINEMATIC_SKIP,Skip,தவிர்
+QUEST_SEARCH_SMALLER,The search area is smaller now. Look closely.,தேடும் இடம் சுருங்கியது. கவனமாகப் பார்.
+QUEST_SPOT_CLOSER,Go closer to see it properly.,சரியாகப் பார்க்க இன்னும் பக்கத்தில் போ.
+QUEST_SPOT_SLOWER,Slow down to look properly.,சரியாகப் பார்க்க வேகத்தைக் குறை.

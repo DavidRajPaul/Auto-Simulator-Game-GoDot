@@ -1,0 +1,123 @@
+{
+  "_note": "Who each speaker is. 'parler' = the free Indic Parler-TTS voice (named speaker + fixed seed, so a character always sounds the same; Jaya and Kavitha are the Tamil speakers, the rest are its Indian English speakers reading Tamil). The other fields drive pick_voices.py for ElevenLabs (paid plan only). 'locked': the hero's voice must never change between quests.",
+  "Driver": {
+    "gender": "male",
+    "age": [
+      "middle_aged",
+      "young"
+    ],
+    "search": [
+      "casual",
+      "conversational",
+      "friendly"
+    ],
+    "locked": true,
+    "parler": {
+      "speaker": "Raghav",
+      "seed": 101,
+      "description": "Raghav speaks in a relaxed, friendly tone with a moderate pace, the same every time. The recording is very clear audio, close up, with almost no background noise.",
+      "locked_description": true
+    }
+  },
+  "Lakshmi": {
+    "gender": "female",
+    "age": [
+      "middle_aged",
+      "young"
+    ],
+    "search": [
+      "warm",
+      "emotional",
+      "conversational"
+    ],
+    "parler": {
+      "speaker": "Jaya",
+      "seed": 202,
+      "description": "{name} speaks in a {emotion} tone with slightly fast, expressive delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Karthik": {
+    "gender": "male",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "child",
+      "kid",
+      "boy"
+    ],
+    "child": true,
+    "parler": {
+      "speaker": "Tarun",
+      "seed": 303,
+      "description": "{name} speaks in a {emotion} tone with a high pitch and a fast, energetic delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Priya": {
+    "gender": "female",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "child",
+      "kid",
+      "girl"
+    ],
+    "child": true,
+    "parler": {
+      "speaker": "Sneha",
+      "seed": 404,
+      "description": "{name} speaks in a {emotion} tone with a high pitch and a very fast delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Kid 2": {
+    "gender": "male",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "child",
+      "kid",
+      "boy"
+    ],
+    "child": true,
+    "parler": {
+      "speaker": "Aakash",
+      "seed": 505,
+      "description": "{name} speaks in a {emotion} tone with a high pitch and an excited delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Tea Kadai Anna": {
+    "gender": "male",
+    "age": [
+      "old",
+      "middle_aged"
+    ],
+    "search": [
+      "deep",
+      "raspy",
+      "casual"
+    ],
+    "parler": {
+      "speaker": "Ravi",
+      "seed": 606,
+      "description": "{name} speaks in a {emotion} tone with a slightly low pitch and a slow, casual delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Flower Akka": {
+    "gender": "female",
+    "age": [
+      "middle_aged",
+      "old"
+    ],
+    "search": [
+      "soft",
+      "calm"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 707,
+      "description": "{name} speaks in a {emotion} tone with a soft, slightly slow and hesitant delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  }
+}

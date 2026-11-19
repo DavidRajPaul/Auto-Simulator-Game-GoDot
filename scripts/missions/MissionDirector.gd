@@ -1,7 +1,11 @@
 class_name MissionDirector
 extends Node
 ## Scene-owned runtime for the side quests in data/missions/career_quests.tres.
-const LOCATED_KINDS: PackedStringArray = ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"]
+const LOCATED_KINDS: PackedStringArray = ["goto", "photo", "yield", "inspect", "calm", "park", "cargo", "ask", "spot"]
+## A claimed cutscene that never reports back (its player was freed) moves on after this much more.
+const CUTSCENE_SAFETY_S: float = 60.0
+## Leaving the search circle by this factor brings the GPS route back.
+const SEARCH_LEAVE_FACTOR: float = 1.35
 @export var pack: MissionPack = preload("res://data/missions/career_quests.tres")
 @export var quality_tuning: QuestQualityTuning = preload("res://data/missions/quality_tuning.tres")
 var registry: MissionRegistry = MissionRegistry.new()
@@ -21,6 +25,12 @@ var _reverse_seen: bool = false
 var _action_ready: bool = false
 var _action_in_range: bool = false
 var _over_speed_s: float = 0.0
+var _cinematic_claimed: bool = false
+var _search_center: Vector3 = Vector3.ZERO
+var _search_radius: float = 0.0
+var _search_road: Vector3 = Vector3.ZERO # GPS destination while outside the circle
+var _in_search: bool = false
+var _shrunk: bool = false
 
 func _ready() -> void:
 	if not registry.load_pack(pack):
@@ -30,6 +40,8 @@ func _ready() -> void:
 	SignalBus.mission_start_requested.connect(start)
 	SignalBus.mission_choice_requested.connect(choose)
 	SignalBus.mission_interact_requested.connect(interact)
+	SignalBus.mission_spot_requested.connect(spot)
+	SignalBus.mission_cutscene_finished.connect(cutscene_finished)
 	SignalBus.indicator_changed.connect(func(direction: int) -> void:
 		if direction != 0:
 			_signalled = true)
@@ -95,7 +107,7 @@ func start(id: String) -> bool:
 	var definition: MissionDef = registry.get_mission(id)
 	# Validate every GoTo before taking ownership; never strand a run on an absent graph.
 	for stage: MissionStage in definition.stages:
-		if stage.kind in ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"] and not _reachable(stage.target):
+		if stage.kind in LOCATED_KINDS and not _reachable(stage.target):
 			return false
 		for option: String in stage.target_options:
 			if not _reachable(stage.target_options[option] as Vector3):
@@ -159,6 +171,9 @@ func _enter_stage(index: int) -> void:
 
 func _announce_stage() -> void:
 	var stage: MissionStage = current_stage()
+	_cinematic_claimed = stage.kind == "cutscene" and SignalBus.quest_cinematic_provider.is_valid() \
+		and bool(SignalBus.quest_cinematic_provider.call(run.quest_id, stage.id))
+	_set_search(stage)
 	_publish_route()
 	SignalBus.mission_stage_changed.emit(run.quest_id, stage.id, _stage_objective(stage), stage.choices)
 	SignalBus.mission_stage_info.emit({"id": run.quest_id, "stage": stage.id,
@@ -169,12 +184,14 @@ func _announce_stage() -> void:
 		"reward": _current_reward(),
 		"deadline": stage.deadline_s, "speed": stage.max_speed_kmh,
 		"damage": stage.max_condition_loss, "quality_key": stage.quality_key,
-		"quality": float(run.flags.get(stage.quality_key, 100.0))})
+		"quality": float(run.flags.get(stage.quality_key, 100.0)),
+		"cutscene": stage.cutscene_id, "spot_pos": stage.spot_pos, "search_radius": _search_radius,
+		"story": registry.get_mission(run.quest_id).story != null})
 	_publish_action_state(true)
 
 func _publish_route() -> void:
 	var stage: MissionStage = current_stage()
-	if stage == null or stage.hidden_route or stage.kind not in ["goto", "photo", "yield", "inspect", "calm", "park", "cargo"]:
+	if stage == null or stage.hidden_route or stage.kind not in LOCATED_KINDS or (stage.kind == "spot" and _in_search):
 		SignalBus.gps_route_changed.emit(null)
 		SignalBus.route_updated.emit(PackedVector3Array())
 		return
@@ -182,7 +199,7 @@ func _publish_route() -> void:
 	if graph == null:
 		_route_dirty = true
 		return
-	var route: Dictionary = graph.find_route(_position, _stage_target(stage))
+	var route: Dictionary = graph.find_route(_position, _search_road if stage.kind == "spot" else _stage_target(stage))
 	if not bool(route.get("ok", false)):
 		_fail("unreachable")
 		return
@@ -227,8 +244,12 @@ func tick(delta: float) -> void:
 	if stage.avoid_radius_m > 0.0 and _has_pose and _position.distance_to(stage.avoid_center) < stage.avoid_radius_m:
 		_fail("diversion")
 		return
-	if stage.kind == "goto" and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh and not rider_missing():
+	if stage.kind in ["goto", "ask"] and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh and not rider_missing():
 		_advance()
+	elif stage.kind == "cutscene" and run.elapsed >= stage.duration_s + (CUTSCENE_SAFETY_S if _cinematic_claimed else 0.0):
+		_advance()
+	elif stage.kind == "spot":
+		_tick_search(stage)
 	elif stage.kind == "yield" and _signalled and _has_pose and _position.distance_to(_stage_target(stage)) <= stage.radius_m and absf(_speed) <= stage.arrival_speed_kmh:
 		_advance()
 	elif stage.kind == "wait" and run.elapsed >= stage.duration_s:
@@ -241,7 +262,8 @@ func _publish_action_state(force: bool) -> void:
 	var stage: MissionStage = current_stage()
 	if stage == null or not _has_pose:
 		return
-	var in_range: bool = stage.kind in LOCATED_KINDS and _position.distance_to(_stage_target(stage)) <= stage.radius_m
+	# A search circle is not a stop: being inside it never means "stop here".
+	var in_range: bool = stage.kind in LOCATED_KINDS and stage.kind != "spot" and _position.distance_to(_stage_target(stage)) <= stage.radius_m
 	var ready: bool = in_range and absf(_speed) <= stage.arrival_speed_kmh and not rider_missing()
 	if force or ready != _action_ready or in_range != _action_in_range:
 		_action_ready = ready
@@ -287,6 +309,76 @@ func interact(quest_id: String, stage_id: String) -> bool:
 		return false
 	if stage.kind == "calm" and stage.quality_key != "":
 		_change_quality(quality_tuning.calm_restore)
+	_advance()
+	return true
+
+## A search: the GPS leads to the circle and goes quiet inside it; after shrink_after_s the circle
+## closes in on the thing (not centred on it, so it is still a search).
+func _tick_search(stage: MissionStage) -> void:
+	if not _has_pose:
+		return
+	if not _shrunk and stage.shrink_after_s > 0.0 and run.elapsed >= stage.shrink_after_s:
+		_shrunk = true
+		var thing: Vector3 = Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z)
+		var toward: Vector3 = Vector3(stage.target.x, 0.0, stage.target.z) - thing
+		_search_center = thing + (toward.normalized() * stage.shrink_radius_m * 0.4 if toward.length_squared() > 1.0 else Vector3.ZERO)
+		_search_radius = stage.shrink_radius_m
+		_search_road = _road_near(_search_center, stage.target)
+		SignalBus.quest_search_area_changed.emit(_search_center, _search_radius)
+		SignalBus.hint_requested.emit(tr("QUEST_SEARCH_SMALLER"), 3.0)
+		_in_search = false
+		_publish_route()
+	var flat: Vector3 = Vector3(_position.x, 0.0, _position.z)
+	var d: float = flat.distance_to(_search_center)
+	if not _in_search and d <= _search_radius:
+		_in_search = true
+		_publish_route()
+	elif _in_search and d > _search_radius * SEARCH_LEAVE_FACTOR:
+		_in_search = false
+		_publish_route()
+
+func _set_search(stage: MissionStage) -> void:
+	_shrunk = false
+	_in_search = false
+	if stage.kind == "spot":
+		_search_center = Vector3(stage.target.x, 0.0, stage.target.z)
+		_search_radius = stage.radius_m
+		_search_road = stage.target
+		_in_search = _has_pose and Vector3(_position.x, 0.0, _position.z).distance_to(_search_center) <= _search_radius
+	else:
+		_search_center = Vector3.ZERO
+		_search_radius = 0.0
+	SignalBus.quest_search_area_changed.emit(_search_center, _search_radius)
+
+func _road_near(at: Vector3, fallback: Vector3) -> Vector3:
+	var graph: RoadGraph = SignalBus.current_road_graph
+	if graph == null:
+		return fallback
+	var cp: Dictionary = graph.closest_point(at)
+	if int(cp.get("edge", -1)) < 0:
+		return fallback
+	var p: Vector3 = graph.sample(int(cp["edge"]), float(cp["s"]), 1)[0]
+	return p if bool(graph.find_route(_position, p).get("ok", false)) else fallback
+
+## The thing was found on screen (QuestStory checked the tap): accept it if the auto really is
+## close and slow enough, so a tap from across the city never counts.
+func spot(quest_id: String, stage_id: String) -> bool:
+	if _busy or run == null or run.status != "active" or quest_id != run.quest_id or stage_id != run.stage_id:
+		return false
+	var stage: MissionStage = current_stage()
+	if stage.kind != "spot" or not _has_pose or absf(_speed) > stage.spot_max_kmh or rider_missing():
+		return false
+	var flat: Vector3 = Vector3(_position.x, 0.0, _position.z)
+	if flat.distance_to(Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z)) > stage.spot_range_m:
+		return false
+	_advance()
+	return true
+
+func cutscene_finished(quest_id: String, stage_id: String) -> bool:
+	if _busy or run == null or run.status != "active" or quest_id != run.quest_id or stage_id != run.stage_id:
+		return false
+	if current_stage().kind != "cutscene":
+		return false
 	_advance()
 	return true
 
@@ -346,6 +438,8 @@ func _stage_target(stage: MissionStage) -> Vector3:
 func _advance(next_id: String = "") -> void:
 	_busy = true
 	var definition: MissionDef = registry.get_mission(run.quest_id)
+	if next_id == "" and current_stage() != null and current_stage().next_id != "":
+		next_id = current_stage().next_id
 	var index: int = definition.stage_index(next_id) if next_id != "" else definition.stage_index(run.stage_id) + 1
 	_enter_stage(index)
 	_busy = false
@@ -382,6 +476,7 @@ func _wreck_recoverable() -> bool:
 
 func _fail(reason: String) -> void:
 	run.status = "failed"
+	SignalBus.quest_search_area_changed.emit(Vector3.ZERO, 0.0)
 	_restore_scenario()
 	run.scenario = {}
 	GameState.mission_active = false
@@ -443,7 +538,10 @@ func _complete() -> void:
 	GameState.mission_reward_transaction = true
 	GameState.mission_completed[id] = {"content_version": run.content_version, "completed": true}
 	var earned_inr: int = _current_reward()
-	GameState.grant_reward("mission", earned_inr, definition.reward_xp, "mission:" + id + ":complete")
+	var earned_xp: int = definition.reward_xp
+	if definition.reward_choice_stage != "":
+		earned_xp += int(definition.reward_choice_xp.get(str(run.flags.get(definition.reward_choice_stage, "")), 0))
+	GameState.grant_reward("mission", earned_inr, earned_xp, "mission:" + id + ":complete")
 	_finish("completed", "")
 
 func abandon(reason: String = "abandoned") -> void:
@@ -452,6 +550,7 @@ func abandon(reason: String = "abandoned") -> void:
 
 func _finish(status: String, reason: String) -> void:
 	var id: String = run.quest_id
+	SignalBus.quest_search_area_changed.emit(Vector3.ZERO, 0.0)
 	_restore_scenario()
 	run = null
 	GameState.mission_run = {}

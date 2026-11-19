@@ -673,3 +673,11 @@ seat/load capacity, rain-sensitive supplies, signed diversions and heritage clue
 The twenty-four-story CI suite checks both branch routes and failure recovery.
 Physical Android playtests and narrative balancing remain; six final stories are planned
 for the next content phase.
+
+**Story quests** ([docs/STORY_QUESTS.md](docs/STORY_QUESTS.md)): side quests that play in the
+world instead of by buttons. "The Little Red Kite" is the first: voiced Tamil/English cutscenes
+with locked controls and their own camera (starting inside the auto as a kite swoops across the
+windscreen), people you stop beside to ask, a search circle where you must spot the kite on a
+Santhome wire and the boy in a beach crowd and tap them (look-alikes don't count), a choice held
+in the letterbox, a park-under-the-wire rescue and a gentle ride home. `run_story_quest_tests`
+plays it end to end.

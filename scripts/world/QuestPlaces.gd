@@ -17,7 +17,9 @@ const KINDS: Dictionary = {
 	"SQ04_P_HOME": "house", "SQ04_P_STALL": "stall", "SQ04_P_STEPS": "notice",
 	"SQ05_P_OUTER": "notice", "SQ05_P_SHOP": "lamps", "SQ05_P_SIGN": "closed", "SQ05_P_STORE": "store",
 	"SQ06_P_SPOT1": "photo", "SQ06_P_SPOT2": "photo",
-	"SQ07_P_GATE1": "notice", "SQ07_P_GATE2": "notice", "SQ07_P_GATE3": "notice", "SQ07_P_HELP": "tent",
+	"SQ07_P_TEA": "tea", "SQ07_P_HOME": "house",
+	# Search areas and the spot under the kite are not buildings: nothing stands there.
+	"SQ07_P_CHURCH": "none", "SQ07_P_BEACH": "none", "SQ07_P_KITE": "none",
 	"SQ08_P_BOXES": "stall", "SQ08_P_PAPER": "stall", "SQ08_P_SHELTER": "tent",
 	"SQ09_P_CLINIC": "clinic", "SQ09_P_CORNER": "notice",
 	"SQ10_P_NORTH": "notice", "SQ10_P_SORT": "tent", "SQ10_P_SOUTH": "notice", "SQ10_P_WEST": "notice",
@@ -69,6 +71,8 @@ func _add(seen: Dictionary, key: String, at: Vector3, road: Vector3) -> void:
 		return
 	seen[key] = true
 	var kind: String = str(KINDS.get(key, "notice"))
+	if kind == "none":
+		return
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = QuestPlaceKit.mesh(kind)
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
