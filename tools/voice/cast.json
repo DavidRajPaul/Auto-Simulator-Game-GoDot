@@ -15,7 +15,8 @@
     "parler": {
       "speaker": "Raghav",
       "seed": 101,
-      "description": "{name} speaks in a {emotion} tone with a moderate pace and a relaxed, friendly delivery. The recording is very clear audio, close up, with almost no background noise."
+      "description": "Raghav speaks in a relaxed, friendly tone with a moderate pace, the same every time. The recording is very clear audio, close up, with almost no background noise.",
+      "locked_description": true
     }
   },
   "Lakshmi": {

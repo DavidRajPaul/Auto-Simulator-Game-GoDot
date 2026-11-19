@@ -55,10 +55,11 @@ TRIM = ("silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
         "silenceremove=start_periods=1:start_threshold=-50dB,areverse")
 
 
-def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch):
-    """Generate, trim, check the length, encode. Returns seconds; raises if every attempt is off."""
+def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, locked=False):
+    """Generate, trim, check the length, encode. Returns seconds; raises if every attempt is off.
+    A locked speaker (the hero) is never re-rolled: a different seed would be a different voice."""
     best = None
-    for attempt in range(ATTEMPTS):
+    for attempt in range(1 if locked else ATTEMPTS):
         torch.manual_seed(seed + 1000 * attempt)
         d = desc_tok(desc, return_tensors="pt")
         p = tok(text, return_tensors="pt")
@@ -122,11 +123,16 @@ def main():
             if os.path.exists(ogg) and not args.force:
                 continue
             text, tags = split_tags(raw)
-            desc = voice["description"].format(name=voice["speaker"], emotion=emotion_for(tags))
-            jobs.append((ogg, text, desc, int(voice["seed"])))
+            if voice.get("locked_description"):
+                desc = voice["description"]  # the hero: identical in every line, every quest
+                locked = True
+            else:
+                desc = voice["description"].format(name=voice["speaker"], emotion=emotion_for(tags))
+                locked = False
+            jobs.append((ogg, text, desc, int(voice["seed"]), locked))
 
     if args.dry_run:
-        for ogg, text, desc, seed in jobs:
+        for ogg, text, desc, seed, _locked in jobs:
             print(f"{os.path.basename(ogg)} seed={seed}\n  text: {text}\n  desc: {desc}")
         print(f"{len(jobs)} files")
         return
@@ -146,9 +152,9 @@ def main():
     rate = model.config.sampling_rate
 
     failed = 0
-    for i, (ogg, text, desc, seed) in enumerate(jobs, 1):
+    for i, (ogg, text, desc, seed, locked) in enumerate(jobs, 1):
         try:
-            seconds = voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch)
+            seconds = voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, locked)
             print(f"[{i}/{len(jobs)}] ok {os.path.basename(ogg)} {seconds:.1f}s", flush=True)
         except Exception as e:  # keep going: one bad line must not lose the rest
             failed += 1
