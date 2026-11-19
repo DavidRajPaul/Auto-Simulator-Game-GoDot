@@ -829,9 +829,13 @@ func _clear_eye(eye: Vector3, spec: Variant, target: Vector3) -> Vector3:
 		for f: float in [0.35, 0.6]:
 			tries.append(base.lerp(target, f) + Vector3.UP * 0.2)
 	tries.append(eye + Vector3.UP * 1.6)
+	# Last: the same distance and height, swung round the subject.
+	var arm: Vector3 = eye - target
+	for deg: float in [35.0, -35.0, 70.0, -70.0, 110.0, -110.0]:
+		tries.append(target + arm.rotated(Vector3.UP, deg_to_rad(deg)))
 	for p: Vector3 in tries:
 		# The subject and the auto both in clear view (a trunk beside the lens hides half the frame).
-		if SignalBus.walkable(p.x, p.z) and not _occluded(p, target) and not _occluded(p, _auto.global_position + Vector3.UP * 0.6):
+		if SignalBus.walkable(p.x, p.z) and _clear_frame(p, target):
 			return p
 	return eye
 
@@ -1131,6 +1135,18 @@ func _occluded(from: Vector3, to: Vector3) -> bool:
 		query.exclude = [_auto.get_rid()]
 	var hit: Dictionary = space.intersect_ray(query)
 	return not hit.is_empty() and from.distance_to(hit["position"] as Vector3) < from.distance_to(to) - 0.6
+
+## The subject, the auto and both sides of the frame in clear view: a trunk or pole right beside
+## the lens misses the centre ray but fills half the picture.
+func _clear_frame(eye: Vector3, target: Vector3) -> bool:
+	if _occluded(eye, target) or _occluded(eye, _auto.global_position + Vector3.UP * 0.6):
+		return false
+	var view: Vector3 = target - eye
+	view.y = 0.0
+	if view.length_squared() < 0.01:
+		return true
+	var side: Vector3 = view.normalized().cross(Vector3.UP) * clampf(view.length() * 0.35, 0.8, 2.5)
+	return not _occluded(eye, target + side) and not _occluded(eye, target - side)
 
 ## A small ring where the player tapped: green when it found the thing.
 class TapRing:

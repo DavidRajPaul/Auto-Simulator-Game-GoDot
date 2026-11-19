@@ -619,9 +619,10 @@ cutscenes = {
 }
 },
 "cam": {
-"eye": [-5.4, 1.5, 4.8],
+"eye": [2.6, 1.5, 5.2],
+"eye_to": [2.3, 1.45, 4.7],
 "look": "role:lakshmi",
-"fov": 48
+"fov": 50
 },
 "line": "sq07_l22",
 "line_at": 0.8
@@ -645,9 +646,10 @@ cutscenes = {
 }
 },
 "cam": {
-"eye": [-5.4, 1.5, 4.8],
+"eye": [2.6, 1.5, 5.2],
+"eye_to": [2.3, 1.45, 4.7],
 "look": "role:lakshmi",
-"fov": 48
+"fov": 50
 },
 "line": "sq07_l22",
 "line_at": 0.8

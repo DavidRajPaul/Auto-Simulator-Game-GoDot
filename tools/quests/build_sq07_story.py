@@ -194,11 +194,13 @@ cutscenes = {
         {"if_choice": ["choice", "SQ07_CHOICE_KITE"], "fade_in": 0.5,
          "act": {"lakshmi": {"at": "door", "to": [-2.8, 0, 1.0], "then": "talk", "face": "auto", "show": True},
                  "karthik": {"at": [-1.5, 0, -0.6], "to": [-3.4, 0, 1.9], "then": "idle", "face": "auto", "show": True, "kite": "kite"}},
-         "cam": {"eye": [-5.4, 1.5, 4.8], "look": "role:lakshmi", "fov": 48}, "line": "sq07_l22", "line_at": 0.8},
+         # From the road: the kerb in front of the house is lined with trees.
+         "cam": {"eye": [2.6, 1.5, 5.2], "eye_to": [2.3, 1.45, 4.7], "look": "role:lakshmi", "fov": 50}, "line": "sq07_l22", "line_at": 0.8},
         {"if_choice": ["choice", "SQ07_CHOICE_HOME"], "fade_in": 0.5,
          "act": {"lakshmi": {"at": "door", "to": [-2.8, 0, 1.0], "then": "talk", "face": "auto", "show": True},
                  "karthik": {"at": [-1.5, 0, -0.6], "to": [-3.4, 0, 1.9], "then": "idle", "face": "auto", "show": True}},
-         "cam": {"eye": [-5.4, 1.5, 4.8], "look": "role:lakshmi", "fov": 48}, "line": "sq07_l22", "line_at": 0.8},
+         # From the road: the kerb in front of the house is lined with trees.
+         "cam": {"eye": [2.6, 1.5, 5.2], "eye_to": [2.3, 1.45, 4.7], "look": "role:lakshmi", "fov": 50}, "line": "sq07_l22", "line_at": 0.8},
         {"cam": {"eye": [-4.1, 1.35, -0.2], "look": "role:lakshmi", "fov": 42}, "act": {"lakshmi": {"anim": "talk", "face": "auto"}},
          "line": "sq07_l23", "hold": True},
     ],
