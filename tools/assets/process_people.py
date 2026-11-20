@@ -90,13 +90,13 @@ PEOPLE = [
     # ships only CC0 / CC BY / Pixabay assets (docs/ASSETS.md). Its body is the same avatar as
     # "Female test", which is CC BY and gives the saree women below (outfit colour overridden).
     ("woman_saree_violet", "female_test", 1.56, 3200, 0,
-     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0', {}, {"paint": ["outfit"]}),
+     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0', {}, {"paint": ["outfit"], "hair_tris": 2200}),
     ("woman_saree_green", "female_test", 1.58, 3200, 0,
      '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.03, 0.26, 0.09, 1.0]},
-     {"paint": ["outfit"]}),
+     {"paint": ["outfit"], "hair_tris": 2200}),
     ("woman_saree_maroon", "female_test", 1.54, 3200, 0,
      '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.33, 0.02, 0.04, 1.0]},
-     {"paint": ["outfit"]}),
+     {"paint": ["outfit"], "hair_tris": 2200}),
     # Ready Player Me style avatars (74 bones, 50–112k tris, ~25 textures) → 22 bones, one atlas.
     # "woman_modern" ("Modern Indian Woman", Pixel_Monster, CC BY 4.0) was removed on Nov 20: its
     # face and hands had collapsed in the old simplifier and the raw download was not available to
@@ -112,7 +112,8 @@ PEOPLE = [
      {"rig_from": "female_test", "paint": ["Saree"]}),
     # Reallusion Character Creator rig (CC_Base_* bones, mapped in gltf_rig.canonical).
     ("woman_coat", "lady_in_coat", 1.62, 3400, 0,
-     '"Lady in Coat" by aribb (Sketchfab), CC BY 4.0', {}, {"paint": ["Long_slim_coat"]}),
+     '"Lady in Coat" by aribb (Sketchfab), CC BY 4.0', {}, {"paint": ["Long_slim_coat"], "hair_tris": 5000, "face_tris": 2000,
+                                                                       "crown_m": 0.04}),
     ("girl_churidar", "south_indian_women", 1.55, 3200, 0,
      '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0', {}, {"solid_hair": True, "paint": ["Kurta"]}),
     ("girl_pavadai", "south_indian_women", 1.52, 4000, 1,
@@ -715,6 +716,7 @@ def main() -> int:
                 cluster_part(p, 0.04)
                 print(f"     {pid}: hair {before} -> {len(p['idx']) // 3} tris (clustered)")
             p["region"] = detail.vertex_regions(p, KEEP)
+        parts = detail.cover_scalp(parts, lambda m: material_image(g, m)[0], opts.get("crown_m", 0.05))
         parts = detail.split_by_region(parts)
         atlas, alpha = build_atlas(g, parts)
         # Where the garment PaintSwap recolours ended up in the atlas, and its colour there.
@@ -745,7 +747,8 @@ def main() -> int:
         offs = np.cumsum([0] + [len(p["pos"]) for p in parts[:-1]])
         idx_all = np.concatenate([p["idx"] + o for p, o in zip(parts, offs)])
         pos, nrm, uv, J, W, reg, idx_all = detail.simplify_by_region(
-            cat("pos"), cat("nrm"), cat("uv"), cat("J"), cat("W"), cat("region"), idx_all, budget)
+            cat("pos"), cat("nrm"), cat("uv"), cat("J"), cat("W"), cat("region"), idx_all, budget,
+            face_budget=opts.get("face_tris", detail.FACE_TRIS), hair_budget=opts.get("hair_tris"))
         counts = detail.region_counts(reg, idx_all)
         merged = [{"pos": pos, "nrm": nrm, "uv": uv, "J": J, "W": W, "idx": idx_all}]
         write_character(raw, merged, atlas_png, alpha, pose_rest, clips)

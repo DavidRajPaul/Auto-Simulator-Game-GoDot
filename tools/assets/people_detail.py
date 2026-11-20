@@ -22,6 +22,8 @@ FACE_WORDS = ("head", "face", "eye", "pupil", "iris", "mouth", "lip", "brow", "n
 FACE_TRIS = 1300
 HANDS_TRIS = 700
 HAIR_TRIS = 1100
+# Head skin closer than this to the hair is painted hair-coloured (cover_scalp).
+SCALP_M = 0.03
 # Atlas tile weight per region (surface share is multiplied by this).
 TILE_WEIGHT = {REGION_BODY: 1.0, REGION_FACE: 10.0, REGION_HANDS: 3.0, REGION_HAIR: 0.8}
 FACE_TILE_MIN = 256
@@ -95,7 +97,8 @@ def _simplify_pass(pos, attrs, weights, idx, lock, target_tris):
 
 
 def simplify_by_region(pos, nrm, uv, J, W, region, idx, body_budget: int,
-                       face_budget: int = FACE_TRIS, hands_budget: int = HANDS_TRIS):
+                       face_budget: int = FACE_TRIS, hands_budget: int = HANDS_TRIS,
+                       hair_budget: int | None = None):
     """Simplifies body+hair to body_budget, then face and hands to their own budgets, each pass
     with the other regions locked. Returns compacted arrays."""
     pos, nrm, uv, J, W, region, idx = weld(pos, nrm, uv, J, W, region, idx)
@@ -114,8 +117,11 @@ def simplify_by_region(pos, nrm, uv, J, W, region, idx, body_budget: int,
 
     # Hair has its own share of the budget: strand-soup hair used to take most of it and leave
     # the clothes a few hundred triangles.
-    hair_budget = int(min(HAIR_TRIS, max(900, body_budget * 0.3)))
-    plan = [((REGION_BODY,), body_budget - hair_budget), ((REGION_HAIR,), hair_budget),
+    share = int(min(HAIR_TRIS, max(900, body_budget * 0.3)))
+    body_budget -= share
+    if hair_budget is None:
+        hair_budget = share
+    plan = [((REGION_BODY,), body_budget), ((REGION_HAIR,), hair_budget),
             ((REGION_FACE,), face_budget), ((REGION_HANDS,), hands_budget)]
     for regions, budget in plan:
         tr = tri_regions(idx)
@@ -160,5 +166,66 @@ def split_by_region(parts: list[dict]) -> list[dict]:
             q = {k: (v[used] if isinstance(v, np.ndarray) and len(v) == len(p["pos"]) else v) for k, v in p.items()}
             q["idx"] = remap[t].reshape(-1)
             q["tile_region"] = g
+            out.append(q)
+    return out
+
+
+def cover_scalp(parts: list[dict], image_of, crown_m: float = 0.05) -> list[dict]:
+    """Paints the head skin that lies under the hair in the hair's colour.
+
+    Nov 20 owner report ("the hair is not proper"): simplified hair opens small gaps, and under
+    them the head texture is bare skin, so the saree women showed brown patches on the crown.
+    Head-skin triangles within SCALP_M of the hair, above the eyes or facing backwards, move to a
+    swatch of the hair's median colour. `image_of(mat)` returns the material's RGBA image."""
+    from scipy.spatial import cKDTree
+    hair = [p for p in parts if (p["region"] == REGION_HAIR).all()]
+    if not hair:
+        return parts
+    hpos = np.concatenate([p["pos"] for p in hair])
+    tree = cKDTree(hpos)
+    px = []
+    for p in hair:
+        img = np.asarray(image_of(p["mat"]).convert("RGBA").resize((64, 64))).reshape(-1, 4)
+        px.append(img[img[:, 3] > 128][:, :3])
+    px = np.concatenate(px) if px else np.zeros((1, 3))
+    # A darker-than-median tone: lit hair strands read darker than their texture's average.
+    colour = tuple(int(c) for c in np.percentile(px, 30, axis=0)) + (255,)
+    from PIL import Image
+    scalp_mat = {"name": "scalp", "_image": Image.new("RGBA", (8, 8), colour)}
+    # Top of the head skin, not of the hair (a bun sits ~10 cm above the crown).
+    top = max(p["pos"][p["region"] == REGION_FACE][:, 1].max() for p in parts if (p["region"] == REGION_FACE).any())
+    eyes_y = top - 0.115
+    out = []
+    for p in parts:
+        if not (p["region"] == REGION_FACE).any() or (p["region"] == REGION_HAIR).all():
+            out.append(p)
+            continue
+        d, _ = tree.query(p["pos"], distance_upper_bound=SCALP_M)
+        # Crown and back of the head only: skin that faces forwards (the forehead) keeps its own
+        # hairline, or the cover reads as a hard fringe.
+        # The top `crown_m` of the head (5 cm; 4 cm for woman_coat, whose swept-back hair cards
+        # leave a natural hairline that a deeper cover turns into a straight edge) is crown whatever way it faces (the parting showed the head
+        # texture's lighter painted hair).
+        crown = p["pos"][:, 1] > top - crown_m
+        flag = (d <= SCALP_M) & (p["region"] == REGION_FACE) & \
+            (crown | ((p["nrm"][:, 2] < 0.3) & ((p["pos"][:, 1] > eyes_y) | (p["nrm"][:, 2] < -0.3))))
+        t = p["idx"].reshape(-1, 3)
+        cover = flag[t].all(1)
+        if not cover.any():
+            out.append(p)
+            continue
+        for sel, mat in ((~cover, p["mat"]), (cover, scalp_mat)):
+            tt = t[sel]
+            if len(tt) == 0:
+                continue
+            used = np.unique(tt)
+            remap = np.full(len(p["pos"]), -1, np.int64)
+            remap[used] = np.arange(len(used))
+            q = {k: (v[used] if isinstance(v, np.ndarray) and len(v) == len(p["pos"]) else v) for k, v in p.items()}
+            q["idx"] = remap[tt].reshape(-1)
+            q["mat"] = mat
+            if mat is scalp_mat:
+                q["label"] = "scalp"
+                q["uv"] = np.full((len(used), 2), 0.5)
             out.append(q)
     return out

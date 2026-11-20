@@ -8,7 +8,7 @@
 | `assets/models/people/woman_saree_green.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
 | `assets/models/people/woman_saree_maroon.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
 | `assets/models/people/man_casual.glb` | chennai_man_rpm | "Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character |
-| `assets/models/people/woman_saree_kanchi.glb` | wife_final | "Wife Final" by svgmishra95 (Sketchfab), CC BY 4.0 — no skeleton in the download: rigged with the bones and skin weights of "Female test" (`tools/assets/rig_static.py`) |
+| `assets/models/people/woman_saree_kanchi.glb` | wife_final | "Wife Final" by svgmishra95 (Sketchfab), CC BY 4.0 |
 | `assets/models/people/woman_coat.glb` | lady_in_coat | "Lady in Coat" by aribb (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_churidar.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_pavadai.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |

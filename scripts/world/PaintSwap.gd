@@ -24,9 +24,9 @@ const CONFIG: Dictionary = {
 	# People: the garment's block in the texture.
 	# Nov 20: rects and colours come from people.json "paint" (process_people.py writes them when
 	# it rebuilds a character); the atlas layout changed with the face / hands fix.
-	"woman_saree_green": [Color8(48, 139, 84), 0.12, 0.2, Vector4(0.5156, 0.75, 0.5312, 0.7656)],
-	"woman_saree_maroon": [Color8(155, 38, 56), 0.12, 0.2, Vector4(0.5156, 0.75, 0.5312, 0.7656)],
-	"woman_saree_violet": [Color8(179, 76, 186), 0.12, 0.2, Vector4(0.5156, 0.75, 0.5312, 0.7656)],
+	"woman_saree_green": [Color8(48, 139, 84), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
+	"woman_saree_maroon": [Color8(155, 38, 56), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
+	"woman_saree_violet": [Color8(179, 76, 186), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
 	"girl_churidar": [Color8(108, 131, 0), 0.12, 0.2, Vector4(0.0, 0.0, 0.5, 0.5)],
 	"girl_pavadai": [Color8(200, 70, 120), 0.5, 0.15, Vector4(0.0, 0.0, 0.5, 0.5)], # patterned: rotate every hue
 	"woman_saree_kanchi": [Color8(53, 14, 0), 0.04, 0.3, Vector4(0.0, 0.0, 0.5, 0.5)],
