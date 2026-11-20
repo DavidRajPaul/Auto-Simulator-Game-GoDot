@@ -902,3 +902,164 @@ QUEST_CINEMATIC_SKIP,Skip,தவிர்
 QUEST_SEARCH_SMALLER,The search area is smaller now. Look closely.,தேடும் இடம் சுருங்கியது. கவனமாகப் பார்.
 QUEST_SPOT_CLOSER,Go closer to see it properly.,சரியாகப் பார்க்க இன்னும் பக்கத்தில் போ.
 QUEST_SPOT_SLOWER,Slow down to look properly.,சரியாகப் பார்க்க வேகத்தைக் குறை.
+SAV_PLACE_TNAGAR,T. Nagar,டி. நகர்
+SAV_PLACE_MYLAPORE_TANK,Mylapore tank,மயிலாப்பூர் குளம்
+SAV_PLACE_KAPALI,Kapaleeshwarar temple,கபாலீஸ்வரர் கோயில்
+SAV_PLACE_LIGHTHOUSE,the Lighthouse,லைட்ஹவுஸ்
+SAV_PLACE_MARINA,Marina Beach,மெரினா பீச்
+SAV_PLACE_MOUNT_ROAD,Mount Road,மவுண்ட் ரோடு
+SAV_PLACE_NAPIER,Napier Bridge,நேப்பியர் பாலம்
+SAV_PLACE_VIVEKANANDA,Vivekananda House,விவேகானந்தர் இல்லம்
+SAV_PLACE_LIC,the LIC building,எல்.ஐ.சி. பில்டிங்
+SAV_PLACE_GEMINI,the Gemini flyover,ஜெமினி பாலம்
+SAV_PLACE_PANAGAL,Panagal Park,பனகல் பார்க்
+SAV_DEST_01,"%s, please.",%s போகணும்.
+SAV_DEST_02,Will you go to %s?,%s போவீங்களா?
+SAV_DEST_03,Can you take me to %s?,%s வரைக்கும் வருவீங்களா?
+SAV_DEST_04,I need to get to %s. Coming?,"%s பக்கம் போகணும், வரீங்களா?"
+SAV_DEST_05,%s. Shall we go?,"அண்ணா, %s போகலாமா?"
+SAV_DEST_06,"%s, quickly please. I'm in a hurry.","%s போகணும் அண்ணா, அவசரம்."
+SAV_DEST_07,"All the way to %s, can you?",%s வரைக்கும் போகணும்.
+SAV_DEST_08,"%s? Come, let's go.","%s, போலாமா?"
+SAV_DEST_09,Can you drop me at %s?,%s வரைக்கும் விடுறீங்களா?
+SAV_DEST_10,"Straight to %s, please.",நேரா %s போங்க.
+SAV_NEAR_01,"Just nearby, two streets away.","பக்கத்துலதான், ரெண்டு தெரு தள்ளி."
+SAV_NEAR_02,It's close by. Will you come?,"இங்க பக்கத்துலதான், வருவீங்களா?"
+SAV_NEAR_03,Not far. Shall we go?,"கொஞ்ச தூரம்தான், போலாமா?"
+SAV_NEAR_04,Just the next street.,அடுத்த தெருதான் அண்ணா.
+SAV_NEAR_05,I need the road next to this one.,பக்கத்து ரோடு போகணும்.
+SAV_NEAR_06,"It's close, we'll be there quickly.","கிட்டதான், சீக்கிரம் போயிடலாம்."
+SAV_NEAR_07,Only a little way from here.,இங்கிருந்து கொஞ்ச தூரம்தான்.
+SAV_NEAR_08,A house nearby. Can you drop me?,"பக்கத்துல ஒரு வீடு, விடுறீங்களா?"
+SAV_NEAR_09,I'll show you the way. Go.,"நான் வழி சொல்றேன், போங்க."
+SAV_NEAR_10,It's not far. Come.,"ரொம்ப தூரம் இல்ல, வாங்க."
+SAV_CALL_01,Auto!,ஆட்டோ!
+SAV_CALL_02,Auto! Auto!,ஆட்டோ! ஆட்டோ!
+SAV_CALL_03,"Hey, auto!","அண்ணா, ஆட்டோ!"
+SAV_CALL_04,"Auto, stop please!","ஆட்டோ, கொஞ்சம் நில்லுங்க!"
+SAV_CALL_05,"Boss, are you free?","அண்ணா, ஃப்ரீயா?"
+SAV_CALL_06,"Auto, free?","ஆட்டோ, வருமா?"
+SAV_CALL_07,Over here! Auto!,இங்க! ஆட்டோ!
+SAV_CALL_08,"This side, this side!","அண்ணா, இந்தப் பக்கம்!"
+SAV_CALL_09,"Auto, will you come?","ஆட்டோ, வருவீங்களா?"
+SAV_CALL_10,"Hello, auto!","ஹலோ, ஆட்டோ!"
+SAV_OPEN_01,This is all I can pay.,இவ்வளவுதான் தர முடியும்.
+SAV_OPEN_02,Will you come for this much?,இதுக்கு வருவீங்களா?
+SAV_OPEN_03,I always pay this much.,எப்பவும் இவ்வளவுதான் குடுப்பேன்.
+SAV_OPEN_04,This is the fair price.,நியாயமா இதுதான் வரும்.
+SAV_OPEN_05,I don't have more than this.,இதுக்கு மேல கையில இல்ல.
+SAV_OPEN_06,"This is enough, right?",இவ்வளவு போதும் தானே?
+SAV_OPEN_07,Don't ask too much. This is it.,"ரொம்ப கேக்காதீங்க, இதுதான்."
+SAV_OPEN_08,Shall we go at this rate?,இந்த ரேட்டுக்கு போலாமா?
+SAV_OPEN_09,I pay this every day.,டெய்லி இவ்வளவுதான் குடுக்கறேன்.
+SAV_OPEN_10,"I'll give you this much, okay?","இவ்வளவு தரேன், சரியா?"
+SAV_COUNTER_01,"No no, that's too much.","இல்ல இல்ல, ரொம்ப அதிகம்."
+SAV_COUNTER_02,Bring it down a little.,கொஞ்சம் குறைங்க அண்ணா.
+SAV_COUNTER_03,I can't pay that much.,அவ்வளவு எல்லாம் முடியாது.
+SAV_COUNTER_04,Meet me in the middle.,"நடுவுல வாங்க, இவ்வளவு தரேன்."
+SAV_COUNTER_05,That much? Make it a bit less.,"அய்யோ, அவ்வளவா? கொஞ்சம் கம்மி பண்ணுங்க."
+SAV_COUNTER_06,"Okay, I'll add a little.","சரி, கொஞ்சம் ஏத்தித் தரேன்."
+SAV_COUNTER_07,"The app is cheaper than that, you know.",ஆப்ல இதைவிட கம்மி தெரியுமா?
+SAV_COUNTER_08,Just agree to this much.,இவ்வளவுக்கு ஓகே பண்ணுங்க.
+SAV_COUNTER_09,It's not that far. Bring it down.,"ரொம்ப தூரம் இல்லையே, குறைங்க."
+SAV_COUNTER_10,"Be reasonable, please.",கொஞ்சம் பாத்துக் குடுங்க அண்ணா.
+SAV_ANGRY_01,Are you joking? Last offer!,விளையாடுறீங்களா? இதுதான் கடைசி!
+SAV_ANGRY_02,"What is this, daylight robbery?","என்ன இது, பகல் கொள்ளையா?"
+SAV_ANGRY_03,Asking that much? Is that fair?,"அவ்வளவு கேக்கறீங்களே, நியாயமா?"
+SAV_ANGRY_04,Not one paisa more!,இதுக்கு மேல ஒரு பைசா கூட இல்ல!
+SAV_ANGRY_05,"This is my last price, or I'm going.","இதுதான் கடைசி ரேட், இல்லனா போறேன்."
+SAV_ANGRY_06,Why so much? This is it.,ஏன் இவ்வளவு கேக்கறீங்க? இதுதான்.
+SAV_ANGRY_07,"Too much, way too much!","அய்யோ, ரொம்ப ஓவர்!"
+SAV_ANGRY_08,Don't try to cheat me!,சும்மா ஏமாத்தாதீங்க!
+SAV_ANGRY_09,"Take it, or I'll find another auto.","வேணும்னா இது, இல்லனா வேற ஆட்டோ."
+SAV_ANGRY_10,"Final answer, this much only!","கடைசியா சொல்றேன், இவ்வளவுதான்!"
+SAV_DEAL_01,"Okay, let's go.","சரி, போலாம்."
+SAV_DEAL_02,"Fine, fine, let's go.","ஓகே, ஓகே, வாங்க போலாம்."
+SAV_DEAL_03,"Okay, I'm getting in.","சரி அண்ணா, ஏறிக்கறேன்."
+SAV_DEAL_04,"Alright, go quickly.","சரி, சீக்கிரம் போங்க."
+SAV_DEAL_05,Deal. Let's move.,"டீல், கிளம்புங்க."
+SAV_DEAL_06,"Okay, never mind, fine.","சரி சரி, பரவாயில்ல."
+SAV_DEAL_07,"Hmm, okay, let's go.","ம்ம், சரி போலாம்."
+SAV_DEAL_08,"Good, start the auto.","நல்லது, வண்டிய எடுங்க."
+SAV_DEAL_09,"Okay, drive safely.","சரி, பத்திரமா போங்க."
+SAV_DEAL_10,"Okay, I'm in. Go.","ஓகே, ஏறிட்டேன், போங்க."
+SAV_WALK_01,"Forget it, I'll find another auto.","வேண்டாம், வேற ஆட்டோ பாக்கறேன்."
+SAV_WALK_02,"Leave it, I'll take the bus.","விடுங்க, பஸ்லயே போயிடறேன்."
+SAV_WALK_03,Not for that price. Go.,"இவ்வளவுக்கு முடியாது, போங்க."
+SAV_WALK_04,"Okay, leave it.","சரி, விடுங்க."
+SAV_WALK_05,I'll book on the app.,ஆப்ல புக் பண்ணிக்கறேன்.
+SAV_WALK_06,This won't work.,இது சரிப்பட்டு வராது.
+SAV_WALK_07,Someone else will come.,வேற யாராவது வருவாங்க.
+SAV_WALK_08,I'll just walk.,நடந்தே போயிடறேன்.
+SAV_WALK_09,No use talking to you.,உங்ககிட்ட பேசி பிரயோஜனம் இல்ல.
+SAV_WALK_10,You go. I'll wait for another.,"போங்க, நான் வேற ஆட்டோக்கு காத்திருக்கேன்."
+SAV_HAPPY_01,"Nice driving, thank you!","நல்லா ஓட்டினீங்க, நன்றி!"
+SAV_HAPPY_02,"Right on time, thanks.","சரியான நேரத்துக்கு வந்துட்டோம், தேங்க்ஸ்."
+SAV_HAPPY_03,That was very comfortable.,ரொம்ப சௌகரியமா இருந்தது.
+SAV_HAPPY_04,"Thank you, see you again.","நன்றி அண்ணா, மறுபடியும் பாக்கலாம்."
+SAV_HAPPY_05,"Super, we got here fast!","சூப்பர், சீக்கிரம் வந்துட்டோம்!"
+SAV_HAPPY_06,"You got me here safely, thanks.","பத்திரமா கொண்டு வந்தீங்க, நன்றி."
+SAV_HAPPY_07,"Good ride, thank you so much.","நல்ல சவாரி, ரொம்ப நன்றி."
+SAV_HAPPY_08,Next time I'll call you again.,அடுத்த தடவையும் உங்களையே கூப்பிடறேன்.
+SAV_HAPPY_09,"Wonderful, no tension at all.","அருமை, டென்ஷனே இல்ல."
+SAV_HAPPY_10,"Thanks, take care.","தேங்க்ஸ் அண்ணா, நல்லா இருங்க."
+SAV_UPSET_01,"Drive slowly, I was scared!","மெதுவா ஓட்டுங்க, பயமா இருந்தது!"
+SAV_UPSET_02,We're very late.,ரொம்ப லேட் ஆயிடுச்சு.
+SAV_UPSET_03,You hit every pothole!,"என்ன இது, எல்லா பள்ளத்துலயும் விட்டீங்க!"
+SAV_UPSET_04,Why brake like that?,இப்படி பிரேக் போட்டா எப்படி?
+SAV_UPSET_05,I won't take your auto again.,இனிமே உங்க ஆட்டோல வரமாட்டேன்.
+SAV_UPSET_06,My back hurts. Drive carefully.,"முதுகு வலிக்குது, கொஞ்சம் பாத்து ஓட்டுங்க."
+SAV_UPSET_07,Why did it take so long?,இவ்வளவு நேரமா ஆகும்?
+SAV_UPSET_08,All my things fell over!,என் பொருள் எல்லாம் விழுந்துடுச்சு!
+SAV_UPSET_09,"Here's the money, but I'm not happy.","பணம் தரேன், ஆனா திருப்தி இல்ல."
+SAV_UPSET_10,"Ayyo, I almost died!","அய்யோ, உயிர் போயிடுச்சு!"
+SAV_DRV_METER_01,"Just pay the meter, that's enough.","மீட்டர் படி குடுங்க, போதும்."
+SAV_DRV_METER_02,Meter rate only.,மீட்டர் ரேட் போதும்.
+SAV_DRV_METER_03,"Fair and square, by the meter.","நியாயமா, மீட்டர் படிதான்."
+SAV_DRV_METER_04,"Come on, the meter fare, that's all.","மீட்டருக்கு வாங்க, அவ்வளவுதான்."
+SAV_DRV_METER_05,Give me the meter money.,மீட்டர் காசு குடுங்க.
+SAV_DRV_METER_06,I'm only asking the government rate.,அரசு ரேட் தான் கேக்கறேன்.
+SAV_DRV_METER_07,"Meter charge, nothing more.","மீட்டர் சார்ஜ், அதுக்கு மேல வேணாம்."
+SAV_DRV_METER_08,Let's go by the meter.,மீட்டர் படியே போலாம்.
+SAV_DRV_METER_09,"Right price, it's the meter.","சரியான ரேட், மீட்டர் தான்."
+SAV_DRV_METER_10,Check the meter and pay that.,"மீட்டர் பாத்துக்கோங்க, அதே குடுங்க."
+SAV_DRV_MORE_01,Add a little more.,கொஞ்சம் சேர்த்துக் குடுங்க.
+SAV_DRV_MORE_02,"Gas prices went up, a bit more.","கேஸ் விலை ஏறிடுச்சு, கொஞ்சம் கூட."
+SAV_DRV_MORE_03,"Heavy traffic, add a little.","டிராஃபிக் ஜாஸ்தி, கொஞ்சம் கூட போடுங்க."
+SAV_DRV_MORE_04,Put a little extra.,கொஞ்சம் மேல போடுங்க.
+SAV_DRV_MORE_05,"I'll come back empty, give a bit more.","திரும்ப காலியா வரணும், கொஞ்சம் கூட குடுங்க."
+SAV_DRV_MORE_06,That little? Raise it a bit.,அவ்வளவு கம்மியா? கொஞ்சம் ஏத்துங்க.
+SAV_DRV_MORE_07,"Fairly, it comes to a bit more.",நியாயமா கொஞ்சம் கூட வரும்.
+SAV_DRV_MORE_08,"Driving in this heat, add a little.","வெயில்ல ஓட்டணும், கொஞ்சம் சேருங்க."
+SAV_DRV_MORE_09,"Just a little more, that's all.","இன்னும் கொஞ்சம், அவ்வளவுதான்."
+SAV_DRV_MORE_10,A bit more and we leave right now.,கொஞ்சம் கூட குடுத்தா உடனே கிளம்பலாம்.
+SAV_DRV_HIGH_01,"At this hour, the rate is higher.",இந்த நேரத்துக்கு ரேட் ஜாஸ்தி.
+SAV_DRV_HIGH_02,"That's far, it'll cost a lot.","அவ்வளவு தூரம், நிறைய ஆகும்."
+SAV_DRV_HIGH_03,"In this traffic, you have to pay this.",இந்த டிராஃபிக்ல இவ்வளவு குடுக்கணும்.
+SAV_DRV_HIGH_04,Nobody goes that side. Pay more.,"அந்த பக்கம் யாரும் போக மாட்டாங்க, கூட குடுங்க."
+SAV_DRV_HIGH_05,I have to go round the one-way. It costs more.,"ஒன் வே சுத்தணும், ஜாஸ்தி ஆகும்."
+SAV_DRV_HIGH_06,I won't get a ride back from there.,திரும்பி வர சவாரி கிடைக்காது.
+SAV_DRV_HIGH_07,Pay what I ask and I'll come.,கேட்டது குடுத்தா வரேன்.
+SAV_DRV_HIGH_08,This is my rate. Come if you want.,"இதுதான் என் ரேட், வேணும்னா வாங்க."
+SAV_DRV_HIGH_09,That little won't cover it.,அவ்வளவு கம்மிக்கு கட்டுப்படியாகாது.
+SAV_DRV_HIGH_10,Pay a good rate and I'll drop you nicely.,"நல்ல ரேட் குடுங்க, நல்லா கொண்டு போய் விடறேன்."
+SAV_DRV_ACCEPT_01,"Okay, get in.","சரி, ஏறுங்க."
+SAV_DRV_ACCEPT_02,"Fine, come, let's go.","சரி, வாங்க போலாம்."
+SAV_DRV_ACCEPT_03,"Okay, sit down.","ஓகே, உக்காருங்க."
+SAV_DRV_ACCEPT_04,"Alright, alright, get in.","சரி சரி, ஏறுங்க."
+SAV_DRV_ACCEPT_05,"No problem, let's go.","பரவாயில்ல, போலாம்."
+SAV_DRV_ACCEPT_06,"Okay, mind your step.","சரி, பாத்து ஏறுங்க."
+SAV_DRV_ACCEPT_07,"Okay, let's leave.","ஓகே, கிளம்பலாம்."
+SAV_DRV_ACCEPT_08,"Okay, just for you.","சரி, உங்களுக்காக."
+SAV_DRV_ACCEPT_09,"Fine, let's go.","சரி, போயிடலாம்."
+SAV_DRV_ACCEPT_10,"Get in, we'll be there quickly.","ஏறுங்க, சீக்கிரம் போயிடலாம்."
+SAV_DRV_LETGO_01,"No, I'm not going that side.","இல்ல, அந்த பக்கம் வரல."
+SAV_DRV_LETGO_02,"No, leave it.","வேண்டாம், விடுங்க."
+SAV_DRV_LETGO_03,That price doesn't work for me.,அவ்வளவுக்கு கட்டுப்படியாகாது.
+SAV_DRV_LETGO_04,Find another auto.,வேற ஆட்டோ பாருங்க.
+SAV_DRV_LETGO_05,"No, I can't come.","இல்லங்க, வண்டி வராது."
+SAV_DRV_LETGO_06,I'm not going that way now.,இப்போ அந்த பக்கம் போகல.
+SAV_DRV_LETGO_07,"Sorry, can't do it.","சாரி, முடியாது."
+SAV_DRV_LETGO_08,"No, I'm done for now.","இல்ல, டைம் ஆச்சு."
+SAV_DRV_LETGO_09,Take the next auto.,அடுத்த ஆட்டோல போங்க.
+SAV_DRV_LETGO_10,"No thanks, I'm off.","வேணாம், நான் கிளம்பறேன்."

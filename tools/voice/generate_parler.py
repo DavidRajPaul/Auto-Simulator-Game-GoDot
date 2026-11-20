@@ -104,6 +104,8 @@ def main():
     ap.add_argument("--only", help="comma-separated line ids to redo")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true", help="print the prompts, load no model")
+    ap.add_argument("--shard", default="0/1",
+                    help="i/n: voice only every n-th missing file starting at i (parallel CI jobs)")
     args = ap.parse_args()
 
     cast = {k: v for k, v in json.load(open(args.cast, encoding="utf-8")).items() if not k.startswith("_")}
@@ -130,6 +132,9 @@ def main():
                 desc = voice["description"].format(name=voice["speaker"], emotion=emotion_for(tags))
                 locked = False
             jobs.append((ogg, text, desc, int(voice["seed"]), locked))
+
+    shard_i, shard_n = (int(x) for x in args.shard.split("/"))
+    jobs = jobs[shard_i::shard_n]
 
     if args.dry_run:
         for ogg, text, desc, seed, _locked in jobs:

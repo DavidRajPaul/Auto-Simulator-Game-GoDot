@@ -27,7 +27,7 @@ import urllib.request
 
 API = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128"
 MODEL = "eleven_v3"
-LINE = re.compile(r"^- (sq\d+_\w+)\s+([^:(]+?)(?:\s*\([^)]*\))?:\s+(.+)$")
+LINE = re.compile(r"^- ((?:sq\d+|sav)_\w+)\s+([^:(]+?)(?:\s*\([^)]*\))?:\s+(.+)$")
 
 
 def parse(path):

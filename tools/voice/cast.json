@@ -119,5 +119,66 @@
       "seed": 707,
       "description": "{name} speaks in a {emotion} tone with a soft, slightly slow and hesitant delivery. The recording is very clear audio, close up, with almost no background noise."
     }
+  },
+  "Rider Man": {
+    "gender": "male",
+    "age": [
+      "young",
+      "middle_aged"
+    ],
+    "search": [
+      "casual",
+      "conversational"
+    ],
+    "parler": {
+      "speaker": "Dinesh",
+      "seed": 1101,
+      "description": "{name} speaks in a {emotion} tone with a moderate pace and a mid-low pitch, like a Chennai office-goer. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Rider Woman": {
+    "gender": "female",
+    "age": [
+      "middle_aged"
+    ],
+    "search": [
+      "brisk",
+      "conversational"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 1202,
+      "description": "{name} speaks in a {emotion} tone with a brisk, confident delivery and a mid pitch. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Rider Elder": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "elderly",
+      "slow"
+    ],
+    "parler": {
+      "speaker": "Vikas",
+      "seed": 1303,
+      "description": "{name} speaks in a {emotion} tone, slowly, with a low, slightly hoarse voice of an old man. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Rider Girl": {
+    "gender": "female",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "young",
+      "quick"
+    ],
+    "parler": {
+      "speaker": "Riya",
+      "seed": 1404,
+      "description": "{name} speaks in a {emotion} tone with a quick, lively delivery and a high pitch, like a college student. The recording is very clear audio, close up, with almost no background noise."
+    }
   }
 }
