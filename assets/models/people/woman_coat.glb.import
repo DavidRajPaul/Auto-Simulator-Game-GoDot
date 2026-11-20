@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dyhbxma343hpi"
-path="res://.godot/imported/woman_modern_rider.glb-f35ba8cfea6dd62ad9be5e1df5fa688b.scn"
+uid="uid://bhoeqno4edkfb"
+path="res://.godot/imported/woman_coat.glb-6f11f3bdc4c7610459e9c9eb504d4090.scn"
 
 [deps]
 
-source_file="res://assets/models/people/riders/woman_modern_rider.glb"
-dest_files=["res://.godot/imported/woman_modern_rider.glb-f35ba8cfea6dd62ad9be5e1df5fa688b.scn"]
+source_file="res://assets/models/people/woman_coat.glb"
+dest_files=["res://.godot/imported/woman_coat.glb-6f11f3bdc4c7610459e9c9eb504d4090.scn"]
 
 [params]
 

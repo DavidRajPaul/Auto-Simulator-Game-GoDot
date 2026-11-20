@@ -116,12 +116,12 @@ def skin(g: Gltf, world: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray, np.n
     return np.concatenate(pos_all), np.concatenate(nrm_all), np.concatenate(uv_all), np.concatenate(idx_all)
 
 
-def texture(g: Gltf) -> Image.Image:
+def texture(g: Gltf, mode: str = "RGB") -> Image.Image:
     img = g.j["images"][0]
     bv = g.j["bufferViews"][img["bufferView"]]
     data = g.buffer(bv["buffer"])[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]]
     import io
-    return Image.open(io.BytesIO(data)).convert("RGB")
+    return Image.open(io.BytesIO(data)).convert(mode)
 
 
 def bake(src: Path, out_path: Path, pose: list, hip_bone: str, standing_m: float, budget: int) -> dict:
@@ -137,9 +137,15 @@ def bake(src: Path, out_path: Path, pose: list, hip_bone: str, standing_m: float
     hip = world[by_name[hip_bone]][:3, 3]
     pos = (pos - hip) * scale
     tex = texture(g)
+    # Characters with alpha-card hair (woman_coat) keep the cutout, or the cards bake to shards.
+    cutout = any(m.get("alphaMode") == "MASK" for m in g.j.get("materials", []))
+    if cutout:
+        tex = texture(g, "RGBA")
     # trimesh stores glTF UVs with v flipped; give it its convention so the export round-trips.
     uv_t = np.column_stack([uv[:, 0], 1.0 - uv[:, 1]])
-    mat = trimesh.visual.material.PBRMaterial(baseColorTexture=tex, metallicFactor=0.0, roughnessFactor=0.8)
+    mat = trimesh.visual.material.PBRMaterial(baseColorTexture=tex, metallicFactor=0.0, roughnessFactor=0.8,
+                                              alphaMode="MASK" if cutout else None,
+                                              alphaCutoff=0.5 if cutout else None, doubleSided=cutout or None)
     mesh = trimesh.Trimesh(vertices=pos, faces=idx.reshape(-1, 3), vertex_normals=nrm, process=False,
                            visual=trimesh.visual.TextureVisuals(uv=uv_t, material=mat))
     TMP.parent.mkdir(parents=True, exist_ok=True)

@@ -2,10 +2,13 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dylqdfrqeunnc"
+uid="uid://b1k617ksrxr5s"
 path="res://.godot/imported/girl_churidar_rider_0.png-4349a604b8b6cd162037476a58c75ce3.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "094cd060635731217d108cbc5b17d407"
 }
 
 [deps]
@@ -23,7 +26,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

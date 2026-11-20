@@ -50,10 +50,10 @@ const ARCHETYPE_STYLE: Dictionary = {
 ## stand in their idle with a WaveModifier raising the arm. Archetypes not listed (tourist)
 ## keep the low-poly PersonMesh.
 const ARCHETYPE_PEOPLE: Dictionary = {
-	"it_commuter": ["young_man", "man_casual", "woman_modern"],
-	"tnagar_shopper": ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet"],
+	"it_commuter": ["young_man", "man_casual", "woman_coat"],
+	"tnagar_shopper": ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "woman_saree_kanchi"],
 	"monsoon_rider": ["old_man_veshti"],
-	"college_student": ["girl_churidar", "girl_pavadai", "woman_modern"],
+	"college_student": ["girl_churidar", "girl_pavadai", "woman_coat"],
 }
 const PEOPLE_DIR: String = "res://assets/models/people/"
 ## The auto catches fire mid-ride: the rider gets out on the kerb side (left: India drives on the

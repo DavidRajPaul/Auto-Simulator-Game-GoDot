@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b01j41yr282q3"
-path="res://.godot/imported/woman_modern_stand_0.png-45a0380b9d46c0a6733e044761637d3b.ctex"
+uid="uid://bvs1bth8gi2op"
+path="res://.godot/imported/woman_saree_kanchi_0.png-b2f4a258338f53223f2463083531ef3d.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "d30633c086953740bbd8eec6b39767e8"
+"md5": "928545b8fc1653f7f9c19b297b42c1c3"
 }
 
 [deps]
 
-source_file="res://assets/models/people/waiting/woman_modern_stand_0.png"
-dest_files=["res://.godot/imported/woman_modern_stand_0.png-45a0380b9d46c0a6733e044761637d3b.ctex"]
+source_file="res://assets/models/people/woman_saree_kanchi_0.png"
+dest_files=["res://.godot/imported/woman_saree_kanchi_0.png-b2f4a258338f53223f2463083531ef3d.ctex"]
 
 [params]
 

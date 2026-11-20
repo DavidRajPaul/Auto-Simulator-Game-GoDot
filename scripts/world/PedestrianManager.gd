@@ -114,7 +114,7 @@ const BUMP_COOLDOWN_S: float = 1.0
 const KOLAM_MINUTES: Vector2 = Vector2(325.0, 455.0) # 05:25 - 07:35
 const KOLAM_MAX: int = 4
 const KOLAM_STAND_M: float = 0.85
-const WOMEN: Array[String] = ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "woman_modern", "girl_churidar"]
+const WOMEN: Array[String] = ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "woman_saree_kanchi", "girl_churidar"]
 ## Rain: walkers run to the nearest shop front and wait there; some open an umbrella and walk
 ## on; the rest hurry. Noon sun: a few women walk under an umbrella too.
 const SHELTER_REACH_M: float = 45.0
@@ -139,7 +139,7 @@ const UMBRELLA_COLOURS: Array[Color] = [Color(0.06, 0.06, 0.07), Color(0.06, 0.0
 
 const SHARE: Dictionary = {
     "young_man": 3, "man_casual": 2, "old_man_veshti": 3, "girl_churidar": 2,
-    "woman_modern": 2, "woman_saree_violet": 2, "woman_saree_green": 2,
+    "woman_coat": 1, "woman_saree_kanchi": 2, "woman_saree_violet": 2, "woman_saree_green": 2,
     "woman_saree_maroon": 2, "girl_pavadai": 2,
     "man_dhoti_new": 3, "man_pattern_shirt": 3, "woman_saree_new": 3
 }

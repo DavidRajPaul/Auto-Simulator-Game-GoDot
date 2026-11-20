@@ -25,8 +25,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PEOPLE = ROOT / "assets" / "models" / "people"
 OUT = PEOPLE / "riders"
 # Commuters on Chennai scooters: office goer, casual, a woman in modern dress, a college girl.
-RIDERS = ["young_man", "man_casual", "woman_modern", "girl_churidar"]
-TRI_BUDGET = 2400
+RIDERS = ["young_man", "man_casual", "woman_coat", "girl_churidar"]
+# Nov 20: the source characters keep their faces and hands at full detail (people_detail.py);
+# a flat 2,400-triangle budget collapsed them again here. Far figures use the import LODs.
+TRI_BUDGET = 8000
 
 # Mixamo-style 22-bone rig (process_people.py). Character faces +Z, +X is his left.
 POSE = [

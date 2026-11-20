@@ -2,10 +2,13 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqnl3jucodmbw"
+uid="uid://dqyiclav76th5"
 path="res://.godot/imported/young_man_rider_0.png-fbaaaed9552a438a4b148918a6c244f6.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "64bb1330a6b59ffb77f01f0c9ebada98"
 }
 
 [deps]
@@ -23,7 +26,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

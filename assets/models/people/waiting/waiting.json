@@ -4,11 +4,11 @@
   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured"
  },
  "woman_saree_maroon": {
-  "stand_hip": 0.821,
+  "stand_hip": 0.822,
   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured"
  },
  "woman_saree_violet": {
-  "stand_hip": 0.832,
+  "stand_hip": 0.833,
   "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0"
  },
  "man_casual": {
@@ -27,13 +27,17 @@
   "sit_drop": 0.56
  },
  "girl_churidar": {
-  "stand_hip": 0.85,
+  "stand_hip": 0.851,
   "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
-  "sit_drop": 0.506
+  "sit_drop": 0.509
  },
- "woman_modern": {
-  "stand_hip": 0.847,
-  "credit": "\"Modern Indian Woman\" by Pixel_Monster (Sketchfab), CC BY 4.0",
-  "sit_drop": 0.486
+ "woman_coat": {
+  "stand_hip": 0.898,
+  "credit": "\"Lady in Coat\" by aribb (Sketchfab), CC BY 4.0",
+  "sit_drop": 0.548
+ },
+ "woman_saree_kanchi": {
+  "stand_hip": 0.838,
+  "credit": "\"Wife Final\" by svgmishra95 (Sketchfab), CC BY 4.0"
  }
 }

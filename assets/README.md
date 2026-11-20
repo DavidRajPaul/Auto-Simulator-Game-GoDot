@@ -116,11 +116,12 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 
 | File | Source | Licence |
 |---|---|---|
-| `riders/young_man_rider, man_casual_rider, woman_modern_rider, girl_churidar_rider.glb` | Two-wheeler riders: the same characters as below, baked seated on a scooter by `tools/assets/bake_seated_riders.py` (one mesh, one material each) | as the source character |
+| `riders/young_man_rider, man_casual_rider, woman_coat_rider, girl_churidar_rider.glb` | Two-wheeler riders: the same characters as below, baked seated on a scooter by `tools/assets/bake_seated_riders.py` (one mesh, one material each) | as the source character |
 | `old_man_veshti.glb` (+ shared walk clip) | "Indian Old man walking", anandmohan662 | CC BY 4.0 |
 | `young_man.glb` | "Alex Texel A-pose", alex.texelsales | CC BY 4.0 |
 | `woman_saree_violet / green / maroon.glb` (+ shared idle) | "Female test", CloudHubOmniTeam (sarees recoloured) | CC BY 4.0 |
-| `woman_modern.glb` | "Modern Indian Woman", Pixel_Monster | CC BY 4.0 |
+| `woman_saree_kanchi.glb` | "Wife Final", svgmishra95 (no skeleton in the download: rigged from "Female test" by `tools/assets/rig_static.py`) | CC BY 4.0 |
+| `woman_coat.glb` | "Lady in Coat", aribb (replaced `woman_modern` on Nov 20) | CC BY 4.0 |
 | `man_casual.glb` | "Dhanush 3d model", Peter Charles — face repainted as a generic character | CC BY 4.0 ⚠️ see audit |
 | `girl_churidar.glb`, `girl_pavadai.glb` | "South Indian Women", alnmathew | CC BY 4.0 |
 | `police_f_khaki.glb`, `police_m_ips.glb` | Umar; `@MgsGamer5` (uniform painted) | CC BY 4.0 |
