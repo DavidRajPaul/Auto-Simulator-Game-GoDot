@@ -2,7 +2,7 @@ class_name MissionStage
 extends Resource
 ## Immutable authoring data. Mutable progress belongs to MissionRunState.
 @export var id: String = ""
-@export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo") var kind: String = "goto"
+@export_enum("goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo", "cutscene", "ask", "spot") var kind: String = "goto"
 @export var objective_key: String = ""
 ## A previous dialogue may select an alternate localized objective/outcome.
 @export var objective_choice_stage: String = ""
@@ -45,3 +45,18 @@ extends Resource
 @export var place_pos_options: Dictionary = {}
 ## Button text for stop-and-do stages ("Load the drum"). Falls back to a word per stage kind.
 @export var action_key: String = ""
+## Story stages (MissionDef.story):
+## "cutscene" plays MissionDef.story.cutscenes[cutscene_id] (controls locked); duration_s is the
+## fallback length when no QuestStory is in the scene.
+## "ask" is a goto that ends by stopping beside the person at place_pos (they talk, no button).
+## "spot" is a search: GPS leads to target, radius_m is the search circle, and the stage ends when
+## the player taps the thing at spot_pos on screen from within spot_range_m, at spot_max_kmh or less.
+@export var cutscene_id: String = ""
+@export var spot_pos: Vector3 = Vector3.ZERO
+@export var spot_range_m: float = 40.0
+@export var spot_max_kmh: float = 15.0
+## The search circle closes in on the thing after this long (0 = never), like a hint.
+@export var shrink_after_s: float = 0.0
+@export var shrink_radius_m: float = 45.0
+## Jump forward to this stage when this one is done (empty = the next stage). Forward only.
+@export var next_id: String = ""

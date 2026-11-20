@@ -287,3 +287,13 @@ signal quest_prompt_dismissed
 signal mission_action_ready(ready: bool, in_range: bool)
 ## Seconds left before an ongoing speed breach stops the job (0 = no breach).
 signal mission_speed_warning(seconds_left: float)
+## Story quests (MissionDef.story, QuestStory). A "spot" stage is done by finding the thing on
+## screen and tapping it; QuestStory checks the tap and asks the director here.
+signal mission_spot_requested(quest_id: String, stage_id: String)
+## A "cutscene" stage finished playing (or was skipped).
+signal mission_cutscene_finished(quest_id: String, stage_id: String)
+## Search area of a "spot" stage for the maps (radius 0 = none).
+signal quest_search_area_changed(center: Vector3, radius: float)
+## Set by QuestStory: returns true when it will play the cutscene of (quest_id, stage_id). Unset
+## (headless tests, scenes without QuestStory): the director moves on after the stage's duration_s.
+var quest_cinematic_provider: Callable = Callable()

@@ -1,0 +1,102 @@
+name: Generate quest voices
+
+# Voices every line of every script in docs/voice/ that has no .ogg yet and commits the audio to
+# assets/audio/voice/<quest>/ on the same branch (docs/voice/README.md).
+# Default engine: AI4Bharat Indic Parler-TTS (Apache 2.0, free for commercial use), run on the
+# runner's CPU. Needs the HF_TOKEN secret: a Hugging Face read token for an account that accepted
+# the terms at huggingface.co/ai4bharat/indic-parler-tts.
+# Engine "elevenlabs" (paid ElevenLabs plan only) needs the ELEVENLABS_API_KEY secret.
+# Runs on a push that changes a voice script, or by hand: Actions -> Generate quest voices.
+
+on:
+  push:
+    paths:
+      - "docs/voice/**"
+      - "tools/voice/*.py"
+      - "tools/voice/cast.json"
+      - ".github/workflows/generate-voices.yml"
+  workflow_dispatch:
+    inputs:
+      engine:
+        description: "parler (free) or elevenlabs (paid plan)"
+        default: "parler"
+      only:
+        description: "Optional: comma-separated line ids to redo (e.g. sq07_l01,sq07_l02)"
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voices-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      ENGINE: ${{ inputs.engine || 'parler' }}
+      ONLY: ${{ inputs.only }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - uses: actions/setup-python@v5
+        if: env.ENGINE == 'parler'
+        with:
+          python-version: "3.11"
+      - name: Cache Parler model
+        if: env.ENGINE == 'parler'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-indic-parler-tts-v1
+      - name: Install Parler-TTS
+        if: env.ENGINE == 'parler'
+        run: |
+          # torch and torchaudio must come from the same build or _torchaudio.so fails to load
+          pip install -q torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -q git+https://github.com/huggingface/parler-tts.git soundfile
+          # audiotools pins an old protobuf; newer sentencepiece needs protobuf.runtime_version
+          pip install -q "sentencepiece==0.2.0"
+          python3 -c "from sentencepiece import sentencepiece_model_pb2; print('sentencepiece ok')"
+          python3 -c "import torch, torchaudio; print(torch.__version__, torchaudio.__version__)"
+          python3 -c "from parler_tts import ParlerTTSForConditionalGeneration; print('parler ok')"
+      - name: Pick voices (ElevenLabs)
+        if: env.ENGINE == 'elevenlabs'
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: python3 tools/voice/pick_voices.py
+      - name: Generate lines
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          if [ "$ENGINE" = "parler" ] && [ -z "$HF_TOKEN" ]; then
+            echo "::error::Add the HF_TOKEN secret (Hugging Face read token, model terms accepted)"; exit 1
+          fi
+          status=0
+          for script in docs/voice/SQ*_*.md; do
+            quest=$(basename "$script" | cut -d_ -f1 | tr 'A-Z' 'a-z')
+            out="assets/audio/voice/$quest"
+            extra=""
+            if [ -n "$ONLY" ]; then extra="--only $ONLY --force"; fi
+            if [ "$ENGINE" = "parler" ]; then
+              python3 tools/voice/generate_parler.py "$script" --out "$out" $extra || status=1
+            else
+              python3 tools/voice/generate_quest_voices.py "$script" --voices tools/voice/voices.json --out "$out" $extra || status=1
+            fi
+          done
+          du -sh assets/audio/voice || true
+          exit $status
+      - name: Commit voices
+        if: always()
+        run: |
+          git config user.name "voice-bot"
+          git config user.email "voice-bot@users.noreply.github.com"
+          git add tools/voice/voices.json assets/audio/voice 2>/dev/null || true
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "voice: generate quest voice lines ($ENGINE)"
+          git pull --rebase
+          git push

@@ -30,18 +30,30 @@ func load_pack(pack: MissionPack) -> bool:
 				for reward_choice: String in mission.reward_choice_inr:
 					if not mission.stages[reward_source].choices.has(reward_choice) or not mission.reward_choice_inr[reward_choice] is int or int(mission.reward_choice_inr[reward_choice]) < 0:
 						errors.append("Invalid choice reward: " + mission.id)
+				for xp_choice: String in mission.reward_choice_xp:
+					if not mission.stages[reward_source].choices.has(xp_choice) or not mission.reward_choice_xp[xp_choice] is int or int(mission.reward_choice_xp[xp_choice]) < 0:
+						errors.append("Invalid choice XP: " + mission.id)
 		var ids: Dictionary = {}
 		for stage: MissionStage in mission.stages:
 			if stage == null:
 				errors.append("Null stage: " + mission.id)
 				continue
-			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo"] or stage.objective_key.is_empty():
+			if stage.id.is_empty() or ids.has(stage.id) or stage.kind not in ["goto", "dialogue", "wait", "photo", "yield", "inspect", "calm", "park", "cargo", "cutscene", "ask", "spot"] or stage.objective_key.is_empty():
 				errors.append("Invalid stage: " + mission.id + "/" + stage.id)
 			ids[stage.id] = true
 			if not stage.target.is_finite() or not is_finite(stage.radius_m) or stage.radius_m <= 0 or stage.arrival_speed_kmh < 0 or not is_finite(stage.arrival_speed_kmh) or not is_finite(stage.duration_s) or stage.duration_s < 0 or not is_finite(stage.deadline_s) or stage.deadline_s < 0 or not is_finite(stage.max_speed_kmh) or stage.max_speed_kmh < 0 or not is_finite(stage.max_condition_loss) or stage.max_condition_loss < 0:
 				errors.append("Invalid stage thresholds: " + stage.id)
 			if stage.kind == "dialogue" and (stage.choices.is_empty() or stage.choices.has("")):
 				errors.append("Dialogue needs choices: " + stage.id)
+			if stage.kind == "cutscene" and (stage.cutscene_id.is_empty() or stage.duration_s <= 0.0 \
+					or (mission.story != null and not mission.story.cutscenes.has(stage.cutscene_id))):
+				errors.append("Cutscene needs a story scene and a fallback duration: " + stage.id)
+			if stage.kind == "spot" and (stage.spot_pos == Vector3.ZERO or not stage.spot_pos.is_finite() \
+					or not is_finite(stage.spot_range_m) or stage.spot_range_m <= 0.0 or not is_finite(stage.spot_max_kmh) \
+					or stage.spot_max_kmh <= 0.0 or stage.shrink_after_s < 0.0 or stage.shrink_radius_m <= 0.0):
+				errors.append("Spot needs a thing to find: " + stage.id)
+			if stage.kind in ["cutscene", "ask", "spot"] and mission.story == null:
+				errors.append("Story stage without a story: " + stage.id)
 			if not stage.facing.is_finite() or stage.facing_tolerance_deg <= 0 or stage.facing_tolerance_deg > 180:
 				errors.append("Invalid composition angle: " + stage.id)
 			if not is_finite(stage.quality_floor) or stage.quality_floor < 0.0 or stage.quality_floor >= 100.0 or not is_finite(stage.quality_scale) or stage.quality_scale < 0.0:
@@ -70,6 +82,8 @@ func load_pack(pack: MissionPack) -> bool:
 					for option: String in stage.objective_options:
 						if not mission.stages[objective_source].choices.has(option) or str(stage.objective_options[option]).is_empty():
 							errors.append("Invalid objective choice: " + stage.id)
+			if stage.next_id != "" and mission.stage_index(stage.next_id) <= i:
+				errors.append("Invalid forward jump: " + stage.id)
 			for key: String in stage.next_by_choice:
 				if not stage.choices.has(key) or mission.stage_index(str(stage.next_by_choice[key])) <= i:
 					errors.append("Invalid forward choice: " + stage.id)

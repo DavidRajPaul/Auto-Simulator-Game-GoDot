@@ -25,6 +25,10 @@ extends Resource
 ## Optional final-dialogue choice determines earned cash; default remains reward_inr.
 @export var reward_choice_stage: String = ""
 @export var reward_choice_inr: Dictionary = {}
+## Optional extra XP by the same final choice (refusing the fare earns respect, not money).
+@export var reward_choice_xp: Dictionary = {}
+## Voiced story: cutscenes, cast, props and spoken lines (QuestStory plays it). Null = plain quest.
+@export var story: QuestStoryData
 @export var scenario_minute: float = -1.0
 @export_enum("unchanged", "dry", "rain") var scenario_weather: String = "unchanged"
 
