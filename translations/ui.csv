@@ -779,35 +779,10 @@ QUEST_SLOW_DOWN,Too fast! Slow down in %d s,மிக வேகம்! %d நொ
 QUEST_LEAVE_SURE,Sure?,உறுதியா?
 QUEST_KNOCK,Careful! That hit did some damage.,கவனம்! அந்த மோதலில் சேதம் ஆனது.
 RIDER_IT_COMMUTER_NAME,Office Worker,அலுவலக ஊழியர்
-RIDER_IT_COMMUTER_HAIL,"Anna, I need to reach the office. Can you go?","அண்ணா, ஆபீஸ் போகணும். வருவீங்களா?"
-RIDER_IT_COMMUTER_ACCEPT,"Okay, let's go fast.","சரி, சீக்கிரம் போகலாம்."
-RIDER_IT_COMMUTER_REJECT,The app is cheaper. Leave it.,ஆப்ல கம்மி. விடுங்க.
-RIDER_IT_COMMUTER_HAPPY,"Perfect timing, thank you!","சரியான நேரம், நன்றி!"
-RIDER_IT_COMMUTER_UPSET,"Careful, I have a laptop!","மெதுவா, லேப்டாப் இருக்கு!"
 RIDER_COLLEGE_STUDENT_NAME,College Student,கல்லூரி மாணவர்
-RIDER_COLLEGE_STUDENT_HAIL,"Anna, I'm late for class. Will you come?","அண்ணா, கிளாஸுக்கு லேட். வருவீங்களா?"
-RIDER_COLLEGE_STUDENT_ACCEPT,"Done, let's go!","சரி, போகலாம்!"
-RIDER_COLLEGE_STUDENT_REJECT,Too much. I'll take the bus.,ரொம்ப அதிகம். பஸ்ல போறேன்.
-RIDER_COLLEGE_STUDENT_HAPPY,"Superb driving, anna!",சூப்பர் ஓட்டம் அண்ணா!
-RIDER_COLLEGE_STUDENT_UPSET,"I said go, not crash!","வேகம் சரி, மோதாதீங்க!"
 RIDER_TNAGAR_SHOPPER_NAME,Silk Shopper,பட்டுக் கடை வாடிக்கையாளர்
-RIDER_TNAGAR_SHOPPER_HAIL,Auto! I have bags. Will you come?,ஆட்டோ! பைகள் இருக்கு. வருவீங்களா?
-RIDER_TNAGAR_SHOPPER_ACCEPT,"Fine, load the bags.","சரி, பைகளை வையுங்க."
-RIDER_TNAGAR_SHOPPER_REJECT,For that price I'll find another auto.,அந்த விலைக்கு வேற ஆட்டோ பாக்கறேன்.
-RIDER_TNAGAR_SHOPPER_HAPPY,"Nice and smooth, thank you.","நல்லா ஓட்டினீங்க, நன்றி."
-RIDER_TNAGAR_SHOPPER_UPSET,"Slowly, my bags are falling!","மெதுவா, பைகள் விழுது!"
 RIDER_TOURIST_NAME,Tourist,சுற்றுலாப் பயணி
-RIDER_TOURIST_HAIL,"Excuse me, can you take me there?","சாரி, அங்கே கொண்டு போவீங்களா?"
-RIDER_TOURIST_ACCEPT,"Great, let's go.","சரி, போகலாம்."
-RIDER_TOURIST_REJECT,"That is too much, sorry.","அது அதிகம், சாரி."
-RIDER_TOURIST_HAPPY,"What a lovely ride, thank you!","அருமையான பயணம், நன்றி!"
-RIDER_TOURIST_UPSET,Please slow down a little.,கொஞ்சம் மெதுவா போங்க.
 RIDER_MONSOON_RIDER_NAME,Stranded Rider,சிக்கிய பயணி
-RIDER_MONSOON_RIDER_HAIL,"Anna, I'm stuck here. Please come!","அண்ணா, இங்க மாட்டிக்கிட்டேன். வாங்க!"
-RIDER_MONSOON_RIDER_ACCEPT,"Thank you, let's go.","நன்றி, போகலாம்."
-RIDER_MONSOON_RIDER_REJECT,"No, that is too much even today.",இன்னைக்கும் அது ரொம்ப அதிகம்.
-RIDER_MONSOON_RIDER_HAPPY,"You saved me, thank you!","காப்பாத்திட்டீங்க, நன்றி!"
-RIDER_MONSOON_RIDER_UPSET,"Careful, the road is bad!","கவனம், ரோடு மோசம்!"
 HAGGLE_METER,Meter: ₹%d,மீட்டர்: ₹%d
 HAGGLE_PATIENCE,Patience,பொறுமை
 HAGGLE_ACCEPT,Accept,ஏற்றுக்கொள்
@@ -817,8 +792,6 @@ HAGGLE_ASK_MORE,Ask a bit more,கொஞ்சம் அதிகம் கே�
 HAGGLE_ASK_HIGH,Ask high,நிறைய கேள்
 HAGGLE_PLUS,₹%d more,₹%d கூட
 HAGGLE_LET_GO,Let this ride go,இந்தச் சவாரி வேண்டாம்
-HAGGLE_COUNTER,"No no. ₹%d, okay?","இல்லை இல்லை. ₹%d, சரியா?"
-HAGGLE_COUNTER_ANGRY,"Are you joking? ₹%d, last offer!","விளையாடுறீங்களா? ₹%d, அவ்வளவுதான்!"
 HAGGLE_DEAL,“%s”  Deal at ₹%d,“%s”  ₹%d-க்கு ஒப்பந்தம்
 HAGGLE_STREAK,%d good deals in a row! Bonus at the drop.,தொடர்ந்து %d நல்ல பேரம்! இறக்கும்போது போனஸ்.
 GOOD_DEAL_BONUS,Good deal bonus,நல்ல பேர போனஸ்

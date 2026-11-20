@@ -109,6 +109,12 @@ var demand: float = 0.5
 var greed_streak: int = 0
 var deal_streak: int = 0 # Fair deals in a row: pays a small bonus, and walking away ends it.
 var _rider_person: String = "" # the people/*.glb id the current rider is played by
+## Savari dialogue + voices (SavariVoice): the rider's voice for the ride under way.
+var voice: SavariVoice
+var _rider_voice: String = "man"
+## A rider shouts for the auto once it is this close (and still further than the pickup).
+const CALL_M: float = 38.0
+const CALL_SHOW_S: float = 2.6
 var _fleer: Node3D
 var _fleer_chars: Dictionary = {} # person id -> its character under _fleer (made once each)
 var _fleer_dir: Vector3 = Vector3.ZERO
@@ -127,6 +133,9 @@ func _ready() -> void:
 	_load_manifest()
 	_build_parked_stand_autos()
 	_build_pools()
+	voice = SavariVoice.new()
+	voice.name = "SavariVoice"
+	add_child(voice)
 	SignalBus.player_pose_updated.connect(_on_pose)
 	SignalBus.speed_updated.connect(func(kmh: float) -> void: _speed_kmh = kmh)
 	SignalBus.haggle_choice_made.connect(_on_haggle_choice)
@@ -237,7 +246,7 @@ func _physics_process(delta: float) -> void:
 		State.HAGGLING:
 			_haggle_timer -= delta
 			if _haggle_timer <= 0.0:
-				_rider_leaves(FareCalculator.RESPECT_XP_REJECTED, tr("RIDER_%s_REJECT" % (_haggle_hail["archetype"] as PassengerArchetype).id.to_upper())) # Got bored and walked off.
+				_rider_leaves(FareCalculator.RESPECT_XP_REJECTED, _walk_line()) # Got bored and walked off.
 		State.RIDING:
 			_tick_ride(delta)
 		State.PAYOUT, State.COOLDOWN:
@@ -340,6 +349,10 @@ func spawn_hail_at(pos: Vector3, archetype: PassengerArchetype, at_stand: bool =
 	body.mesh = PersonMesh.standing(style, variant, true)
 	(node.get_node("WaveArm") as MeshInstance3D).mesh = PersonMesh.wave_arm(style, variant)
 	var animated: bool = _set_character(node, archetype.id, variant)
+	var ch: Node3D = node.get_node_or_null("Character") as Node3D
+	h["voice"] = SavariVoice.voice_of(str(ch.get_meta("person_id", "")) if animated and ch != null else "")
+	h["called"] = false
+	h["call_t"] = 0.0
 	body.visible = not animated
 	(node.get_node("WaveArm") as Node3D).visible = not animated
 	# Face the road / the approaching auto.
@@ -496,7 +509,12 @@ func start_haggle(h: Dictionary) -> void:
 		_haggle_offer = FareCalculator.opening_offer(_haggle_meter, a, _haggle_clues)
 		_haggle_patience = a.haggle_patience
 		_haggle_asks = FareCalculator.next_asks(_haggle_offer, _haggle_meter)
-	SignalBus.haggle_started.emit(_haggle_info(tr("RIDER_%s_HAIL" % a.id.to_upper())), _haggle_timer)
+	# The rider names the place and makes an offer; the round's clock starts after they speak.
+	var hv: String = str(h.get("voice", "man"))
+	var dest_l: Dictionary = voice.dest_line(SavariVoice.place_of(str(destination["name"])), hv)
+	var open_l: Dictionary = voice.rider_line("open", hv)
+	_haggle_timer += voice.say([dest_l, open_l], true)
+	SignalBus.haggle_started.emit(_haggle_info("%s %s" % [dest_l["text"], open_l["text"]]), _haggle_timer)
 
 ## What the driver can see about this rider. Each clue moves the hidden top price.
 func _read_rider(a: PassengerArchetype) -> PackedStringArray:
@@ -539,15 +557,22 @@ func _choose_destination(a: PassengerArchetype) -> Dictionary:
 func _on_haggle_choice(choice: int) -> void:
 	if state != State.HAGGLING:
 		return
+	# The hero says his side first (same words as the button: meter / a bit more / high), then
+	# the rider answers.
 	match choice:
 		FareCalculator.Choice.ACCEPT:
+			voice.say([voice.driver_line("accept")], true)
 			_close_deal(_haggle_offer)
 		FareCalculator.Choice.ASK_LOW, FareCalculator.Choice.ASK_HIGH:
 			var index: int = choice - FareCalculator.Choice.ASK_LOW
 			if index < _haggle_asks.size():
-				_ask(_haggle_asks[index])
+				var ask: int = _haggle_asks[index]
+				var cat: String = "meter" if ask == _haggle_meter else ("more" if index == 0 else "high")
+				_haggle_timer += voice.say([voice.driver_line(cat)], true)
+				_ask(ask)
 		FareCalculator.Choice.LET_GO:
-			_rider_leaves(0, tr("RIDER_%s_REJECT" % (_haggle_hail["archetype"] as PassengerArchetype).id.to_upper()))
+			voice.say([voice.driver_line("letgo")], true)
+			_rider_leaves(0, _walk_line())
 
 func _ask(ask: int) -> void:
 	var a: PassengerArchetype = _haggle_hail["archetype"]
@@ -559,13 +584,14 @@ func _ask(ask: int) -> void:
 	greed_streak = mini(greed_streak + 1, FareCalculator.MAX_GREED_STREAK)
 	if bool(r["walked"]):
 		_rider_leaves(FareCalculator.RESPECT_XP_INSULTED if bool(r["insulted"]) else FareCalculator.RESPECT_XP_REJECTED,
-			tr("RIDER_%s_REJECT" % a.id.to_upper()))
+			_walk_line())
 		return
 	_haggle_offer = int(r["offer"])
 	_haggle_patience = int(r["patience"])
 	_haggle_asks = FareCalculator.next_asks(_haggle_offer, _haggle_meter)
-	_haggle_timer = HAGGLE_SECONDS
-	var line: String = tr("HAGGLE_COUNTER_ANGRY" if bool(r["insulted"]) else "HAGGLE_COUNTER") % _haggle_offer
+	var said: Dictionary = voice.rider_line("angry" if bool(r["insulted"]) else "counter", str(_haggle_hail.get("voice", "man")))
+	_haggle_timer = HAGGLE_SECONDS + voice.say([said])
+	var line: String = "%s  ₹%d" % [said["text"], _haggle_offer]
 	SignalBus.haggle_updated.emit(_haggle_info(line), _haggle_timer)
 
 func _rider_leaves(respect: int, line: String) -> void:
@@ -594,6 +620,9 @@ func _close_deal(fare: int) -> void:
 		GameState.add_respect(FareCalculator.RESPECT_XP_DEAL if fare <= _haggle_meter else FareCalculator.RESPECT_XP_DEAL / 2)
 	var ch: Node3D = (_haggle_hail["node"] as Node3D).get_node_or_null("Character") as Node3D
 	_rider_person = str(ch.get_meta("person_id", "")) if ch != null and ch.visible else ""
+	_rider_voice = str(_haggle_hail.get("voice", "man"))
+	var deal_l: Dictionary = voice.rider_line("deal", _rider_voice)
+	voice.say([deal_l])
 	_remove_hail(_haggle_hail)
 	_haggle_hail = {}
 	_publish_hails()
@@ -604,7 +633,7 @@ func _close_deal(fare: int) -> void:
 	near_misses = 0
 	time_left_s = FareCalculator.ride_time_limit_s(float(route["length"]), a)
 	state = State.RIDING
-	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "streak": deal_streak, "line": tr("RIDER_%s_ACCEPT" % a.id.to_upper())})
+	SignalBus.haggle_resolved.emit({"accepted": true, "offer": offer, "fare": agreed_fare, "streak": deal_streak, "line": str(deal_l["text"])})
 	SignalBus.passenger_boarded.emit(a.party_size, a.luggage_kg)
 	_publish_route(route)
 	_dest_marker.global_position = destination["pos"]
@@ -656,7 +685,9 @@ func complete_ride() -> void:
 	b["archetype_name"] = tr("RIDER_%s_NAME" % rider.id.to_upper())
 	b["archetype"] = rider.id
 	b["distance_km"] = _haggle_trip_km * FareCalculator.REAL_KM_PER_GAME_KM
-	b["line"] = tr("RIDER_%s_%s" % [rider.id.to_upper(), "HAPPY" if comfort >= 0.5 and on_time else "UPSET"])
+	var end_l: Dictionary = voice.rider_line("happy" if comfort >= 0.5 and on_time else "upset", _rider_voice)
+	voice.say([end_l], true)
+	b["line"] = str(end_l["text"])
 	b["offer"] = agreed_offer
 	b["comfort"] = comfort
 	b["near_misses"] = near_misses
@@ -682,8 +713,7 @@ func _on_wrecked(wrecked: bool) -> void:
 			abandon_ride()
 		State.HAGGLING:
 			# Not on board yet: they simply walk off, with no respect lost on either side.
-			var a: PassengerArchetype = _haggle_hail["archetype"]
-			_rider_leaves(0, tr("RIDER_%s_REJECT" % a.id.to_upper()))
+			_rider_leaves(0, _walk_line())
 
 ## The auto is on fire with a rider on board: they jump out and run. No fare, and no rating, since
 ## the driver didn't choose this. The route and destination ring clear, the HUD gets the line.
@@ -839,11 +869,38 @@ func _on_pose(pos: Vector3, fwd: Vector3) -> void:
 ## Hailing passengers wave their raised arm ("Auto!") — one rotation per visible hail.
 func _animate_hails() -> void:
 	var t: float = Time.get_ticks_msec() * 0.001
+	var dt: float = 1.0 / float(Engine.physics_ticks_per_second)
 	for h: Dictionary in hails:
 		var n: Node3D = h["node"]
+		_call_for_auto(h, n, dt)
 		var arm: Node3D = n.get_node_or_null("WaveArm") as Node3D
 		if arm != null:
 			arm.rotation.z = -0.35 + sin(t * 7.0 + float(h["id"])) * 0.45
+
+## The rider shouts for the auto when it comes near ("Auto!"): heard from the kerb, and the line
+## shows over their head for a moment before their name comes back.
+func _call_for_auto(h: Dictionary, n: Node3D, dt: float) -> void:
+	var label: Label3D = n.get_node("Label") as Label3D
+	if float(h.get("call_t", 0.0)) > 0.0:
+		h["call_t"] = float(h["call_t"]) - dt
+		if float(h["call_t"]) <= 0.0:
+			label.text = tr("RIDER_%s_NAME" % (h["archetype"] as PassengerArchetype).id.to_upper())
+	if bool(h.get("called", true)) or state != State.CRUISING:
+		return
+	var d: float = Vector2((h["pos"] as Vector3).x - _player_pos.x, (h["pos"] as Vector3).z - _player_pos.z).length()
+	if d > CALL_M or d < PICKUP_RADIUS_M + 2.0:
+		return
+	h["called"] = true
+	var line: Dictionary = voice.rider_line("call", str(h.get("voice", "man")))
+	voice.call_out(line, (h["pos"] as Vector3) + Vector3.UP * 1.5)
+	label.text = "“%s”" % str(line["text"])
+	h["call_t"] = CALL_SHOW_S
+
+## The rider walks off: their line (spoken) for the HUD.
+func _walk_line() -> String:
+	var line: Dictionary = voice.rider_line("walk", str(_haggle_hail.get("voice", "man")))
+	voice.say([line])
+	return str(line["text"])
 
 func _build_pools() -> void:
 	var beam: CylinderMesh = CylinderMesh.new()
