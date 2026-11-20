@@ -583,9 +583,12 @@ func _rider_cycle(rider: QuestRider, director: MissionDirector, auto: AutoRicksh
 			and rider.body.global_position.distance_to(d.start_anchor) < 15.0, QuestRider.State.keys()[rider.state])
 	_check(who + "…on a stone ledge", rider._ledge != null and rider._ledge.visible)
 	_check(who + "the quest starts", director.start(id))
-	_check(who + "…and the rider walks to the auto rather than appearing in it", rider.state == QuestRider.State.BOARDING)
+	# A story quest's intro scene may first walk her up to stand by the door (LEAVING) and seat her
+	# once its talk is done, so allow the whole scene for the boarding.
+	_check(who + "…and the rider walks to the auto rather than appearing in it", rider.state in [QuestRider.State.BOARDING, QuestRider.State.LEAVING]
+			and rider.body.get_parent() == rider)
 	_check(who + "its stops don't count until the rider is in", director.rider_missing())
-	for i: int in 900:
+	for i: int in 4000:
 		if rider.state == QuestRider.State.ABOARD:
 			break
 		await get_tree().process_frame

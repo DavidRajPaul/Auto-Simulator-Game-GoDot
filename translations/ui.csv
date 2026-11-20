@@ -239,17 +239,30 @@ SQ14_RIDER,Student,மாணவி
 SQ21_RIDER,Job seeker,வேலை தேடுபவர்
 RIDER_OUT_FIRE,"%s got out of the burning auto. Put the fire out, then pick her up.","%s எரியும் ஆட்டோவிலிருந்து இறங்கிவிட்டார். தீயை அணைத்து, பிறகு அவரை ஏற்றிக்கொள்."
 RIDER_LEFT_BEHIND,%s is waiting. Stop next to her to pick her up.,%s காத்திருக்கிறார். அவர் அருகில் நிறுத்தி ஏற்றிக்கொள்.
-SQ04_DESC,An old grandmother is lost. Use her memories to find her family's home.,ஒரு பாட்டிக்கு வீட்டுக்குப் போற வழி மறந்திடுச்சு. அவங்க சொல்லுற அடையாளத்தை வச்சு வீட்டைக் கண்டுபிடி.
-SQ04_CLUE_1,Paati remembers a flower stall. Drive there and look around.,பாட்டிக்குப் பூக்கடை நினைவிருக்கிறது. அங்கே போய்ப் பார்.
-SQ04_GUESS,The seller says to go by the temple tank steps. Where next?,குளத்துப் படிகள் வழியாகப் போகச் சொல்கிறார் கடைக்காரர். அடுத்து எங்கே?
-SQ04_TANK,Tank steps,குளத்துப் படிகள்
+SQ04_DESC,"Kamakshi Paati is lost in Mylapore. No phone, no address, only her memories. Help her find her granddaughter's home.","காமாட்சி பாட்டி மயிலாப்பூர்ல வழி தவறிட்டாங்க. போனும் இல்ல, அட்ரஸும் இல்ல, நினைவுகள் மட்டும்தான். பேத்தி வீட்டைக் கண்டுபிடிக்க உதவு."
+SQ04_JOB,1. Listen to Paati and drive to the places she remembers.\n2. Stop beside the people there and let them talk.\n3. Find her granddaughter Meena and tap her when you see her.\n4. Drive them home gently.,"1. பாட்டி சொல்வதைக் கேட்டு, அவருக்கு நினைவிருக்கும் இடங்களுக்கு ஓட்டு.\n2. அங்கே இருப்பவர்கள் பக்கத்தில் நிறுத்து, அவர்கள் பேசட்டும்.\n3. பேத்தி மீனாவைக் கண்டுபிடித்து, பார்த்ததும் அவரைத் தொடு.\n4. இருவரையும் மெதுவாக வீட்டில் சேர்."
+SQ04_INTRO,Paati needs a ride.,பாட்டிக்கு ஒரு சவாரி வேண்டும்.
+SQ04_ASK_FLOWER,Drive to the flower stall and stop beside Valli.,பூக்கடைக்குப் போய் வள்ளி பக்கத்தில் நிறுத்து.
+SQ04_FLOWERS,Valli remembers Paati.,வள்ளிக்குப் பாட்டியை நினைவிருக்கிறது.
+SQ04_GUESS,Where did Paati go after the flower stall?,பூக்கடைக்குப் பிறகு பாட்டி எங்கே போனார்?
+SQ04_TANK,The temple tank,கோயில் குளம்
 SQ04_MARKET,The market,சந்தை
-SQ04_HINT,Paati shakes her head. She wants the tank steps.,பாட்டி தலையசைக்கிறார். அவர் குளத்துப் படிகளைச் சொல்கிறார்.
-SQ04_LISTEN,Go to the tank steps,குளத்துப் படிகளுக்குப் போ
-SQ04_CLUE_2,Drive to the tank steps and look around.,குளத்துப் படிகளுக்குப் போய்ப் பார்.
-SQ04_REVEAL,Paati smiles. She knows this place. The house is close!,பாட்டி சிரிக்கிறார். இந்த இடம் அவருக்குத் தெரியும். வீடு அருகில்தான்!
-SQ04_READY,Take her home,வீட்டில் சேர்
-SQ04_HOME,Take Paati to her granddaughter's home.,பாட்டியைப் பேத்தியின் வீட்டில் சேர்.
+SQ04_MARKET_LINE,Paati thinks again.,பாட்டி மறுபடி யோசிக்கிறார்.
+SQ04_TANK_LINE,Off to the tank.,குளத்துக்குப் புறப்படு.
+SQ04_ASK_SUNDAL,Drive to the tank and stop beside the sundal seller.,குளத்துக்குப் போய் சுண்டல் தாத்தா பக்கத்தில் நிறுத்து.
+SQ04_SUNDAL,The sundal seller remembers.,சுண்டல் தாத்தாவுக்கு நினைவிருக்கிறது.
+SQ04_FIND_MEENA,Find Meena near the temple: green churidar. Tap her when you see her.,கோயில் பக்கம் மீனாவைத் தேடு: பச்சை சுடிதார். பார்த்ததும் அவரைத் தொடு.
+SQ04_REUNION,Paati and Meena.,பாட்டியும் மீனாவும்.
+SQ04_HOME,Take them home. Drive gently.,இருவரையும் வீட்டில் சேர். மெதுவாக ஓட்டு.
+SQ04_AT_HOME,The green gate.,பச்சை கேட்.
+SQ04_PAYOFF,Meena asks for the fare.,மீனா கட்டணம் கேட்கிறார்.
+SQ04_TAKE_FARE,Take the fare,கட்டணம் வாங்கு
+SQ04_REFUSE_FARE,"No fare, Paati",காசு வேண்டாம் பாட்டி
+SQ04_THANKS,Paati says thank you.,பாட்டி நன்றி சொல்கிறார்.
+SQ04_P_STALL,Valli's Flower Stall,வள்ளி பூக்கடை
+SQ04_P_TANK,"Tank Steps, South Mada Street","குளத்துப் படி, தெற்கு மாட வீதி"
+SQ04_P_TEMPLE,East Tank Square Street,கிழக்கு குளக்கரைத் தெரு
+SQ04_P_HOME,"Meena's Home, Green Gate","மீனா வீடு, பச்சை கேட்"
 SQ09_TITLE,A Quiet Ride for Kutty,குட்டிக்கு ஒரு அமைதியான சவாரி
 SQ09_DESC,A scared puppy needs a gentle ride to the animal clinic.,பயந்துபோன நாய்க்குட்டியை வெட்னரி ஹாஸ்பிட்டலுக்கு மெதுவா கூட்டிட்டு போ.
 SQ09_BRIEF,"Kutty is shaking with fear. Go straight to the clinic, or stop first to calm him?","குட்டி பயத்தில் நடுங்குகிறது. நேராக மருத்துவமனையா, அல்லது நிறுத்தி அமைதிப்படுத்தவா?"
@@ -528,6 +541,11 @@ VO_SPK_TEA,Tea stall anna,டீக்கடை அண்ணா
 VO_SPK_FLOWER,Flower seller,பூக்கார அக்கா
 VO_SPK_PRIYA,Priya,பிரியா
 VO_SPK_KID,Little boy,சின்னப் பையன்
+VO_SPK_PAATI,Paati,பாட்டி
+VO_SPK_VALLI,Valli (flowers),வள்ளி (பூக்கடை)
+VO_SPK_WATCHMAN,Watchman,வாட்ச்மேன்
+VO_SPK_SUNDAL,Sundal thatha,சுண்டல் தாத்தா
+VO_SPK_MEENA,Meena,மீனா
 VO_SQ07_D01,Whoa! What was that…!,ஐயோ! என்னது இது…!
 VO_SQ07_L01,"Auto! Auto! Brother, please stop!","ஆட்டோ! ஆட்டோ! அண்ணா, கொஞ்சம் நில்லுங்க!"
 VO_SQ07_L02,"My son Karthik… he ran after that red kite. He's only nine, brother!",என் பையன் கார்த்திக்… அந்த சிவப்பு பட்டத்துக்குப் பின்னாடியே ஓடிட்டான். ஒன்பது வயசுதான் அண்ணா!
@@ -570,6 +588,54 @@ VO_SQ07_L24,You have a good heart. God bless you.,நல்ல மனசு உ�
 VO_SQ07_B08,Thanks brother! This sticker is for you!,தேங்க்ஸ் அண்ணா! இந்த ஸ்டிக்கர் உங்களுக்கு!
 VO_SQ07_B09,"Auto brother! Look, my kite!","ஆட்டோ அண்ணா! பாருங்க, என் பட்டம்!"
 VO_SQ07_L25,"…You found him? He's with the neighbour? Okay… okay… Brother, please drop me home.","…கிடைச்சுட்டானா? பக்கத்து வீட்டு அக்கா கூடவா? சரி… சரி… அண்ணா, என்னை வீட்ல விட்டுடுங்க."
+VO_SQ04_P01,"Thambi! Auto thambi! Wait a little, son!",தம்பி! ஆட்டோ தம்பி! கொஞ்சம் நில்லுப்பா!
+VO_SQ04_D01,"Take it slow, Paati. I'm not going anywhere.",மெதுவா வாங்க பாட்டி. நான் எங்கயும் போகல.
+VO_SQ04_P02,I only came from Kumbakonam yesterday… to my granddaughter Meena's house. I came to the temple this morning… and now I've forgotten the way back.,நேத்துதான் கும்பகோணத்துலேருந்து வந்தேன்… பேத்தி மீனா வீட்டுக்கு. காலைல கோயிலுக்கு வந்தேன்… இப்ப வீட்டுக்குப் போற வழியே மறந்து போச்சு.
+VO_SQ04_D02,"Do you have the address, Paati? Or a phone number?",அட்ரஸ் இருக்கா பாட்டி? இல்ல போன் நம்பர்?
+VO_SQ04_P03,My phone? It's charging at home! Only Meena knows the address.,போனா? அது வீட்டுல சார்ஜ்ல இருக்கு! அட்ரஸ் மீனாவுக்குத்தான் தெரியும்.
+VO_SQ04_P04,"But… this morning I bought jasmine at a flower stall. If we go there, I'll remember.",ஆனா… காலைல ஒரு பூக்கடையில மல்லிப்பூ வாங்கினேன். அங்க போனா ஞாபகம் வரும்ப்பா.
+VO_SQ04_D03,"Hop in, Paati. We'll find it by the smell of jasmine!",ஏறுங்க பாட்டி. மல்லிப்பூ வாசனைய வச்சே கண்டுபிடிப்போம்!
+VO_SQ04_P05,"In my day this whole road was tiled houses with thinnais. Now look, all flats!","அந்தக் காலத்துல இந்த ரோடு முழுக்க திண்ணை வச்ச ஓட்டு வீடுங்கதான். இப்ப பாரு, எல்லாம் ஃப்ளாட்டு!"
+VO_SQ04_P06,Poor Meena… she'll be searching for me.,பாவம் மீனா… தேடிக்கிட்டு இருப்பா.
+VO_SQ04_P07,"Go slowly, son. My knees are seventy-eight years old!",மெதுவா போப்பா. என் முட்டிக்கு எழுபத்தெட்டு வயசு!
+VO_SQ04_W01,"A new flat? There are a hundred new flats on this road alone, Paati! Which one?",புது ஃப்ளாட்டா? இந்த ரோட்டுலயே நூறு புது ஃப்ளாட் இருக்கு பாட்டி! எதுன்னு சொல்றது?
+VO_SQ04_P08,"Hmph. He doesn't know either. To the flower stall, son.",ம்க்கும். இவருக்கும் தெரியல. பூக்கடைக்கே போப்பா.
+VO_SQ04_P14,"Aiyaiyo! Slowly, son, slowly!","அய்யய்யோ! மெதுவாப்பா, மெதுவா!"
+VO_SQ04_V01,"Oh, Paati! You came this morning! You left without your change!","அட, பாட்டி! காலைல வந்தீங்களே! மீதி சில்லறை வாங்காமலே போயிட்டீங்க!"
+VO_SQ04_P09,"See, son? Didn't I tell you? It's her!",பாத்தியா தம்பி? நான் சொல்லல? இவதான்!
+VO_SQ04_V02,You asked me where the temple tank was. Then you said you had to go to the market too. I didn't see which way you went.,நீங்க கோயில் குளம் எங்கன்னு கேட்டீங்க. அப்புறம் சந்தைக்கும் போகணும்னு சொன்னீங்க. எந்தப் பக்கம் போனீங்கன்னு நான் பாக்கல.
+VO_SQ04_P10,The tank… or the market… where did I go?,குளமா… சந்தையா… நான் எங்க போனேன்?
+VO_SQ04_D04,"Maybe the market, Paati?",சந்தையா இருக்குமோ பாட்டி?
+VO_SQ04_P11,"No, son. There's no bag in my hand, I bought nothing. It was the tank! I remember sitting on the steps.","இல்லப்பா. கையில ஒரு பையும் இல்ல, எதுவும் வாங்கல. குளம்தான்! படியில உக்காந்தது ஞாபகம் இருக்கு."
+VO_SQ04_D05,"It's the Kapaleeshwarar tank, Paati. Hold on!",கபாலீஸ்வரர் குளம்தான் பாட்டி. பிடிச்சுக்கோங்க!
+VO_SQ04_P12,Clever boy!,சமத்துப் பையன்!
+VO_SQ04_V03,"Paati, your change! Okay, next time!","பாட்டி, உங்க சில்லறை! சரி, அடுத்த தடவை!"
+VO_SQ04_P13,"By the tank steps there was an old sundal seller. He told me, careful on the steps, Paati. Let's ask him.",குளத்துப் படிகிட்ட ஒரு சுண்டல் தாத்தா இருந்தாரு. பாத்து இறங்குங்க பாட்டின்னு சொன்னாரு. அவரக் கேப்போம்.
+VO_SQ04_S01,"Come, Paati! You sat on the steps this morning, singing!",வாங்க பாட்டி! காலைல படியில உக்காந்து பாட்டு பாடிக்கிட்டு இருந்தீங்களே!
+VO_SQ04_P15,"That wasn't singing, son, just humming.","அது பாட்டு இல்லப்பா, சும்மா முணுமுணுப்பு."
+VO_SQ04_S02,"Ten minutes ago a girl came by, crying. Green churidar. She was asking everyone, have you seen my Paati? She went toward the temple side.",பத்து நிமிஷம் முன்னாடி ஒரு பொண்ணு அழுதுக்கிட்டே வந்துச்சு. பச்சை சுடிதார். என் பாட்டியப் பாத்தீங்களான்னு எல்லார்கிட்டயும் கேட்டுக்கிட்டு கோயில் பக்கம் போச்சு.
+VO_SQ04_P16,"Meena! That's my Meena! Go, son, go!","மீனா! அது என் மீனாதான்! போ தம்பி, போ!"
+VO_SQ04_P17,"Green churidar… she's tall. Look carefully, son.",பச்சை சுடிதார்… நெட்டையா இருப்பா. நல்லா பாருப்பா.
+VO_SQ04_P18,It's my fault… I left without telling her.,என் தப்புதான்… சொல்லாமப் போயிட்டேன்.
+VO_SQ04_P19,"She never wears a saree, always a churidar. Green… her thatha's favourite colour.","அவ சேலை கட்ட மாட்டா, எப்பவும் சுடிதார்தான். பச்சை… அவ தாத்தாவுக்குப் பிடிச்ச கலர்."
+VO_SQ04_P20,"No, son, that's not Meena.","இல்லப்பா, அது மீனா இல்ல."
+VO_SQ04_M01,Paati!,பாட்டீ!
+VO_SQ04_M02,"Where did you go, Paati?! No phone, no address… I was so scared, what would I tell Amma!","எங்க போனீங்க பாட்டி?! போனும் இல்ல, அட்ரஸும் தெரியாது… அம்மாகிட்ட என்ன சொல்லுவேன்னு பயந்தே போயிட்டேன்!"
+VO_SQ04_P21,"I went to see Kapaleeshwarar, kanna. I've come here for fifty years. The temple hasn't changed… only the roads have.",கபாலீஸ்வரரப் பாக்கப் போனேன் கண்ணு. அம்பது வருஷமா வர்றேன். கோயில் மாறல… ரோடுதான் மாறிடுச்சு.
+VO_SQ04_M03,Paati… our house is just two minutes from here!,பாட்டி… நம்ம வீடு இங்கேருந்து ரெண்டே நிமிஷம்தான்!
+VO_SQ04_P22,"This boy brought me here. Like my own grandson, so patient.","இந்தத் தம்பிதான் என்னக் கூட்டிட்டு வந்தான். என் பேரன் மாதிரி, அவ்ளோ பொறுமை."
+VO_SQ04_M04,"Thank you so much, brother. Please drop us home, Paati can't walk that far.","ரொம்ப நன்றி அண்ணா. வீட்டுல கொண்டு விட்டுடுங்களேன், பாட்டியால அவ்ளோ தூரம் நடக்க முடியாது."
+VO_SQ04_D06,"Both of you, hop in.",ரெண்டு பேரும் ஏறுங்க.
+VO_SQ04_M05,"From now on you don't go anywhere alone, understand, Paati?","இனிமே தனியா எங்கயும் போகக் கூடாது, புரியுதா பாட்டி?"
+VO_SQ04_P23,And when you go to office I just sit at home? I have this boy's auto now!,நீ ஆபீஸ் போனா நான் வீட்டுலயே உக்காந்திருக்கணுமா? இப்ப எனக்குத் தம்பியோட ஆட்டோ இருக்கே!
+VO_SQ04_P24,"Aiyo, my knees!","ஹையோ, என் முட்டி!"
+VO_SQ04_M06,"Here, the green gate. This is our house, Paati. Don't forget it again!","இதோ, பச்சை கேட். இதுதான் நம்ம வீடு பாட்டி. இனிமே மறக்கக் கூடாது!"
+VO_SQ04_P25,"Green gate… green gate… okay, okay!",பச்சை கேட்… பச்சை கேட்… சரி சரி!
+VO_SQ04_M07,"How much is it, brother?",எவ்வளவு ஆச்சு அண்ணா?
+VO_SQ04_P26,"You won't take money? Bless you, son. May your auto never run empty.",காசு வேணாமா? நல்லா இரு தம்பி. உன் ஆட்டோ எப்பவும் சவாரியோடவே ஓடட்டும்.
+VO_SQ04_M08,"Here, brother. What would we have done without you.",இந்தாங்க அண்ணா. நீங்க இல்லன்னா என்ன பண்ணியிருப்போம்.
+VO_SQ04_P27,"Here, Kumbakonam athirasam. I made it myself. You can't say no!","இந்தா, கும்பகோணம் அதிரசம். நானே செஞ்சது. வேணாம்னு சொல்லக் கூடாது!"
+VO_SQ04_D07,"Who says no to athirasam, Paati?",அதிரசத்துக்கு யாராவது வேணாம்னு சொல்லுவாங்களா பாட்டி?
 SQ08_TITLE,Rain Before Pack-Up,மழைக்கு முன் கடை மூடல்
 SQ08_DESC,Rain is coming! Help two beach sellers save their goods.,மழை வருது! இரண்டு கடைக்காரர்களின் பொருட்களைக் காப்பாற்று.
 SQ08_ORDER,One seller has paper goods. The other has sealed boxes. Who first?,ஒருவரிடம் காகிதப் பொருட்கள். மற்றவரிடம் மூடிய பெட்டிகள். முதலில் யார்?
@@ -674,10 +740,6 @@ SQ03_P_SHOP,Music Shop,இசைக் கடை
 SQ03_P_HALL,Music Hall,சபா மண்டபம்
 SQ03_P_NOTICE,Notice Board,அறிவிப்புப் பலகை
 SQ03_P_BACK,Hall Back Gate,சபா பின்னாடி கேட்
-SQ04_JOB,1. Drive Paati to the places she remembers.\n2. Stop and look around at each one.\n3. Take her to her granddaughter's home.,1. பாட்டிக்கு நினைவிருக்கும் இடங்களுக்கு ஓட்டு.\n2. ஒவ்வொரு இடத்திலும் நிறுத்திப் பார்.\n3. பேத்தியின் வீட்டில் சேர்.
-SQ04_P_STALL,Flower Stall,பூக்கடை
-SQ04_P_STEPS,Tank Steps Corner,குளத்துப் படி முனை
-SQ04_P_HOME,Granddaughter's Home,பேத்தியின் வீடு
 SQ05_JOB,1. Load the lamps.\n2. Take the open road around the procession. Stay under 25 km/h.\n3. Back up at the store and unload.\nBumps and crashes can break the lamps.,1. விளக்குகளை ஏற்று.\n2. திறந்த சாலையில் சுற்றிப் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. கிடங்கில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் விளக்குகளை உடைக்கும்.
 SQ05_OUTER_GO,Take the outer road. Drive slowly.,வெளிச் சாலையில் மெதுவாப் போ.
 SQ05_P_SHOP,Lamp Shop,விளக்குக் கடை

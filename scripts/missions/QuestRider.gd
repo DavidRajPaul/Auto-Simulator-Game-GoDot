@@ -61,6 +61,10 @@ var _scan: float = 0.0
 var _burning: bool = false
 var _climbing: float = 0.0 # > 0 while a climb-in / climb-out tween plays
 var _tween: Tween
+## A story scene (QuestStory) has her standing out of the auto: she doesn't walk back to it on her
+## own until the scene says so (story_in) or the scene ends.
+var story_hold: bool = false
+var _face_after: Vector3 = Vector3.INF # where she turns once a story walk ends
 
 func _ready() -> void:
 	director = get_node_or_null(director_path) as MissionDirector
@@ -72,6 +76,10 @@ func _ready() -> void:
 	SignalBus.mission_ownership_changed.connect(_on_ownership)
 	SignalBus.mission_finished.connect(_on_finished)
 	SignalBus.vehicle_burning.connect(_on_burning)
+	# A scene that let her out and ended (or was skipped past) hands her back to the fare rules.
+	SignalBus.quest_cinematic_changed.connect(func(on: bool) -> void:
+		if not on:
+			story_hold = false)
 
 func _exit_tree() -> void:
 	SignalBus.quest_rider_aboard_provider = Callable()
@@ -100,7 +108,7 @@ func _process(delta: float) -> void:
 				if _step_walk(delta):
 					_sit_in_auto(true)
 		State.OUT:
-			if not _burning and not GameState.is_on_fire() and _auto() != null and _speed_kmh <= PICKUP_KMH \
+			if not story_hold and not _burning and not GameState.is_on_fire() and _auto() != null and _speed_kmh <= PICKUP_KMH \
 					and body.global_position.distance_to(_auto().global_position) <= PICKUP_M:
 				_start_walk(_door_point(), State.ABOARD, true)
 				state = State.BOARDING
@@ -109,6 +117,7 @@ func _process(delta: float) -> void:
 				if _after_walk == State.OUT:
 					state = State.OUT
 					_stand()
+					_turn_to(_face_after)
 				else:
 					_clear()
 
@@ -478,7 +487,94 @@ func _clear_ledge_later() -> void:
 		_ledge.queue_free()
 		_ledge = null
 
+# --- Story scenes (QuestStory) ---------------------------------------------------
+
+## Gets out of the auto (kerb side) and walks to `to`, then stands facing `face_to`. `now`: she is
+## simply there (a cut, or a skipped scene). She stays out until story_in() or the scene ends.
+func story_out(to: Vector3, face_to: Vector3, now: bool = false) -> void:
+	if body == null or state in [State.NONE, State.WAITING]:
+		return
+	story_hold = true
+	_face_after = face_to
+	if now:
+		_kill_tween()
+		if body.get_parent() != self:
+			body.reparent(self, false)
+			body.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		to.y = SignalBus.surface_height(to.x, to.z, to.y)
+		body.global_transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * _size), to)
+		state = State.OUT
+		_stand()
+		_turn_to(face_to)
+		return
+	if state == State.ABOARD:
+		_get_out(to, State.OUT)
+	else:
+		_start_walk(to, State.OUT, false)
+		state = State.LEAVING
+
+## Walks to `to` on foot (out of the auto first if she is in it) and stands there.
+func story_walk(to: Vector3, face_to: Vector3 = Vector3.INF) -> void:
+	story_out(to, face_to, false)
+
+## Back into the auto: walks to the door and climbs in. `now`: she is in her seat at once.
+func story_in(now: bool = false) -> void:
+	if body == null or state in [State.NONE, State.WAITING]:
+		return
+	story_hold = false
+	_face_after = Vector3.INF
+	if state == State.ABOARD and not now:
+		return
+	if now:
+		if state != State.ABOARD or _climbing > 0.0:
+			_kill_tween()
+			_sit_in_auto(false)
+		return
+	if state != State.BOARDING:
+		_start_walk(_door_point(), State.ABOARD, true)
+		state = State.BOARDING
+
+## Hidden (gone through her door at the end of a scene) or shown again.
+func story_show(on: bool) -> void:
+	if body != null:
+		body.visible = on
+
+## Standing out of the auto: turns to look at `point`.
+func story_face(point: Vector3) -> void:
+	_face_after = point
+	if state == State.OUT:
+		_turn_to(point)
+
+## True while she is walking, climbing in or out: a scene can wait for her.
+func story_moving() -> bool:
+	return body != null and (_climbing > 0.0 or state in [State.BOARDING, State.LEAVING])
+
+func is_aboard() -> bool:
+	return state == State.ABOARD
+
+## Her feet, or where she sits, in the world (Vector3.INF with no rider).
+func story_point() -> Vector3:
+	return body.global_position if body != null else Vector3.INF
+
+## Her head (for a camera to look at), seated or standing.
+func head_point() -> Vector3:
+	if body == null:
+		return Vector3.INF
+	if _skeleton != null and _skeleton.find_bone("Head") >= 0:
+		return _skeleton.global_transform * _skeleton.get_bone_global_pose(_skeleton.find_bone("Head")).origin
+	return body.global_position + Vector3.UP * (_size * (0.6 if state == State.ABOARD else 0.88))
+
+func _turn_to(point: Vector3) -> void:
+	if body == null or point == Vector3.INF or body.get_parent() != self:
+		return
+	var to: Vector3 = point - body.global_position
+	to.y = 0.0
+	if to.length_squared() > 0.0004:
+		body.global_transform = Transform3D(Basis.looking_at(to.normalized(), Vector3.UP, true).scaled(Vector3.ONE * _size), body.global_position)
+
 func _clear() -> void:
+	story_hold = false
+	_face_after = Vector3.INF
 	_kill_tween()
 	_clear_ledge_later()
 	if body != null:

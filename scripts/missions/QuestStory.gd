@@ -15,8 +15,12 @@ extends Node3D
 ##   "act": {role: {"at", "to", "gait", "anim", "then", "face", "show", "kite", "roof"}}
 ##   "prop": {id: {"path": [marks], "secs", "to": "hand:<role>", "show", "string"}}
 ##   "fade_in": s, "fade_out": s, "if_choice": [stage id, choice], "hold": bool
+##   "rider": {"out": mark, "walk": mark, "face": look, "now": bool, "in": true, "show": bool}
+##     moves the quest's rider (QuestRider, MissionDef.rider_model): out of the auto to a mark,
+##     on foot to a mark, or back in through the door; "wait": "rider" waits until she is there.
 ## A mark is [r, u, f], "door" (the kerb-side door), "place:<stage>" (that stage's place_pos),
-## "role:<name>" or a world Vector3. A look is a mark, "role:<name>", "prop:<id>" or "auto".
+## "role:<name>", "rider" or a world Vector3. A look is a mark, "role:<name>", "prop:<id>",
+## "rider" (her head, seated or standing) or "auto".
 
 const FADE_DEFAULT_S: float = 0.45
 const BEAT_GAP_S: float = 0.35
@@ -41,6 +45,7 @@ const COCKPIT_EYE: Vector3 = CameraRig.COCKPIT_OFFSET
 @export var director_path: NodePath = NodePath("../MissionDirector")
 @export var auto_path: NodePath = NodePath("../AutoRickshaw")
 @export var rig_path: NodePath = NodePath("../CameraRig")
+@export var rider_path: NodePath = NodePath("../QuestRider")
 
 var director: MissionDirector
 var quest_id: String = ""
@@ -55,6 +60,7 @@ var lines_said: PackedStringArray = PackedStringArray() # every line started, fo
 
 var _auto: AutoRickshawController
 var _rig: CameraRig
+var _rider: QuestRider
 var _camera: Camera3D
 var _voice: AudioStreamPlayer
 var _queue: Array[String] = []
@@ -121,6 +127,7 @@ func _ready() -> void:
 	director = get_node_or_null(director_path) as MissionDirector
 	_auto = get_node_or_null(auto_path) as AutoRickshawController
 	_rig = get_node_or_null(rig_path) as CameraRig
+	_rider = get_node_or_null(rider_path) as QuestRider
 	_camera = Camera3D.new()
 	_camera.name = "StoryCamera"
 	_camera.near = 0.08
@@ -313,6 +320,11 @@ func end_story() -> void:
 	_lingering.clear()
 	spoken.clear()
 	_bark = {}
+	# Cooldowns belong to the quest that set them: the next story starts fresh.
+	_miss_cd = 0.0
+	_wrong_cd = 0.0
+	_impact_cd = 0.0
+	_jolt_cd = 0.0
 	quest_id = ""
 	stage_id = ""
 	story = null
@@ -544,6 +556,8 @@ func _begin_beat(b: Dictionary) -> void:
 		_apply_act(role, (b["act"] as Dictionary)[role] as Dictionary, false)
 	for id: String in (b.get("prop", {}) as Dictionary):
 		_apply_prop(id, (b["prop"] as Dictionary)[id] as Dictionary, false)
+	if b.has("rider"):
+		_apply_rider(b["rider"] as Dictionary, false)
 	var fade_in: float = float(b.get("fade_in", 0.0))
 	if fade_in > 0.0:
 		_fade.color.a = 1.0
@@ -598,7 +612,8 @@ func _tick_beat(delta: float) -> void:
 	if _fade_out_at >= 0.0 and _beat_t >= _fade_out_at:
 		_fade_out_at = -1.0
 		create_tween().tween_property(_fade, "color:a", 1.0, maxf(_fade_out_s, 0.05))
-	var waiting: bool = _beat_wait != "" and actors.has(_beat_wait) and not (actors[_beat_wait] as QuestActor).arrived()
+	var waiting: bool = (_beat_wait != "" and actors.has(_beat_wait) and not (actors[_beat_wait] as QuestActor).arrived()) \
+		or (_beat_wait == "rider" and _rider != null and _rider.story_moving())
 	var talking: bool = _voice_left > 0.0
 	if _beat_t >= _beat_max or (_beat_t >= _beat_len and not waiting and not talking):
 		_next_beat()
@@ -640,6 +655,8 @@ func skip() -> void:
 			_apply_act(role, (b["act"] as Dictionary)[role] as Dictionary, true)
 		for id: String in (b.get("prop", {}) as Dictionary):
 			_apply_prop(id, (b["prop"] as Dictionary)[id] as Dictionary, true)
+		if b.has("rider"):
+			_apply_rider(b["rider"] as Dictionary, true)
 		if b.has("cam"):
 			last_cam = b["cam"] as Dictionary
 	if not last_cam.is_empty() and not bool(last_cam.get("cockpit", false)):
@@ -697,6 +714,30 @@ func _apply_act(role: String, a: Dictionary, instant: bool) -> void:
 		else:
 			# true or "fly": a kite flying on its string; any other name: one in the hand.
 			_give_kite(actor, "fly" if (k is bool or str(k) == "fly") else "held", Color(0.86, 0.08, 0.1))
+
+## The quest's rider (QuestRider) in a scene: out of the auto, on foot, back in, hidden.
+func _apply_rider(r: Dictionary, instant: bool) -> void:
+	if _rider == null or _rider.body == null:
+		return
+	var now: bool = instant or bool(r.get("now", false))
+	var face_to: Vector3 = _face_point(r["face"]) if r.has("face") else Vector3.INF
+	if r.has("out"):
+		_rider.story_out(_mark(r["out"], true), face_to, now)
+	if r.has("walk"):
+		if now:
+			_rider.story_out(_mark(r["walk"], true), face_to, true)
+		else:
+			_rider.story_walk(_mark(r["walk"], true), face_to)
+	if r.has("face") and not r.has("out") and not r.has("walk"):
+		_rider.story_face(face_to)
+	if bool(r.get("in", false)):
+		_rider.story_in(now)
+	if r.has("show"):
+		_rider.story_show(bool(r["show"]))
+
+func _rider_point() -> Vector3:
+	var p: Vector3 = _rider.story_point() if _rider != null else Vector3.INF
+	return p if p.is_finite() else _auto.global_position
 
 func _apply_prop(id: String, p: Dictionary, instant: bool) -> void:
 	var kite: KiteProp = props.get(id) as KiteProp
@@ -788,6 +829,8 @@ func _mark(spec: Variant, ground: bool) -> Vector3:
 			p = st.place_pos if st != null else _frame.origin
 		elif s.begins_with("role:") and actors.has(s.substr(5)):
 			p = (actors[s.substr(5)] as QuestActor).global_position
+		elif s == "rider":
+			p = _rider_point()
 	if ground:
 		# Never ask anyone to stand inside a building: mirror a blocked kerb mark to the other side.
 		if not SignalBus.walkable(p.x, p.z) and spec is Array:
@@ -806,6 +849,8 @@ func _eye(spec: Variant) -> Vector3:
 		var base: Vector3 = _resolve_look(str(d.get("from", "auto")))
 		if str(d.get("from", "")).begins_with("role:") and actors.has(str(d["from"]).substr(5)):
 			base = (actors[str(d["from"]).substr(5)] as QuestActor).global_position
+		elif str(d.get("from", "")) == "rider":
+			base = _rider_point()
 		var toward: Vector3 = _auto.global_position
 		var dir: Vector3 = toward - base
 		dir.y = 0.0
@@ -848,6 +893,8 @@ func _resolve_look(spec: Variant) -> Vector3:
 			return (props[s.substr(5)] as Node3D).global_position
 		if s == "auto":
 			return _auto.global_position + Vector3.UP * 0.5
+		if s == "rider" and _rider != null and _rider.body != null:
+			return _rider.head_point()
 		return _look_now
 	return _mark(spec, false)
 
@@ -860,6 +907,8 @@ func _face_point(spec: Variant) -> Vector3:
 			return _camera.global_position
 		if s.begins_with("prop:") and props.has(s.substr(5)):
 			return (props[s.substr(5)] as Node3D).global_position
+		if s == "rider":
+			return _rider_point()
 	return _resolve_look(spec) if spec is String else _mark(spec, true)
 
 ## Top of the auto's canopy (world height), for someone standing on the roof.

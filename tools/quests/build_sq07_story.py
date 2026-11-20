@@ -5,64 +5,13 @@ cutscenes, like RDR2). Positions are real Santhome / Marina spots read off data/
 lines come from docs/voice/SQ07_Red_Kite_Voice_Script.md (assets/audio/voice/sq07).
 Run from the repo root: python3 tools/quests/build_sq07_story.py
 """
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-
-
-class V3(tuple):
-    pass
-
-
-class V2(tuple):
-    pass
-
-
-class Col(tuple):
-    pass
-
-
-class PSA(list):
-    pass
-
-
-def g(v):
-    """Python value -> Godot text resource variant."""
-    if isinstance(v, bool):
-        return "true" if v else "false"
-    if isinstance(v, V3):
-        return "Vector3(%s, %s, %s)" % tuple(num(x) for x in v)
-    if isinstance(v, V2):
-        return "Vector2(%s, %s)" % tuple(num(x) for x in v)
-    if isinstance(v, Col):
-        return "Color(%s, %s, %s, %s)" % tuple(num(x) for x in v)
-    if isinstance(v, PSA):
-        return "PackedStringArray(%s)" % ", ".join('"%s"' % x for x in v)
-    if isinstance(v, (int, float)):
-        return num(v)
-    if isinstance(v, str):
-        return '"%s"' % v.replace("\\", "\\\\").replace('"', '\\"')
-    if isinstance(v, dict):
-        if not v:
-            return "{}"
-        return "{\n" + ",\n".join('"%s": %s' % (k, g(x)) for k, x in v.items()) + "\n}"
-    if isinstance(v, (list, tuple)):
-        return "[" + ", ".join(g(x) for x in v) + "]"
-    raise TypeError(v)
-
-
-def num(x):
-    if isinstance(x, bool):
-        raise TypeError(x)
-    if isinstance(x, int):
-        return str(x)
-    s = repr(float(x))
-    return s
-
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from story_tres import NONE, PEOPLE, PSA, V2, V3, Col, write_mission, write_story  # noqa: E402
 
 BLUE = Col((0.12, 0.27, 0.68, 1.0))
-NONE = Col((0.0, 0.0, 0.0, 0.0))
-PEOPLE = "res://assets/models/people/"
 
 # Real places (data/world): Santhome High Road tea stall, Sullivan Street EB wire, the sand off
 # Foreshore Estate Link, a house in the lanes behind the beach.
@@ -260,34 +209,10 @@ barks = {
 speakers = {"l": "VO_SPK_LAKSHMI", "b": "VO_SPK_KARTHIK", "d": "VO_SPK_DRIVER", "t": "VO_SPK_TEA",
             "f": "VO_SPK_FLOWER", "k": "VO_SPK_PRIYA", "sq07_k02": "VO_SPK_KID"}
 
-story = ['[gd_resource type="Resource" script_class="QuestStoryData" load_steps=2 format=3]',
-         '[ext_resource type="Script" path="res://data/missions/QuestStoryData.gd" id="story"]',
-         '[resource]', 'script = ExtResource("story")',
-         'voice_dir = "res://assets/audio/voice/sq07"',
-         'speakers = ' + g(speakers), 'cast = ' + g(cast), 'props = ' + g(props),
-         'cutscenes = ' + g(cutscenes), 'barks = ' + g(barks)]
-out = ROOT / "data/missions/stories/sq_007_story.tres"
-out.parent.mkdir(parents=True, exist_ok=True)
-out.write_text("\n".join(story) + "\n", encoding="utf-8")
-
-ORDER = ["id", "kind", "objective_key", "target", "radius_m", "arrival_speed_kmh", "duration_s", "choices", "next_by_choice",
-         "quality_key", "place_key", "place_pos", "cutscene_id", "spot_pos", "spot_range_m", "spot_max_kmh", "shrink_after_s",
-         "shrink_radius_m", "next_id"]
-lines = ['[gd_resource type="Resource" script_class="MissionDef" load_steps=%d format=3]' % (len(stages) + 4),
-         '[ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]',
-         '[ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]',
-         '[ext_resource type="Resource" path="res://data/missions/stories/sq_007_story.tres" id="story"]']
-for st in stages:
-    lines.append('[sub_resource type="Resource" id="%s"]' % st["id"])
-    lines.append('script = ExtResource("stage")')
-    for k in ORDER:
-        if k in st:
-            lines.append("%s = %s" % (k, g(st[k])))
-lines += ['[resource]', 'script = ExtResource("def")', 'id = "sq_007"', 'content_version = 3', 'title_key = "SQ07_TITLE"',
-          'description_key = "SQ07_DESC"', 'job_key = "SQ07_JOB"', 'discoverable = true', 'start_anchor = ' + g(START),
-          'estimated_minutes = 12', 'category = "help"', 'reward_inr = 220', 'reward_xp = 25',
-          'reward_choice_stage = "payoff"', 'reward_choice_inr = ' + g({"SQ07_TAKE_FARE": 220, "SQ07_REFUSE_FARE": 0}),
-          'reward_choice_xp = ' + g({"SQ07_REFUSE_FARE": 40}), 'story = ExtResource("story")',
-          'stages = Array[ExtResource("stage")]([%s])' % ", ".join('SubResource("%s")' % s["id"] for s in stages)]
-(ROOT / "data/missions/side_quests/sq_007.tres").write_text("\n".join(lines) + "\n", encoding="utf-8")
+write_story("sq_007", "res://assets/audio/voice/sq07", speakers, cast, props, cutscenes, barks)
+write_mission("sq_007", stages, [
+    ("content_version", 3), ("title_key", "SQ07_TITLE"), ("description_key", "SQ07_DESC"), ("job_key", "SQ07_JOB"),
+    ("discoverable", True), ("start_anchor", START), ("estimated_minutes", 12), ("category", "help"),
+    ("reward_inr", 220), ("reward_xp", 25), ("reward_choice_stage", "payoff"),
+    ("reward_choice_inr", {"SQ07_TAKE_FARE": 220, "SQ07_REFUSE_FARE": 0}), ("reward_choice_xp", {"SQ07_REFUSE_FARE": 40})])
 print("wrote sq_007.tres and sq_007_story.tres")

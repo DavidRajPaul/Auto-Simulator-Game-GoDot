@@ -4,8 +4,11 @@ extends Node
 ## give them back, that dialogue never overlaps, that searching means finding the thing on screen
 ## (taps that miss, come from too far, too fast or hit a look-alike don't count), the branches,
 ## skip and abandon, and that every line has its voice and subtitles in both languages.
+## "Paati Knows the Way" (sq_004) is played the same way with its rider (QuestRider): she walks up
+## and boards in the intro, rides in the back, gets out in the scenes and climbs back in.
 
 const QUEST: String = "sq_007"
+const PAATI: String = "sq_004"
 const MAX_SCENE_S: float = 80.0
 
 var passed: int = 0
@@ -15,6 +18,7 @@ var auto: AutoRickshawController
 var rig: CameraRig
 var director: MissionDirector
 var story: QuestStory
+var rider: QuestRider
 var test_cam: Camera3D
 var line_times: Array[Dictionary] = [] # {line, t}
 var clock: float = 0.0
@@ -49,10 +53,13 @@ func _run() -> void:
 			last_reward = Vector2i(inr, xp))
 	_build_scene()
 	_registry_rules()
-	_content_checks()
+	_content_checks(QUEST)
+	_content_checks(PAATI)
 	await _full_playthrough()
 	await _skip_and_home_branch()
 	await _abandon_mid_scene()
+	await _paati_playthrough()
+	await _paati_skips()
 	_language_check()
 	root.queue_free()
 	SignalBus.current_road_graph = null
@@ -94,8 +101,8 @@ func _mission(pack: MissionPack) -> MissionDef:
 			return m
 	return null
 
-func _content_checks() -> void:
-	var def: MissionDef = director.registry.get_mission(QUEST)
+func _content_checks(quest: String) -> void:
+	var def: MissionDef = director.registry.get_mission(quest)
 	var s: QuestStoryData = def.story
 	var missing: PackedStringArray = PackedStringArray()
 	for line: String in s.all_lines():
@@ -104,7 +111,7 @@ func _content_checks() -> void:
 				missing.append(line + "_" + lang)
 		if s.speaker_key(line) == "":
 			missing.append("speaker:" + line)
-	check("Every line is voiced in English and Tamil %s" % str(missing), missing.is_empty() and s.all_lines().size() >= 35)
+	check(quest + ": every line is voiced in English and Tamil %s" % str(missing), missing.is_empty() and s.all_lines().size() >= 35)
 	var untranslated: PackedStringArray = PackedStringArray()
 	for locale: String in ["en", "ta"]:
 		TranslationServer.set_locale(locale)
@@ -113,7 +120,7 @@ func _content_checks() -> void:
 				if tr(key) == key or tr(key).strip_edges() == "":
 					untranslated.append(locale + ":" + key)
 	TranslationServer.set_locale("en")
-	check("Every line has subtitles in both languages %s" % str(untranslated), untranslated.is_empty())
+	check(quest + ": every line has subtitles in both languages %s" % str(untranslated), untranslated.is_empty())
 	var bad: PackedStringArray = PackedStringArray()
 	for id: String in s.cutscenes:
 		for beat: Dictionary in s.cutscenes[id]:
@@ -132,7 +139,7 @@ func _content_checks() -> void:
 	for role: String in s.cast:
 		if not ResourceLoader.exists(str((s.cast[role] as Dictionary).get("model", ""))):
 			bad.append("model " + role)
-	check("Every cutscene uses known people and every scene is played %s" % str(bad), bad.is_empty())
+	check(quest + ": every cutscene uses known people and every scene is played %s" % str(bad), bad.is_empty())
 
 # --- Scene -----------------------------------------------------------------------------
 
@@ -155,6 +162,9 @@ func _build_scene() -> void:
 	director = MissionDirector.new()
 	director.name = "MissionDirector"
 	root.add_child(director)
+	rider = QuestRider.new()
+	rider.name = "QuestRider"
+	root.add_child(rider)
 	story = QuestStory.new()
 	story.name = "QuestStory"
 	root.add_child(story)
@@ -394,6 +404,136 @@ func _abandon_mid_scene() -> void:
 	director.tick(def.stages[0].duration_s + MissionDirector.CUTSCENE_SAFETY_S + 1.0)
 	check("A lost cutscene times out", stage() == "ask_tea")
 	director.abandon()
+
+# --- Paati Knows the Way: a story with a rider ---------------------------------------
+
+func _wait_rider(state: QuestRider.State, seconds: float) -> bool:
+	var start: float = clock
+	while rider.state != state and clock - start < seconds:
+		_note_lines()
+		await get_tree().process_frame
+	return rider.state == state
+
+func _paati_playthrough() -> void:
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	line_times.clear()
+	var def: MissionDef = director.registry.get_mission(PAATI)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	rider._scan = 0.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check("Paati waits on her thinnai by the marker", rider.state == QuestRider.State.WAITING and rider.quest_id == PAATI)
+	check("Paati's quest starts", director.start(PAATI))
+	check("…with a cutscene, controls locked", story.cinematic and stage() == "intro" and auto.freeze and modal_open)
+	check("She gets up and walks to the auto (not popping in)", rider.state in [QuestRider.State.BOARDING, QuestRider.State.LEAVING] and rider.body.get_parent() == rider)
+	await get_tree().create_timer(0.5).timeout
+	var head: Vector3 = rider.head_point()
+	check("The camera can look at her face %s" % str(head), head.is_finite() and head.y > rider.story_point().y + 0.8)
+	check("Intro ends with Paati aboard, on to the flower stall", await run_until("ask_flower", MAX_SCENE_S) and rider.is_aboard() and not director.rider_missing())
+	check("Controls come back after her scene", not story.cinematic and not auto.freeze and rig._camera.current and not modal_open)
+	check("Intro dialogue in order, never overlapping", _said("sq04_d03") and _no_overlap(PackedStringArray(["sq04_p01", "sq04_d01", "sq04_p02", "sq04_d02", "sq04_p03", "sq04_p04", "sq04_d03"])))
+	check("Paati chats from the back seat", _said("sq04_p05"))
+
+	# The watchman on the way: a joke, not a lead.
+	check("Valli and the watchman stand in the street", story.actors.has("valli") and story.actors.has("watchman"))
+	place_auto((story.actors["watchman"] as QuestActor).global_position + Vector3(0.0, 0.0, 3.5))
+	await get_tree().create_timer(3.0).timeout
+	_note_lines()
+	check("Stopping by the watchman: a hundred new flats, and Paati's reply", _said("sq04_w01") and _said("sq04_p08") and stage() == "ask_flower")
+	SignalBus.player_impact.emit({"severity": 0.6})
+	await get_tree().create_timer(0.2).timeout
+	check("A knock: Paati shouts", _said("sq04_p14"))
+
+	place_auto(director.current_stage().target)
+	check("Stopping beside Valli starts her scene", await run_until("flowers", 2.0) and story.cinematic)
+	check("Valli remembers her; the scene ends on the choice", await run_until("guess", MAX_SCENE_S) and story.holding and story._choices[1].visible)
+	check("Valli walked over to the auto", (story.actors["valli"] as QuestActor).global_position.distance_to(auto.global_position) < 3.5)
+	check("Flower stall lines in order", _no_overlap(PackedStringArray(["sq04_v01", "sq04_p09", "sq04_v02", "sq04_p10"])) and _said("sq04_p10"))
+	story._choose(1) # "The market"
+	check("Market: Paati says no, it was the tank, and you drive on", await run_until("ask_sundal", MAX_SCENE_S) and _said("sq04_d04") and _said("sq04_p11") and _said("sq04_v03") and not _said("sq04_d05"))
+	check("Paati remembers the sundal seller", _said("sq04_p13") and story.actors.has("sundal"))
+
+	place_auto(director.current_stage().target)
+	check("Stopping beside the sundal seller starts his scene", await run_until("sundal", 2.0))
+	check("He saw Meena: on to the search", await run_until("spot_meena", MAX_SCENE_S) and _said("sq04_s01") and _said("sq04_s02") and _said("sq04_p16"))
+
+	# Looking for Meena.
+	var search_stage: MissionStage = director.current_stage()
+	check("Meena and four look-alikes stand by the temple", story.actors.has("meena") and story.actors.has("green_saree") and story.actors.has("office_coat"))
+	place_auto(search_stage.target)
+	await get_tree().create_timer(0.2).timeout
+	check("Paati describes her", _said("sq04_p17"))
+	var wrong: String = tap_at((story.actors["green_saree"] as QuestActor).chest_point())
+	check("A woman in a green saree is not her (%s)" % wrong, wrong == "decoy" and stage() == "spot_meena")
+	await get_tree().create_timer(0.2).timeout
+	check("Paati: that's not Meena", _said("sq04_p20"))
+	check("Tapping Meena finds her", tap_at((story.actors["meena"] as QuestActor).chest_point()) == "found" and stage() == "reunion")
+	var out_seen: bool = false
+	var t_out: float = clock
+	while stage() == "reunion" and clock - t_out < MAX_SCENE_S:
+		_note_lines()
+		out_seen = out_seen or (rider.state == QuestRider.State.OUT and rider.body.get_parent() == rider)
+		await get_tree().process_frame
+	check("Paati gets out to meet Meena", out_seen)
+	check("…and climbs back in for the ride home", stage() == "ride_home" and rider.is_aboard() and not director.rider_missing() and not story.cinematic)
+	check("Reunion lines in order", _no_overlap(PackedStringArray(["sq04_m01", "sq04_m02", "sq04_p21", "sq04_m03", "sq04_p22", "sq04_m04", "sq04_d06"])) and _said("sq04_d06"))
+	check("Meena rides along (not left standing in the street)", not story.actors.has("meena") or not (story.actors["meena"] as QuestActor).visible)
+	await get_tree().create_timer(0.3).timeout
+	check("Meena scolds, Paati teases", _said("sq04_m05"))
+
+	place_auto(director.current_stage().target)
+	check("At the green gate they get out; Meena asks the fare", await run_until("payoff", MAX_SCENE_S) and story.holding and _said("sq04_m06") and _said("sq04_p25") and _said("sq04_m07"))
+	check("Paati stands on the pavement, not in the seat", rider.state == QuestRider.State.OUT and rider.body.get_parent() == rider)
+	story._choose(1) # no fare
+	var t0: float = clock
+	while clock - t0 < MAX_SCENE_S and director.run != null:
+		_note_lines()
+		await get_tree().process_frame
+	check("Paati blesses you, gives athirasam, and the quest completes", director.run == null and GameState.mission_completed.has(PAATI) and _said("sq04_p26") and _said("sq04_p27") and _said("sq04_d07") and not _said("sq04_m08"))
+	check("No fare: respect, not money %s" % str(last_reward), last_reward == Vector2i(0, 65))
+	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and rig._camera.current and not modal_open)
+	check("Paati walks in at the gate", rider.state in [QuestRider.State.LEAVING, QuestRider.State.NONE] and not rider.story_hold)
+
+func _paati_skips() -> void:
+	rider._clear()
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	var def: MissionDef = director.registry.get_mission(PAATI)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	rider._scan = 0.0
+	await get_tree().process_frame
+	check("Paati again (replay)", director.start(PAATI))
+	await get_tree().create_timer(0.4).timeout
+	story.skip()
+	check("Skipping the intro seats her at once", stage() == "ask_flower" and rider.is_aboard() and not story.cinematic and not auto.freeze)
+	place_auto(director.current_stage().target)
+	await run_until("flowers", 2.0)
+	story.skip()
+	check("Skipping a held scene still asks where she went", stage() == "guess" and story.holding)
+	story._choose(0) # "The temple tank"
+	check("Tank: the driver knows the way", await run_until("ask_sundal", MAX_SCENE_S) and _said("sq04_d05") and _said("sq04_p12") and not _said("sq04_p11"))
+	place_auto(director.current_stage().target)
+	await run_until("sundal", 2.0)
+	story.skip()
+	var search_stage: MissionStage = director.current_stage()
+	place_auto(search_stage.target)
+	director.spot(PAATI, "spot_meena")
+	await get_tree().create_timer(0.3).timeout
+	story.skip()
+	check("Skipping the reunion: Paati back in her seat, off home", stage() == "ride_home" and rider.is_aboard() and not story.cinematic)
+	place_auto(director.current_stage().target)
+	await run_until("payoff", MAX_SCENE_S)
+	director.choose(PAATI, "payoff", "SQ04_TAKE_FARE")
+	var t0: float = clock
+	while clock - t0 < MAX_SCENE_S and director.run != null:
+		await get_tree().process_frame
+	check("Taking the fare pays %s" % str(last_reward), last_reward == Vector2i(180, 25) and _said("sq04_m08"))
+	rider._clear()
 
 func _language_check() -> void:
 	GameState.settings["language"] = "ta"

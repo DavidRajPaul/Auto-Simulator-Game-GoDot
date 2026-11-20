@@ -1,6 +1,7 @@
 extends Node
 ## Dev-only: renders "The Little Red Kite" in the real city to $SHOT_OUT (default /tmp/story_shots):
-## every cutscene at a few moments, the search views and the letterbox choice. Run with
+## every cutscene at a few moments, the search views and the letterbox choice. SHOT_QUEST=sq_004
+## renders "Paati Knows the Way" instead (her rider scenes). Run with
 ## xvfb-run godot --path . --rendering-method gl_compatibility --fixed-fps 60 res://tests/shot_story.tscn
 
 var out: String = "/tmp/story_shots"
@@ -35,6 +36,9 @@ func _run() -> void:
 	for i: int in 30:
 		await get_tree().physics_frame
 	GameState.tutorial_active = false
+	if OS.get_environment("SHOT_QUEST") == "sq_004":
+		await _run_paati()
+		return
 	var def: MissionDef = director.registry.get_mission("sq_007")
 	await _go(def.start_anchor)
 	print("start ok=", director.start("sq_007"))
@@ -75,6 +79,44 @@ func _run() -> void:
 	_save("14_payoff_letterbox")
 	story._choose(1)
 	await _shots("15_thanks", [0.5, 2.5, 5.0], "")
+	print("done stage=", director.run.stage_id if director.run != null else "complete")
+	get_tree().quit()
+
+func _run_paati() -> void:
+	var rider: QuestRider = city.get_node("QuestRider") as QuestRider
+	var def: MissionDef = director.registry.get_mission("sq_004")
+	await _go(def.start_anchor)
+	rider._scan = 0.0
+	await _wait(0.5)
+	_save("p00_thinnai")
+	print("start ok=", director.start("sq_004"))
+	await _shots("p01_intro", [0.5, 3.0, 6.0, 10.0, 14.0, 18.0, 22.0, 26.0, 30.0], "ask_flower")
+	var watch: QuestActor = story.actors.get("watchman") as QuestActor
+	if watch != null:
+		await _go(watch.global_position + Vector3(-6.0, 0.0, 3.0))
+		await _wait(0.6)
+		_save("p02_watchman_drive")
+	await _go(director.current_stage().target)
+	await _shots("p03_flowers", [0.6, 2.5, 5.0, 8.0, 11.0], "guess")
+	await _wait(0.8)
+	_save("p04_choice_letterbox")
+	story._choose(0)
+	await _shots("p05_tank_line", [0.5, 2.5], "ask_sundal")
+	await _go(director.current_stage().target)
+	await _shots("p06_sundal", [0.6, 2.5, 5.0, 9.0, 13.0], "spot_meena")
+	var st: MissionStage = director.current_stage()
+	await _go(st.target, st.spot_pos)
+	await _wait(0.8)
+	_save("p07_search_chase")
+	await _cockpit("p08_search_cockpit")
+	director.spot("sq_004", "spot_meena")
+	await _shots("p09_reunion", [0.5, 2.0, 3.2, 6.0, 9.5, 13.0, 16.5, 20.0, 23.0, 26.0], "ride_home")
+	await _go(director.current_stage().target)
+	await _shots("p10_home", [0.6, 2.5, 5.0, 8.0], "payoff")
+	await _wait(0.5)
+	_save("p11_payoff_letterbox")
+	story._choose(1)
+	await _shots("p12_thanks", [0.5, 3.0, 6.5, 9.5, 12.0], "")
 	print("done stage=", director.run.stage_id if director.run != null else "complete")
 	get_tree().quit()
 

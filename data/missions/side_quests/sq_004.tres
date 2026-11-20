@@ -1,67 +1,144 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=18 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
-[sub_resource type="Resource" id="clue_1"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_004_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
 script = ExtResource("stage")
-id = "clue_1"
-kind = "inspect"
-objective_key = "SQ04_CLUE_1"
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ04_INTRO"
+duration_s = 40.0
+cutscene_id = "intro"
+[sub_resource type="Resource" id="ask_flower"]
+script = ExtResource("stage")
+id = "ask_flower"
+kind = "ask"
+objective_key = "SQ04_ASK_FLOWER"
 target = Vector3(674.7, 0, 1792.6)
-radius_m = 10.0
+radius_m = 9.0
 place_key = "SQ04_P_STALL"
 place_pos = Vector3(675.0, 0, 1788.5)
-action_key = "QUEST_ACT_LOOK"
+[sub_resource type="Resource" id="flowers"]
+script = ExtResource("stage")
+id = "flowers"
+kind = "cutscene"
+objective_key = "SQ04_FLOWERS"
+duration_s = 16.0
+cutscene_id = "flowers"
 [sub_resource type="Resource" id="guess"]
 script = ExtResource("stage")
 id = "guess"
 kind = "dialogue"
 objective_key = "SQ04_GUESS"
 choices = PackedStringArray("SQ04_TANK", "SQ04_MARKET")
-next_by_choice = {"SQ04_TANK": "clue_2", "SQ04_MARKET": "hint"}
-[sub_resource type="Resource" id="hint"]
+next_by_choice = {
+"SQ04_TANK": "tank_line",
+"SQ04_MARKET": "market_line"
+}
+[sub_resource type="Resource" id="market_line"]
 script = ExtResource("stage")
-id = "hint"
-kind = "dialogue"
-objective_key = "SQ04_HINT"
-choices = PackedStringArray("SQ04_LISTEN")
-[sub_resource type="Resource" id="clue_2"]
+id = "market_line"
+kind = "cutscene"
+objective_key = "SQ04_MARKET_LINE"
+duration_s = 10.0
+cutscene_id = "market_line"
+next_id = "ask_sundal"
+[sub_resource type="Resource" id="tank_line"]
 script = ExtResource("stage")
-id = "clue_2"
-kind = "inspect"
-objective_key = "SQ04_CLUE_2"
-target = Vector3(872.3, 0, 1912.0)
-radius_m = 10.0
-place_key = "SQ04_P_STEPS"
-place_pos = Vector3(869.8, 0, 1903.9)
-action_key = "QUEST_ACT_LOOK"
-[sub_resource type="Resource" id="reveal"]
+id = "tank_line"
+kind = "cutscene"
+objective_key = "SQ04_TANK_LINE"
+duration_s = 8.0
+cutscene_id = "tank_line"
+[sub_resource type="Resource" id="ask_sundal"]
 script = ExtResource("stage")
-id = "reveal"
-kind = "dialogue"
-objective_key = "SQ04_REVEAL"
-choices = PackedStringArray("SQ04_READY")
-[sub_resource type="Resource" id="home"]
+id = "ask_sundal"
+kind = "ask"
+objective_key = "SQ04_ASK_SUNDAL"
+target = Vector3(1056.4, 0, 1825.8)
+radius_m = 9.0
+place_key = "SQ04_P_TANK"
+place_pos = Vector3(1056.4, 0, 1821.8)
+[sub_resource type="Resource" id="sundal"]
 script = ExtResource("stage")
-id = "home"
+id = "sundal"
+kind = "cutscene"
+objective_key = "SQ04_SUNDAL"
+duration_s = 16.0
+cutscene_id = "sundal"
+[sub_resource type="Resource" id="spot_meena"]
+script = ExtResource("stage")
+id = "spot_meena"
+kind = "spot"
+objective_key = "SQ04_FIND_MEENA"
+target = Vector3(1131.2, 0, 1705.3)
+radius_m = 80.0
+place_key = "SQ04_P_TEMPLE"
+place_pos = Vector3(1132.7, 0, 1717.9)
+spot_pos = Vector3(1132.7, 0.8, 1681.2)
+spot_range_m = 40.0
+spot_max_kmh = 15.0
+shrink_after_s = 70.0
+shrink_radius_m = 38.0
+[sub_resource type="Resource" id="reunion"]
+script = ExtResource("stage")
+id = "reunion"
+kind = "cutscene"
+objective_key = "SQ04_REUNION"
+duration_s = 30.0
+cutscene_id = "reunion"
+[sub_resource type="Resource" id="ride_home"]
+script = ExtResource("stage")
+id = "ride_home"
 kind = "goto"
 objective_key = "SQ04_HOME"
 target = Vector3(952.1, 0, 1806.6)
-radius_m = 9.0
+radius_m = 8.0
+quality_key = "comfort"
 place_key = "SQ04_P_HOME"
 place_pos = Vector3(950.6, 0, 1810.2)
+[sub_resource type="Resource" id="home"]
+script = ExtResource("stage")
+id = "home"
+kind = "cutscene"
+objective_key = "SQ04_AT_HOME"
+duration_s = 12.0
+cutscene_id = "home"
+[sub_resource type="Resource" id="payoff"]
+script = ExtResource("stage")
+id = "payoff"
+kind = "dialogue"
+objective_key = "SQ04_PAYOFF"
+choices = PackedStringArray("SQ04_TAKE_FARE", "SQ04_REFUSE_FARE")
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "cutscene"
+objective_key = "SQ04_THANKS"
+duration_s = 14.0
+cutscene_id = "thanks"
 [resource]
 script = ExtResource("def")
 id = "sq_004"
-content_version = 2
+content_version = 3
 title_key = "SQ04_TITLE"
 description_key = "SQ04_DESC"
 job_key = "SQ04_JOB"
 discoverable = true
 start_anchor = Vector3(784.0, 0, 1795.6)
-estimated_minutes = 6
+estimated_minutes = 12
 category = "exploration"
-reward_inr = 160
-reward_xp = 15
+reward_inr = 180
+reward_xp = 25
 rider_model = "res://assets/models/people/quest/paati.glb"
 rider_name_key = "SQ04_RIDER"
-stages = Array[ExtResource("stage")]([SubResource("clue_1"), SubResource("guess"), SubResource("hint"), SubResource("clue_2"), SubResource("reveal"), SubResource("home")])
+reward_choice_stage = "payoff"
+reward_choice_inr = {
+"SQ04_TAKE_FARE": 180,
+"SQ04_REFUSE_FARE": 0
+}
+reward_choice_xp = {
+"SQ04_REFUSE_FARE": 40
+}
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("ask_flower"), SubResource("flowers"), SubResource("guess"), SubResource("market_line"), SubResource("tank_line"), SubResource("ask_sundal"), SubResource("sundal"), SubResource("spot_meena"), SubResource("reunion"), SubResource("ride_home"), SubResource("home"), SubResource("payoff"), SubResource("thanks")])
