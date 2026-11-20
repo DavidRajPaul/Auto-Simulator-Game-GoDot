@@ -458,16 +458,16 @@ func _paati_playthrough() -> void:
 
 	place_auto(director.current_stage().target)
 	check("Stopping beside the sundal seller starts his scene", await run_until("sundal", 2.0))
-	check("He saw Meena: on to the search", await run_until("spot_meena", MAX_SCENE_S) and _said("sq04_s01") and _said("sq04_s02") and _said("sq04_p16"))
+	check("He saw Meena: on to the search", await run_until("spot_meena", MAX_SCENE_S) and _said("sq04_s01") and _said("sq04_s03") and _said("sq04_p16"))
 
 	# Looking for Meena.
 	var search_stage: MissionStage = director.current_stage()
-	check("Meena and four look-alikes stand by the temple", story.actors.has("meena") and story.actors.has("green_saree") and story.actors.has("office_coat"))
+	check("Meena and four look-alikes stand by the temple", story.actors.has("meena") and story.actors.has("green_churidar") and story.actors.has("office_coat"))
 	place_auto(search_stage.target)
 	await get_tree().create_timer(0.2).timeout
-	check("Paati describes her", _said("sq04_p17"))
-	var wrong: String = tap_at((story.actors["green_saree"] as QuestActor).chest_point())
-	check("A woman in a green saree is not her (%s)" % wrong, wrong == "decoy" and stage() == "spot_meena")
+	check("Paati describes her", _said("sq04_p28"))
+	var wrong: String = tap_at((story.actors["green_churidar"] as QuestActor).chest_point())
+	check("The street's green churidar is not her (%s)" % wrong, wrong == "decoy" and stage() == "spot_meena")
 	await get_tree().create_timer(0.2).timeout
 	check("Paati: that's not Meena", _said("sq04_p20"))
 	check("Tapping Meena finds her", tap_at((story.actors["meena"] as QuestActor).chest_point()) == "found" and stage() == "reunion")

@@ -251,7 +251,7 @@ SQ04_MARKET_LINE,Paati thinks again.,பாட்டி மறுபடி ய�
 SQ04_TANK_LINE,Off to the tank.,குளத்துக்குப் புறப்படு.
 SQ04_ASK_SUNDAL,Drive to the tank and stop beside the sundal seller.,குளத்துக்குப் போய் சுண்டல் தாத்தா பக்கத்தில் நிறுத்து.
 SQ04_SUNDAL,The sundal seller remembers.,சுண்டல் தாத்தாவுக்கு நினைவிருக்கிறது.
-SQ04_FIND_MEENA,Find Meena near the temple: green churidar. Tap her when you see her.,கோயில் பக்கம் மீனாவைத் தேடு: பச்சை சுடிதார். பார்த்ததும் அவரைத் தொடு.
+SQ04_FIND_MEENA,Find Meena near the temple: pink churidar. Tap her when you see her.,கோயில் பக்கம் மீனாவைத் தேடு: ரோஸ் கலர் சுடிதார். பார்த்ததும் அவரைத் தொடு.
 SQ04_REUNION,Paati and Meena.,பாட்டியும் மீனாவும்.
 SQ04_HOME,Take them home. Drive gently.,இருவரையும் வீட்டில் சேர். மெதுவாக ஓட்டு.
 SQ04_AT_HOME,The green gate.,பச்சை கேட்.
@@ -613,11 +613,11 @@ VO_SQ04_V03,"Paati, your change! Okay, next time!","பாட்டி, உங�
 VO_SQ04_P13,"By the tank steps there was an old sundal seller. He told me, careful on the steps, Paati. Let's ask him.",குளத்துப் படிகிட்ட ஒரு சுண்டல் தாத்தா இருந்தாரு. பாத்து இறங்குங்க பாட்டின்னு சொன்னாரு. அவரக் கேப்போம்.
 VO_SQ04_S01,"Come, Paati! You sat on the steps this morning, singing!",வாங்க பாட்டி! காலைல படியில உக்காந்து பாட்டு பாடிக்கிட்டு இருந்தீங்களே!
 VO_SQ04_P15,"That wasn't singing, son, just humming.","அது பாட்டு இல்லப்பா, சும்மா முணுமுணுப்பு."
-VO_SQ04_S02,"Ten minutes ago a girl came by, crying. Green churidar. She was asking everyone, have you seen my Paati? She went toward the temple side.",பத்து நிமிஷம் முன்னாடி ஒரு பொண்ணு அழுதுக்கிட்டே வந்துச்சு. பச்சை சுடிதார். என் பாட்டியப் பாத்தீங்களான்னு எல்லார்கிட்டயும் கேட்டுக்கிட்டு கோயில் பக்கம் போச்சு.
+VO_SQ04_S03,"Ten minutes ago a girl came by, crying. Pink churidar. She was asking everyone, have you seen my Paati? She went toward the temple side.",பத்து நிமிஷம் முன்னாடி ஒரு பொண்ணு அழுதுக்கிட்டே வந்துச்சு. ரோஸ் கலர் சுடிதார். என் பாட்டியப் பாத்தீங்களான்னு எல்லார்கிட்டயும் கேட்டுக்கிட்டு கோயில் பக்கம் போச்சு.
 VO_SQ04_P16,"Meena! That's my Meena! Go, son, go!","மீனா! அது என் மீனாதான்! போ தம்பி, போ!"
-VO_SQ04_P17,"Green churidar… she's tall. Look carefully, son.",பச்சை சுடிதார்… நெட்டையா இருப்பா. நல்லா பாருப்பா.
+VO_SQ04_P28,"Pink churidar… she's tall. Look carefully, son.",ரோஸ் கலர் சுடிதார்… நெட்டையா இருப்பா. நல்லா பாருப்பா.
 VO_SQ04_P18,It's my fault… I left without telling her.,என் தப்புதான்… சொல்லாமப் போயிட்டேன்.
-VO_SQ04_P19,"She never wears a saree, always a churidar. Green… her thatha's favourite colour.","அவ சேலை கட்ட மாட்டா, எப்பவும் சுடிதார்தான். பச்சை… அவ தாத்தாவுக்குப் பிடிச்ச கலர்."
+VO_SQ04_P29,"She never wears a saree, always a churidar. Pink… she has loved pink since she was a little girl.","அவ சேலை கட்ட மாட்டா, எப்பவும் சுடிதார்தான். ரோஸ் கலர்… சின்ன வயசுலேருந்தே அதுதான் அவளுக்குப் பிடிக்கும்."
 VO_SQ04_P20,"No, son, that's not Meena.","இல்லப்பா, அது மீனா இல்ல."
 VO_SQ04_M01,Paati!,பாட்டீ!
 VO_SQ04_M02,"Where did you go, Paati?! No phone, no address… I was so scared, what would I tell Amma!","எங்க போனீங்க பாட்டி?! போனும் இல்ல, அட்ரஸும் தெரியாது… அம்மாகிட்ட என்ன சொல்லுவேன்னு பயந்தே போயிட்டேன்!"

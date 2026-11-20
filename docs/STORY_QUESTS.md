@@ -101,12 +101,13 @@ cut. `"wait": "rider"` waits until she has stopped walking or climbing; looks an
 3. **Valli remembers** her (and her forgotten change) and comes over to the auto. Paati asked about the
    temple tank and the market: the choice in the letterbox. The market gets "no bag in my hand, it was
    the tank".
-4. **Ask** the old sundal seller on South Mada Street by the Kapaleeshwarar tank: a girl in a green
+4. **Ask** the old sundal seller on South Mada Street by the Kapaleeshwarar tank: a girl in a pink
    churidar was asking everyone for her Paati and went toward the temple.
-5. **Search** East Tank Square Street: Meena is the only green churidar (a green saree, a girl in a
-   pavadai, an office coat and a violet saree are look-alikes). Tap her. Everyone wears their model's
-   own colours: in the city a PaintSwap repaint can silently fail (see AGENTS.md), and a search must
-   never depend on it.
+5. **Search** East Tank Square Street: Meena is the only pink churidar in the city (the street's
+   green churidar, a girl in a pink pavadai, an office coat and a violet saree are look-alikes). Tap
+   her. Meena is her own model, `assets/models/people/quest/meena.glb` (`tools/assets/make_meena.py`
+   bakes the churidar pink into her own texture): a PaintSwap repaint can silently fail in the city
+   (see AGENTS.md), and the stock churidar walks every street, so a search target must never be one.
 6. **Reunion**: Paati gets out; Meena cries and scolds; "the temple hasn't changed, only the roads have";
    their house is two minutes away. Both get in.
 7. **Ride home gently** (comfort bar) to the green gate on RK Mutt Road corner.

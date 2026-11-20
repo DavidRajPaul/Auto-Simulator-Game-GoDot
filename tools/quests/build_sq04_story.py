@@ -127,7 +127,7 @@ cutscenes = {
          "act": {"sundal": {"anim": "talk", "face": "auto"}}, "line": "sq04_s01"},
         {"cam": {"eye": SEAT_CAM, "eye_to": SEAT_CAM_TO, "look": "rider", "fov": 40}, "line": "sq04_p15"},
         {"cam": {"eye": {"from": "role:sundal", "dist": 3.0, "up": 1.5, "side": -1.2}, "look": "role:sundal", "fov": 38},
-         "act": {"sundal": {"anim": "talk"}}, "line": "sq04_s02"},
+         "act": {"sundal": {"anim": "talk"}}, "line": "sq04_s03"},
         {"cam": {"eye": SEAT_CAM, "look": "rider", "fov": 38}, "line": "sq04_p16", "fade_out": 0.4},
     ],
     # Meena sees the auto, and Paati gets out to meet her.
@@ -186,13 +186,15 @@ cast = {
                  "anim": "idle", "stages": PSA(["ask_flower"]), "line": "sq04_w01", "reply": "sq04_p08", "near_m": 10.0},
     "sundal": {"model": PEOPLE + "old_man_veshti.glb", "scale": 1.0, "paint": NONE, "world": SUNDAL, "face": SUNDAL_ROAD,
                "anim": "idle", "stages": PSA(["ask_sundal", "sundal", "spot_meena"])},
-    # Meena: the only green churidar on the street. Her model's own colours, no PaintSwap: in the
-    # city the GL Compatibility renderer can run out of instance-uniform slots, and a repaint then
-    # silently shows the original dress (Nov 20: a "yellow" Meena rendered green).
-    "meena": {"model": PEOPLE + "girl_churidar.glb", "scale": 1.04, "paint": NONE, "world": MEENA, "face": TEMPLE_ROAD,
+    # Meena: the only rose-pink churidar in the city. Her own baked copy of the street model
+    # (tools/assets/make_meena.py), not a PaintSwap: in the city the GL Compatibility renderer can
+    # run out of instance-uniform slots and a repaint then silently shows the stock dress (Nov 20:
+    # a "yellow" Meena rendered green, and green churidars walk every street).
+    "meena": {"model": PEOPLE + "quest/meena.glb", "scale": 1.04, "paint": NONE, "world": MEENA, "face": TEMPLE_ROAD,
               "anim": "talk", "stages": PSA(["spot_meena"]), "target_for": "spot_meena"},
-    # Look-alikes in their own colours too: a green saree, a girl in a pavadai, an office coat, violet.
-    "green_saree": decoy("woman_saree_green.glb", V3((1135.8, 0, 1665.5))),
+    # Look-alikes in their own colours: the street's green churidar, a girl in a pink pavadai, an
+    # office coat and a violet saree.
+    "green_churidar": decoy("girl_churidar.glb", V3((1135.8, 0, 1665.5))),
     "pavadai_girl": decoy("girl_pavadai.glb", V3((1130.4, 0, 1693.0)), 0.9),
     "office_coat": decoy("woman_coat.glb", V3((1135.0, 0, 1706.1))),
     "violet_saree": decoy("woman_saree_violet.glb", V3((1139.6, 0, 1682.6))),
@@ -201,7 +203,7 @@ cast = {
 barks = {
     "ask_flower": {"enter": ["sq04_p05"], "idle": ["sq04_p06", "sq04_p07"], "idle_s": V2((26.0, 40.0)), "impact": "sq04_p14"},
     "ask_sundal": {"enter": ["sq04_p13"], "idle": ["sq04_p06", "sq04_p07"], "idle_s": V2((26.0, 40.0)), "impact": "sq04_p14"},
-    "spot_meena": {"enter": ["sq04_p17"], "idle": ["sq04_p18"], "idle_s": V2((24.0, 36.0)), "hint": ["sq04_p19"],
+    "spot_meena": {"enter": ["sq04_p28"], "idle": ["sq04_p18"], "idle_s": V2((24.0, 36.0)), "hint": ["sq04_p29"],
                    "hint_after_s": 40.0, "wrong": "sq04_p20"},
     "ride_home": {"enter": ["sq04_m05", "sq04_p23"], "impact": "sq04_p14", "jolt": "sq04_p24"},
 }

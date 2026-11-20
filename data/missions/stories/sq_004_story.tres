@@ -43,7 +43,7 @@ cast = {
 "stages": PackedStringArray("ask_sundal", "sundal", "spot_meena")
 },
 "meena": {
-"model": "res://assets/models/people/girl_churidar.glb",
+"model": "res://assets/models/people/quest/meena.glb",
 "scale": 1.04,
 "paint": Color(0.0, 0.0, 0.0, 0.0),
 "world": Vector3(1132.7, 0, 1681.2),
@@ -52,8 +52,8 @@ cast = {
 "stages": PackedStringArray("spot_meena"),
 "target_for": "spot_meena"
 },
-"green_saree": {
-"model": "res://assets/models/people/woman_saree_green.glb",
+"green_churidar": {
+"model": "res://assets/models/people/girl_churidar.glb",
 "scale": 1.0,
 "paint": Color(0.0, 0.0, 0.0, 0.0),
 "world": Vector3(1135.8, 0, 1665.5),
@@ -357,7 +357,7 @@ cutscenes = {
 "anim": "talk"
 }
 },
-"line": "sq04_s02"
+"line": "sq04_s03"
 }, {
 "cam": {
 "eye": [2.3, 1.3, 0.4],
@@ -617,10 +617,10 @@ barks = {
 "impact": "sq04_p14"
 },
 "spot_meena": {
-"enter": ["sq04_p17"],
+"enter": ["sq04_p28"],
 "idle": ["sq04_p18"],
 "idle_s": Vector2(24.0, 36.0),
-"hint": ["sq04_p19"],
+"hint": ["sq04_p29"],
 "hint_after_s": 40.0,
 "wrong": "sq04_p20"
 },

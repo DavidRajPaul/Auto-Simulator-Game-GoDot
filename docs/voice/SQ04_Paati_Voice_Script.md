@@ -49,13 +49,13 @@ Subtitles: `VO_SQ04_*` in `translations/ui.csv` (tags removed).
 ## Scene 5: Sundal Thatha (cutscene)
 - sq04_s01 Sundal Thatha: [warm, recognising] வாங்க பாட்டி! காலைல படியில உக்காந்து பாட்டு பாடிக்கிட்டு இருந்தீங்களே! / [warm, recognising] Come, Paati! You sat on the steps this morning, singing!
 - sq04_p15 Paati: [shy laugh] அது பாட்டு இல்லப்பா, சும்மா முணுமுணுப்பு. / [shy laugh] That wasn't singing, son, just humming.
-- sq04_s02 Sundal Thatha: [serious, helpful] பத்து நிமிஷம் முன்னாடி ஒரு பொண்ணு அழுதுக்கிட்டே வந்துச்சு. பச்சை சுடிதார். என் பாட்டியப் பாத்தீங்களான்னு எல்லார்கிட்டயும் கேட்டுக்கிட்டு கோயில் பக்கம் போச்சு. / [serious, helpful] Ten minutes ago a girl came by, crying. Green churidar. She was asking everyone, have you seen my Paati? She went toward the temple side.
+- sq04_s03 Sundal Thatha: [serious, helpful] பத்து நிமிஷம் முன்னாடி ஒரு பொண்ணு அழுதுக்கிட்டே வந்துச்சு. ரோஸ் கலர் சுடிதார். என் பாட்டியப் பாத்தீங்களான்னு எல்லார்கிட்டயும் கேட்டுக்கிட்டு கோயில் பக்கம் போச்சு. / [serious, helpful] Ten minutes ago a girl came by, crying. Pink churidar. She was asking everyone, have you seen my Paati? She went toward the temple side.
 - sq04_p16 Paati: [gasps, emotional] மீனா! அது என் மீனாதான்! போ தம்பி, போ! / [gasps, emotional] Meena! That's my Meena! Go, son, go!
 
 ## Scene 6: Looking for Meena (East Tank Square Street)
-- sq04_p17 Paati: [anxious, scanning] பச்சை சுடிதார்… நெட்டையா இருப்பா. நல்லா பாருப்பா. / [anxious, scanning] Green churidar… she's tall. Look carefully, son.
+- sq04_p28 Paati: [anxious, scanning] ரோஸ் கலர் சுடிதார்… நெட்டையா இருப்பா. நல்லா பாருப்பா. / [anxious, scanning] Pink churidar… she's tall. Look carefully, son.
 - sq04_p18 Paati (idle): [worried, muttering] என் தப்புதான்… சொல்லாமப் போயிட்டேன். / [worried, muttering] It's my fault… I left without telling her.
-- sq04_p19 Paati (hint after 40 s): [remembering] அவ சேலை கட்ட மாட்டா, எப்பவும் சுடிதார்தான். பச்சை… அவ தாத்தாவுக்குப் பிடிச்ச கலர். / [remembering] She never wears a saree, always a churidar. Green… her thatha's favourite colour.
+- sq04_p29 Paati (hint after 40 s): [remembering] அவ சேலை கட்ட மாட்டா, எப்பவும் சுடிதார்தான். ரோஸ் கலர்… சின்ன வயசுலேருந்தே அதுதான் அவளுக்குப் பிடிக்கும். / [remembering] She never wears a saree, always a churidar. Pink… she has loved pink since she was a little girl.
 - sq04_p20 Paati (wrong tap): [impatient] இல்லப்பா, அது மீனா இல்ல. / [impatient] No, son, that's not Meena.
 
 ## Scene 7: Meena (cutscene; Paati gets out)
