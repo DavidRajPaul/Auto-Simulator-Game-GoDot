@@ -16,7 +16,7 @@ voiced with 4 of its 10 phrasings per rider voice, rotating so all 10 are heard.
 
 ### Rider Man
 
-- sav_call_01_man Rider Man: [shouting] ஆட்டோ! / [shouting] Auto!
+- sav_call_01_man Rider Man: [shouting] ஆட்டோ! / [shouting] Auto, please!
 - sav_call_02_man Rider Man: [shouting] ஆட்டோ! ஆட்டோ! / [shouting] Auto! Auto!
 - sav_call_03_man Rider Man: [shouting] அண்ணா, ஆட்டோ! / [shouting] Hey, auto!
 - sav_call_04_man Rider Man: [shouting] ஆட்டோ, கொஞ்சம் நில்லுங்க! / [shouting] Auto, stop please!
@@ -147,7 +147,7 @@ voiced with 4 of its 10 phrasings per rider voice, rotating so all 10 are heard.
 
 ### Rider Woman
 
-- sav_call_01_woman Rider Woman: [shouting] ஆட்டோ! / [shouting] Auto!
+- sav_call_01_woman Rider Woman: [shouting] ஆட்டோ! / [shouting] Auto, please!
 - sav_call_02_woman Rider Woman: [shouting] ஆட்டோ! ஆட்டோ! / [shouting] Auto! Auto!
 - sav_call_03_woman Rider Woman: [shouting] அண்ணா, ஆட்டோ! / [shouting] Hey, auto!
 - sav_call_04_woman Rider Woman: [shouting] ஆட்டோ, கொஞ்சம் நில்லுங்க! / [shouting] Auto, stop please!
@@ -278,7 +278,7 @@ voiced with 4 of its 10 phrasings per rider voice, rotating so all 10 are heard.
 
 ### Rider Elder
 
-- sav_call_01_elder Rider Elder: [shouting] ஆட்டோ! / [shouting] Auto!
+- sav_call_01_elder Rider Elder: [shouting] ஆட்டோ! / [shouting] Auto, please!
 - sav_call_02_elder Rider Elder: [shouting] ஆட்டோ! ஆட்டோ! / [shouting] Auto! Auto!
 - sav_call_03_elder Rider Elder: [shouting] தம்பி, ஆட்டோ! / [shouting] Hey, auto!
 - sav_call_04_elder Rider Elder: [shouting] ஆட்டோ, கொஞ்சம் நில்லுங்க! / [shouting] Auto, stop please!
@@ -409,7 +409,7 @@ voiced with 4 of its 10 phrasings per rider voice, rotating so all 10 are heard.
 
 ### Rider Girl
 
-- sav_call_01_girl Rider Girl: [shouting] ஆட்டோ! / [shouting] Auto!
+- sav_call_01_girl Rider Girl: [shouting] ஆட்டோ! / [shouting] Auto, please!
 - sav_call_02_girl Rider Girl: [shouting] ஆட்டோ! ஆட்டோ! / [shouting] Auto! Auto!
 - sav_call_03_girl Rider Girl: [shouting] அண்ணா, ஆட்டோ! / [shouting] Hey, auto!
 - sav_call_04_girl Rider Girl: [shouting] ஆட்டோ, கொஞ்சம் நில்லுங்க! / [shouting] Auto, stop please!

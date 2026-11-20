@@ -906,7 +906,7 @@ SAV_NEAR_07,Only a little way from here.,இங்கிருந்து க�
 SAV_NEAR_08,A house nearby. Can you drop me?,"பக்கத்துல ஒரு வீடு, விடுறீங்களா?"
 SAV_NEAR_09,I'll show you the way. Go.,"நான் வழி சொல்றேன், போங்க."
 SAV_NEAR_10,It's not far. Come.,"ரொம்ப தூரம் இல்ல, வாங்க."
-SAV_CALL_01,Auto!,ஆட்டோ!
+SAV_CALL_01,"Auto, please!",ஆட்டோ!
 SAV_CALL_02,Auto! Auto!,ஆட்டோ! ஆட்டோ!
 SAV_CALL_03,"Hey, auto!","அண்ணா, ஆட்டோ!"
 SAV_CALL_04,"Auto, stop please!","ஆட்டோ, கொஞ்சம் நில்லுங்க!"

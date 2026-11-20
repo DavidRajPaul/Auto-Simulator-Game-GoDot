@@ -77,7 +77,7 @@ NEAR = [
 # Rider lines: category -> (acting tag, ten (English, Tamil) lines).
 RIDER = {
     "call": ("shouting", [
-        ("Auto!", "ஆட்டோ!"),
+        ("Auto, please!", "ஆட்டோ!"),  # "Auto!" alone came out silent in the girl's voice
         ("Auto! Auto!", "ஆட்டோ! ஆட்டோ!"),
         ("Hey, auto!", "அண்ணா, ஆட்டோ!"),
         ("Auto, stop please!", "ஆட்டோ, கொஞ்சம் நில்லுங்க!"),
