@@ -26,8 +26,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PEOPLE = ROOT / "assets" / "models" / "people"
 OUT = PEOPLE / "waiting"
 IDS = ["woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "man_casual",
-       "old_man_veshti", "young_man", "girl_churidar", "woman_modern"]
-TRI_BUDGET = 2400
+       "old_man_veshti", "young_man", "girl_churidar", "woman_coat", "woman_saree_kanchi"]
+# Nov 20: the source characters keep their faces and hands at full detail (people_detail.py);
+# a flat 2,400-triangle budget collapsed them again here. Far figures use the import LODs.
+TRI_BUDGET = 8000
 
 ARMS_DOWN = [
     ("LeftArm", "LeftForeArm", np.array([0.14, -1.0, 0.02])),
@@ -43,7 +45,7 @@ STAND = [
     ("RightLeg", "RightFoot", np.array([-0.04, -1.0, -0.03])),
 ] + ARMS_DOWN
 # Sarees drape badly when the legs fold (the skirt follows the thighs): those only stand.
-NO_SIT = {"woman_saree_green", "woman_saree_maroon", "woman_saree_violet"}
+NO_SIT = {"woman_saree_green", "woman_saree_maroon", "woman_saree_violet", "woman_saree_kanchi"}
 SIT = [
     ("Spine", "Spine1", np.array([0.0, 1.0, -0.04])),           # upright, leaning back a touch
     ("LeftUpLeg", "LeftLeg", np.array([0.1, -0.06, 1.0])),      # thighs along the bench

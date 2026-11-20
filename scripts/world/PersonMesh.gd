@@ -37,7 +37,7 @@ static func material() -> StandardMaterial3D:
 const RIDER_MODELS: Array[String] = [
 	"res://assets/models/people/riders/young_man_rider.glb",
 	"res://assets/models/people/riders/man_casual_rider.glb",
-	"res://assets/models/people/riders/woman_modern_rider.glb",
+	"res://assets/models/people/riders/woman_coat_rider.glb",
 	"res://assets/models/people/riders/girl_churidar_rider.glb",
 ]
 ## seated_rider()'s hip joint sits this far from its origin.

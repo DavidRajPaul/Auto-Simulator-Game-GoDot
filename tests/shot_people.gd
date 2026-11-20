@@ -7,7 +7,7 @@ func _ready() -> void:
 	add_child(env)
 	var sun: DirectionalLight3D = DirectionalLight3D.new(); sun.rotation_degrees = Vector3(-45, 35, 0); add_child(sun)
 	var x: float = -2.4
-	for spec: Array in [["woman_modern", "walk", 0.4], ["woman_modern", "idle", 0.0], ["man_casual", "walk", 1.1], ["man_casual", "idle", 0.0], ["young_man", "walk", 0.4]]:
+	for spec: Array in [["woman_coat", "walk", 0.4], ["woman_coat", "idle", 0.0], ["man_casual", "walk", 1.1], ["man_casual", "idle", 0.0], ["young_man", "walk", 0.4]]:
 		var n: Node3D = (load("res://assets/models/people/%s.glb" % spec[0]) as PackedScene).instantiate()
 		add_child(n); n.position = Vector3(x, 0, 0); n.rotation.y = 0.5 if spec[1] == "walk" else 0.0
 		var ap: AnimationPlayer = n.find_children("*", "AnimationPlayer", true, false)[0]

@@ -12,9 +12,12 @@ For each character:
      The walk's forward root motion is removed and its true speed is written to people.json, so the
      game moves each person at exactly the pace their feet step (no ice-skating).
   4. Packs every texture into one atlas and merges all parts into one primitive: one draw call.
-  5. gltf-transform: weld, simplify to the triangle budget, resize the atlas.
+  5. Simplify region by region (people_detail.py: faces and hands keep their own budgets), then
+     gltf-transform prune writes the GLB with the 1024 px atlas.
 
 Raw downloads stay in assets_src/incoming/models/people (gitignored); only the .glb files ship.
+Needs: numpy, Pillow, scipy, meshoptimizer (pip) and gltf-transform (npm ci in tools/assets).
+Rebuilding drops the street clips: copy them back with copy_people_clips.py (see AGENTS.md).
 Usage: python3 tools/assets/process_people.py [ids...]
 """
 from __future__ import annotations
@@ -31,6 +34,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gltf_rig import Gltf, arc, canonical, mat_to_quat, orthonormal, yaw  # noqa: E402
+import people_detail as detail  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "assets_src" / "incoming" / "models" / "people"
@@ -53,7 +57,7 @@ for _s in ("Left", "Right"):
 AIM = {b: c for c, b in PARENT.items() if c not in ("LeftUpLeg", "RightUpLeg", "LeftShoulder", "RightShoulder")}
 AIM.update({"Hips": "Spine", "Spine2": "Neck", "Head": "HeadTop_End", "LeftHand": "LeftHandMiddle1",
             "RightHand": "RightHandMiddle1", "LeftToeBase": "LeftToe_End", "RightToeBase": "RightToe_End"})
-DROP_PARTS = ("cornea", "teeth", "tongue", "eyelash", "lash")
+DROP_PARTS = ("cornea", "teeth", "tongue", "eyelash", "lash", "occlusion", "tearline")
 FPS = 30
 
 # Animation sources: (raw folder, animation index, keep root motion as speed)
@@ -86,22 +90,34 @@ PEOPLE = [
     # ships only CC0 / CC BY / Pixabay assets (docs/ASSETS.md). Its body is the same avatar as
     # "Female test", which is CC BY and gives the saree women below (outfit colour overridden).
     ("woman_saree_violet", "female_test", 1.56, 3200, 0,
-     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0'),
+     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0', {}, {"paint": ["outfit"], "hair_tris": 2200}),
     ("woman_saree_green", "female_test", 1.58, 3200, 0,
-     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.03, 0.26, 0.09, 1.0]}),
+     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.03, 0.26, 0.09, 1.0]},
+     {"paint": ["outfit"], "hair_tris": 2200}),
     ("woman_saree_maroon", "female_test", 1.54, 3200, 0,
-     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.33, 0.02, 0.04, 1.0]}),
+     '"Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured', {"outfit": [0.33, 0.02, 0.04, 1.0]},
+     {"paint": ["outfit"], "hair_tris": 2200}),
     # Ready Player Me style avatars (74 bones, 50–112k tris, ~25 textures) → 22 bones, one atlas.
-    ("woman_modern", "modern_indian_woman", 1.58, 3800, 0,
-     '"Modern Indian Woman" by Pixel_Monster (Sketchfab), CC BY 4.0'),
+    # "woman_modern" ("Modern Indian Woman", Pixel_Monster, CC BY 4.0) was removed on Nov 20: its
+    # face and hands had collapsed in the old simplifier and the raw download was not available to
+    # rebuild it. woman_coat took its place. Add the spec back here to rebuild it from the source.
     ("man_casual", "chennai_man_rpm", 1.72, 3600, 0,
      '"Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character'),
     # ^ Before baking, the photo face on its head texture is replaced by tools/art/genericize_face.py
     #   (the licence covers the model, not the actor's likeness). Keep the .orig.jpeg next to it.
+    # Nov 20 owner upload. "Wife Final" has no skeleton: it borrows the bones and skin weights of
+    # "Female test" (also a saree, also an A-pose) through rig_static.py.
+    ("woman_saree_kanchi", "wife_final", 1.56, 3400, None,
+     '"Wife Final" by svgmishra95 (Sketchfab), CC BY 4.0', {},
+     {"rig_from": "female_test", "paint": ["Saree"]}),
+    # Reallusion Character Creator rig (CC_Base_* bones, mapped in gltf_rig.canonical).
+    ("woman_coat", "lady_in_coat", 1.62, 3400, 0,
+     '"Lady in Coat" by aribb (Sketchfab), CC BY 4.0', {}, {"paint": ["Long_slim_coat"], "hair_tris": 5000, "face_tris": 2000,
+                                                                       "crown_m": 0.04}),
     ("girl_churidar", "south_indian_women", 1.55, 3200, 0,
-     '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0'),
+     '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0', {}, {"solid_hair": True, "paint": ["Kurta"]}),
     ("girl_pavadai", "south_indian_women", 1.52, 4000, 1,
-     '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0'),
+     '"South Indian Women" by alnmathew (Sketchfab), CC BY 4.0', {}, {"paint": ["Skirt"]}),
 ]
 
 
@@ -342,7 +358,7 @@ def build_atlas(g: Gltf, parts: list[dict], size: int = 1024) -> tuple[Image.Ima
     """Packs one tile per part (power-of-two squares sized by surface share) and rewrites its UVs."""
     keyed: dict[int, list[dict]] = {}
     for p in parts:
-        keyed.setdefault(id(p["mat"]), []).append(p)
+        keyed.setdefault((id(p["mat"]), p.get("tile_region", 0)), []).append(p)
     groups = []
     total = sum(tri_area(p["pos"], p["idx"]) for p in parts) or 1.0
     for _, ps in keyed.items():
@@ -353,20 +369,59 @@ def build_atlas(g: Gltf, parts: list[dict], size: int = 1024) -> tuple[Image.Ima
         # vertex was clamped onto one atlas pixel (the white "Chennai Slum" walls).
         lo = np.floor((uv.min(0) + uv.max(0)) * 0.5)
         span = uv.max(0) - uv.min(0)
-        tiled = bool((span > 1.02).any())
+        # Only a real repeat counts as tiled. Eyeballs overshoot 0..1 a little on their hidden
+        # back (South Indian Women: -0.15..1.15); averaging those wiped out the iris (white eyes).
+        tiled = bool((span > 1.5).any())
         share = sum(tri_area(p["pos"], p["idx"]) for p in ps) / total
-        groups.append({"parts": ps, "img": img, "alpha": alpha, "lo": lo, "tiled": tiled, "share": share})
+        # Faces and hands get more texels than their surface share (people_detail.TILE_WEIGHT).
+        regions = np.concatenate([p["region"] for p in ps]) if "region" in ps[0] else np.zeros(1, int)
+        weight = max([1.0] + [detail.TILE_WEIGHT[int(r)] for r in np.unique(regions) if np.mean(regions == r) > 0.25])
+        face = bool(np.mean(regions == detail.REGION_FACE) > 0.25) and ps[0].get("tile_region", 0) != detail.REGION_BODY
+        crop = (0.0, 0.0, 1.0, 1.0)
+        if not tiled:
+            # Only the part of the texture the UVs use goes into the atlas (padded by 1 %).
+            local = np.clip(uv - lo, 0.0, 1.0)
+            a0 = np.clip(local.min(0) - 0.01, 0.0, 1.0)
+            a1 = np.clip(local.max(0) + 0.01, 0.0, 1.0)
+            if (a1 - a0).min() > 0.02:
+                crop = (float(a0[0]), float(a0[1]), float(a1[0]), float(a1[1]))
+                w_, h_ = img.size
+                img = img.crop((int(crop[0] * w_), int(crop[1] * h_),
+                                max(int(crop[0] * w_) + 1, int(np.ceil(crop[2] * w_))),
+                                max(int(crop[1] * h_) + 1, int(np.ceil(crop[3] * h_)))))
+        groups.append({"parts": ps, "img": img, "alpha": alpha, "lo": lo, "tiled": tiled,
+                       "share": share * weight, "face": face, "crop": crop})
     # Tile side by surface share, then shrink everything until the squares fit the atlas.
     def side(share: float) -> int:
         s = 32
         while s < size // 2 and (s * 2) ** 2 <= share * size * size * 1.6:
             s *= 2
         return s
+    total_share = sum(gr["share"] for gr in groups) or 1.0
     for gr in groups:
-        gr["side"] = side(gr["share"])
+        gr["share"] /= total_share
+        arr = np.asarray(gr["img"].convert("RGB").resize((16, 16))).reshape(-1, 3)
+        gr["flat"] = bool(arr.std(0).max() < 3.0)
+        if gr["flat"] or gr["tiled"]:
+            gr["side"] = 16  # one colour: a 16 px swatch is the same as a 256 px one
+        else:
+            gr["side"] = max(side(gr["share"]), detail.FACE_TILE_MIN if gr["face"] else 32)
     while sum(gr["side"] ** 2 for gr in groups) > size * size:
+        # Shrink the largest tiles first, so the face keeps its resolution.
+        big = max(gr["side"] for gr in groups)
         for gr in groups:
-            gr["side"] = max(16, gr["side"] // 2)
+            if gr["side"] == big:
+                gr["side"] = max(16, gr["side"] // 2)
+    # Then fill the free space: double the tile that has the fewest texels for its share, while it
+    # fits (power-of-two squares, largest first, always pack when their area fits).
+    while True:
+        used = sum(gr["side"] ** 2 for gr in groups)
+        grow = [gr for gr in groups if not gr["flat"] and not gr["tiled"] and gr["side"] < size // 2
+                and used + 3 * gr["side"] ** 2 <= size * size]
+        if not grow:
+            break
+        best = max(grow, key=lambda gr: gr["share"] / gr["side"] ** 2)
+        best["side"] *= 2
     # Quadtree packing of power-of-two squares (largest first) always succeeds when area fits.
     free = [(0, 0, size)]
     atlas = Image.new("RGBA", (size, size), (128, 128, 128, 255))
@@ -399,10 +454,14 @@ def build_atlas(g: Gltf, parts: list[dict], size: int = 1024) -> tuple[Image.Ima
         atlas.paste(tile, (x, y))
         any_alpha = any_alpha or gr["alpha"]
         for p in gr["parts"]:
+            p["tile_rect"] = (x / size, y / size, (x + s) / size, (y + s) / size)
             if gr["tiled"]:
                 p["uv"] = np.tile([(x + s * 0.5) / size, (y + s * 0.5) / size], (len(p["uv"]), 1))
             else:
+                c = gr["crop"]
                 local = np.clip(p["uv"] - gr["lo"], 0.0, 1.0)
+                local = (local - [c[0], c[1]]) / [max(c[2] - c[0], 1e-6), max(c[3] - c[1], 1e-6)]
+                local = np.clip(local, 0.0, 1.0)
                 p["uv"] = np.c_[(x + pad + local[:, 0] * inner) / size, (y + pad + local[:, 1] * inner) / size]
     return atlas, any_alpha
 
@@ -618,25 +677,59 @@ def main() -> int:
     for spec in PEOPLE:
         pid, folder, height, budget, skin_i, credit = spec[:6]
         recolour: dict = spec[6] if len(spec) > 6 else {}
+        opts: dict = spec[7] if len(spec) > 7 else {}
         credits.append(f"| `assets/models/people/{pid}.glb` | {folder} | {credit} |")
         if only and pid not in only:
             continue
         g = Gltf(SRC / folder / "scene.gltf")
-        rig = Rig(g, skin_i, height)
-        parts = extract_mesh(rig)
         for mat in g.j.get("materials", []):
             if mat.get("name") in recolour:
                 mat.setdefault("pbrMetallicRoughness", {})["baseColorFactor"] = recolour[mat["name"]]
-        rig.fit(np.concatenate([p["pos"] for p in parts]))
+        if opts.get("solid_hair"):
+            # Strand-soup hair with alpha strands breaks into black shards once simplified: draw it
+            # as a solid mass instead.
+            for mat in g.j.get("materials", []):
+                if any(w in mat.get("name", "").lower() for w in detail.HAIR_WORDS):
+                    mat["alphaMode"] = "OPAQUE"
+        if "rig_from" in opts:
+            # No skeleton in the download: borrow the bones and skin weights of a rigged model.
+            import rig_static
+            ref_spec = next(sp for sp in PEOPLE if sp[1] == opts["rig_from"])
+            ref = Rig(Gltf(SRC / opts["rig_from"] / "scene.gltf"), ref_spec[4], height)
+            ref_parts = extract_mesh(ref)
+            ref.fit(np.concatenate([p["pos"] for p in ref_parts]))
+            for p in ref_parts:
+                p["pos"] = np.array([ref.norm_point(v) for v in p["pos"]])
+            parts, pose_rest = rig_static.rig_static(g, height, ref_parts, ref.pose(ref.rest), KEEP, PARENT,
+                                                     DROP_PARTS, opts)
+        else:
+            rig = Rig(g, skin_i, height)
+            parts = extract_mesh(rig)
+            rig.fit(np.concatenate([p["pos"] for p in parts]))
+            for p in parts:
+                p["pos"] = np.array([rig.norm_point(v) for v in p["pos"]])
+                p["nrm"] = p["nrm"] @ rig.turn.T
+            pose_rest = rig.pose(rig.rest)
         for p in parts:
-            p["pos"] = np.array([rig.norm_point(v) for v in p["pos"]])
-            p["nrm"] = p["nrm"] @ rig.turn.T
             if "hair" in p["label"] and len(p["idx"]) // 3 > 60000:
                 before = len(p["idx"]) // 3
                 cluster_part(p, 0.04)
                 print(f"     {pid}: hair {before} -> {len(p['idx']) // 3} tris (clustered)")
-        pose_rest = rig.pose(rig.rest)
+            p["region"] = detail.vertex_regions(p, KEEP)
+        parts = detail.cover_scalp(parts, lambda m: material_image(g, m)[0], opts.get("crown_m", 0.05))
+        parts = detail.split_by_region(parts)
         atlas, alpha = build_atlas(g, parts)
+        # Where the garment PaintSwap recolours ended up in the atlas, and its colour there.
+        paint = {}
+        if opts.get("paint"):
+            rects = [p["tile_rect"] for p in parts if p["mat"].get("name") in opts["paint"]]
+            # The garment's main tile (a few of its triangles may sit in a face / hands tile).
+            r = list(max(rects, key=lambda t: (t[2] - t[0]) * (t[3] - t[1])))
+            crop = np.asarray(atlas.convert("RGB").crop((int(r[0] * 1024), int(r[1] * 1024),
+                                                         int(r[2] * 1024), int(r[3] * 1024))))
+            paint = {"rect": [round(v, 4) for v in r],
+                     "colour": [int(c) for c in np.median(crop.reshape(-1, 3), axis=0)]}
+            print(f"     {pid}: paint {paint}")
         atlas_png = WORK / f"{pid}_atlas.png"
         atlas.save(atlas_png)
         clips = {}
@@ -647,31 +740,46 @@ def main() -> int:
                 k = pose_rest["Hips"][1][1] / max(src.pose(src.rest)["Hips"][1][1], 1e-6)
                 clips[clip]["speed"] = fallback_speed * k
         raw = WORK / f"{pid}.gltf"
-        write_character(raw, parts, atlas_png, alpha, pose_rest, clips)
-        dest = OUT / f"{pid}.glb"
-        tmp = WORK / f"{pid}_w.glb"
         tris_in = sum(len(p["idx"]) // 3 for p in parts)
-        ratio = min(1.0, budget / max(tris_in, 1))
-        welded = WORK / f"{pid}_weld.glb"
-        run([GLTF, "weld", raw, welded])
-        # Loosen the error limit until the triangle budget is met (hair cards and loose parts
-        # stop meshoptimizer early at tight limits).
-        for err in ("0.02", "0.05", "0.1", "0.2"):
-            run([GLTF, "simplify", welded, tmp, "--ratio", f"{ratio:.4f}", "--error", err, "--lock-border", "false"])
-            if triangles(tmp) <= budget * 1.15:
-                break
-        run([GLTF, "resize", tmp, tmp, "--width", 512, "--height", 512])
-        run([GLTF, "prune", tmp, dest])
+        # Merge, then simplify region by region: the body and hair to `budget`, the face and the
+        # hands to their own budgets (people_detail), so faces and fingers never collapse.
+        cat = lambda k: np.concatenate([p[k] for p in parts])  # noqa: E731
+        offs = np.cumsum([0] + [len(p["pos"]) for p in parts[:-1]])
+        idx_all = np.concatenate([p["idx"] + o for p, o in zip(parts, offs)])
+        pos, nrm, uv, J, W, reg, idx_all = detail.simplify_by_region(
+            cat("pos"), cat("nrm"), cat("uv"), cat("J"), cat("W"), cat("region"), idx_all, budget,
+            face_budget=opts.get("face_tris", detail.FACE_TRIS), hair_budget=opts.get("hair_tris"))
+        counts = detail.region_counts(reg, idx_all)
+        merged = [{"pos": pos, "nrm": nrm, "uv": uv, "J": J, "W": W, "idx": idx_all}]
+        write_character(raw, merged, atlas_png, alpha, pose_rest, clips)
+        dest = OUT / f"{pid}.glb"
+        # The atlas stays 1024 px (it was halved to 512, which left a face about 64 px wide).
+        run([GLTF, "prune", raw, dest])
+        print(f"     {pid}: regions {counts}")
         speed = clips["walk"]["speed"]
         meta[pid] = {"walk_speed": round(speed, 3), "walk_seconds": round(clips["walk"]["duration"], 3),
                      "height": height, "credit": credit}
+        if paint:
+            meta[pid]["paint"] = paint
         print(f"OK   {pid}: {tris_in} -> {triangles(dest)} tris, {dest.stat().st_size // 1024} KB, "
               f"walk {speed:.2f} m/s, alpha={alpha}")
     meta_path.write_text(json.dumps({"_note": "made by tools/assets/process_people.py — walk_speed is the "
                                      "in-place walk's true pace in m/s at speed_scale 1",
                                      "people": meta}, indent=1, sort_keys=True))
+    # Only shipped files get a row; rows this script does not own (Mixamo, quest riders) and the
+    # notes under the table are kept as they are.
+    ids = {sp[0] for sp in PEOPLE}
+    old = (OUT / "CREDITS_people.md").read_text().splitlines() if (OUT / "CREDITS_people.md").exists() else []
+    keep_rows = [ln for ln in old if ln.startswith("| `") and Path(ln.split("`")[1]).stem not in ids]
+    tail = []
+    for i, ln in enumerate(old):
+        if i > 0 and not ln.startswith("|") and any(o.startswith("|") for o in old[:i]):
+            tail = old[i:]
+            break
+    rows = [c for c in credits if (ROOT / c.split("`")[1]).exists()] + keep_rows
     (OUT / "CREDITS_people.md").write_text("# People (made by tools/assets/process_people.py)\n\n"
-                                          "| File | Source | Licence |\n|---|---|---|\n" + "\n".join(credits) + "\n")
+                                          "| File | Source | Licence |\n|---|---|---|\n" + "\n".join(rows) + "\n"
+                                          + ("\n".join(tail) + "\n" if tail else ""))
     return 0
 
 

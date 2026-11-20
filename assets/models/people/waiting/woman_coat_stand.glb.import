@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://glku4kb4vkpk"
-path="res://.godot/imported/woman_modern_sit.glb-613e1234fbf11dbef205efa3b803f3a3.scn"
+uid="uid://dofhm8587ftg7"
+path="res://.godot/imported/woman_coat_stand.glb-7c5dacd788c379394835bba4537fcf25.scn"
 
 [deps]
 
-source_file="res://assets/models/people/waiting/woman_modern_sit.glb"
-dest_files=["res://.godot/imported/woman_modern_sit.glb-613e1234fbf11dbef205efa3b803f3a3.scn"]
+source_file="res://assets/models/people/waiting/woman_coat_stand.glb"
+dest_files=["res://.godot/imported/woman_coat_stand.glb-7c5dacd788c379394835bba4537fcf25.scn"]
 
 [params]
 

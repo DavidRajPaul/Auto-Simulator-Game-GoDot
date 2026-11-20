@@ -63,10 +63,10 @@ CLIPS = {
 }
 
 
-def bake(target: dict, src: Rig, mode: str, fps: int = FPS) -> dict:
+def bake(target: dict, src: Rig, mode: str, fps: int = FPS, anim: int = 0) -> dict:
     """process_people.bake_clip, plus a "root" mode that keeps the hips' travel from frame 0."""
     g = src.g
-    dur = g.anim_duration(0)
+    dur = g.anim_duration(anim)
     n = max(2, int(round(dur * fps)) + 1)
     times = np.linspace(0.0, dur, n)
     s_rest = src.pose(src.rest)
@@ -78,7 +78,7 @@ def bake(target: dict, src: Rig, mode: str, fps: int = FPS) -> dict:
     rot = {b: [] for b in KEEP}
     hips = []
     for t in times:
-        sp = src.pose(g.anim_world(0, float(t)))
+        sp = src.pose(g.anim_world(anim, float(t)))
         world = {b: sp[b][0] @ s_rest[b][0].T @ align[b] @ target[b][0] for b in KEEP}
         for b in KEEP:
             parent = world[PARENT[b]] if b in PARENT else np.eye(3)

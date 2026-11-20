@@ -22,11 +22,15 @@ const CONFIG: Dictionary = {
 	"sport_bike_2": [Color8(215, 0, 38), 0.03, 0.6, Vector4(0, 0, 1, 1)],
 	"sport_bike_3": [Color8(252, 97, 133), 0.03, 0.4, Vector4(0, 0, 1, 1)],
 	# People: the garment's block in the texture.
-	"woman_saree_green": [Color8(46, 139, 84), 0.12, 0.2, Vector4(0.5, 0.0, 1.0, 0.5)],
-	"woman_saree_maroon": [Color8(152, 36, 52), 0.12, 0.2, Vector4(0.5, 0.0, 1.0, 0.5)],
-	"woman_saree_violet": [Color8(174, 76, 186), 0.12, 0.2, Vector4(0.5, 0.0, 1.0, 0.5)],
-	"girl_churidar": [Color8(140, 160, 15), 0.12, 0.2, Vector4(0.0, 0.0, 0.5, 0.5)],
-	"girl_pavadai": [Color8(200, 70, 120), 0.5, 0.15, Vector4(0.0, 0.0, 0.5, 0.42)], # patterned: rotate every hue
+	# Nov 20: rects and colours come from people.json "paint" (process_people.py writes them when
+	# it rebuilds a character); the atlas layout changed with the face / hands fix.
+	"woman_saree_green": [Color8(48, 139, 84), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
+	"woman_saree_maroon": [Color8(155, 38, 56), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
+	"woman_saree_violet": [Color8(179, 76, 186), 0.12, 0.2, Vector4(0.5, 0.7656, 0.5156, 0.7812)],
+	"girl_churidar": [Color8(108, 131, 0), 0.12, 0.2, Vector4(0.0, 0.0, 0.5, 0.5)],
+	"girl_pavadai": [Color8(200, 70, 120), 0.5, 0.15, Vector4(0.0, 0.0, 0.5, 0.5)], # patterned: rotate every hue
+	"woman_saree_kanchi": [Color8(53, 14, 0), 0.04, 0.3, Vector4(0.0, 0.0, 0.5, 0.5)],
+	"woman_coat": [Color8(183, 131, 93), 0.06, 0.25, Vector4(0.5, 0.0, 1.0, 0.5)],
 	"man_casual": [Color8(110, 125, 175), 0.12, 0.12, Vector4(0.5, 0.0, 1.0, 0.5)],
 }
 

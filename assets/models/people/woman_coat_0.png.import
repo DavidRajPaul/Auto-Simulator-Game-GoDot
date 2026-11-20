@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0p264sechj6j"
-path="res://.godot/imported/woman_modern_sit_0.png-c453a7dadc8821ccff753d4a8977dbae.ctex"
+uid="uid://cisyywtbw28y3"
+path="res://.godot/imported/woman_coat_0.png-c341df654739fda17465f794fd3843f9.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "d30633c086953740bbd8eec6b39767e8"
+"md5": "e273dd620fbcd46faa35062861cb226c"
 }
 
 [deps]
 
-source_file="res://assets/models/people/waiting/woman_modern_sit_0.png"
-dest_files=["res://.godot/imported/woman_modern_sit_0.png-c453a7dadc8821ccff753d4a8977dbae.ctex"]
+source_file="res://assets/models/people/woman_coat_0.png"
+dest_files=["res://.godot/imported/woman_coat_0.png-c341df654739fda17465f794fd3843f9.ctex"]
 
 [params]
 

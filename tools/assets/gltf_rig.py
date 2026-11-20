@@ -99,10 +99,23 @@ def yaw(angle: float) -> np.ndarray:
 
 # --- Canonical bone names --------------------------------------------------------------------
 
+# Reallusion Character Creator rigs ("CC_Base_L_Upperarm_045"): their bones mapped to Mixamo names.
+CC_BONES = {"Hip": "Hips", "Waist": "Spine", "Spine01": "Spine1", "Spine02": "Spine2",
+            "NeckTwist01": "Neck", "Head": "Head"}
+for _s, _side in (("L", "Left"), ("R", "Right")):
+    CC_BONES.update({f"{_s}_Clavicle": f"{_side}Shoulder", f"{_s}_Upperarm": f"{_side}Arm",
+                     f"{_s}_Forearm": f"{_side}ForeArm", f"{_s}_Hand": f"{_side}Hand",
+                     f"{_s}_Mid1": f"{_side}HandMiddle1", f"{_s}_Thigh": f"{_side}UpLeg",
+                     f"{_s}_Calf": f"{_side}Leg", f"{_s}_Foot": f"{_side}Foot",
+                     f"{_s}_ToeBase": f"{_side}ToeBase", f"{_s}_MidToe1": f"{_side}Toe_End"})
+
+
 def canonical(name: str) -> str:
-    """'mixamorig:LeftArm_010' / 'LeftArm_013' / 'LeftArm' -> 'LeftArm'."""
+    """'mixamorig:LeftArm_010' / 'LeftArm_013' / 'LeftArm' / 'CC_Base_L_Upperarm_045' -> 'LeftArm'."""
     n = name.split(":")[-1]
     n = re.sub(r"_\d+$", "", n)
+    if n.startswith("CC_Base_"):
+        n = CC_BONES.get(n[len("CC_Base_"):], n)
     return n
 
 

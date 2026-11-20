@@ -26,7 +26,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "assets" / "models" / "people" / "waiting"
 OUT = ROOT / "assets" / "models" / "people" / "shop_people.glb"
-IDS = ["man_casual", "woman_saree_green", "young_man", "woman_saree_maroon", "old_man_veshti", "woman_modern", "woman_saree_violet", "girl_churidar"]
+# Nov 20: woman_saree_kanchi took woman_modern's cell (woman_coat's alpha-card hair needs a cutout
+# material, and this atlas is opaque).
+IDS = ["man_casual", "woman_saree_green", "young_man", "woman_saree_maroon", "old_man_veshti", "woman_saree_kanchi", "woman_saree_violet", "girl_churidar"]
 CELL = 256
 COLS = 4
 

@@ -7,8 +7,9 @@
 | `assets/models/people/woman_saree_violet.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0 |
 | `assets/models/people/woman_saree_green.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
 | `assets/models/people/woman_saree_maroon.glb` | female_test | "Female test" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured |
-| `assets/models/people/woman_modern.glb` | modern_indian_woman | "Modern Indian Woman" by Pixel_Monster (Sketchfab), CC BY 4.0 |
 | `assets/models/people/man_casual.glb` | chennai_man_rpm | "Dhanush 3d model" by Peter Charles (Sketchfab), CC BY 4.0 — face repainted as a generic character |
+| `assets/models/people/woman_saree_kanchi.glb` | wife_final | "Wife Final" by svgmishra95 (Sketchfab), CC BY 4.0 |
+| `assets/models/people/woman_coat.glb` | lady_in_coat | "Lady in Coat" by aribb (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_churidar.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
 | `assets/models/people/girl_pavadai.glb` | south_indian_women | "South Indian Women" by alnmathew (Sketchfab), CC BY 4.0 |
 | `assets/models/people/mixamo_ch22.glb` | Mixamo "Ch22" (skinned Walk.fbx, owner-supplied) | Adobe Mixamo character, used under the Mixamo terms (royalty-free in games; raw FBX not redistributed) |
@@ -19,3 +20,5 @@
 | `assets/models/people/quest/puppy/scene.gltf` | "Dog Puppy" by kenchoo (Sketchfab) | CC-BY-4.0. This work is based on "Dog Puppy" (https://sketchfab.com/3d-models/dog-puppy-72331763040e4314b154f84348fe0957) by kenchoo (https://sketchfab.com/kenchoo) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). Quest rider in sq_009 (Kutty); licence in `puppy/license.txt`. No sit or walk clip yet: she stands on the bench and hops. |
 
 Animation clips on every pedestrian GLB (`run`, `dodge`, `stumble`, `fallen`, `get_up`, `wave`, `talk`, `talk_2`, `talk_4`, `drink`, `flee_look`, `flee`): Adobe Mixamo animations downloaded by the owner and retargeted by `tools/assets/add_mixamo_clips.py`; used under the Mixamo terms (royalty-free in games; raw FBX files are not redistributed). `talk_2` / `talk_4` (Talking_2, Talking_4) were added Nov 14.
+
+Nov 20: the saree, churidar and pavadai women were rebuilt with faces and hands kept at full detail (`tools/assets/people_detail.py`); their street clips were carried over from the previous GLBs by `tools/assets/copy_people_clips.py` (woman_saree_kanchi took Female test's, woman_coat took the removed woman_modern's).

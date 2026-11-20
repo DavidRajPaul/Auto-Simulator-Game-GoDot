@@ -633,7 +633,9 @@ func _test_atlases() -> void:
 func _test_new_people_and_slum() -> void:
 	var meta: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://assets/models/people/people.json")) as Dictionary)["people"]
 	var ok: bool = true
-	for id: String in ["woman_modern", "man_casual"]:
+	# Nov 20: woman_modern (deformed face and hands, no source to rebuild) was replaced by
+	# woman_coat; the rebuilt women keep ~1.3k face and 0.7k hand triangles (people_detail.py).
+	for id: String in ["woman_coat", "woman_saree_kanchi", "man_casual"]:
 		var scene: PackedScene = load("res://assets/models/people/%s.glb" % id) as PackedScene
 		if not meta.has(id) or scene == null:
 			ok = false
@@ -646,10 +648,10 @@ func _test_new_people_and_slum() -> void:
 			var m: Mesh = (mi as MeshInstance3D).mesh
 			for sidx: int in m.get_surface_count():
 				tris += m.surface_get_arrays(sidx)[Mesh.ARRAY_INDEX].size() / 3
-		if ap.is_empty() or not (ap[0] as AnimationPlayer).has_animation("walk") or not (ap[0] as AnimationPlayer).has_animation("idle") or tris > 4200 or mis.size() != 1:
+		if ap.is_empty() or not (ap[0] as AnimationPlayer).has_animation("walk") or not (ap[0] as AnimationPlayer).has_animation("idle") or tris > 10500 or mis.size() != 1:
 			ok = false
 		n.free()
-	_check("New Chennai man + woman: rigged, walk + idle, ≤ 4.2k tris, one draw call", ok)
+	_check("New Chennai people: rigged, walk + idle, ≤ 10.5k tris (woman_coat's alpha-card hair), one draw call", ok)
 	var props: Array = (JSON.parse_string(FileAccess.get_file_as_string("res://data/world/city_props.json")) as Dictionary)["props"]
 	var slums: int = 0
 	for pr: Dictionary in props:

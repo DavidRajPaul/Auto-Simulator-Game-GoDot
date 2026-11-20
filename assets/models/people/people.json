@@ -63,9 +63,22 @@
      3.167
     ]
    },
+   "paint": {
+    "colour": [
+     108,
+     131,
+     0
+    ],
+    "rect": [
+     0.0,
+     0.0,
+     0.5,
+     0.5
+    ]
+   },
    "run_speed": 2.152,
    "walk_seconds": 4.333,
-   "walk_speed": 1.238
+   "walk_speed": 1.251
   },
   "girl_pavadai": {
    "credit": "\"South Indian Women\" by alnmathew (Sketchfab), CC BY 4.0",
@@ -129,9 +142,22 @@
      3.167
     ]
    },
+   "paint": {
+    "colour": [
+     64,
+     42,
+     71
+    ],
+    "rect": [
+     0.0,
+     0.0,
+     0.5,
+     0.5
+    ]
+   },
    "run_speed": 2.213,
    "walk_seconds": 4.333,
-   "walk_speed": 1.274
+   "walk_speed": 1.286
   },
   "man_casual": {
    "credit": "\"Dhanush 3d model\" by Peter Charles (Sketchfab), CC BY 4.0 \u2014 face repainted as a generic character",
@@ -331,15 +357,15 @@
    "walk_seconds": 4.333,
    "walk_speed": 1.329
   },
-  "woman_modern": {
-   "credit": "\"Modern Indian Woman\" by Pixel_Monster (Sketchfab), CC BY 4.0",
-   "flee_look_speed": 1.576,
-   "flee_speed": 1.426,
-   "height": 1.58,
+  "woman_coat": {
+   "credit": "\"Lady in Coat\" by aribb (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.67,
+   "flee_speed": 1.511,
+   "height": 1.62,
    "moves": {
     "dodge": [
      -0.0,
-     -1.962,
+     -2.078,
      2.667
     ],
     "drink": [
@@ -369,7 +395,7 @@
     ],
     "stumble": [
      0.012,
-     -1.594,
+     -1.689,
      3.333
     ],
     "talk": [
@@ -393,9 +419,22 @@
      3.167
     ]
    },
-   "run_speed": 2.159,
+   "paint": {
+    "colour": [
+     183,
+     131,
+     93
+    ],
+    "rect": [
+     0.5,
+     0.0,
+     1.0,
+     0.5
+    ]
+   },
+   "run_speed": 2.287,
    "walk_seconds": 4.333,
-   "walk_speed": 1.255
+   "walk_speed": 1.33
   },
   "woman_saree_green": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
@@ -459,9 +498,101 @@
      3.167
     ]
    },
+   "paint": {
+    "colour": [
+     48,
+     139,
+     84
+    ],
+    "rect": [
+     0.5,
+     0.7656,
+     0.5156,
+     0.7812
+    ]
+   },
    "run_speed": 2.154,
    "walk_seconds": 4.333,
-   "walk_speed": 1.24
+   "walk_speed": 1.252
+  },
+  "woman_saree_kanchi": {
+   "credit": "\"Wife Final\" by svgmishra95 (Sketchfab), CC BY 4.0",
+   "flee_look_speed": 1.553,
+   "flee_speed": 1.405,
+   "height": 1.56,
+   "moves": {
+    "dodge": [
+     -0.0,
+     -1.933,
+     2.667
+    ],
+    "drink": [
+     0.0,
+     0.0,
+     8.867
+    ],
+    "fallen": [
+     0.0,
+     -0.0,
+     1.5
+    ],
+    "flee": [
+     0.0,
+     0.0,
+     1.633
+    ],
+    "flee_look": [
+     0.0,
+     0.0,
+     2.233
+    ],
+    "get_up": [
+     0.0,
+     0.0,
+     7.6
+    ],
+    "stumble": [
+     0.012,
+     -1.571,
+     3.333
+    ],
+    "talk": [
+     0.0,
+     0.0,
+     4.8
+    ],
+    "talk_2": [
+     0.0,
+     0.0,
+     5.933
+    ],
+    "talk_4": [
+     0.0,
+     0.0,
+     10.267
+    ],
+    "wave": [
+     0.0,
+     0.0,
+     3.167
+    ]
+   },
+   "paint": {
+    "colour": [
+     53,
+     14,
+     0
+    ],
+    "rect": [
+     0.0,
+     0.0,
+     0.5,
+     0.5
+    ]
+   },
+   "run_speed": 2.127,
+   "walk_seconds": 4.333,
+   "walk_speed": 1.237
   },
   "woman_saree_maroon": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0, saree recoloured",
@@ -525,9 +656,22 @@
      3.167
     ]
    },
+   "paint": {
+    "colour": [
+     155,
+     38,
+     56
+    ],
+    "rect": [
+     0.5,
+     0.7656,
+     0.5156,
+     0.7812
+    ]
+   },
    "run_speed": 2.1,
    "walk_seconds": 4.333,
-   "walk_speed": 1.209
+   "walk_speed": 1.221
   },
   "woman_saree_violet": {
    "credit": "\"Female test\" by CloudHubOmniTeam (Sketchfab), CC BY 4.0",
@@ -591,9 +735,22 @@
      3.167
     ]
    },
+   "paint": {
+    "colour": [
+     179,
+     76,
+     186
+    ],
+    "rect": [
+     0.5,
+     0.7656,
+     0.5156,
+     0.7812
+    ]
+   },
    "run_speed": 2.127,
    "walk_seconds": 4.333,
-   "walk_speed": 1.224
+   "walk_speed": 1.237
   },
   "young_man": {
    "credit": "\"Alex Texel A-pose\" by alex.texelsales (Sketchfab), CC BY 4.0",
