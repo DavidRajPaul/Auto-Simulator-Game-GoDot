@@ -70,19 +70,22 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
         torch.manual_seed(seed + 1000 * attempt)
         d = desc_tok(desc, return_tensors="pt")
         p = tok(text, return_tensors="pt")
+        raw = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+        trimmed = raw[:-4] + "_t.wav"
         try:
             with torch.inference_mode():
                 audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
                                        prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
-        except IndexError as e:  # Parler sometimes fails on one-word text; another seed works
+            samples = audio.cpu().numpy().reshape(-1)
+            if samples.size < rate // 10:
+                raise ValueError(f"only {samples.size} samples")
+            sf.write(raw, samples, rate)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af", TRIM, trimmed], check=True)
+            os.remove(raw)
+            seconds = sf.info(trimmed).duration
+        except Exception as e:  # Parler sometimes returns nothing for one-word text; another seed works
             print(f"  {os.path.basename(ogg)}: attempt {attempt + 1} failed ({e}), retrying", flush=True)
             continue
-        raw = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
-        trimmed = raw[:-4] + "_t.wav"
-        sf.write(raw, audio.cpu().numpy().squeeze(), rate)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af", TRIM, trimmed], check=True)
-        os.remove(raw)
-        seconds = sf.info(trimmed).duration
         per_char = seconds / max(1, len(text))
         if length_ok(seconds, text):
             if best:
