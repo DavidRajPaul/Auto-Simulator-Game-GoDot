@@ -50,9 +50,16 @@ def split_tags(text):
 # whole sentence) or rambles: retry with another seed, up to ATTEMPTS times.
 MIN_S_PER_CHAR = 0.035
 MAX_S_PER_CHAR = 0.2
+# A one-word shout ("Auto!") is longer than its letters suggest: allow at least this many seconds.
+SHORT_LINE_MAX_S = 1.8
 ATTEMPTS = 4
 TRIM = ("silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
         "silenceremove=start_periods=1:start_threshold=-50dB,areverse")
+
+
+def length_ok(seconds, text):
+    per_char = seconds / max(1, len(text))
+    return per_char >= MIN_S_PER_CHAR and (per_char <= MAX_S_PER_CHAR or seconds <= SHORT_LINE_MAX_S)
 
 
 def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, locked=False):
@@ -63,9 +70,13 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
         torch.manual_seed(seed + 1000 * attempt)
         d = desc_tok(desc, return_tensors="pt")
         p = tok(text, return_tensors="pt")
-        with torch.inference_mode():
-            audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
-                                   prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
+        try:
+            with torch.inference_mode():
+                audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
+                                       prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
+        except IndexError as e:  # Parler sometimes fails on one-word text; another seed works
+            print(f"  {os.path.basename(ogg)}: attempt {attempt + 1} failed ({e}), retrying", flush=True)
+            continue
         raw = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
         trimmed = raw[:-4] + "_t.wav"
         sf.write(raw, audio.cpu().numpy().squeeze(), rate)
@@ -73,7 +84,7 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
         os.remove(raw)
         seconds = sf.info(trimmed).duration
         per_char = seconds / max(1, len(text))
-        if MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+        if length_ok(seconds, text):
             if best:
                 os.remove(best[1])
             best = (seconds, trimmed)
@@ -85,12 +96,13 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
             best = (seconds, trimmed)
         else:
             os.remove(trimmed)
+    if best is None:
+        raise RuntimeError(f"every attempt failed for {len(text)} chars")
     seconds, trimmed = best
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", trimmed, "-ac", "1", "-ar", "32000",
                     "-c:a", "libvorbis", "-q:a", "1", ogg], check=True)
     os.remove(trimmed)
-    per_char = seconds / max(1, len(text))
-    if not MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+    if not length_ok(seconds, text):
         raise RuntimeError(f"still {seconds:.1f}s for {len(text)} chars after {ATTEMPTS} tries (kept best, check it)")
     return seconds
 
