@@ -17,6 +17,26 @@ Rush hour, a good star rating and auto decoration raise the top price. Recent gr
 
 **Stakes:** a walkout costs the fare and some respect, and an insult costs more. Fair deals in a row pay ₹5 per deal at the drop, up to ₹25. A rider charged over 125 % of the meter tips half.
 
+## What riders and the driver say (Nov 20)
+
+Every moment has ten lines in English and Tamil, spoken aloud (`SavariVoice`, lines in
+`tools/voice/savari_lines.py`, voices in `assets/audio/voice/sav/`):
+
+| Moment | Who | Example (EN / TA) |
+|---|---|---|
+| The auto comes within 38 m | rider shouts, line shows over their head | "Auto! Auto!" / "ஆட்டோ! ஆட்டோ!" |
+| The card opens | rider names the place, then makes an offer | "T. Nagar, please. This is all I can pay." / "டி. நகர் போகணும். இவ்வளவுதான் தர முடியும்." |
+| Ask the meter / a bit more / high | the driver says it, then the rider counters (or angrily, after a greedy ask) | "Meter rate only." → "Bring it down a little." |
+| Accept | driver, then rider | "Okay, get in." → "Okay, let's go." |
+| Let it go, a timeout or a walk-out | rider (after the driver, when he refused) | "Leave it, I'll take the bus." |
+| The drop | rider, happy or upset | "Right on time, thanks." / "You hit every pothole!" |
+
+Riders speak in one of four voices by the character at the kerb: man, woman, elder (he calls the
+driver தம்பி, not அண்ணா) and college girl. A place is named in 4 of its 10 phrasings per voice,
+rotating so all 10 are heard; a nearby street gets "Just the next street." style lines. The
+round's 9-second clock starts after the rider has finished speaking. The driver's lines are the
+hero's locked voice.
+
 ## Where the ideas come from
 
 * **Offers, counters, and patience that greedy offers burn fast:** [Kingdom Come: Deliverance 2](https://www.videogamer.com/guides/kingdom-come-deliverance-2-haggle-how-to).

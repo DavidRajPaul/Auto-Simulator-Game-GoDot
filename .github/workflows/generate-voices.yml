@@ -32,12 +32,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 16 jobs voice every 16th missing line each (generate_parler.py --shard), so the ~1,100 Savari
+  # lines take ~40 min instead of ~8 h; "commit" gathers their files and pushes once.
   voices:
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     env:
       ENGINE: ${{ inputs.engine || 'parler' }}
       ONLY: ${{ inputs.only }}
+      SHARD: ${{ matrix.shard }}/16
     steps:
       - uses: actions/checkout@v5
       - name: Install ffmpeg
@@ -77,26 +84,50 @@ jobs:
             echo "::error::Add the HF_TOKEN secret (Hugging Face read token, model terms accepted)"; exit 1
           fi
           status=0
-          for script in docs/voice/SQ*_*.md; do
+          for script in docs/voice/SQ*_*.md docs/voice/SAV_*.md; do
             quest=$(basename "$script" | cut -d_ -f1 | tr 'A-Z' 'a-z')
             out="assets/audio/voice/$quest"
             extra=""
             if [ -n "$ONLY" ]; then extra="--only $ONLY --force"; fi
             if [ "$ENGINE" = "parler" ]; then
-              python3 tools/voice/generate_parler.py "$script" --out "$out" $extra || status=1
+              python3 tools/voice/generate_parler.py "$script" --out "$out" --shard "$SHARD" $extra || status=1
             else
-              python3 tools/voice/generate_quest_voices.py "$script" --voices tools/voice/voices.json --out "$out" $extra || status=1
+              if [ "${SHARD%%/*}" = "0" ]; then
+                python3 tools/voice/generate_quest_voices.py "$script" --voices tools/voice/voices.json --out "$out" $extra || status=1
+              fi
             fi
           done
           du -sh assets/audio/voice || true
           exit $status
-      - name: Commit voices
+      - name: Keep this shard's files
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voices-${{ matrix.shard }}
+          path: |
+            assets/audio/voice/**/*.ogg
+            tools/voice/voices.json
+          if-no-files-found: ignore
+          retention-days: 3
+
+  commit:
+    needs: voices
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Gather every shard's files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: voices-*
+          merge-multiple: true
+          path: .
+      - name: Commit voices
         run: |
           git config user.name "voice-bot"
           git config user.email "voice-bot@users.noreply.github.com"
           git add tools/voice/voices.json assets/audio/voice 2>/dev/null || true
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
-          git commit -m "voice: generate quest voice lines ($ENGINE)"
+          git commit -m "voice: generate quest voice lines (${{ inputs.engine || 'parler' }})"
           git pull --rebase
           git push

@@ -174,8 +174,15 @@ func _test_haggle_timeout(savari: SavariManager, auto: AutoRickshawController) -
 		var q: Array = info["asks"]
 		_check("Offer ≤ meter ≤ asks", int(info["offer"]) <= int(info["meter"]) and int(info["meter"]) <= int(q[0]) and int(q[0]) < int(q[1]), str(q))
 		_check("Haggle card names a destination", str(info["destination"]) != "", str(info["destination"]))
-	await _physics(570) # > 9 s with no tap
+		# Nov 20: the rider names the place, then makes an offer, in their own voice (SavariVoice).
+		var said: Array[Dictionary] = savari.voice.last_said
+		_check("Rider names the place, then makes an offer", said.size() == 2 and str(said[0]["id"]).begins_with("sav_dest_")
+			and str(said[1]["id"]).begins_with("sav_open_") and str(info["line"]) == "%s %s" % [said[0]["text"], said[1]["text"]],
+			str(said.map(func(l: Dictionary) -> String: return str(l["id"]))))
+	# The round's clock starts after the rider has spoken: wait it out with no tap.
+	await _physics(int(ceil(savari._haggle_timer * 60.0)) + 30)
 	_check("No answer → rider walks off", _events.has("haggle_resolved") and not bool((_events["haggle_resolved"] as Dictionary)["accepted"]))
+	_check("…saying so", not savari.voice.last_said.is_empty() and str(savari.voice.last_said[0]["id"]).begins_with("sav_walk_"))
 	_check("Walk-off costs Respect, not money", GameState.stand_respect_xp == respect_before + FareCalculator.RESPECT_XP_REJECTED and GameState.wallet_inr == wallet_before)
 	_check("10 s cooldown after a rejection", savari.state == SavariManager.State.COOLDOWN)
 	savari._state_timer = 0.0
@@ -191,6 +198,7 @@ func _test_full_ride(savari: SavariManager, auto: AutoRickshawController, main: 
 	SignalBus.haggle_choice_made.emit(FareCalculator.Choice.ACCEPT)
 	await _physics(3)
 	_check("Correct Meter accepted → ride starts", savari.state == SavariManager.State.RIDING)
+	_check("Rider agrees out loud after the driver's yes", not savari.voice.last_said.is_empty() and str(savari.voice.last_said[0]["id"]).begins_with("sav_deal_"))
 	_check("Passengers add mass to the auto", auto.mass > auto.stats.base_mass_kg)
 	_check("GPS route published and drawn on the road", _events.has("route_updated") and (main.get_node("RouteLine") as MeshInstance3D).mesh != null)
 	var dest: Vector3 = savari.destination["pos"]

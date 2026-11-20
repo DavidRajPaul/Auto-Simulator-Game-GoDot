@@ -19,3 +19,13 @@ Secrets: `HF_TOKEN` (Hugging Face read token for an account that accepted the te
 huggingface.co/ai4bharat/indic-parler-tts). The `elevenlabs` engine (`pick_voices.py`,
 `generate_quest_voices.py`, `voices.json`) is kept for a paid ElevenLabs plan: the free plan
 can't use library voices through the API and its output is non-commercial.
+
+## Savari (street rides)
+
+`tools/voice/savari_lines.py` is the one source for every Savari line: run it to rewrite the
+`SAV_*` strings in `translations/ui.csv` and `docs/voice/SAV_Savari_Voice_Script.md`, then push
+(the workflow voices only lines that have no file yet). Rider voices: `Rider Man` (Dinesh),
+`Rider Woman` (Kavitha), `Rider Elder` (Vikas), `Rider Girl` (Riya), each with a fixed seed.
+The workflow runs 16 jobs side by side (`generate_parler.py --shard i/16`) and a last job commits
+everything they made, so ~1,100 files take about 40 minutes.
+

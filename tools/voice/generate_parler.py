@@ -50,9 +50,16 @@ def split_tags(text):
 # whole sentence) or rambles: retry with another seed, up to ATTEMPTS times.
 MIN_S_PER_CHAR = 0.035
 MAX_S_PER_CHAR = 0.2
+# A one-word shout ("Auto!") is longer than its letters suggest: allow at least this many seconds.
+SHORT_LINE_MAX_S = 1.8
 ATTEMPTS = 4
 TRIM = ("silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
         "silenceremove=start_periods=1:start_threshold=-50dB,areverse")
+
+
+def length_ok(seconds, text):
+    per_char = seconds / max(1, len(text))
+    return per_char >= MIN_S_PER_CHAR and (per_char <= MAX_S_PER_CHAR or seconds <= SHORT_LINE_MAX_S)
 
 
 def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, locked=False):
@@ -63,17 +70,24 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
         torch.manual_seed(seed + 1000 * attempt)
         d = desc_tok(desc, return_tensors="pt")
         p = tok(text, return_tensors="pt")
-        with torch.inference_mode():
-            audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
-                                   prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
         raw = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
         trimmed = raw[:-4] + "_t.wav"
-        sf.write(raw, audio.cpu().numpy().squeeze(), rate)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af", TRIM, trimmed], check=True)
-        os.remove(raw)
-        seconds = sf.info(trimmed).duration
+        try:
+            with torch.inference_mode():
+                audio = model.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
+                                       prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask)
+            samples = audio.cpu().numpy().reshape(-1)
+            if samples.size < rate // 10:
+                raise ValueError(f"only {samples.size} samples")
+            sf.write(raw, samples, rate)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-af", TRIM, trimmed], check=True)
+            os.remove(raw)
+            seconds = sf.info(trimmed).duration
+        except Exception as e:  # Parler sometimes returns nothing for one-word text; another seed works
+            print(f"  {os.path.basename(ogg)}: attempt {attempt + 1} failed ({e}), retrying", flush=True)
+            continue
         per_char = seconds / max(1, len(text))
-        if MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+        if length_ok(seconds, text):
             if best:
                 os.remove(best[1])
             best = (seconds, trimmed)
@@ -85,12 +99,13 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
             best = (seconds, trimmed)
         else:
             os.remove(trimmed)
+    if best is None:
+        raise RuntimeError(f"every attempt failed for {len(text)} chars")
     seconds, trimmed = best
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", trimmed, "-ac", "1", "-ar", "32000",
                     "-c:a", "libvorbis", "-q:a", "1", ogg], check=True)
     os.remove(trimmed)
-    per_char = seconds / max(1, len(text))
-    if not MIN_S_PER_CHAR <= per_char <= MAX_S_PER_CHAR:
+    if not length_ok(seconds, text):
         raise RuntimeError(f"still {seconds:.1f}s for {len(text)} chars after {ATTEMPTS} tries (kept best, check it)")
     return seconds
 
@@ -104,6 +119,8 @@ def main():
     ap.add_argument("--only", help="comma-separated line ids to redo")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true", help="print the prompts, load no model")
+    ap.add_argument("--shard", default="0/1",
+                    help="i/n: voice only every n-th missing file starting at i (parallel CI jobs)")
     args = ap.parse_args()
 
     cast = {k: v for k, v in json.load(open(args.cast, encoding="utf-8")).items() if not k.startswith("_")}
@@ -130,6 +147,9 @@ def main():
                 desc = voice["description"].format(name=voice["speaker"], emotion=emotion_for(tags))
                 locked = False
             jobs.append((ogg, text, desc, int(voice["seed"]), locked))
+
+    shard_i, shard_n = (int(x) for x in args.shard.split("/"))
+    jobs = jobs[shard_i::shard_n]
 
     if args.dry_run:
         for ogg, text, desc, seed, _locked in jobs:
