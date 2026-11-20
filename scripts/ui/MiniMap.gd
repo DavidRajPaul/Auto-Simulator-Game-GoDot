@@ -16,6 +16,11 @@ var _hails: Array = []
 var _services: Array[Dictionary] = []
 var _quests: Array[Dictionary] = []
 var _timer: float = 0.0
+## A story quest's search circle (QuestStory "spot" stages): centre and radius, 0 = none.
+var _search_at: Vector2 = Vector2.ZERO
+var _search_r: float = 0.0
+const SEARCH_FILL: Color = Color(1.0, 0.82, 0.2, 0.22)
+const SEARCH_RIM: Color = Color(1.0, 0.82, 0.2, 0.8)
 
 ## Painted ring and pins (TouchHUD.HUD_ATLAS). The ring turns with north, so its "N" stays true.
 var _hud_tex: Texture2D
@@ -37,6 +42,10 @@ func _ready() -> void:
 		_heading = f)
 	SignalBus.route_updated.connect(func(pts: PackedVector3Array) -> void: _route = pts)
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
+	SignalBus.quest_search_area_changed.connect(func(c: Vector3, radius: float) -> void:
+		_search_at = Vector2(c.x, c.z)
+		_search_r = radius
+		queue_redraw())
 	SignalBus.quest_catalogue_changed.connect(_refresh_quests)
 	SignalBus.quest_tracking_changed.connect(func(_id: String) -> void: _refresh_quests())
 	SignalBus.mission_finished.connect(func(_id: String, _status: String, _reason: String) -> void: _refresh_quests())
@@ -151,6 +160,7 @@ func _draw() -> void:
 		else:
 			_pin_disc(marker, 5.0, colour, 4)
 	# Quest pins go before the hails so the textured pins, arrow and frame batch together.
+	_draw_search(centre, scale_px, rot, r)
 	_draw_quest_pins(centre, scale_px, rot, r)
 	_flush_pins()
 	# Hails.
@@ -219,6 +229,37 @@ func _draw_quest_pins(centre: Vector2, scale_px: float, rot: float, r: float) ->
 		_pin_disc(badge, 9.0, Color("ffcf58"))
 		_pin_box(Rect2(badge + Vector2(-1.5, -6.0), Vector2(3.0, 8.0)), Color.BLACK)
 		_pin_box(Rect2(badge + Vector2(-1.5, 3.5), Vector2(3.0, 3.0)), Color.BLACK)
+
+## The search circle: a soft disc with a rim, clipped to the map (points pulled inside the rim).
+## Outside the map it shows as a small disc on the rim pointing the way. Same batch as the pins.
+func _draw_search(centre: Vector2, scale_px: float, rot: float, r: float) -> void:
+	if _search_r <= 0.0:
+		return
+	var c: Vector2 = _to_map(_search_at, centre, scale_px, rot)
+	var rad: float = _search_r * scale_px
+	if c.distance_to(centre) - rad > r - 6.0:
+		_pin_disc(_clamp_to(c, centre, r - 10.0), 8.0, SEARCH_RIM, 16)
+		return
+	var sides: int = 40
+	var first: int = _pin_points.size()
+	_pin_points.append(_clamp_to(c, centre, r - 3.0))
+	_pin_colours.append(SEARCH_FILL)
+	for i: int in sides:
+		_pin_points.append(_clamp_to(c + Vector2.UP.rotated(TAU * i / sides) * rad, centre, r - 3.0))
+		_pin_colours.append(SEARCH_FILL)
+		_pin_indices.append_array(PackedInt32Array([first, first + 1 + i, first + 1 + (i + 1) % sides]))
+	# Rim: thin quads between consecutive points on the circle.
+	for i: int in sides:
+		var a: Vector2 = c + Vector2.UP.rotated(TAU * i / sides) * rad
+		var b: Vector2 = c + Vector2.UP.rotated(TAU * (i + 1) / sides) * rad
+		if a.distance_to(centre) > r - 3.0 or b.distance_to(centre) > r - 3.0:
+			continue
+		var n: Vector2 = (b - a).orthogonal().normalized() * 1.2
+		var k: int = _pin_points.size()
+		for v: Vector2 in [a - n, b - n, b + n, a + n]:
+			_pin_points.append(v)
+			_pin_colours.append(SEARCH_RIM)
+		_pin_indices.append_array(PackedInt32Array([k, k + 1, k + 2, k, k + 2, k + 3]))
 
 ## Service and quest pins share one triangle list: draw_circle costs a draw call per circle and
 ## text breaks the batch, so a few pins used to cost as much as a whole building block.

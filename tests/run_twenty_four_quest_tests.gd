@@ -30,7 +30,7 @@ func _run() -> void:
 	for id: String in IDS:
 		play(id, "")
 	for variation: Array in [["sq_003", "SQ03_FRONT"], ["sq_005", "SQ05_TEMPLE"],
-		["sq_007", "SQ07_BLUE"], ["sq_008", "SQ08_BOXES"],
+		["sq_007", "SQ07_CHOICE_HOME"], ["sq_008", "SQ08_BOXES"],
 		["sq_010", "SQ10_GENERAL"], ["sq_014", "SQ14_SKIP"],
 		["sq_015", "SQ15_LIBRARY"], ["sq_017", "SQ17_DESK"],
 		["sq_018", "SQ18_CHARGER"], ["sq_023", "SQ23_NARROW"], ["sq_025", "SQ25_ARCH"]]:
@@ -58,9 +58,15 @@ func play(id: String, alternate: String) -> void:
 			"dialogue":
 				var choice: String = alternate if stage.choices.has(alternate) else stage.choices[0]
 				check(id + "/" + before + " choice", director.choose(id, before, choice))
-			"goto":
+			"goto", "ask":
 				pose(director._stage_target(stage))
 				director.tick(0.1)
+			"cutscene":
+				# No QuestStory here: the director moves on after the stage's fallback length.
+				director.tick(stage.duration_s + 0.1)
+			"spot":
+				pose(Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z))
+				check(id + "/" + before + " found", director.spot(id, before))
 			"cargo", "inspect", "park", "photo":
 				pose(director._stage_target(stage), stage.facing if stage.facing != Vector3.ZERO else Vector3.FORWARD)
 				if stage.kind == "park":

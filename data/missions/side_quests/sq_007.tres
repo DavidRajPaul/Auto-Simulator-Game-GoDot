@@ -1,70 +1,164 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=20 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
-[sub_resource type="Resource" id="brief"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_007_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
 script = ExtResource("stage")
-id = "brief"
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ07_INTRO"
+duration_s = 30.0
+cutscene_id = "intro"
+[sub_resource type="Resource" id="ask_tea"]
+script = ExtResource("stage")
+id = "ask_tea"
+kind = "ask"
+objective_key = "SQ07_ASK"
+target = Vector3(2044.8, 0, 1440.0)
+radius_m = 9.0
+place_key = "SQ07_P_TEA"
+place_pos = Vector3(2053.2, 0, 1441.6)
+[sub_resource type="Resource" id="tea"]
+script = ExtResource("stage")
+id = "tea"
+kind = "cutscene"
+objective_key = "SQ07_TEA"
+duration_s = 12.0
+cutscene_id = "tea"
+[sub_resource type="Resource" id="spot_kite"]
+script = ExtResource("stage")
+id = "spot_kite"
+kind = "spot"
+objective_key = "SQ07_FIND_KITE"
+target = Vector3(2003.0, 0, 1744.8)
+radius_m = 130.0
+place_key = "SQ07_P_CHURCH"
+place_pos = Vector3(2011.0, 0, 1741.8)
+spot_pos = Vector3(1943.8, 3.7, 1827.3)
+spot_range_m = 40.0
+spot_max_kmh = 15.0
+shrink_after_s = 75.0
+shrink_radius_m = 45.0
+[sub_resource type="Resource" id="kids"]
+script = ExtResource("stage")
+id = "kids"
+kind = "cutscene"
+objective_key = "SQ07_KIDS"
+duration_s = 14.0
+cutscene_id = "kids"
+[sub_resource type="Resource" id="spot_boy"]
+script = ExtResource("stage")
+id = "spot_boy"
+kind = "spot"
+objective_key = "SQ07_FIND_BOY"
+target = Vector3(2229.6, 0, 1843.9)
+radius_m = 110.0
+place_key = "SQ07_P_BEACH"
+place_pos = Vector3(2236.6, 0, 1844.6)
+spot_pos = Vector3(2250.5, 0.8, 1846.0)
+spot_range_m = 48.0
+spot_max_kmh = 15.0
+shrink_after_s = 70.0
+shrink_radius_m = 40.0
+[sub_resource type="Resource" id="reunion"]
+script = ExtResource("stage")
+id = "reunion"
+kind = "cutscene"
+objective_key = "SQ07_REUNION"
+duration_s = 20.0
+cutscene_id = "reunion"
+[sub_resource type="Resource" id="choice"]
+script = ExtResource("stage")
+id = "choice"
 kind = "dialogue"
-objective_key = "SQ07_BRIEF"
-choices = PackedStringArray("SQ07_LOOK")
-[sub_resource type="Resource" id="scan"]
+objective_key = "SQ07_CHOICE"
+choices = PackedStringArray("SQ07_CHOICE_HOME", "SQ07_CHOICE_KITE")
+next_by_choice = {
+"SQ07_CHOICE_HOME": "home_line",
+"SQ07_CHOICE_KITE": "promise"
+}
+[sub_resource type="Resource" id="promise"]
 script = ExtResource("stage")
-id = "scan"
-kind = "inspect"
-objective_key = "SQ07_SCAN"
-target = Vector3(2165.3, 0, 622.8)
-radius_m = 9.0
-place_key = "SQ07_P_GATE1"
-place_pos = Vector3(2165.3, 0, 627.6)
-action_key = "QUEST_ACT_LOOK"
-[sub_resource type="Resource" id="guess"]
+id = "promise"
+kind = "cutscene"
+objective_key = "SQ07_PROMISE"
+duration_s = 8.0
+cutscene_id = "promise"
+[sub_resource type="Resource" id="rescue"]
 script = ExtResource("stage")
-id = "guess"
-kind = "dialogue"
-objective_key = "SQ07_GUESS"
-choices = PackedStringArray("SQ07_STRIPED", "SQ07_BLUE")
-next_by_choice = {"SQ07_STRIPED": "confirm", "SQ07_BLUE": "verify"}
-[sub_resource type="Resource" id="verify"]
-script = ExtResource("stage")
-id = "verify"
-kind = "inspect"
-objective_key = "SQ07_VERIFY"
-target = Vector3(2018.5, 0, 622.4)
-radius_m = 9.0
-place_key = "SQ07_P_GATE2"
-place_pos = Vector3(2018.4, 0, 627.2)
-action_key = "QUEST_ACT_LOOK"
-[sub_resource type="Resource" id="confirm"]
-script = ExtResource("stage")
-id = "confirm"
-kind = "inspect"
-objective_key = "SQ07_CONFIRM"
-target = Vector3(1968.3, 0, 685.6)
-radius_m = 9.0
-place_key = "SQ07_P_GATE3"
-place_pos = Vector3(1973.0, 0, 682.7)
-action_key = "QUEST_ACT_LOOK"
-[sub_resource type="Resource" id="reunite"]
-script = ExtResource("stage")
-id = "reunite"
+id = "rescue"
 kind = "goto"
-objective_key = "SQ07_REUNITE"
-target = Vector3(2234.1, 0, 630.2)
-radius_m = 9.0
-deadline_s = 230.0
-place_key = "SQ07_P_HELP"
-place_pos = Vector3(2238.7, 0, 629.1)
+objective_key = "SQ07_RESCUE"
+target = Vector3(1944.1, 0, 1826.0)
+radius_m = 2.4
+arrival_speed_kmh = 2.0
+place_key = "SQ07_P_KITE"
+place_pos = Vector3(1943.9, 0, 1828.0)
+[sub_resource type="Resource" id="climb"]
+script = ExtResource("stage")
+id = "climb"
+kind = "cutscene"
+objective_key = "SQ07_CLIMB"
+duration_s = 10.0
+cutscene_id = "climb"
+next_id = "ride_home"
+[sub_resource type="Resource" id="home_line"]
+script = ExtResource("stage")
+id = "home_line"
+kind = "cutscene"
+objective_key = "SQ07_HOME_LINE"
+duration_s = 6.0
+cutscene_id = "home_line"
+[sub_resource type="Resource" id="ride_home"]
+script = ExtResource("stage")
+id = "ride_home"
+kind = "goto"
+objective_key = "SQ07_RIDE"
+target = Vector3(2205.3, 0, 1797.0)
+radius_m = 8.0
+quality_key = "comfort"
+place_key = "SQ07_P_HOME"
+place_pos = Vector3(2204.6, 0, 1802.5)
+[sub_resource type="Resource" id="home"]
+script = ExtResource("stage")
+id = "home"
+kind = "cutscene"
+objective_key = "SQ07_HOME"
+duration_s = 12.0
+cutscene_id = "home"
+[sub_resource type="Resource" id="payoff"]
+script = ExtResource("stage")
+id = "payoff"
+kind = "dialogue"
+objective_key = "SQ07_PAYOFF"
+choices = PackedStringArray("SQ07_TAKE_FARE", "SQ07_REFUSE_FARE")
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "cutscene"
+objective_key = "SQ07_THANKS"
+duration_s = 10.0
+cutscene_id = "thanks"
 [resource]
 script = ExtResource("def")
 id = "sq_007"
-content_version = 2
+content_version = 3
 title_key = "SQ07_TITLE"
 description_key = "SQ07_DESC"
 job_key = "SQ07_JOB"
 discoverable = true
 start_anchor = Vector3(2094.1, 0, 634.8)
-estimated_minutes = 6
+estimated_minutes = 12
 category = "help"
-reward_inr = 160
-reward_xp = 15
-stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("scan"), SubResource("guess"), SubResource("verify"), SubResource("confirm"), SubResource("reunite")])
+reward_inr = 220
+reward_xp = 25
+reward_choice_stage = "payoff"
+reward_choice_inr = {
+"SQ07_TAKE_FARE": 220,
+"SQ07_REFUSE_FARE": 0
+}
+reward_choice_xp = {
+"SQ07_REFUSE_FARE": 40
+}
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("ask_tea"), SubResource("tea"), SubResource("spot_kite"), SubResource("kids"), SubResource("spot_boy"), SubResource("reunion"), SubResource("choice"), SubResource("promise"), SubResource("rescue"), SubResource("climb"), SubResource("home_line"), SubResource("ride_home"), SubResource("home"), SubResource("payoff"), SubResource("thanks")])
