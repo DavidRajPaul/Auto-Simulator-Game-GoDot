@@ -14,7 +14,7 @@ const KINDS: Dictionary = {
 	"SQ01_P_DESK": "tent", "SQ01_P_FLOWER": "stall", "SQ01_P_HALL": "hall",
 	"SQ02_P_BOOKS": "books", "SQ02_P_TAILOR": "tailor", "SQ02_P_TEA": "tea",
 	"SQ03_P_BACK": "gate", "SQ03_P_HALL": "hall", "SQ03_P_NOTICE": "notice", "SQ03_P_SHOP": "music",
-	"SQ04_P_HOME": "house", "SQ04_P_STALL": "stall", "SQ04_P_STEPS": "notice",
+	"SQ04_P_HOME": "house", "SQ04_P_STALL": "flowers", "SQ04_P_TANK": "stall", "SQ04_P_TEMPLE": "none",
 	"SQ05_P_OUTER": "notice", "SQ05_P_SHOP": "lamps", "SQ05_P_SIGN": "closed", "SQ05_P_STORE": "store",
 	"SQ06_P_SPOT1": "photo", "SQ06_P_SPOT2": "photo",
 	"SQ07_P_TEA": "tea", "SQ07_P_HOME": "house",

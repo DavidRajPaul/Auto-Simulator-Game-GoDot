@@ -125,6 +125,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | `woman_coat.glb` | "Lady in Coat", aribb (replaced `woman_modern` on Nov 20) | CC BY 4.0 |
 | `man_casual.glb` | "Dhanush 3d model", Peter Charles — face repainted as a generic character | CC BY 4.0 ⚠️ see audit |
 | `girl_churidar.glb`, `girl_pavadai.glb` | "South Indian Women", alnmathew | CC BY 4.0 |
+| `quest/meena.glb` | Meena in sq_004: `girl_churidar.glb` with the churidar baked rose pink by `tools/assets/make_meena.py` (her own texture, so no repaint can fail) | as `girl_churidar.glb` (CC BY 4.0) |
 | `police_f_khaki.glb`, `police_m_ips.glb` | Umar; `@MgsGamer5` (uniform painted) | CC BY 4.0 |
 
 **City** (`city/`, placed from `data/world/city_props.json`; `city_models.json` holds sizes and credits):

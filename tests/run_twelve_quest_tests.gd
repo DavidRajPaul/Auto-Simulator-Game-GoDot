@@ -46,7 +46,7 @@ func play(id: String, alternate: String) -> void:
 		check(id + " start is reachable", false)
 		return
 	check(id + " start is reachable", true)
-	for _step: int in 20:
+	for _step: int in 30:
 		if director.run == null or director.run.status != "active":
 			break
 		var stage: MissionStage = director.current_stage()
@@ -55,9 +55,15 @@ func play(id: String, alternate: String) -> void:
 			"dialogue":
 				var choice: String = alternate if stage.choices.has(alternate) else stage.choices[0]
 				check(id + "/" + before + " choice", director.choose(id, before, choice))
-			"goto":
+			"goto", "ask":
 				pose(director._stage_target(stage))
 				director.tick(0.1)
+			"cutscene":
+				# No QuestStory here: the director moves on after the stage's fallback length.
+				director.tick(stage.duration_s + 0.1)
+			"spot":
+				pose(Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z))
+				check(id + "/" + before + " found", director.spot(id, before))
 			"inspect", "calm", "park":
 				pose(stage.target, stage.facing if stage.facing != Vector3.ZERO else Vector3.FORWARD)
 				if stage.kind == "park":
@@ -70,16 +76,21 @@ func play(id: String, alternate: String) -> void:
 	var reward: int = GameState.wallet_inr
 	pose(quest.start_anchor)
 	check(id + " replay can start", director.start(id))
-	for _replay: int in 20:
+	for _replay: int in 30:
 		if director.run == null or director.run.status != "active":
 			break
 		var stage: MissionStage = director.current_stage()
 		match stage.kind:
 			"dialogue":
 				director.choose(id, stage.id, stage.choices[0])
-			"goto":
+			"goto", "ask":
 				pose(director._stage_target(stage))
 				director.tick(0.1)
+			"cutscene":
+				director.tick(stage.duration_s + 0.1)
+			"spot":
+				pose(Vector3(stage.spot_pos.x, 0.0, stage.spot_pos.z))
+				director.spot(id, stage.id)
 			"inspect", "calm", "park":
 				pose(stage.target, stage.facing if stage.facing != Vector3.ZERO else Vector3.FORWARD)
 				if stage.kind == "park":

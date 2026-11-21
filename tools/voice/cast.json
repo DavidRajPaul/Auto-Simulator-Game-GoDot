@@ -180,5 +180,82 @@
       "seed": 1404,
       "description": "{name} speaks in a {emotion} tone with a quick, lively delivery and a high pitch, like a college student. The recording is very clear audio, close up, with almost no background noise."
     }
+  },
+  "Paati": {
+    "gender": "female",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "elderly",
+      "warm",
+      "slow"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 818,
+      "description": "{name} speaks in a {emotion} tone, slowly and warmly, with the soft, slightly shaky voice of a grandmother in her late seventies. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Valli": {
+    "gender": "female",
+    "age": [
+      "middle_aged"
+    ],
+    "search": [
+      "cheerful",
+      "street vendor"
+    ],
+    "parler": {
+      "speaker": "Jaya",
+      "seed": 848,
+      "description": "{name} speaks in a {emotion} tone with a bright, cheerful, slightly fast delivery, like a flower seller at her stall. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Watchman": {
+    "gender": "male",
+    "age": [
+      "middle_aged",
+      "old"
+    ],
+    "search": [
+      "casual",
+      "amused"
+    ],
+    "parler": {
+      "speaker": "Dinesh",
+      "seed": 858,
+      "description": "{name} speaks in a {emotion} tone with a slightly low pitch and a lazy, amused delivery. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Sundal Thatha": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "elderly",
+      "kind"
+    ],
+    "parler": {
+      "speaker": "Vikas",
+      "seed": 868,
+      "description": "{name} speaks in a {emotion} tone, slowly and kindly, with the low, slightly hoarse voice of an old man. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Meena": {
+    "gender": "female",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "young",
+      "emotional"
+    ],
+    "parler": {
+      "speaker": "Riya",
+      "seed": 838,
+      "description": "{name} speaks in a {emotion} tone with a clear mid-high pitch and expressive, slightly fast delivery, like a young woman in her twenties. The recording is very clear audio, close up, with almost no background noise."
+    }
   }
 }
