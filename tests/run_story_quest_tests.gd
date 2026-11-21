@@ -440,8 +440,11 @@ func _paati_playthrough() -> void:
 	# The watchman on the way: a joke, not a lead.
 	check("Valli and the watchman stand in the street", story.actors.has("valli") and story.actors.has("watchman"))
 	place_auto((story.actors["watchman"] as QuestActor).global_position + Vector3(0.0, 0.0, 3.5))
-	await get_tree().create_timer(3.0).timeout
-	_note_lines()
+	# The watchman's joke, then Paati's reply: wait for both voice files to play out.
+	var t_w: float = clock
+	while not _said("sq04_p08") and clock - t_w < 15.0:
+		_note_lines()
+		await get_tree().process_frame
 	check("Stopping by the watchman: a hundred new flats, and Paati's reply", _said("sq04_w01") and _said("sq04_p08") and stage() == "ask_flower")
 	SignalBus.player_impact.emit({"severity": 0.6})
 	await get_tree().create_timer(0.2).timeout
