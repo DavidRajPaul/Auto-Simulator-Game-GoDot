@@ -737,8 +737,12 @@ func _test_living_city() -> void:
 	_check("A woman bends over her kolam at dawn", placed and lady.role == "kolam" and lady.pose != null and lady.pose.mode == PoseModifier.Mode.KOLAM
 		and lady.pos.distance_to(spot_used[0] as Vector3) < 1.5)
 	GameState.shift_minute = 600.0
-	for i: int in 10:
+	# She finishes on her next calm frame; a passing vehicle or a startle can take a moment
+	# first (10 frames was flaky on the slower CI runners, Nov 23).
+	for i: int in 180:
 		await get_tree().process_frame
+		if lady == null or (lady.role == "" and lady.pose.mode == PoseModifier.Mode.NONE):
+			break
 	_check("By mid-morning she has finished", lady != null and lady.role == "" and lady.pose.mode == PoseModifier.Mode.NONE)
 	city.queue_free()
 
