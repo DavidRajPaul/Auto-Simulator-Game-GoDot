@@ -29,6 +29,10 @@ GRAPHICS,Graphics,கிராஃபிக்ஸ்
 GFX_LOW,Low,லோ
 GFX_MED,Medium,மீடியம்
 GFX_HIGH,High,ஹை
+FRAME_RATE,Frame rate,ஃபிரேம் ரேட்
+FPS_AUTO,Auto,ஆட்டோ
+FPS_30,Smooth 30,ஸ்மூத் 30
+FPS_60,Always 60,எப்போதும் 60
 LANGUAGE,Language,லாங்குவேஜ்
 VOLUME,Volume,வால்யூம்
 FILL_LPG,Fill LPG,எல்பிஜி ஃபில் பண்ணு

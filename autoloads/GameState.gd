@@ -114,7 +114,8 @@ var day_stats: Dictionary = {"earned": 0, "rides": 0, "fuel_spent": 0, "repairs"
 
 var settings: Dictionary = {"control_scheme": 1, "controls_v2": true, "graphics": 1, "language": "en", "master_volume": 0.9, "engine_volume": 0.8,
 	"vibration": true, "guidance_arrow": true, "first_ride_step": 0, "first_ride_done": false, "auto_reverse": true,
-	"daily_reminder": true, "reminder_asked": false, "traffic_fines": FINES_ON}
+	"daily_reminder": true, "reminder_asked": false, "traffic_fines": FINES_ON,
+	"frame_rate": 0, "perf_overlay": false}
 
 ## "Traffic fines" setting (Settings): fines after a daily warning, warnings only, or off.
 const FINES_ON: int = 0
@@ -872,10 +873,18 @@ const SHADOW_FILTER: Array[int] = [RenderingServer.SHADOW_QUALITY_HARD, Renderin
 const SHADOW_ATLAS: Array[int] = [1024, 2048, 4096]
 const MSAA_3D: Array[int] = [Viewport.MSAA_DISABLED, Viewport.MSAA_DISABLED, Viewport.MSAA_2X]
 
+## FrameGuard's dynamic-resolution factor (1.0 = the preset's own scale). Only FrameGuard sets it.
+var dynamic_res_factor: float = 1.0
+
+## 3D render scale = graphics preset × dynamic factor. The HUD is 2D and stays sharp.
+func apply_render_scale() -> void:
+	var gfx: int = clampi(int(settings.get("graphics", 1)), 0, 2)
+	get_tree().root.scaling_3d_scale = GRAPHICS_SCALE[gfx] * clampf(dynamic_res_factor, 0.5, 1.0)
+
 func _apply_settings() -> void:
 	TranslationServer.set_locale(str(settings.get("language", "en")))
 	var gfx: int = clampi(int(settings.get("graphics", 1)), 0, 2)
-	get_tree().root.scaling_3d_scale = GRAPHICS_SCALE[gfx]
+	apply_render_scale()
 	for n: Node in get_tree().get_nodes_in_group("sun_light"):
 		(n as DirectionalLight3D).shadow_enabled = gfx > 0
 	RenderingServer.directional_soft_shadow_filter_set_quality(SHADOW_FILTER[gfx])
