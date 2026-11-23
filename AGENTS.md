@@ -27,6 +27,7 @@ res://
 ├── autoloads/
 │   ├── SignalBus.gd                 # Global typed event bus (ZERO direct cross-scene get_node calls)
 │   ├── GameState.gd                 # Profile: wallet, garage loadout, fuel, condition, shift clock, settings, encrypted save
+│   ├── FrameGuard.gd                # Frame pacing: 60 / steady-30 cap, dynamic 3D resolution, hitch log (user://perf/hitches.csv)
 │   ├── CrashReporter.gd             # Sentry breadcrumbs/tags/context (only file that talks to the SDK)
 │   ├── AdMonetizationManager.gd     # (Phase 6) Mediated ads, cooldowns & rewarded hooks
 │   └── DailyReminder.gd             # Local daily reminder notifications (see docs/DAILY_REMINDER.md)
@@ -107,6 +108,7 @@ res://
 │   │   ├── ChennaiTrafficManager.gd # + Gap-la Gethu near-miss detection
 │   │   ├── KnockedVehicles.gd       # 3 pre-built rigid bodies that take over a moving vehicle the player hits hard
 │   │   └── TrafficVehicleAI.gd
+│   ├── perf/FramePacer.gd           # FrameGuard's pure decision logic (unit-tested)
 │   ├── world/
 │   │   ├── WorldChunkStreamer.gd    # Streams data/world chunks (threaded), areas, landmarks, spawn
 │   │   ├── StreetStallKit.gd        # Vegetable, fancy, petti kadai and flower stalls merged into chunk meshes
@@ -144,7 +146,7 @@ res://
 │       ├── MiniMap.gd               # Heading-up circular mini-map
 │       ├── GarageUI.gd              # Service prompts, clock, pause/settings, garage, shift summary
 │       ├── TutorialOverlay.gd       # Coach mode: task strip in the top HUD row, folding speech bubble, ring on the control
-│       └── DebugOverlay.gd          # FPS / draw calls, debug builds only
+│       └── DebugOverlay.gd          # FPS, frame-time graph, 1 % low, hitches, compiles; debug builds, or a 4-finger tap in release
 └── tests/
     ├── run_phase1_tests.gd          # Headless verification suite (Node script)
     ├── run_phase1_tests.tscn        # Runner scene — run as a scene, NOT with `-s`
@@ -158,6 +160,7 @@ res://
     ├── run_streets_tests.gd/.tscn   # Street shader, paved plots, compound walls + gates, ambience (test_plots.py: walls keep off roads)
     ├── run_street_life_tests.gd/.tscn # Chennai vehicles, parking mix, kolams/dogs/flags, birds (shot_chennai_vehicles.tscn)
     ├── run_buildings_tests.gd/.tscn # Building types, facade atlas, typed geometry, vertex budget (shot_buildings.tscn renders streets)
+    ├── run_smoothness_tests.gd/.tscn # FramePacer decisions, FrameGuard wiring + hitch log, smooth-motion settings, hot-path scan
     └── run_perf_probe.gd/.tscn      # Draw-call & traffic budget gate (needs a display); PROBE_SCENE env picks the scene
 ```
 
@@ -185,6 +188,12 @@ res://
 * ≤ **150 draw calls** per frame; shared materials, ETC2/ASTC, `MultiMeshInstance3D` for static props.
 * ≤ **18 pooled AI vehicles** within **120 m** of the player. Never `instantiate()`/`queue_free()` during driving frames.
 * Physics at a fixed **60 Hz**. Primitive colliders (`BoxShape3D`, `CapsuleShape3D`) on moving bodies.
+* **Smoothness (Nov 23, owner: "buttery smooth, no glitches or frame drops"):**
+  * Steady beats fast: `FrameGuard` is the ONLY code that sets `Engine.max_fps` or `GameState.dynamic_res_factor`. Settings `frame_rate`: Auto (60; lowers the 3D scale in 0.05 steps down to 0.8 × the preset, then drops to a steady 30 at full scale, retrying 60 after 60 / 120 / 240 s of headroom), Smooth 30, Always 60. Adaptive only on Android, never headless or in tests. Change the thresholds in `FramePacer` and its tests together.
+  * No `load()`, `instantiate()`, `queue_free()`, `ShaderMaterial.new()` / `StandardMaterial3D.new()` or `Image.create()` inside `_process`, `_physics_process` or `_integrate_forces` (the smoothness suite scans every script; only Splash/LoadingScreen are allowed). Build in `_ready` or on a loading screen, pool, and change looks with shader parameters, never a new material in play (a new material = a pipeline compile = a hitch).
+  * Physics interpolation stays on; anything teleported (pool recycle, respawn, camera cut) calls `reset_physics_interpolation()` right after. Smoothing uses `1.0 - exp(-k * delta)`, never a fixed lerp factor.
+  * `max_physics_steps_per_frame` = 4: a hitch must not snowball into more physics work.
+  * Device testing: release builds show the overlay after a FOUR-finger tap; long-press it to copy `FrameGuard.report_text()` (avg / 1 % low / worst, hitches, pipeline compiles, draws). The overlay's pipeline-compile count must stay 0 while driving; any hitch is in `user://perf/hitches.csv` with camera position and scene.
 
 ### Rule 6: Crash Reporting (Sentry) — `docs/CRASH_REPORTING.md`
 * `autoloads/CrashReporter.gd` is the **only** code that touches the Sentry SDK. Never write `SentrySDK`/`SentryBreadcrumb` anywhere: the addon (`addons/sentry`, git-ignored, installed by `tools/sentry/install_sentry_addon.sh`) is absent in tests and fresh checkouts, and a bare class name is a parse error there. CrashReporter reaches it through `Engine.get_singleton("SentrySDK")` + `call()`.

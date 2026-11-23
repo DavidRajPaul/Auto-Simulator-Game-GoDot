@@ -315,6 +315,10 @@ func open_settings() -> void:
 		func(i: int) -> void:
 			GameState.set_setting("graphics", i)
 			open_settings())
+	_choice(tr("FRAME_RATE"), PackedStringArray([tr("FPS_AUTO"), tr("FPS_30"), tr("FPS_60")]), int(s.get("frame_rate", 0)),
+		func(i: int) -> void:
+			GameState.set_setting("frame_rate", i)
+			open_settings())
 	if DailyReminder.is_supported():
 		_choice(tr("DAILY_REMINDER"), PackedStringArray([tr("ON"), tr("OFF")]), 0 if DailyReminder.is_on() else 1,
 			func(i: int) -> void:
