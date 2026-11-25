@@ -6,7 +6,9 @@ extends RefCounted
 ## palette (instance uniform, or MultiMesh custom data for parked vehicles).
 ##
 ## CONFIG: model file -> [source colour (the part to repaint, sRGB), hue tolerance (0..0.5),
-## min saturation, UV rect (u0, v0, u1, v1) of the garment / body in that model's texture].
+## min saturation, UV rect (u0, v0, u1, v1) of the garment / body in that model's texture,
+## optional true = tint mode for WHITE cloth (min saturation then means "at most this saturated"),
+## optional second UV rect + minimum model-space height (m) painted the same way].
 ## The rects were read off each texture (sarees: the solid block at top right, etc.).
 
 const SHADER: Shader = preload("res://shaders/paint_swap.gdshader")
@@ -32,6 +34,13 @@ const CONFIG: Dictionary = {
 	"woman_saree_kanchi": [Color8(53, 14, 0), 0.04, 0.3, Vector4(0.0, 0.0, 0.5, 0.5)],
 	"woman_coat": [Color8(183, 131, 93), 0.06, 0.25, Vector4(0.5, 0.0, 1.0, 0.5)],
 	"man_casual": [Color8(110, 125, 175), 0.12, 0.12, Vector4(0.5, 0.0, 1.0, 0.5)],
+	# Nov 25 (owner: "same models often"): the men vary too. Rects found by mapping each texture
+	# block to body height on the mesh: the old man's shirt is the right-hand white block (his
+	# veshti, the left block, stays white); the Mixamo man's jeans are the blue block at left.
+	# young_man stays as he is: his striped shirt shares one block with his face (eye whites).
+	# His veshti's waist band shows above the shirt hem: painted with the shirt above 0.88 m.
+	"old_man_veshti": [Color8(231, 231, 231), 0.0, 0.08, Vector4(0.5, 0.0, 0.875, 0.5), true, Vector4(0.0, 0.35, 0.5, 0.5), 0.88],
+	"mixamo_ch22": [Color8(29, 43, 77), 0.08, 0.3, Vector4(0.0, 0.1, 0.28, 0.5)],
 }
 
 ## Two-wheeler colours seen on Chennai roads (Activa/Jupiter/Splendor/Pulsar): black, white,
@@ -57,6 +66,19 @@ const DRESS_PAINTS: Array[Color] = [
 	Color8(235, 235, 230), Color8(150, 190, 230), Color8(230, 200, 150), Color8(200, 60, 60),
 	Color8(60, 120, 80), Color8(240, 180, 40), Color8(120, 80, 160), Color8(40, 50, 90),
 	Color8(250, 150, 120), Color8(90, 160, 170),
+]
+
+## Men's shirts in Chennai: white leads, then pale blue, cream, light grey, sandal, pale green,
+## light pink, lavender, then a few darker ones (navy, maroon, olive).
+const SHIRT_PAINTS: Array[Color] = [
+	Color8(170, 200, 235), Color8(240, 228, 196), Color8(196, 198, 200), Color8(222, 196, 150),
+	Color8(176, 214, 176), Color8(236, 190, 196), Color8(196, 180, 222), Color8(44, 58, 104),
+	Color8(122, 32, 44), Color8(98, 104, 60),
+]
+## Trousers: black, charcoal, navy, khaki, olive, brown, grey.
+const TROUSER_PAINTS: Array[Color] = [
+	Color8(22, 22, 26), Color8(58, 58, 64), Color8(30, 40, 78), Color8(170, 150, 110),
+	Color8(84, 90, 56), Color8(92, 64, 44), Color8(120, 122, 126),
 ]
 
 ## Chennai vehicles built by tools/art/make_chennai_vehicles.py: no texture; the body panels
@@ -86,7 +108,13 @@ static func vehicle_palette(key: String) -> Array[Color]:
 static func palette_for_person(id: String) -> Array[Color]:
 	if not CONFIG.has(id):
 		return []
-	return SAREE_PAINTS if id.begins_with("woman_saree") or id == "girl_pavadai" else DRESS_PAINTS
+	if id.begins_with("woman_saree") or id == "girl_pavadai":
+		return SAREE_PAINTS
+	if id == "old_man_veshti":
+		return SHIRT_PAINTS
+	if id == "mixamo_ch22":
+		return TROUSER_PAINTS
+	return DRESS_PAINTS
 
 ## Put the paint_swap material on every textured surface under `root` (once per node).
 ## `multimesh` = the material reads INSTANCE_CUSTOM (parked vehicles). Returns surfaces set.
@@ -132,6 +160,10 @@ static func material_for(src: Material, key: String, multimesh: bool) -> ShaderM
 	m.set_shader_parameter("hue_tol", cfg[1])
 	m.set_shader_parameter("min_sat", cfg[2])
 	m.set_shader_parameter("rect", cfg[3])
+	m.set_shader_parameter("tint_mode", cfg.size() > 4 and bool(cfg[4]))
+	if cfg.size() > 6:
+		m.set_shader_parameter("rect2", cfg[5])
+		m.set_shader_parameter("rect2_min_y", float(cfg[6]))
 	m.set_shader_parameter("use_custom", multimesh)
 	m.set_shader_parameter("roughness_value", base.roughness)
 	m.set_shader_parameter("metallic_value", base.metallic)

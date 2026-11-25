@@ -457,7 +457,8 @@ func _test_walking(pm: PedestrianManager) -> void:
 	var moved: float = start.distance_to(w.pos)
 	_check("Walkers cover ground at their pace (1 s)", moved > w.pace * 0.6 and moved < w.pace * 1.7, "%.2f m at %.2f m/s" % [moved, w.pace])
 	var native: float = float(pm._native_pace[w.id])
-	_check("Feet stay planted: playback rate = pace / native walk pace", is_equal_approx(w.anim.speed_scale, w.pace / native))
+	# Nov 25: each walker has its own body size, and its stride grows with it.
+	_check("Feet stay planted: playback rate = pace / (native walk pace × body size)", is_equal_approx(w.anim.speed_scale, w.pace / (native * w.size)))
 	var face: Vector3 = w.node.global_transform.basis.z
 	_check("Walkers face where they are going", face.dot(w.heading) > 0.9)
 	_check("Walk clip loops", w.anim.get_animation("walk").loop_mode == Animation.LOOP_LINEAR and w.anim.current_animation == "walk")
@@ -1126,7 +1127,7 @@ func _test_reactions(pm: PedestrianManager) -> void:
 			jogger = w
 			break
 	jogger.running = true
-	jogger.pace = float(pm._run_pace[jogger.id])
+	jogger.pace = float(pm._run_pace[jogger.id]) * jogger.size # its own clip's pace at its body size
 	pm._resume(jogger, 0.0)
 	_check("Joggers play the run clip at their own pace", jogger.anim.current_animation == "run" and is_equal_approx(jogger.anim.speed_scale, 1.0) and jogger.pace > 1.8, "%.2f m/s" % jogger.pace)
 	jogger.running = false

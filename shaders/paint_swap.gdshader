@@ -13,11 +13,21 @@ uniform float hue_tol = 0.08;   // 0..0.5 of the colour wheel
 uniform float min_sat = 0.25;
 uniform vec4 rect = vec4(0.0, 0.0, 1.0, 1.0); // u0, v0, u1, v1
 uniform bool use_custom = false;
+// White / grey cloth has no hue to rotate (Nov 25: the men's white shirts). Tint mode picks the
+// PALE texels instead (saturation below min_sat, brighter than skin shadows and hair) and dyes
+// them the paint's hue and saturation, keeping their folds and shading through the value.
+uniform bool tint_mode = false;
+// A second area painted the same way, but only above `rect2_min_y` (model space, metres): a
+// garment piece the texture shares with another garment (the old man's veshti waist band, which
+// shows above his shirt hem).
+uniform vec4 rect2 = vec4(0.0);
+uniform float rect2_min_y = 0.0;
 uniform float roughness_value = 0.7;
 uniform float metallic_value = 0.0;
 instance uniform vec4 paint = vec4(0.0);
 
 varying vec4 v_paint;
+varying float v_y;
 
 vec3 rgb2hsv(vec3 c) {
 	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -34,6 +44,7 @@ vec3 hsv2rgb(vec3 c) {
 
 void vertex() {
 	v_paint = use_custom ? INSTANCE_CUSTOM : paint;
+	v_y = VERTEX.y;
 }
 
 void fragment() {
@@ -41,6 +52,9 @@ void fragment() {
 	vec3 c = t.rgb;
 	if (v_paint.a > 0.5) {
 		float in_rect = step(rect.x, UV.x) * step(rect.y, UV.y) * step(UV.x, rect.z) * step(UV.y, rect.w);
+		float in_rect2 = step(rect2.x, UV.x) * step(rect2.y, UV.y) * step(UV.x, rect2.z) * step(UV.y, rect2.w)
+			* step(rect2_min_y, v_y) * step(0.0001, rect2.z - rect2.x);
+		in_rect = max(in_rect, in_rect2);
 		vec3 h = rgb2hsv(c);
 		vec3 s0 = rgb2hsv(src_colour);
 		vec3 p = rgb2hsv(v_paint.rgb);
@@ -49,6 +63,10 @@ void fragment() {
 		vec3 nh = vec3(fract(h.x + p.x - s0.x),
 			clamp(h.y * p.y / max(s0.y, 0.02), 0.0, 1.0),
 			clamp(h.z * p.z / max(s0.z, 0.02), 0.0, 1.0));
+		if (tint_mode) {
+			m = in_rect * (1.0 - smoothstep(min_sat, min_sat + 0.06, h.y)) * smoothstep(0.32, 0.42, h.z);
+			nh = vec3(p.x, p.y, clamp(h.z * p.z / max(s0.z, 0.02), 0.0, 1.0));
+		}
 		c = mix(c, hsv2rgb(nh), m);
 	}
 	ALBEDO = c;
