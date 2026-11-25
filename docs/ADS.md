@@ -39,5 +39,16 @@ To switch to real ads (after the AdMob account is approved):
 5. Before publishing: add **app-ads.txt** on your developer website (AdMob shows the exact line),
    and in Play Console declare **advertising ID** use in Data safety and "Contains ads" = Yes.
 
+## Testing without risking the account
+
+- **Debug APKs always show Google's demo ads**, even after real ads are switched on
+  (`AdMobProvider.use_demo_ads`). The APKs from the Android Build workflow are debug builds, so
+  tapping ads while testing them is always safe. Only the release AAB on Play shows real ads.
+- To test the **Play Store build** itself, add each phone as a **test device** in AdMob
+  (Settings → Test devices → Add test device → Android → advertising ID from the phone's
+  Settings → Google → Ads, or Settings → Privacy → Ads). Real ad units then serve ads labelled
+  **"Test Ad"** on that phone.
+- **Only ever tap an ad that shows the "Test Ad" label.**
+
 Ad content is capped at **PG** (`AdConfig.max_ad_content_rating`). Banners stay off for the first
 release.

@@ -52,13 +52,20 @@ func setup(cfg: AdConfig) -> void:
 	_request_consent()
 
 ## The plugin node, with ids set BEFORE it enters the tree (it reads them in _ready).
-static func _make_admob_node(cfg: AdConfig) -> Node:
+## Debug builds (the APKs the owner side-loads from CI to test) ALWAYS get Google's demo ad
+## units, even once ad_config goes live, so tapping ads while testing can never count as invalid
+## clicks on the real account. Only release builds (the Play Store AAB) can show real ads.
+static func use_demo_ads(cfg: AdConfig, debug_build: bool = OS.is_debug_build()) -> bool:
+	return cfg.use_test_ads or debug_build
+
+static func _make_admob_node(cfg: AdConfig, debug_build: bool = OS.is_debug_build()) -> Node:
 	var node: Node = (load(ADMOB_SCRIPT) as GDScript).new() as Node
 	node.name = "Admob"
-	node.set("is_real", not cfg.use_test_ads)
+	var demo: bool = use_demo_ads(cfg, debug_build)
+	node.set("is_real", not demo)
 	node.set("auto_configure_on_initialize", true)
 	node.set("max_ad_content_rating", ["G", "PG", "T", "MA"].find(cfg.max_ad_content_rating) if cfg.max_ad_content_rating in ["G", "PG", "T", "MA"] else 1)
-	if not cfg.use_test_ads:
+	if not demo:
 		node.set("android_real_application_id", cfg.admob_app_id)
 		node.set("android_real_rewarded_id", cfg.rewarded_unit_id)
 		node.set("android_real_interstitial_id", cfg.interstitial_unit_id)

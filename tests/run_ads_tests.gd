@@ -111,7 +111,11 @@ func _test_node_ids() -> void:
 	cfg.admob_app_id = "ca-app-pub-1111111111111111~2222222222"
 	cfg.rewarded_unit_id = "ca-app-pub-1111111111111111/3333333333"
 	cfg.interstitial_unit_id = "ca-app-pub-1111111111111111/4444444444"
-	var r: Node = AdMobProvider._make_admob_node(cfg)
+	var dbg: Node = AdMobProvider._make_admob_node(cfg, true)
+	_check("Debug builds (side-loaded test APKs) show Google's demo ads even when real ads are on",
+		not bool(dbg.get("is_real")) and AdMobProvider.use_demo_ads(cfg, true))
+	dbg.free()
+	var r: Node = AdMobProvider._make_admob_node(cfg, false)
 	_check("Real mode: the node gets the real app and unit ids", bool(r.get("is_real"))
 		and str(r.get("android_real_rewarded_id")) == cfg.rewarded_unit_id and str(r.get("android_real_interstitial_id")) == cfg.interstitial_unit_id
 		and str(r.get("android_real_application_id")) == cfg.admob_app_id)
