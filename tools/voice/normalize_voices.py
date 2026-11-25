@@ -25,6 +25,8 @@ TRUE_PEAK_DB = -1.5
 LRA = 11.0
 TOLERANCE_LU = 1.5  # files within this of the target are left alone (no needless re-encode)
 LAND_LU = 0.6       # a rewrite aims this close
+PEAK_CEILING_DB = -0.5  # a file only counts as off target above this true peak: Vorbis re-encodes
+                        # overshoot by a few tenths and differ between ffmpeg builds (CI vs local)
 LIMIT = 0.72        # limiter ceiling (sample peak, about -2.9 dBFS): Vorbis overshoots, so the true peak stays under TRUE_PEAK_DB
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "audio", "voice")
 
@@ -41,7 +43,7 @@ def off_target(m: dict) -> bool:
     i = float(m["input_i"])
     if i == float("-inf") or i < -70.0:
         return False  # silence: nothing to fix
-    return abs(i - TARGET_LUFS) > TOLERANCE_LU or float(m["input_tp"]) > TRUE_PEAK_DB + 0.5
+    return abs(i - TARGET_LUFS) > TOLERANCE_LU or float(m["input_tp"]) > PEAK_CEILING_DB
 
 
 def normalize_file(path: str, force: bool = False) -> bool:
