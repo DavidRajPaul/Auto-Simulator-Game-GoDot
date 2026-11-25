@@ -37,7 +37,7 @@ var _t: float = 0.0
 static func create(role_name: String, model_path: String, scale_factor: float, paint: Color) -> QuestActor:
 	if not ResourceLoader.exists(model_path):
 		return null
-	var scene: PackedScene = load(model_path) as PackedScene
+	var scene: PackedScene = QuestAssets.get_resource(model_path) as PackedScene
 	if scene == null:
 		return null
 	var actor: QuestActor = QuestActor.new()

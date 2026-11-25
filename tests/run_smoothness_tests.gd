@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_frame_guard_wiring()
 	_test_frame_guard_summary_and_log()
 	_test_hot_paths()
+	await _test_quest_assets()
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
 
@@ -188,6 +189,47 @@ func _test_hot_paths() -> void:
 	_check("No load / instantiate / queue_free / new material inside _process, _physics_process or _integrate_forces",
 		offences.is_empty(), "\n      ".join(offences))
 	_check("Scanned the game's scripts", files.size() > 50, str(files.size()))
+
+## Nov 25 device report (frame drops in the Paati quest): her model, cast and every voice line are
+## loaded on worker threads before the player arrives, and quest code reuses those exact resources.
+func _test_quest_assets() -> void:
+	var d: MissionDef = load("res://data/missions/side_quests/sq_004.tres") as MissionDef
+	_check("Paati quest definition loads", d != null and d.story != null)
+	if d == null or d.story == null:
+		return
+	var paths: PackedStringArray = QuestAssets.paths_for(d, "en")
+	var voices: int = 0
+	for p: String in paths:
+		if p.ends_with(".ogg"):
+			voices += 1
+	_check("Warm list holds her rider model", paths.has(d.rider_model))
+	_check("…and every voiced line of the story", voices >= 40 and voices == _voiced_lines(d), "%d voices" % voices)
+	QuestAssets.warm(d)
+	for i: int in 600:
+		if QuestAssets.pending.is_empty():
+			break
+		await get_tree().process_frame
+	var all_warm: bool = true
+	for p: String in paths:
+		all_warm = all_warm and QuestAssets.is_warm(p)
+	_check("Everything loads on worker threads and is held ready", QuestAssets.pending.is_empty() and all_warm,
+		"%d pending" % QuestAssets.pending.size())
+	_check("Quest code gets the warmed resource itself (no second load)",
+		QuestAssets.get_resource(d.rider_model) == QuestAssets.cache[d.rider_model] and QuestAssets.get_resource(paths[paths.size() - 1]) == QuestAssets.cache[paths[paths.size() - 1]])
+	var other: MissionDef = load("res://data/missions/side_quests/sq_007.tres") as MissionDef
+	if other != null:
+		QuestAssets.warm(other)
+		_check("Warming another quest lets go of the previous one's files", not QuestAssets.is_warm(d.rider_model) or QuestAssets.paths_for(other, "en").has(d.rider_model))
+
+func _voiced_lines(d: MissionDef) -> int:
+	var n: int = 0
+	var seen: PackedStringArray = PackedStringArray()
+	for line: String in d.story.all_lines():
+		var v: String = d.story.voice_path(line, "en")
+		if v != "" and not seen.has(v):
+			seen.append(v)
+			n += 1
+	return n
 
 func _collect(dir: String, out: PackedStringArray) -> void:
 	for f: String in DirAccess.get_files_at(dir):

@@ -18,6 +18,9 @@ var _size: float = DEFAULT_SIZE # this rider's scale (MissionDef.rider_scale)
 ## Her hip on the auto's rear bench (AutoRickshawModel space; the auto drives along -Z).
 const PASSENGER_HIP: Vector3 = Vector3(0.18, AutoRickshawModel.GROUND_Y + 0.78, 0.46)
 const SHOW_WAITING_M: float = 140.0
+## Start loading the nearest quest's rider, cast and voices (QuestAssets) this far out, so they are
+## in memory before she appears at SHOW_WAITING_M and before any cutscene line is spoken.
+const WARM_M: float = 450.0
 const BOARD_FROM_M: float = 30.0
 const PICKUP_M: float = 9.0
 const PICKUP_KMH: float = 3.0
@@ -126,6 +129,7 @@ func _process(delta: float) -> void:
 ## Shows the rider of the nearest available quest sitting at its marker, and hides her when the
 ## player is far away or another quest owns the career.
 func _update_waiting() -> void:
+	_warm_quest_assets()
 	if state not in [State.NONE, State.WAITING] or director == null or not _has_pose:
 		return
 	var best: MissionDef = null
@@ -154,6 +158,27 @@ func _update_waiting() -> void:
 	_ledge.global_transform = _wait_spot
 	_place_sitting(_wait_spot.origin + Vector3(0.0, LEDGE.y + 0.07, 0.0), _wait_spot.basis.z)
 	state = State.WAITING
+
+## The running quest stays warm; otherwise the nearest available quest within WARM_M.
+func _warm_quest_assets() -> void:
+	if director == null:
+		return
+	if GameState.mission_active and director.run != null:
+		QuestAssets.warm(_definition(director.run.quest_id))
+		return
+	if not _has_pose:
+		return
+	var best: MissionDef = null
+	var best_d: float = WARM_M
+	for id: String in director.registry.definitions:
+		var d: MissionDef = director.registry.get_mission(id)
+		if d.rider_model == "" and d.story == null:
+			continue
+		var dist: float = _player_pos.distance_to(d.start_anchor)
+		if dist < best_d and director.registry.available(id, GameState.driver_level(), GameState.mission_completed):
+			best_d = dist
+			best = d
+	QuestAssets.warm(best)
 
 ## A kerb point beside the marker, facing the road.
 func _ledge_spot(anchor: Vector3) -> Transform3D:
@@ -295,7 +320,7 @@ func _stand_out() -> void:
 func _spawn(d: MissionDef) -> bool:
 	if d == null or d.rider_model == "" or not ResourceLoader.exists(d.rider_model):
 		return false
-	var scene: PackedScene = load(d.rider_model) as PackedScene
+	var scene: PackedScene = QuestAssets.get_resource(d.rider_model) as PackedScene
 	if scene == null:
 		return false
 	body = scene.instantiate() as Node3D

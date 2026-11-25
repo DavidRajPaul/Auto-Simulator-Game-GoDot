@@ -24,6 +24,7 @@ boot_splash/show_image=true
 SignalBus="*res://autoloads/SignalBus.gd"
 GameState="*res://autoloads/GameState.gd"
 FrameGuard="*res://autoloads/FrameGuard.gd"
+QuestAssets="*res://autoloads/QuestAssets.gd"
 CrashReporter="*res://autoloads/CrashReporter.gd"
 AdMonetizationManager="*res://autoloads/AdMonetizationManager.gd"
 DailyReminder="*res://autoloads/DailyReminder.gd"

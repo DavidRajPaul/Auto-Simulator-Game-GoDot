@@ -122,6 +122,11 @@ jobs:
           pattern: voices-*
           merge-multiple: true
           path: .
+      - name: Even out voice loudness (every speaker at -16 LUFS)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          python3 tools/voice/normalize_voices.py
+          python3 tools/voice/normalize_voices.py --check
       - name: Commit voices
         run: |
           git config user.name "voice-bot"
