@@ -20,6 +20,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from generate_quest_voices import parse  # noqa: E402
+from normalize_voices import normalize_file  # noqa: E402
 
 MODEL = "ai4bharat/indic-parler-tts"
 # ElevenLabs-style acting tags -> the emotion Indic Parler knows (Tamil supports emotions).
@@ -105,6 +106,7 @@ def voice_line(model, tok, desc_tok, rate, ogg, text, desc, seed, sf, torch, loc
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", trimmed, "-ac", "1", "-ar", "32000",
                     "-c:a", "libvorbis", "-q:a", "1", ogg], check=True)
     os.remove(trimmed)
+    normalize_file(ogg)  # every speaker at the same loudness (Parler levels differ by up to 25 dB)
     if not length_ok(seconds, text):
         raise RuntimeError(f"still {seconds:.1f}s for {len(text)} chars after {ATTEMPTS} tries (kept best, check it)")
     return seconds

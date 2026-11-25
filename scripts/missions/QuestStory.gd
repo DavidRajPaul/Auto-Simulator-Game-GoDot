@@ -963,14 +963,14 @@ func line_seconds(line: String) -> float:
 	if line == "" or story == null:
 		return 0.0
 	var path: String = story.voice_path(line, _language())
-	var stream: AudioStream = load(path) as AudioStream if path != "" else null
+	var stream: AudioStream = QuestAssets.get_resource(path) as AudioStream
 	return stream.get_length() if stream != null else 1.8
 
 func _play_voice(line: String) -> void:
 	lines_said.append(line)
 	_voice_left = line_seconds(line)
 	var path: String = story.voice_path(line, _language())
-	var stream: AudioStream = load(path) as AudioStream if path != "" else null
+	var stream: AudioStream = QuestAssets.get_resource(path) as AudioStream
 	_voice.stop()
 	if stream != null:
 		_voice.stream = stream

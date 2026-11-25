@@ -69,6 +69,8 @@ def to_ogg(mp3_path):
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mp3_path, "-ac", "1", "-ar", "32000",
                     "-c:a", "libvorbis", "-q:a", "1", ogg_path], check=True)
     os.remove(mp3_path)
+    from normalize_voices import normalize_file  # same folder; every speaker at one loudness
+    normalize_file(ogg_path)
 
 
 def main():

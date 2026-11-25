@@ -20,6 +20,17 @@ huggingface.co/ai4bharat/indic-parler-tts). The `elevenlabs` engine (`pick_voice
 `generate_quest_voices.py`, `voices.json`) is kept for a paid ElevenLabs plan: the free plan
 can't use library voices through the API and its output is non-commercial.
 
+## Loudness (every speaker at -16 LUFS)
+
+Parler gives each voice a very different level: before Nov 25, Paati's English lines were
+-42..-37 LUFS against the hero's -14, so on the device only the hero could be heard. Every line is
+now set to -16 LUFS (true peak under -1.5 dBTP) by `tools/voice/normalize_voices.py`: the
+generators call it on each new file, and the Generate quest voices workflow runs it over the whole
+folder (then `--check`) before committing. Run it yourself after adding voice files by hand:
+
+    python3 tools/voice/normalize_voices.py          # fixes what is off target
+    python3 tools/voice/normalize_voices.py --check  # lists files off target, exit 1 if any
+
 ## Savari (street rides)
 
 `tools/voice/savari_lines.py` is the one source for every Savari line: run it to rewrite the
