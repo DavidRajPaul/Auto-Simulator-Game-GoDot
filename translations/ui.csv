@@ -915,6 +915,9 @@ REM_T_MARINA,Evening rush at Marina,மெரினாவில் மாலை 
 REM_B_MARINA,The beach crowd needs rides home. Good fares tonight!,கடற்கரை கூட்டத்துக்கு வீட்டுக்குப் போக ஆட்டோ வேணும். இன்று நல்ல வருமானம்!
 REM_T_LAST,Last reminder this week,இந்த வாரத்தின் கடைசி நினைவூட்டல்
 REM_B_LAST,We'll stop here. Your auto will be at the stand whenever you're ready.,இத்துடன் நிறுத்துறோம். நீ தயாரானதும் உன் ஆட்டோ ஸ்டாண்டில் இருக்கும்.
+REM_ACT_CLAIM,Claim ₹%d,₹%d வாங்கு
+REM_ACT_DRIVE,Drive now,இப்போ ஓட்டு
+REM_CHIP_DAY,DAY %d,நாள் %d
 FINE_TOAST,Challan ₹%s: %s at %s. Details when you stop.,சலான் ₹%s: %s — %s. நிறுத்தியதும் விவரம்.
 FINE_WARNING_TOAST,Constable's warning: %s at %s.,போலீஸ் எச்சரிக்கை: %s — %s.
 FINE_WARNING_NEXT,Next time it's a ₹%s fine.,அடுத்த முறை ₹%s ஃபைன்.

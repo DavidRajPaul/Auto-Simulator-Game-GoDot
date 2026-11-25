@@ -175,6 +175,7 @@ Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/peop
 | `portraits.png` | Rider portraits on the haggle card | Stitch 4F–4G (ours) |
 | `logo.png` | Menu logo with Tamil subtitle | Stitch 1G (ours) |
 | `loading_bg.jpg` | Splash and loading screen | Stitch 1F (ours) |
+| (derived) `android_plugins/namma_reminder/src/main/res/drawable-nodpi/namma_notif_*.webp` | Daily reminder notification cards (coins, gift, badge, night street, app icon) | `tools/art/make_notification_art.py` from `rewards.png`, `loading_bg.jpg`, `icon/icon.png` (ours) |
 | `controls_atlas.png` | v1 control icons (fallback) | `make_ui_icons.py` (ours) |
 
 ### 📱 App icon and splash — `assets/icon/` (1.9 MB)

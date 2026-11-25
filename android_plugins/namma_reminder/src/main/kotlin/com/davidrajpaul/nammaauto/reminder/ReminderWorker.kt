@@ -10,7 +10,13 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
 		val title = inputData.getString(Reminders.KEY_TITLE)
 		val body = inputData.getString(Reminders.KEY_BODY)
 		if (title != null && body != null) {
-			Reminders.show(applicationContext, inputData.getInt(Reminders.KEY_ID, 1), title, body)
+			// Jobs queued by an older build carry no look / chip / action: they show the street card.
+			Reminders.show(
+				applicationContext, inputData.getInt(Reminders.KEY_ID, 1), title, body,
+				inputData.getString(Reminders.KEY_LOOK),
+				inputData.getString(Reminders.KEY_CHIP) ?: "",
+				inputData.getString(Reminders.KEY_ACTION) ?: "",
+			)
 		}
 		return Result.success()
 	}

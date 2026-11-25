@@ -16,6 +16,7 @@ func _run() -> void:
 	_test_same_day_schedule()
 	_test_streak_messages()
 	_test_broken_streak_messages()
+	_test_cards()
 	_test_translations()
 	_test_no_plugin_is_safe()
 	await _test_ask_card()
@@ -65,11 +66,45 @@ func _test_broken_streak_messages() -> void:
 		_check("Day %d has a title and body" % int(x["id"]), str(x["title"]) != "" and str(x["body"]) != "" and not str(x["body"]).contains("%"))
 	_check("Messages vary across the week", titles.size() >= 5, str(titles.size()))
 
+## The game-style card fields the plugin draws (look, reward chip, button label).
+func _test_cards() -> void:
+	var ok_fields: bool = true
+	for st: Dictionary in [{"available": true, "streak": 0}, {"available": false, "streak": 3}, {"available": false, "streak": 6}]:
+		for r: Dictionary in DailyReminder.build_reminders(st):
+			ok_fields = ok_fields and DailyReminder.LOOKS.has(str(r.get("look", ""))) and r.has("chip") \
+				and str(r.get("action", "")) != "" and not str(r["action"]).contains("%") and not str(r["chip"]).contains("%")
+	_check("Every reminder has a known card look, a chip and a button label", ok_fields)
+	var fresh: Array[Dictionary] = DailyReminder.build_reminders({"available": true, "streak": 0})
+	var inr: int = RewardsEngine.DAILY_INR[0]
+	_check("Bonus card: coins look, ₹ chip, 'Claim ₹50' button",
+		fresh[0]["look"] == "bonus" and fresh[0]["chip"] == "₹%d" % inr and str(fresh[0]["action"]) == tr("REM_ACT_CLAIM") % inr, str(fresh[0]))
+	_check("Chennai lines use the night-street card with 'Drive now' and no chip",
+		fresh[1]["look"] == "street" and fresh[1]["chip"] == "" and fresh[1]["action"] == tr("REM_ACT_DRIVE"), str(fresh[1]))
+	var streak: Array[Dictionary] = DailyReminder.build_reminders({"available": false, "streak": 3})
+	_check("Streak card: DAY 4 chip, claims tomorrow's tile", streak[0]["look"] == "streak" and str(streak[0]["chip"]) == "DAY 4"
+		and str(streak[0]["action"]).contains("₹%d" % RewardsEngine.DAILY_INR[3]), str(streak[0]))
+	var jackpot: Array[Dictionary] = DailyReminder.build_reminders({"available": false, "streak": 6})
+	_check("Jackpot card on day 7", jackpot[0]["look"] == "jackpot" and str(jackpot[0]["chip"]) == "₹%d" % RewardsEngine.DAILY_INR[6])
+	var kt: String = FileAccess.get_file_as_string("res://android_plugins/namma_reminder/src/main/kotlin/com/davidrajpaul/nammaauto/reminder/Reminders.kt")
+	var looks_ok: bool = true
+	for look: String in DailyReminder.LOOKS:
+		looks_ok = looks_ok and kt.contains("namma_notif_art_" + look) and kt.contains("namma_notif_bg_" + look) \
+			and FileAccess.file_exists("res://android_plugins/namma_reminder/src/main/res/drawable-nodpi/namma_notif_art_%s.webp" % look) \
+			and FileAccess.file_exists("res://android_plugins/namma_reminder/src/main/res/drawable-nodpi/namma_notif_icon_%s.webp" % look) \
+			and FileAccess.file_exists("res://android_plugins/namma_reminder/src/main/res/drawable/namma_notif_bg_%s.xml" % look)
+	_check("Every card look has its art, icon and gradient in the plugin", looks_ok)
+	var plain_view: bool = false
+	for layout: String in ["namma_notif_collapsed", "namma_notif_expanded"]:
+		var xml: String = FileAccess.get_file_as_string("res://android_plugins/namma_reminder/src/main/res/layout/%s.xml" % layout)
+		plain_view = plain_view or xml.is_empty() or xml.contains("<View")
+	_check("Card layouts exist and use only RemoteViews-safe views (no plain <View>)", not plain_view)
+
 func _test_translations() -> void:
 	var csv: String = FileAccess.get_file_as_string("res://translations/ui.csv")
 	var keys: PackedStringArray = ["DAILY_REMINDER", "REMINDER_TEST", "REMINDER_ASK_TITLE", "REMINDER_ASK_BODY", "REMINDER_YES", "REMINDER_NO",
 		"REM_T_STREAK", "REM_B_STREAK", "REM_T_JACKPOT", "REM_B_JACKPOT", "REM_T_BONUS", "REM_B_BONUS", "REM_T_PASSENGERS", "REM_B_PASSENGERS",
-		"REM_T_AUTO", "REM_B_AUTO", "REM_T_MARINA", "REM_B_MARINA", "REM_T_LAST", "REM_B_LAST"]
+		"REM_T_AUTO", "REM_B_AUTO", "REM_T_MARINA", "REM_B_MARINA", "REM_T_LAST", "REM_B_LAST",
+		"REM_ACT_CLAIM", "REM_ACT_DRIVE", "REM_CHIP_DAY"]
 	var missing: PackedStringArray = []
 	for k: String in keys:
 		if not csv.contains("\n" + k + ","):

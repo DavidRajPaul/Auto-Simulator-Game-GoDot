@@ -19,6 +19,35 @@ No server, no Firebase, no data leaves the phone, so the Play Data Safety form i
 - Messages are `tr()` keys `REM_T_*` / `REM_B_*` in `translations/ui.csv`, so they follow the game language.
 - Tapping a reminder opens the game (the daily-bonus popup then greets the player).
 
+## Look (game-style card, Nov 25)
+
+Plain text reminders looked like a system message (owner device test). Like the reward pushes of
+Candy Crush, Coin Master or Clash of Clans, each reminder is now a colourful card with art, a reward tag and a
+button, drawn in the notification's content area with `NotificationCompat.DecoratedCustomViewStyle`
+(the system keeps its header, small icon and action row, so it stays within Android's rules):
+
+![Notification cards](images/notification_preview.png)
+
+| Look | Used for | Art | Chip | Button |
+|---|---|---|---|---|
+| `bonus` | fresh ₹50 daily bonus | coin pile on a sunburst, purple → orange | ₹50 | Claim ₹50 |
+| `streak` | tomorrow's streak tile | coin stack + star, red → orange | DAY n | Claim ₹n |
+| `jackpot` | day-7 jackpot | gift + gold badge, magenta → gold | ₹500 | Claim ₹500 |
+| `street` | passengers / auto / Marina / last | the loading-screen night street with the auto | — | Drive now |
+
+- Collapsed (≈48 dp): round badge, yellow title, one body line, reward chip. Expanded (168 dp): gradient,
+  art in the right half (`fitEnd`, so phones and the OnePlus Pad both show it whole), title, body, a yellow
+  "Claim" pill and the red chip. The system action button under the card opens the game, same as a tap.
+- Text colours are fixed on our own background, so light and dark notification shades read the same.
+  Title and body are still set on the builder for the lock screen and accessibility.
+- `DailyReminder.build_reminders()` returns `look`, `chip` and `action` with each reminder (`LOOKS`;
+  strings `REM_ACT_CLAIM`, `REM_ACT_DRIVE`, `REM_CHIP_DAY`). An unknown look shows the street card.
+- Art: `tools/art/make_notification_art.py` builds `res/drawable-nodpi/namma_notif_{art,icon}_<look>.webp`
+  from `assets/ui/rewards.png`, `assets/ui/loading_bg.jpg` and the app icon, and renders the preview above.
+  Gradients/pills are XML drawables (`res/drawable/namma_notif_*`); keep `GRADIENTS` in the script in step.
+- Layouts (`res/layout/namma_notif_*.xml`) may only use RemoteViews classes (FrameLayout, LinearLayout,
+  TextView, ImageView…): a plain `<View>` makes the whole notification fail to inflate. The reminder suite checks it.
+
 ## Permission (Android 13+)
 
 Never asked at launch. The "Daily reminder?" card shows once, after the first ride (tutorial finished)
@@ -36,8 +65,8 @@ The permission prompt does not promise a specific time because WorkManager deliv
 | Export addon (adds the AAR + AndroidX deps to Gradle exports) | `addons/namma_reminder/` |
 | Tests (schedule, messages, Tamil, no-plugin safety, packaging) | `tests/run_reminder_tests.gd` |
 
-Plugin API (`Engine.get_singleton("NammaReminder")`): `scheduleAt(id, days_ahead, hour, title, body)`,
-`schedule(id, delay_seconds, title, body)` (debug test),
+Plugin API (`Engine.get_singleton("NammaReminder")`): `scheduleAt(id, days_ahead, hour, title, body, look, chip, action)`,
+`schedule(id, delay_seconds, title, body, look, chip, action)` (debug test, shows the bonus card),
 `cancelAll()`, `notificationsEnabled()`, `requestPermission()` → signal `permission_result(granted)`.
 
 ## Building the AAR
