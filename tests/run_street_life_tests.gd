@@ -23,6 +23,7 @@ func _ready() -> void:
 func _run() -> void:
 	_test_models()
 	_test_paint()
+	_test_people_paint()
 	_test_parking_mix()
 	_test_traffic_variants()
 	_test_street_life_data()
@@ -90,6 +91,28 @@ func _test_paint() -> void:
 	_check("Cars and two-wheelers have their own palettes", PaintSwap.vehicle_palette("tallboy") == PaintSwap.CAR_PAINTS and PaintSwap.vehicle_palette("moped") == PaintSwap.TWO_WHEELER_PAINTS)
 	var sh: String = FileAccess.get_file_as_string("res://shaders/vehicle_paint.gdshader")
 	_check("Vehicle paint needs no texture", not sh.contains("sampler2D"))
+
+## Nov 25 (owner: "I see the same models often"): the men's clothes vary too, white cloth through
+## tint mode, and the old man's veshti waist band takes his shirt colour above the hem.
+func _test_people_paint() -> void:
+	var people: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://assets/models/people/people.json")) as Dictionary)["people"]
+	var fixed: Array[String] = []
+	for id: String in people:
+		if not PaintSwap.CONFIG.has(id) and id != "young_man":
+			fixed.append(id)
+	_check("Every pedestrian model can change clothing colour (young_man: shirt shares the face block)", fixed.is_empty(), ", ".join(fixed))
+	_check("The old man wears men's shirt colours, the Mixamo man trouser colours",
+		PaintSwap.palette_for_person("old_man_veshti") == PaintSwap.SHIRT_PAINTS and PaintSwap.palette_for_person("mixamo_ch22") == PaintSwap.TROUSER_PAINTS)
+	var scene: PackedScene = load("res://assets/models/people/old_man_veshti.glb") as PackedScene
+	var man: Node3D = scene.instantiate() as Node3D
+	var n: int = PaintSwap.prepare(man, "old_man_veshti")
+	var mat: ShaderMaterial = null
+	for mi: Node in man.find_children("*", "MeshInstance3D", true, false):
+		mat = (mi as MeshInstance3D).get_surface_override_material(0) as ShaderMaterial
+	_check("White shirt uses tint mode, veshti waist band painted above 0.88 m",
+		n > 0 and mat != null and bool(mat.get_shader_parameter("tint_mode")) and (mat.get_shader_parameter("rect2") as Vector4).w > 0.0
+		and is_equal_approx(float(mat.get_shader_parameter("rect2_min_y")), 0.88))
+	man.free()
 
 func _test_parking_mix() -> void:
 	var bikes: Dictionary = {}
@@ -301,6 +324,63 @@ func _test_wind() -> void:
 ## Nov 14 device report: "the people near the shops stand idle without animation and the auto
 ## passes through them". Near the player they are pooled walkers (role "shop"): animated, and
 ## they react to the auto; further away they stay in the one static mesh.
+## Nov 25: every spawn has its own body size (pace and stride scale with it), no two of the same
+## model spawn side by side, and same-model walkers near each other wear different colours.
+func _test_crowd_variety(peds: PedestrianManager) -> void:
+	var sizes: Dictionary = {}
+	var in_range: bool = true
+	var feet_ok: bool = true
+	var active: Array[PedestrianManager.Walker] = []
+	for o: PedestrianManager.Walker in peds.people:
+		if not o.active:
+			continue
+		active.append(o)
+		sizes[snappedf(o.size, 0.01)] = true
+		in_range = in_range and o.size >= PedestrianManager.SIZE_RANGE.x - 0.001 and o.size <= PedestrianManager.SIZE_RANGE.y + 0.001
+		in_range = in_range and is_equal_approx(o.node.global_transform.basis.get_scale().y, o.size)
+		if not o.idle and not o.running and o.role == "" and o.react == "" and not o.fleeing and o.anim != null:
+			# Stride grows with the body: the legs play at pace / (native pace × size).
+			var native: float = float(peds._native_pace.get(o.id, 1.2))
+			feet_ok = feet_ok and absf(o.anim.speed_scale - o.pace / (native * o.size)) < 0.01
+	_check("Walkers come in different sizes (%d sizes among %d)" % [sizes.size(), active.size()], active.size() < 4 or sizes.size() >= 3)
+	_check("Every size is in range and on the node", in_range)
+	_check("Feet stay planted: walk speed and stride scale with size", feet_ok)
+	# A spawn spot next to a same-model walker is refused; a different model is fine.
+	if not active.is_empty():
+		var a: PedestrianManager.Walker = active[0]
+		_check("A look-alike is found right beside a walker", peds.lookalike_near(a.id, a.pos + Vector3(1.0, 0, 0), PedestrianManager.LOOKALIKE_M))
+		_check("…but not for a different model", not peds.lookalike_near("not_a_model", a.pos, PedestrianManager.LOOKALIKE_M))
+	# Paint: with every palette colour but one worn near by the same model, that one is picked.
+	var paintable: PedestrianManager.Walker = null
+	for o: PedestrianManager.Walker in active:
+		if o.paintable:
+			paintable = o
+			break
+	if paintable != null:
+		var pal: Array[Color] = PaintSwap.palette_for_person(paintable.id)
+		var saved: Array = []
+		var others: Array[PedestrianManager.Walker] = []
+		for o: PedestrianManager.Walker in peds.people:
+			if o != paintable and others.size() < pal.size() + 1:
+				saved.append([o, o.active, o.id, o.pos, o.paint])
+				others.append(o)
+		for i: int in others.size():
+			var o: PedestrianManager.Walker = others[i]
+			o.active = true
+			o.id = paintable.id
+			o.pos = paintable.pos + Vector3(2.0 + i, 0, 0)
+			o.paint = PaintSwap.NO_PAINT if i == 0 else (pal[i] if i < pal.size() else pal[1])
+		var ok: bool = true
+		for k: int in 20:
+			ok = ok and peds.pick_paint(paintable) == pal[0]
+		_check("Near look-alikes never share a clothing colour", ok)
+		for row: Array in saved:
+			var o: PedestrianManager.Walker = row[0]
+			o.active = bool(row[1])
+			o.id = str(row[2])
+			o.pos = row[3] as Vector3
+			o.paint = row[4] as Color
+
 func _test_shop_people_wake(shops: ShopPeople, peds: PedestrianManager, at: Vector3) -> void:
 	shops.rebuild(Vector3(at.x, 0.0, at.z))
 	if shops._cand.is_empty():
@@ -440,6 +520,7 @@ func _test_living_city() -> void:
 		if v.archetype == TrafficVehicleAI.Archetype.MTC_BUS:
 			bus = v
 	_check("An auto can't throw a bus: buses keep the stop-and-honk recoil", bus != null and not traffic.knocked.knock(bus, 9.0, Vector3.FORWARD, 365.0, Vector3.ZERO))
+	_test_crowd_variety(peds)
 	# --- A fallen body lies on top of the ground.
 	var w: PedestrianManager.Walker = peds.people[0]
 	var best: float = INF

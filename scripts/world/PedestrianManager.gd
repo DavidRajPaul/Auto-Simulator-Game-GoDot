@@ -47,6 +47,15 @@ const STARTLE_SPEED_MPS: float = 2.0
 ## Comfortable street paces (m/s) per character; playback follows.
 const PACE: Dictionary = {"old_man_veshti": Vector2(0.85, 1.0)}
 const DEFAULT_PACE: Vector2 = Vector2(1.1, 1.35)
+## Crowd variety (Nov 25, owner: "I see the same models often"): every spawn gets its own body
+## size, so the same model reads as a different person. Stride, run/flee pace and root-motion
+## distances scale with it, so feet stay planted (speed_scale = pace / (native pace × size)).
+const SIZE_RANGE: Vector2 = Vector2(0.94, 1.06)
+## No two walkers of the same model within this distance of each other: a spawn spot next to a
+## look-alike is skipped (the slot tries another spot on the next recycle).
+const LOOKALIKE_M: float = 22.0
+## Clothing colour avoids whatever same-model walkers within this distance already wear.
+const PAINT_APART_M: float = 60.0
 ## Mixamo clips (tools/assets/add_mixamo_clips.py): a few walkers jog ("run"); anyone a moving
 ## vehicle — the player or traffic — is about to brush past jumps back ("dodge") or stumbles and
 ## falls ("stumble" → "fallen" on the road for a few seconds → back on their feet).
@@ -237,6 +246,8 @@ class Walker:
 	var talking: bool = false
 	var chat_t: float = 0.0
 	var height: float = 1.6
+	## Body scale of this spawn (SIZE_RANGE); 1.0 = the model as baked.
+	var size: float = 1.0
 	## role "shop": the ShopPeople spot this walker stands in for (SignalBus.awake_shop_spots key).
 	var shop_key: Vector3i = Vector3i.ZERO
 
@@ -392,7 +403,8 @@ func _spawn(w: Walker) -> bool:
 	w.kerb = KERB_GAP_M + rng.randf() * KERB_SPREAD_M
 	w.idle = rng.randf() < IDLE_SHARE
 	var pr: Vector2 = PACE.get(w.id, DEFAULT_PACE)
-	w.pace = rng.randf_range(pr.x, pr.y)
+	w.size = rng.randf_range(SIZE_RANGE.x, SIZE_RANGE.y)
+	w.pace = rng.randf_range(pr.x, pr.y) * w.size
 	w.startle = 0.0
 	w.dodge = Vector3.ZERO
 	w.recovery = 0.0
@@ -400,7 +412,7 @@ func _spawn(w: Walker) -> bool:
 	w.gesture_in = rng.randf_range(GESTURE_GAP_S.x, GESTURE_GAP_S.y)
 	w.running = not w.idle and _run_pace.has(w.id) and rng.randf() < RUN_SHARE
 	if w.running:
-		w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y)
+		w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y) * w.size
 	if w.idle and (w.s < IDLE_JUNCTION_CLEAR_M or w.s > e.length - IDLE_JUNCTION_CLEAR_M):
 		return false
 	var target: Array[Vector3] = _target(w)
@@ -422,12 +434,12 @@ func _spawn(w: Walker) -> bool:
 	var seen: bool = ViewCheck.on_screen(get_viewport(), w.pos + Vector3(0, 0.9, 0), 1.2)
 	if (seen and to_p.length() < SPAWN_ON_SCREEN_M) or (not seen and to_p.length() > DESPAWN_M - 5.0):
 		return false
+	if lookalike_near(w.id, w.pos, LOOKALIKE_M, w):
+		return false
 	w.active = true
 	w.node.visible = true
 	if w.paintable:
-		# One in four keeps the model's own colours; the rest wear a palette colour.
-		var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
-		w.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
+		w.paint = pick_paint(w)
 		PaintSwap.set_paint(w.node, w.paint)
 	if GameState.is_raining:
 		if rng.randf() < RAIN_UMBRELLA_SHARE:
@@ -485,8 +497,7 @@ func _start_chat(w: Walker) -> bool:
 	p.active = true
 	p.node.visible = true
 	if p.paintable:
-		var pal: Array[Color] = PaintSwap.palette_for_person(p.id)
-		p.paint = PaintSwap.NO_PAINT if rng.randf() < 0.25 else pal[rng.randi() % pal.size()]
+		p.paint = pick_paint(p)
 		PaintSwap.set_paint(p.node, p.paint)
 	for q: Walker in [w, p]:
 		q.role = "chat"
@@ -653,8 +664,7 @@ func _on_shop_people_woken(spots: Array) -> void:
 		if w.anim != null:
 			w.anim.active = true
 		if w.paintable:
-			var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
-			w.paint = pal[rng.randi() % pal.size()]
+			w.paint = pick_paint(w)
 			PaintSwap.set_paint(w.node, w.paint)
 		_set_pose(w)
 		_resume(w, 0.0)
@@ -704,9 +714,9 @@ func _resume(w: Walker, blend: float) -> void:
 	if w.idle:
 		w.anim.speed_scale = 1.0
 	elif clip == "run":
-		w.anim.speed_scale = w.pace / float(_run_pace.get(w.id, 2.2))
+		w.anim.speed_scale = w.pace / (float(_run_pace.get(w.id, 2.2)) * w.size)
 	else:
-		w.anim.speed_scale = w.pace / float(_native_pace.get(w.id, 1.2))
+		w.anim.speed_scale = w.pace / (float(_native_pace.get(w.id, 1.2)) * w.size)
 
 ## True when `p` is clear of every carriageway (closest road centre-line further than half its width).
 func _on_pavement(p: Vector3) -> bool:
@@ -965,7 +975,7 @@ func _start_react(w: Walker, clip: String, away: Vector3) -> bool:
 	if not w.anim.has_animation(clip) or not mv.has(clip):
 		return false
 	var m: Vector3 = mv[clip]
-	var offset: Vector3 = Basis.looking_at(away, Vector3.UP) * Vector3(m.x, 0.0, m.y)
+	var offset: Vector3 = Basis.looking_at(away, Vector3.UP) * Vector3(m.x, 0.0, m.y) * w.size
 	var land: Vector3 = w.pos + offset
 	var half: Vector3 = w.pos + offset * 0.5
 	if not SignalBus.walkable(land.x, land.z) or not SignalBus.walkable(half.x, half.z):
@@ -1082,7 +1092,7 @@ func _start_flee(w: Walker) -> bool:
 		native = float(_flee_look_pace.get(w.id, 1.6))
 	elif w.flee_clip == "flee":
 		native = float(_flee_pace.get(w.id, 2.2))
-	w.flee_pace = native * rng.randf_range(FLEE_PACE.x, FLEE_PACE.y)
+	w.flee_pace = native * rng.randf_range(FLEE_PACE.x, FLEE_PACE.y) * w.size
 	w.flee_dir = away.normalized()
 	_end_chat(w)
 	w.role = ""
@@ -1091,7 +1101,7 @@ func _start_flee(w: Walker) -> bool:
 	w.fleeing = true
 	w.anim.get_animation(w.flee_clip).loop_mode = Animation.LOOP_LINEAR
 	w.anim.play(w.flee_clip, 0.2)
-	w.anim.speed_scale = w.flee_pace / native
+	w.anim.speed_scale = w.flee_pace / (native * w.size)
 	return true
 
 ## Running off from the fire, straight away from the auto. Stops at the kerb or when the time is up,
@@ -1162,6 +1172,31 @@ func _play_once(w: Walker, clip: String) -> void:
 	w.anim.play(clip, 0.1)
 	w.anim.speed_scale = 1.0
 
+## Another active walker of model `id` within `radius` of `at` (ignoring `except`)?
+func lookalike_near(id: String, at: Vector3, radius: float, except: Walker = null) -> bool:
+	for o: Walker in people:
+		if o != except and o.active and o.id == id and o.pos.distance_to(at) < radius:
+			return true
+	return false
+
+## A clothing colour for `w` that no same-model walker within PAINT_APART_M already wears.
+## One in four keep the model's own colours (unless a near look-alike already does).
+func pick_paint(w: Walker) -> Color:
+	var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
+	var taken: Array[Color] = []
+	for o: Walker in people:
+		if o != w and o.active and o.id == w.id and o.pos.distance_to(w.pos) < PAINT_APART_M:
+			taken.append(o.paint)
+	var options: Array[Color] = []
+	if rng.randf() < 0.25 and not taken.has(PaintSwap.NO_PAINT):
+		return PaintSwap.NO_PAINT
+	for c: Color in pal:
+		if not taken.has(c):
+			options.append(c)
+	if options.is_empty():
+		options = pal
+	return options[rng.randi() % options.size()] if not options.is_empty() else PaintSwap.NO_PAINT
+
 func _apply(w: Walker) -> void:
 	var fwd: Vector3 = Vector3(w.heading.x, 0.0, w.heading.z)
 	if fwd.length() < 0.01:
@@ -1185,7 +1220,7 @@ func _apply(w: Walker) -> void:
 	w.lift = move_toward(w.lift, want_lift, DOWN_LIFT_MPS * dt)
 	w.pos.y = ground_y if ground_y > w.pos.y else move_toward(w.pos.y, ground_y, GROUND_FOLLOW_MPS * dt)
 	# Characters are authored facing +Z: looking at -fwd puts their face along fwd.
-	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP), w.pos + Vector3(0.0, w.lift, 0.0))
+	w.node.global_transform = Transform3D(Basis.looking_at(-fwd.normalized(), Vector3.UP).scaled(Vector3.ONE * w.size), w.pos + Vector3(0.0, w.lift, 0.0))
 
 # --- Time of day and weather -------------------------------------------------
 
@@ -1266,8 +1301,7 @@ func place_kolam(w: Walker, s: Array) -> bool:
 	w.active = true
 	w.node.visible = true
 	if w.paintable:
-		var pal: Array[Color] = PaintSwap.palette_for_person(w.id)
-		w.paint = pal[rng.randi() % pal.size()]
+		w.paint = pick_paint(w)
 		PaintSwap.set_paint(w.node, w.paint)
 	_set_pose(w)
 	_apply(w)
@@ -1309,7 +1343,7 @@ func _hurry(w: Walker) -> void:
 	if w.idle or not _run_pace.has(w.id):
 		return
 	w.running = true
-	w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y)
+	w.pace = float(_run_pace[w.id]) * rng.randf_range(RUN_PACE.x, RUN_PACE.y) * w.size
 	if w.react == "":
 		_resume(w, 0.2)
 
@@ -1356,7 +1390,7 @@ func _step_shelter(w: Walker, delta: float) -> void:
 		_apply(w)
 		return
 	var dir: Vector3 = to.normalized()
-	var pace: float = float(_run_pace.get(w.id, SHELTER_PACE_MPS))
+	var pace: float = float(_run_pace.get(w.id, SHELTER_PACE_MPS)) * w.size
 	var step: Vector3 = w.pos + dir * pace * delta
 	if SignalBus.walkable(step.x, step.z):
 		w.pos = step
