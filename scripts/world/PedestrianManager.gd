@@ -75,14 +75,15 @@ const DOWN_CLIPS: Array[String] = ["stumble", "fallen", "get_up"]
 const DOWN_LIFT_M: Dictionary = {"stumble": 0.17, "fallen": 0.08, "get_up": 0.05}
 const DOWN_REACH_M: float = 0.85
 const DOWN_LIFT_MPS: float = 0.5
-## Standing people now and then do one Mixamo gesture (talking on a phone, sipping, waving at an
+## Standing people now and then do one Mixamo gesture ("talk" = a phone call, sipping, waving at an
 ## auto). A gesture plays once, then they go back to standing; the gap is random per person.
 const GESTURE_CLIPS: Array[String] = ["talk", "drink", "wave"]
 ## Two people chatting at the kerb (Nov 14, the owner's Talking_2 / Talking_4 Mixamo clips):
 ## a share of idlers get a partner standing CHAT_GAP_M away, face to face; they take turns, one
 ## talking (a talk clip) while the other listens (idle, now and then nodding into a talk clip
 ## too), swapping every CHAT_TURN_S. Either one reacting, fleeing or leaving ends the chat.
-const CHAT_CLIPS: Array[String] = ["talk", "talk_2", "talk_4"]
+## Not "talk": that clip is a phone call (hand at the ear), which reads wrong face to face.
+const CHAT_CLIPS: Array[String] = ["talk_2", "talk_4"]
 const CHAT_SHARE: float = 0.55
 const CHAT_GAP_M: float = 1.05
 const CHAT_TURN_S: Vector2 = Vector2(3.5, 8.0)

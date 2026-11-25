@@ -6,6 +6,14 @@ extends Node3D
 
 const PEOPLE_JSON: String = "res://assets/models/people/people.json"
 const LOOPING: PackedStringArray = ["walk", "run", "idle", "flee", "flee_look"]
+## "talk" in story data means talking to the people in the scene. The street clip named "talk" is
+## Mixamo's "Talking" = a PHONE CALL (one hand held at the ear the whole clip), so in quests it
+## plays only when a scene asks for "phone" (Nov 25 device report: Sundal thatha and Meena looked
+## like they were on the phone in every cutscene). Conversation = these hand-gesture clips, taken
+## in turn so a long scene doesn't loop one gesture.
+const PHONE: String = "phone"
+const PHONE_CLIP: String = "talk"
+const TALK_CLIPS: PackedStringArray = ["talk_2", "talk_4"]
 const ARRIVE_M: float = 0.2
 const TURN_RATE: float = 8.0
 
@@ -33,6 +41,7 @@ var _pace: float = 1.3
 var _face: Vector3 = Vector3.INF
 var _scale: float = 1.0
 var _t: float = 0.0
+var _talk_i: int = 0
 
 static func create(role_name: String, model_path: String, scale_factor: float, paint: Color) -> QuestActor:
 	if not ResourceLoader.exists(model_path):
@@ -98,11 +107,27 @@ func play(clip: String, blend: float = 0.25) -> void:
 	_clip = clip
 	if _anim == null:
 		return
-	var name_in: String = clip if _anim.has_animation(clip) else ("idle" if _anim.has_animation("idle") else "")
+	var name_in: String = clip_for(clip)
 	if name_in == "":
 		return
 	_anim.play(name_in, blend)
 	_anim.speed_scale = 1.0
+
+## The model clip a story clip name plays: "talk" → a conversation gesture (never the phone call),
+## "phone" → the phone call, anything missing → idle.
+func clip_for(clip: String) -> String:
+	var name_in: String = clip
+	if clip == "talk":
+		name_in = ""
+		for k: int in TALK_CLIPS.size():
+			var c: String = TALK_CLIPS[(_talk_i + k) % TALK_CLIPS.size()]
+			if _anim.has_animation(c):
+				name_in = c
+				break
+		_talk_i += 1
+	elif clip == PHONE:
+		name_in = PHONE_CLIP
+	return name_in if name_in != "" and _anim.has_animation(name_in) else ("idle" if _anim.has_animation("idle") else "")
 
 ## A point at the hand of a raised right arm (reaching up for a kite) or at a hanging hand.
 func hand_point(raised: bool = false) -> Vector3:

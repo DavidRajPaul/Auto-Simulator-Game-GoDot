@@ -54,6 +54,7 @@ func _run() -> void:
 	_check_load_rules()
 	_check_prompt()
 	_check_hud()
+	await _check_card_after_cutscene()
 	await _check_markers()
 	print("Quest experience: %d passed, %d failed" % [passed, failed])
 	get_tree().quit(0 if failed == 0 else 1)
@@ -252,6 +253,44 @@ func _check_hud() -> void:
 		check("Panel starts below the top row", panel.position.y >= 100.0)
 	director.abandon()
 	hud.queue_free()
+
+## Nov 25 device report: after a cutscene the quest card came back ~600 px tall, an empty dark box
+## over both steer buttons. Text changed while the card was hidden is measured at no width (one
+## word per line), and a Control never shrinks back by itself.
+func _check_card_after_cutscene() -> void:
+	director.abandon()
+	get_window().content_scale_size = Vector2i(1600, 720)
+	var keep_top: float = TouchHUD.steer_top_y
+	var keep_end: float = TouchHUD.steer_end_x
+	TouchHUD.steer_top_y = 520.0
+	TouchHUD.steer_end_x = 360.0
+	var hud: QuestHUD = QuestHUD.new()
+	add_child(hud)
+	await get_tree().process_frame
+	SignalBus.quest_prompt_changed.emit({"id": "sq_004", "title": "Paati Knows the Way", "reward": 180, "minutes": 12,
+		"description": "An old lady at the temple tank is lost and remembers the city of fifty years ago.",
+		"job": "Drive her around Mylapore, follow her landmarks and ask people on the way."})
+	for _f: int in 3:
+		await get_tree().process_frame
+	check("Quest-nearby card fits its text (no one-word-per-line height)", hud.card_rect().size.y < 520.0)
+	SignalBus.quest_prompt_changed.emit({})
+	SignalBus.quest_cinematic_changed.emit(true)
+	SignalBus.mission_stage_info.emit({"id": "sq_004", "stage": "flower", "kind": "goto", "deadline": 0.0, "speed": 0.0,
+		"damage": 100.0, "reward": 180, "located": true, "title": "Paati Knows the Way", "place": "Valli's Flower Stall",
+		"objective": "Drive to the flower stall and stop beside Valli.", "action": "", "choices": PackedStringArray()})
+	for _f: int in 3:
+		await get_tree().process_frame
+	SignalBus.quest_cinematic_changed.emit(false)
+	for _f: int in 4:
+		await get_tree().process_frame
+	var card: Rect2 = hud.card_rect()
+	check("Run card shrinks to its content after a cutscene (%d px)" % int(card.size.y), card.size.y <= hud._card.get_combined_minimum_size().y + 1.0 and card.size.y < 260.0)
+	check("Run card ends above the steer buttons", card.end.y <= TouchHUD.steer_top_y)
+	SignalBus.quest_cinematic_changed.emit(false)
+	hud.queue_free()
+	TouchHUD.steer_top_y = keep_top
+	TouchHUD.steer_end_x = keep_end
+	await get_tree().process_frame
 
 func _check_markers() -> void:
 	GameState.reset_profile()

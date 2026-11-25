@@ -14,6 +14,10 @@ const DANGER_COLOUR: Color = Color("ff5a4f")
 const LEAVE_ARM_S: float = 3.0
 const MAP_START_W: float = 170.0
 const MAP_START_H: float = 50.0
+## Gap kept between the card's bottom and the steer buttons.
+const STEER_GAP: float = 12.0
+## The card's content margins + border (UIKit.card_box): the width its wrapped text gets.
+const CARD_INSET: float = 2.0 * (18.0 + 4.0)
 const FAIL_TIPS: PackedStringArray = ["speed", "quality", "damage", "deadline", "diversion", "unreachable"]
 
 var _card: PanelContainer
@@ -145,6 +149,9 @@ func _ready() -> void:
 	SignalBus.ui_modal_changed.connect(func(open: bool) -> void:
 		_modal = open
 		_refresh())
+	# A Control grows to its content but never shrinks back by itself: re-fit whenever the content's
+	# minimum changes (a long objective replaced by a short one, the prompt replaced by the run card).
+	_card.minimum_size_changed.connect(_fit_card, CONNECT_DEFERRED)
 	SignalBus.route_updated.connect(func(_path: PackedVector3Array) -> void: _layout())
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -167,9 +174,32 @@ func _layout() -> void:
 	var showing_prompt: bool = _quest_id == "" and not _prompt.is_empty()
 	var width: float = minf(PROMPT_W if showing_prompt else PANEL_W, vp.x - 32.0)
 	_card.custom_minimum_size = Vector2(width, 0.0)
-	_card.size = Vector2(width, 0.0)
+	# Wrapped text measured while hidden (cutscene, map, modal) has no width yet, so it counts one
+	# word per line: the card came back ~600 px tall, a dark box over the steer buttons (Nov 25).
+	# Give every wrapping child the card's inner width so its height is always the real one.
+	var inner: float = width - CARD_INSET
+	for wrap: Control in [_objective, _job, _limits, _photo, _retry, _later]:
+		wrap.custom_minimum_size.x = inner
+	for button: Button in _buttons:
+		button.custom_minimum_size.x = inner
 	_card.position = Vector2(PANEL_X, PANEL_TOP_BARE if showing_prompt or not _located else PANEL_TOP_ROUTE)
+	_fit_card()
 	_map_start.position = Vector2((vp.x - MAP_START_W) * 0.5, vp.y - 22.0 - PassengerHUD.MINIMAP_SIZE * 1.17 - MAP_START_H - 6.0)
+
+## Shrinks the card to its content. While driving (a quest running) it also stays above the steer
+## buttons: if the content is still too tall there, the card slides up over the GPS card's space
+## rather than down over the controls.
+func _fit_card() -> void:
+	_card.size = Vector2(_card.custom_minimum_size.x, 0.0)
+	if _quest_id == "":
+		return
+	var limit: float = TouchHUD.steer_top_y - STEER_GAP
+	if _card.position.x < TouchHUD.steer_end_x and _card.position.y + _card.size.y > limit:
+		_card.position.y = maxf(PANEL_TOP_BARE, limit - _card.size.y)
+
+## Card rectangle on screen (tests: it must never cover the steer buttons while driving).
+func card_rect() -> Rect2:
+	return Rect2(_card.position, _card.size) if _card.visible else Rect2()
 
 func _process(delta: float) -> void:
 	if _leave_armed_s > 0.0:

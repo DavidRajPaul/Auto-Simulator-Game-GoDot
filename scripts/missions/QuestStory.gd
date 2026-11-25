@@ -47,6 +47,14 @@ const COCKPIT_EYE: Vector3 = CameraRig.COCKPIT_OFFSET
 @export var rig_path: NodePath = NodePath("../CameraRig")
 @export var rider_path: NodePath = NodePath("../QuestRider")
 
+
+## Auto body box when the model has no meshes (tests): Bajaj RE size, origin on the road.
+const AUTO_BOX_FALLBACK: AABB = AABB(Vector3(-0.72, 0.0, -1.45), Vector3(1.44, 1.85, 2.9))
+## Padding round the auto body for "does it hide the speaker", how close the lens may come to it,
+## and how far either side of the speaker's head the frame must also be clear.
+const AUTO_BOX_PAD_M: float = 0.12
+const AUTO_LENS_CLEAR_M: float = 0.35
+const AUTO_SIDE_M: float = 0.45
 var director: MissionDirector
 var quest_id: String = ""
 var stage_id: String = ""
@@ -538,6 +546,7 @@ func _begin_beat(b: Dictionary) -> void:
 	if b.has("cam"):
 		var cam: Dictionary = b["cam"] as Dictionary
 		var cockpit: bool = bool(cam.get("cockpit", false))
+		cockpit_shot = cockpit
 		_auto.set_cinematic_eye(cockpit)
 		_look_spec = cam.get("look", [0.0, 1.2, 10.0])
 		if cockpit:
@@ -882,6 +891,10 @@ func _clear_eye(eye: Vector3, spec: Variant, target: Vector3) -> Vector3:
 		# The subject and the auto both in clear view (a trunk beside the lens hides half the frame).
 		if SignalBus.walkable(p.x, p.z) and _clear_frame(p, target):
 			return p
+	# Nothing fully clear: never settle for a shot where the auto itself hides the speaker.
+	for p: Vector3 in tries:
+		if not auto_hides(p, target) and not _occluded(p, target):
+			return p
 	return eye
 
 func _resolve_look(spec: Variant) -> Vector3:
@@ -1185,10 +1198,70 @@ func _occluded(from: Vector3, to: Vector3) -> bool:
 	var hit: Dictionary = space.intersect_ray(query)
 	return not hit.is_empty() and from.distance_to(hit["position"] as Vector3) < from.distance_to(to) - 0.6
 
+## The auto's own body in its local space (visible mesh boxes merged, once per scene).
+var _auto_box_cache: AABB = AABB()
+## This beat films through the windscreen (the lens is inside the auto on purpose).
+var cockpit_shot: bool = false
+var _auto_box_ready: bool = false
+
+func _auto_local_box() -> AABB:
+	if _auto_box_ready:
+		return _auto_box_cache
+	_auto_box_ready = true
+	_auto_box_cache = AUTO_BOX_FALLBACK
+	var model: Node = _auto.get_node_or_null("Model")
+	if model == null:
+		return _auto_box_cache
+	var inv: Transform3D = _auto.global_transform.affine_inverse()
+	var merged: AABB = AABB()
+	var any: bool = false
+	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		if not mi.visible or mi.mesh == null:
+			continue
+		var box: AABB = (inv * mi.global_transform) * mi.get_aabb()
+		# The body only: mirror debris waits far away, and a seated rider is inside it anyway.
+		if box.size.length() > 6.0 or Vector2(box.get_center().x, box.get_center().z).length() > 2.5:
+			continue
+		merged = box if not any else merged.merge(box)
+		any = true
+	if any:
+		_auto_box_cache = merged
+	return _auto_box_cache
+
+## True when the auto's body would stand between the lens and the subject, or the lens is against
+## it. `_occluded` skips the auto's collider (it is often the subject), so a shot framed "from" a
+## person towards the auto could sit behind or inside the canopy (Nov 25 device report: Sundal
+## thatha talking while the frame showed the black canopy). Rays go to the subject's head and chest
+## and a little to each side, so the canopy can't fill half the picture either. Shots OF the auto
+## or the rider (the subject inside the body) are never refused.
+func auto_hides(eye: Vector3, target: Vector3) -> bool:
+	if _auto == null:
+		return false
+	var box: AABB = _auto_local_box().grow(AUTO_BOX_PAD_M)
+	var inv: Transform3D = _auto.global_transform.affine_inverse()
+	var a: Vector3 = inv * eye
+	var b: Vector3 = inv * target
+	if box.has_point(b):
+		return false
+	if box.grow(AUTO_LENS_CLEAR_M).has_point(a):
+		return true
+	var view: Vector3 = b - a
+	var flat: Vector3 = Vector3(view.x, 0.0, view.z)
+	var side: Vector3 = flat.normalized().cross(Vector3.UP) * AUTO_SIDE_M if flat.length_squared() > 0.01 else Vector3.ZERO
+	for aim: Vector3 in [b, b + Vector3.DOWN * 0.45, b + side, b - side]:
+		# Stop short of the subject: someone leaning on the auto is still in view.
+		var end: Vector3 = aim - (aim - a).normalized() * 0.3
+		if box.intersects_segment(a, end) != null:
+			return true
+	return false
+
 ## The subject, the auto and both sides of the frame in clear view: a trunk or pole right beside
 ## the lens misses the centre ray but fills half the picture.
 func _clear_frame(eye: Vector3, target: Vector3) -> bool:
 	if _occluded(eye, target) or _occluded(eye, _auto.global_position + Vector3.UP * 0.6):
+		return false
+	if auto_hides(eye, target):
 		return false
 	var view: Vector3 = target - eye
 	view.y = 0.0

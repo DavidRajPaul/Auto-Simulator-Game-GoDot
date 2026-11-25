@@ -25,6 +25,11 @@ var clock: float = 0.0
 var search: Vector2 = Vector2(-1.0, -1.0) # last (radius, -) published
 var modal_open: bool = false
 var last_reward: Vector2i = Vector2i(-1, -1) # (inr, xp) of the last mission reward
+## Nov 25 device report: in cutscenes the auto hid the person talking, and the cast played the
+## phone-call clip. While true, every cutscene frame is checked for both.
+var watch_cast: bool = false
+var hidden_shots: Dictionary = {} # role -> frames the auto stood between the lens and their head
+var phone_frames: Dictionary = {} # role -> frames spent in the phone-call clip
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -39,6 +44,19 @@ func check(label: String, okay: bool) -> void:
 
 func _process(delta: float) -> void:
 	clock += delta
+	if watch_cast and story != null and story.cinematic:
+		for role: String in story.actors:
+			var actor: QuestActor = story.actors[role] as QuestActor
+			var player: AnimationPlayer = actor.find_child("AnimationPlayer", true, false) as AnimationPlayer
+			if actor.visible and player != null and player.current_animation == QuestActor.PHONE_CLIP:
+				phone_frames[role] = int(phone_frames.get(role, 0)) + 1
+		var look: Variant = story._look_spec
+		if not story.cockpit_shot and look is String and str(look).begins_with("role:") and story.actors.has(str(look).substr(5)):
+			var who: QuestActor = story.actors[str(look).substr(5)] as QuestActor
+			if who.visible and story.auto_hides(story._camera.global_position, who.head_point()):
+				hidden_shots[str(look)] = int(hidden_shots.get(str(look), 0)) + 1
+				if int(hidden_shots[str(look)]) == 1:
+					print("hidden shot: beat %d look %s eye %s head %s auto %s" % [story._beat_i, look, story._camera.global_position, who.head_point(), auto.global_position])
 
 func _run() -> void:
 	GameState.persistence_enabled = false
@@ -129,7 +147,7 @@ func _content_checks(quest: String) -> void:
 					bad.append(id + ":" + role)
 			for key: String in ["look"]:
 				var look: Variant = (beat.get("cam", {}) as Dictionary).get(key, null)
-				if look is String and str(look).begins_with("role:") and not s.cast.has(str(look).substr(5)):
+				if not story.cockpit_shot and look is String and str(look).begins_with("role:") and not s.cast.has(str(look).substr(5)):
 					bad.append(id + ":" + str(look))
 		var found: bool = false
 		for stage: MissionStage in def.stages:
@@ -459,8 +477,14 @@ func _paati_playthrough() -> void:
 	check("Market: Paati says no, it was the tank, and you drive on", await run_until("ask_sundal", MAX_SCENE_S) and _said("sq04_d04") and _said("sq04_p11") and _said("sq04_v03") and not _said("sq04_d05"))
 	check("Paati remembers the sundal seller", _said("sq04_p13") and story.actors.has("sundal"))
 
+	hidden_shots.clear()
+	phone_frames.clear()
+	watch_cast = true
 	place_auto(director.current_stage().target)
 	check("Stopping beside the sundal seller starts his scene", await run_until("sundal", 2.0))
+	var sundal_head: Vector3 = (story.actors["sundal"] as QuestActor).head_point()
+	var behind: Vector3 = auto.global_position + (auto.global_position - sundal_head).normalized() * 3.0
+	check("A lens with the auto between it and him counts as hidden", story.auto_hides(Vector3(behind.x, auto.global_position.y + 0.6, behind.z), sundal_head))
 	check("He saw Meena: on to the search", await run_until("spot_meena", MAX_SCENE_S) and _said("sq04_s01") and _said("sq04_s03") and _said("sq04_p16"))
 
 	# Looking for Meena.
@@ -486,6 +510,9 @@ func _paati_playthrough() -> void:
 	check("Meena rides along (not left standing in the street)", not story.actors.has("meena") or not (story.actors["meena"] as QuestActor).visible)
 	await get_tree().create_timer(0.3).timeout
 	check("Meena scolds, Paati teases", _said("sq04_m05"))
+	watch_cast = false
+	check("No cutscene shot of Sundal thatha or Meena has the auto in front of them %s" % str(hidden_shots), hidden_shots.is_empty())
+	check("Nobody in the scenes plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
 
 	place_auto(director.current_stage().target)
 	check("At the green gate they get out; Meena asks the fare", await run_until("payoff", MAX_SCENE_S) and story.holding and _said("sq04_m06") and _said("sq04_p25") and _said("sq04_m07"))
