@@ -172,7 +172,8 @@ func _make_actors() -> void:
 			person.look_at(person.global_position + face.normalized(), Vector3.UP, true)
 		var animation: AnimationPlayer = person.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		if animation != null:
-			for clip: String in ["talk", "talk_2", "idle"]:
+			# "talk" is the phone-call clip (QuestActor.PHONE_CLIP): people in a scene talk with their hands.
+			for clip: String in QuestActor.TALK_CLIPS + PackedStringArray(["idle"]):
 				if animation.has_animation(clip):
 					animation.play(clip)
 					break

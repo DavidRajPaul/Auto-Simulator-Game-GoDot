@@ -372,6 +372,10 @@ func _safe_margins() -> Vector4:
 ## Right edge of the top-left button row (gear, horn, camera, indicators), for panels that share
 ## the top of the screen (PassengerHUD's ride strip keeps clear of it).
 static var top_left_end_x: float = 0.0
+## Top edge and right edge of the bottom-left steer pair, for panels on the left kerb (QuestHUD
+## keeps its card above them: Nov 25 device report, the quest card hid both steer buttons).
+static var steer_top_y: float = INF
+static var steer_end_x: float = 0.0
 
 func _layout() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
@@ -390,6 +394,8 @@ func _layout() -> void:
 	_place_button("SteerRight", sr)
 	# Drag-to-steer zone (scheme 0) covers the same area.
 	var steer: Rect2 = Rect2(sl.position, Vector2(sr.end.x - sl.position.x, sl.size.y))
+	steer_top_y = sl.position.y
+	steer_end_x = sr.end.x
 	_place(_steer_zone, steer)
 	_handlebar.size = Vector2(steer.size.x * 0.82, b * 0.3)
 	_handlebar.position = Vector2(steer.size.x * 0.09, steer.size.y * 0.42)
