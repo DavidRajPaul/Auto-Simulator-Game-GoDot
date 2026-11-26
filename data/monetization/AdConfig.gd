@@ -30,15 +30,21 @@ extends Resource
 @export var banner_screens: PackedStringArray = ["main_menu", "garage", "pause"]
 
 @export_group("Provider")
-## "mock" = on-screen placeholder (editor, tests, closed testing without ad units).
-## "admob" = godot-admob plugin (poing-studios), "applovin" = AppLovin MAX plugin.
-@export_enum("mock", "admob", "applovin") var provider: String = "mock"
-## Use Google's official TEST ad unit ids until the Play Console app is approved.
+## "mock" = on-screen placeholder; "admob" = the godot-sdk-integrations AdMob plugin v5.3
+## (addons/AdmobPlugin, MIT). "admob" falls back to "mock" by itself wherever the plugin's
+## Android singleton is absent (editor, desktop, headless tests).
+@export_enum("mock", "admob", "applovin") var provider: String = "admob"
+## true = Google's official TEST app id and ad units (safe to tap; no earnings, no policy risk).
+## Set false only when the real ids below are filled in, together with
+## addons/AdmobPlugin/android_export.cfg is_real=true (run_ads_tests checks they agree).
 @export var use_test_ads: bool = true
-@export var admob_app_id: String = "ca-app-pub-3940256099942544~3347511713" # Google test app id
-@export var rewarded_unit_id: String = "ca-app-pub-3940256099942544/5224354917" # Google test rewarded
-@export var interstitial_unit_id: String = "ca-app-pub-3940256099942544/1033173712" # Google test interstitial
-@export var banner_unit_id: String = "ca-app-pub-3940256099942544/6300978111" # Google test banner
+## Real ids from the AdMob console (Apps -> Namma Auto -> Ad units). Empty until approval.
+@export var admob_app_id: String = ""
+@export var rewarded_unit_id: String = ""
+@export var interstitial_unit_id: String = ""
+@export var banner_unit_id: String = ""
+## Ad content ceiling: "G", "PG", "T" or "MA". PG fits a city driving game for all ages.
+@export var max_ad_content_rating: String = "PG"
 ## Placeholder ad length (mock provider) — short so playtests aren't annoying.
 @export var mock_rewarded_s: float = 3.0
 @export var mock_interstitial_s: float = 2.0
