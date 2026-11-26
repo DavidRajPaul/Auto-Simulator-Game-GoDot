@@ -92,51 +92,71 @@ func reschedule() -> void:
 	var now: Dictionary = Time.get_datetime_dict_from_system()
 	var before_seven: bool = int(now["hour"]) < REMIND_HOUR
 	for r: Dictionary in build_reminders(GameState.daily_reward_status(), before_seven):
-		_plugin.call("scheduleAt", int(r["id"]), int(r["days_ahead"]), int(r["hour"]), str(r["title"]), str(r["body"]))
+		_plugin.call("scheduleAt", int(r["id"]), int(r["days_ahead"]), int(r["hour"]), str(r["title"]), str(r["body"]),
+			str(r["look"]), str(r["chip"]), str(r["action"]))
 
-## Debug builds: one reminder in a minute (press Home and wait).
+## Debug builds: one reminder in a minute (press Home and wait). Shows the daily-bonus card.
 func send_test() -> void:
 	if _plugin == null:
 		return
 	if not notifications_allowed():
 		request_permission()
 		return
-	_plugin.call("schedule", TEST_ID, TEST_DELAY_S, tr("REM_T_PASSENGERS"), tr("REM_B_PASSENGERS"))
+	var m: Dictionary = _bonus_card(RewardsEngine.DAILY_INR[0])
+	_plugin.call("schedule", TEST_ID, TEST_DELAY_S, str(m["title"]), str(m["body"]), str(m["look"]), str(m["chip"]), str(m["action"]))
 
 ## Pure: the reminders to schedule, given today's daily-bonus status (GameState.daily_reward_status()).
-## Each: {id, days_ahead, hour, title, body}. Reminder k fires at REMIND_HOUR local time k calendar
-## days after today: never today, because the player is playing today.
+## Each: {id, days_ahead, hour, title, body, look, chip, action}. Reminder k fires at REMIND_HOUR local
+## time k calendar days after today: never today, because the player is playing today.
+## look = the notification card (LOOKS: gradient + art in the plugin), chip = the reward tag on the
+## card ("₹50", "DAY 4", "" = none), action = the button label ("Claim ₹50" / "Drive now").
 func build_reminders(status: Dictionary, include_today: bool = false) -> Array[Dictionary]:
 	var claimed_today: bool = not bool(status.get("available", true))
 	var streak: int = int(status.get("streak", 0))
 	var out: Array[Dictionary] = []
 	for day: int in range(1, DAYS + 1):
 		var days_ahead: int = day - 1 if include_today else day
-		var msg: PackedStringArray = _message(day, claimed_today, streak)
+		var msg: Dictionary = _message(day, claimed_today, streak)
 		if days_ahead == 0:
-			msg = PackedStringArray([tr("REM_T_BONUS"), tr("REM_B_BONUS") % RewardsEngine.DAILY_INR[0]])
-		out.append({"id": day, "days_ahead": days_ahead, "hour": REMIND_HOUR, "title": msg[0], "body": msg[1]})
+			msg = _bonus_card(RewardsEngine.DAILY_INR[0])
+		msg["id"] = day
+		msg["days_ahead"] = days_ahead
+		msg["hour"] = REMIND_HOUR
+		out.append(msg)
 	return out
 
-func _message(day: int, claimed_today: bool, streak: int) -> PackedStringArray:
+## Card styles the Kotlin plugin knows (Reminders.look): anything else shows the street card.
+const LOOKS: PackedStringArray = ["bonus", "streak", "jackpot", "street"]
+
+func _card(look: String, title: String, body: String, chip: String, action: String) -> Dictionary:
+	return {"look": look, "title": title, "body": body, "chip": chip, "action": action}
+
+func _bonus_card(inr: int) -> Dictionary:
+	return _card("bonus", tr("REM_T_BONUS"), tr("REM_B_BONUS") % inr, "₹%d" % inr, tr("REM_ACT_CLAIM") % inr)
+
+func _street_card(title_key: String, body_key: String) -> Dictionary:
+	return _card("street", tr(title_key), tr(body_key), "", tr("REM_ACT_DRIVE"))
+
+func _message(day: int, claimed_today: bool, streak: int) -> Dictionary:
 	if day == 1 and claimed_today and streak > 0:
 		# Tomorrow's calendar tile keeps the streak alive (RewardsEngine.daily_status).
 		var idx: int = streak % RewardsEngine.DAILY_INR.size()
+		var inr: int = RewardsEngine.DAILY_INR[idx]
 		if idx == RewardsEngine.DAILY_INR.size() - 1:
-			return PackedStringArray([tr("REM_T_JACKPOT"), tr("REM_B_JACKPOT") % RewardsEngine.DAILY_INR[idx]])
-		return PackedStringArray([tr("REM_T_STREAK") % streak, tr("REM_B_STREAK") % [idx + 1, RewardsEngine.DAILY_INR[idx]]])
+			return _card("jackpot", tr("REM_T_JACKPOT"), tr("REM_B_JACKPOT") % inr, "₹%d" % inr, tr("REM_ACT_CLAIM") % inr)
+		return _card("streak", tr("REM_T_STREAK") % streak, tr("REM_B_STREAK") % [idx + 1, inr],
+			tr("REM_CHIP_DAY") % (idx + 1), tr("REM_ACT_CLAIM") % inr)
 	# Streak unclaimed today, or already broken: a fresh streak starts at the day-1 bonus.
-	var fresh: int = RewardsEngine.DAILY_INR[0]
 	match day:
 		1, 3:
-			return PackedStringArray([tr("REM_T_BONUS"), tr("REM_B_BONUS") % fresh])
+			return _bonus_card(RewardsEngine.DAILY_INR[0])
 		2, 6:
-			return PackedStringArray([tr("REM_T_PASSENGERS"), tr("REM_B_PASSENGERS")])
+			return _street_card("REM_T_PASSENGERS", "REM_B_PASSENGERS")
 		4:
-			return PackedStringArray([tr("REM_T_AUTO"), tr("REM_B_AUTO")])
+			return _street_card("REM_T_AUTO", "REM_B_AUTO")
 		5:
-			return PackedStringArray([tr("REM_T_MARINA"), tr("REM_B_MARINA")])
-	return PackedStringArray([tr("REM_T_LAST"), tr("REM_B_LAST")])
+			return _street_card("REM_T_MARINA", "REM_B_MARINA")
+	return _street_card("REM_T_LAST", "REM_B_LAST")
 
 # --- Asking once ----------------------------------------------------------------------------
 

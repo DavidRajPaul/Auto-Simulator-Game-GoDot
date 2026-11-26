@@ -25,8 +25,10 @@ import java.util.concurrent.TimeUnit
  * (autoloads/DailyReminder.gd), so a player who plays every day never sees one.
  *
  * GDScript: Engine.get_singleton("NammaReminder")
- *   scheduleAt(id, days_ahead, hour, title, body)  - hour:00 in the phone's own time zone
- *   schedule(id, delay_seconds, title, body)       - from now (debug test reminder)
+ *   scheduleAt(id, days_ahead, hour, title, body, look, chip, action)  - hour:00 in the phone's own time zone
+ *   schedule(id, delay_seconds, title, body, look, chip, action)       - from now (debug test reminder)
+ *   look = card style (bonus | streak | jackpot | street), chip = reward tag ("₹50", "" = none),
+ *   action = button / pill label ("Claim ₹50", "" = none)
  *   cancelAll(), notificationsEnabled(),
  *   requestPermission() -> signal permission_result(granted: bool)
  */
@@ -48,14 +50,14 @@ class NammaReminderPlugin(godot: Godot) : GodotPlugin(godot) {
 
 	/** At [hour]:00 local time, [daysAhead] calendar days from today. Replaces a pending reminder with the same id. */
 	@UsedByGodot
-	fun scheduleAt(id: Int, daysAhead: Int, hour: Int, title: String, body: String) {
-		enqueue(id, Reminders.delayUntil(daysAhead, hour), title, body)
+	fun scheduleAt(id: Int, daysAhead: Int, hour: Int, title: String, body: String, look: String, chip: String, action: String) {
+		enqueue(id, Reminders.delayUntil(daysAhead, hour), title, body, look, chip, action)
 	}
 
 	/** [delaySeconds] from now. Replaces a pending reminder with the same id. */
 	@UsedByGodot
-	fun schedule(id: Int, delaySeconds: Int, title: String, body: String) {
-		enqueue(id, TimeUnit.SECONDS.toMillis(delaySeconds.coerceAtLeast(0).toLong()), title, body)
+	fun schedule(id: Int, delaySeconds: Int, title: String, body: String, look: String, chip: String, action: String) {
+		enqueue(id, TimeUnit.SECONDS.toMillis(delaySeconds.coerceAtLeast(0).toLong()), title, body, look, chip, action)
 	}
 
 	@UsedByGodot
@@ -75,7 +77,7 @@ class NammaReminderPlugin(godot: Godot) : GodotPlugin(godot) {
 		runOnHostThread { askOrOpenSettings() }
 	}
 
-	private fun enqueue(id: Int, delayMs: Long, title: String, body: String) {
+	private fun enqueue(id: Int, delayMs: Long, title: String, body: String, look: String, chip: String, action: String) {
 		val ctx = context ?: return
 		Reminders.setActive(ctx, true)
 		Reminders.ensureChannel(ctx)
@@ -83,6 +85,9 @@ class NammaReminderPlugin(godot: Godot) : GodotPlugin(godot) {
 			.putInt(Reminders.KEY_ID, id)
 			.putString(Reminders.KEY_TITLE, title)
 			.putString(Reminders.KEY_BODY, body)
+			.putString(Reminders.KEY_LOOK, look)
+			.putString(Reminders.KEY_CHIP, chip)
+			.putString(Reminders.KEY_ACTION, action)
 			.build()
 		val request = OneTimeWorkRequest.Builder(ReminderWorker::class.java)
 			.setInitialDelay(delayMs, TimeUnit.MILLISECONDS)

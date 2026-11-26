@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arcade "Claim" pill: yellow face on a darker shelf, like UIKit's YELLOW tone. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="3dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <solid android:color="#FFC48200" />
+        </shape>
+    </item>
+    <item android:bottom="3dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <solid android:color="#FFFFC21A" />
+        </shape>
+    </item>
+</layer-list>

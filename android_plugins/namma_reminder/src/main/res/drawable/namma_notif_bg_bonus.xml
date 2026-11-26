@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Card gradient for the "bonus" look (tools/art/make_notification_art.py GRADIENTS, keep in step). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="14dp" />
+    <gradient android:angle="0" android:startColor="#FF3B1F4F" android:endColor="#FFC44A24" />
+</shape>
