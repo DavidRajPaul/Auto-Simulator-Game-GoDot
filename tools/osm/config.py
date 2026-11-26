@@ -31,7 +31,9 @@ DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.94}
 LANDMARKS = [
     {"id": "marina_lighthouse", "name": "Marina Lighthouse", "lat": 13.0398, "lon": 80.2797, "kind": "lighthouse"},
     {"id": "napier_bridge", "name": "Napier Bridge", "lat": 13.0676, "lon": 80.2817, "kind": "bridge"},
-    {"id": "vivekananda_house", "name": "Vivekananda House", "lat": 13.0491, "lon": 80.2808, "kind": "heritage"},
+    # Vivekanandar Illam stands on the LAND side of Kamarajar Salai facing the sea (Nov 27: it sat on the
+    # beach side); "yaw" turns its curved front (-Z of LandmarkKit.vivekananda_house) to face east.
+    {"id": "vivekananda_house", "name": "Vivekananda House", "lat": 13.049054, "lon": 80.280319, "kind": "heritage", "yaw": -1.571},
     {"id": "kapaleeshwarar", "name": "Kapaleeshwarar Temple", "lat": 13.033807, "lon": 80.269876, "kind": "gopuram"},
     {"id": "chitrakulam_tank", "name": "Mylapore Temple Tank", "lat": 13.03354, "lon": 80.268701, "kind": "tank"},
     {"id": "lic_building", "name": "LIC Building", "lat": 13.0627, "lon": 80.2617, "kind": "tower"},

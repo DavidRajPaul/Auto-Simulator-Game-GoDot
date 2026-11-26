@@ -41,6 +41,8 @@ jobs:
           # Paved plots, compound walls and gates (needs "t" / "fw" and every dressing pass).
           python3 tools/osm/build_plots.py
           python3 tools/osm/place_street_life.py
+          python3 tools/osm/build_landmark_compounds.py
+          python3 tools/osm/set_back_trees.py
           python3 tools/osm/audit_city_density.py
       - name: Check dressing kept trees, parking and street shops
         run: |

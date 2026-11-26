@@ -552,7 +552,7 @@ def main() -> int:
     landmarks = []
     for l in LANDMARKS:
         x, z = project(l["lat"], l["lon"])
-        yaw = 0.0
+        yaw = float(l.get("yaw", 0.0))
         if l["kind"] in ("flyover", "bridge"):
             # Sits on the road it carries.
             x, z, dx, dz = nearest_road_point(edges, x, z, side=0.0)

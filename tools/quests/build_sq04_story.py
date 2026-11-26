@@ -82,6 +82,15 @@ OUT_FRONT = [-4.2, 1.35, 4.2]     # kerb, ahead of her, auto in frame
 OUT_FRONT_TO = [-3.9, 1.35, 3.8]
 OUT_BACK = [-1.4, 1.55, -2.3]     # over the auto's rear corner, looking forward at her
 OUT_SIDE = [-4.3, 1.35, -0.6]
+# At the green gate: Paati by the door, Meena 2 m ahead, both on the kerb facing the auto. Cameras
+# stand in the road ahead of the auto, so both faces show and the house stays behind them.
+HOME_PAATI = [-2.0, 0, 0.0]
+HOME_MEENA = [-2.0, 0, 2.0]
+HOME_MID = [-2.0, 1.3, 1.0]
+HOME_TWO = [0.9, 1.55, 6.2]
+HOME_TWO_TO = [0.7, 1.5, 5.8]
+HOME_PAATI_CAM = [0.2, 1.5, 4.2]
+HOME_MEENA_CAM = [0.4, 1.5, 5.4]
 
 cutscenes = {
     # She gets up from her thinnai and walks to the auto (QuestRider boards her) while she talks.
@@ -150,24 +159,29 @@ cutscenes = {
          "act": {"meena": {"to": "door", "gait": "walk"}}, "wait": "rider", "min_s": 1.5, "max_s": 9.0},
         {"cam": {"eye": BOARD_CAM, "look": AUTO_LOOK, "fov": 50}, "act": {"meena": {"show": False}}, "min_s": 0.7, "fade_out": 0.4},
     ],
-    # The green gate: both get out.
+    # The green gate: both get out and stand side by side on the kerb, Paati by the door and Meena
+    # two metres ahead of her, both facing the auto. Every shot here is from the road in front of
+    # the auto, so the house and its compound wall are always BEHIND them (Nov 27 device report:
+    # Meena stood behind the gate and the camera looked at the back of Paati's head).
     "home": [
-        {"fade_in": 0.5, "rider": {"out": [-2.3, 0, 0.3], "face": "auto"},
-         "act": {"meena": {"at": "door", "to": [-2.9, 0, 1.7], "then": "talk", "face": "auto", "show": True}},
-         # From the road: the kerb in front of the house has trees.
-         "cam": {"eye": [2.6, 1.5, 5.2], "eye_to": [2.3, 1.45, 4.7], "look": "role:meena", "fov": 50}, "line": "sq04_m06", "line_at": 0.8},
-        {"cam": {"eye": OUT_SIDE, "look": "rider", "fov": 42}, "wait": "rider", "max_s": 6.0, "line": "sq04_p25"},
-        {"cam": {"eye": [-4.1, 1.35, 3.2], "look": "role:meena", "fov": 42}, "act": {"meena": {"anim": "talk", "face": "auto"}},
-         "line": "sq04_m07", "hold": True},
+        {"fade_in": 0.5, "rider": {"out": HOME_PAATI, "face": "auto"},
+         "act": {"meena": {"at": "door", "to": HOME_MEENA, "then": "talk", "face": "auto", "show": True}},
+         "cam": {"eye": HOME_TWO, "eye_to": HOME_TWO_TO, "look": HOME_MID, "fov": 52}, "line": "sq04_m06", "line_at": 0.8},
+        {"cam": {"eye": HOME_PAATI_CAM, "look": "rider", "fov": 42}, "wait": "rider", "max_s": 6.0, "line": "sq04_p25"},
+        {"cam": {"eye": HOME_MEENA_CAM, "look": "role:meena", "fov": 42}, "act": {"meena": {"anim": "talk", "face": "auto"}},
+         "line": "sq04_m07"},
+        # The fare choice: both of them in one frame.
+        {"cam": {"eye": HOME_TWO, "look": HOME_MID, "fov": 52}, "rider": {"face": "auto"},
+         "act": {"meena": {"anim": "idle", "face": "auto"}}, "min_s": 0.6, "hold": True},
     ],
     "thanks": [
-        {"if_choice": ["payoff", "SQ04_REFUSE_FARE"], "cam": {"eye": OUT_BACK, "look": "rider", "fov": 40},
+        {"if_choice": ["payoff", "SQ04_REFUSE_FARE"], "cam": {"eye": HOME_PAATI_CAM, "look": "rider", "fov": 40},
          "line": "sq04_p26"},
-        {"if_choice": ["payoff", "SQ04_TAKE_FARE"], "cam": {"eye": [-4.1, 1.35, 3.2], "look": "role:meena", "fov": 42},
+        {"if_choice": ["payoff", "SQ04_TAKE_FARE"], "cam": {"eye": HOME_MEENA_CAM, "look": "role:meena", "fov": 42},
          "act": {"meena": {"anim": "talk"}}, "line": "sq04_m08"},
-        {"cam": {"eye": OUT_SIDE, "look": "rider", "fov": 40}, "line": "sq04_p27"},
+        {"cam": {"eye": HOME_PAATI_CAM, "look": "rider", "fov": 40}, "line": "sq04_p27"},
         {"cam": {"eye": FRONT, "eye_to": FRONT_TO, "look": AUTO_LOOK, "fov": 46}, "line": "sq04_d07"},
-        {"cam": {"eye": FRONT, "eye_to": FRONT_TO, "look": "rider", "fov": 50},
+        {"cam": {"eye": HOME_TWO, "look": HOME_MID, "fov": 54},
          "rider": {"walk": "place:ride_home", "face": "auto"}, "act": {"meena": {"to": "place:ride_home", "gait": "walk"}},
          "min_s": 3.4, "fade_out": 0.6},
         {"rider": {"show": False}, "act": {"meena": {"show": False}}, "min_s": 0.1},

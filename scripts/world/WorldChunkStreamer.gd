@@ -277,6 +277,9 @@ var _cart_kit: Array[Dictionary] = [] # BeachCartKit variants, same pattern.
 ## per triangle. Walkers never enter a tank (Nov 4: a woman walked between the steps and the wall).
 var _tank_blocks: Dictionary = {}
 var _compounds: Dictionary = {}
+## Landmark compounds (tools/osm/build_landmark_compounds.py): "i,j" -> [[style, x0, z0, x1, z1]].
+var _landmark_walls: Dictionary = {}
+var _landmark_gates: Dictionary = {}
 var _mutex: Mutex = Mutex.new()
 var _finished: Array[Array] = [] # [key, node]
 ## Visual ground height per loaded chunk (SURFACE_CELL_M grid of the drawn walk / road / junction
@@ -312,6 +315,11 @@ func _ready() -> void:
 	var cf: FileAccess = FileAccess.open(world_dir.path_join("compounds.json"), FileAccess.READ)
 	if cf != null:
 		_compounds = (JSON.parse_string(cf.get_as_text()) as Dictionary).get("chunks", {})
+	var lf: FileAccess = FileAccess.open(world_dir.path_join("landmark_compounds.json"), FileAccess.READ)
+	if lf != null:
+		var lc: Dictionary = JSON.parse_string(lf.get_as_text()) as Dictionary
+		_landmark_walls = lc.get("walls", {})
+		_landmark_gates = lc.get("gates", {})
 	chunk_size = float(manifest["chunk_size"])
 	for c: Array in manifest["chunks"]:
 		_available[Vector2i(int(c[0]), int(c[1]))] = true
@@ -593,7 +601,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 			dress["_heights"] = root.get_meta("surface_heights")
 			dress["_key"] = k
 	if not blds.is_empty() or not dress.is_empty() or not walls.is_empty() or not plot_walls.is_empty():
-		root.add_child(_buildings(blds, dress, walls, plot_walls, gates))
+		root.add_child(_buildings(blds, dress, walls, plot_walls, gates, _landmark_walls.get("%d,%d" % [k.x, k.y], []) as Array, _landmark_gates.get("%d,%d" % [k.x, k.y], []) as Array))
 	if dressing_enabled and not (dress.get("trees", []) as Array).is_empty():
 		root.set_meta("trees", StreetTrees.records(dress["trees"] as Array))
 	if not (dress.get("lamps", []) as Array).is_empty():
@@ -739,7 +747,8 @@ func _ribbon(st: SurfaceTool, pts: PackedVector2Array, width: float, y: float, c
 ## facade atlas (shaders/building_facade.gdshader): window bays per floor, shop fronts with
 ## Tamil/English boards per ground-floor bay, temple stripes, heritage shutters, terrace roofs.
 ## One mesh + one trimesh wall collider per chunk.
-func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_walls: Array = [], gates: Array = []) -> Node3D:
+func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_walls: Array = [], gates: Array = [],
+		landmark_walls: Array = [], landmark_gates: Array = []) -> Node3D:
 	var holder: StaticBody3D = StaticBody3D.new()
 	holder.name = "Buildings"
 	holder.collision_layer = 1
@@ -760,6 +769,10 @@ func _buildings(blds: Array, dress: Dictionary = {}, walls: Array = [], plot_wal
 		_compound_wall(m, faces, wall)
 	for gate: Array in gates:
 		_compound_gate(m, faces, gate)
+	for lw: Array in landmark_walls:
+		_landmark_wall(m, faces, lw)
+	for lg: Array in landmark_gates:
+		_landmark_gate(m, faces, lg)
 	for b: Dictionary in blds:
 		var flat: Array = b["p"]
 		var pts: PackedVector2Array = PackedVector2Array()
@@ -1028,6 +1041,115 @@ func _compound_gate(m: MeshBuf, faces: PackedVector3Array, gate: Array) -> void:
 			var l1: Vector2 = (leaf[1] as Vector2) + off
 			_tquad(m, _v3(l0, 0.06), _v3(l1, 0.06), _v3(l1, top), _v3(l0, top), BuildingStyles.GATE_LEAF_UV, BuildingStyles.COMPOUND, Color.WHITE, n)
 	_wall_faces(faces, g0, g1, 0.0, top, 0.1)
+
+## Landmark compound styles (Nov 27, research in tools/osm/build_landmark_compounds.py):
+## [plinth / pier colour, railing colour, plinth height, pier height]. "kaavi" is the temple wall.
+const LANDMARK_RAILS: Dictionary = {
+	"rail_white": [Color(0.94, 0.94, 0.91), Color(0.1, 0.24, 0.5), 0.55, 1.75],
+	"rail_cream": [Color(0.91, 0.84, 0.68), Color(0.07, 0.07, 0.07), 0.6, 1.8],
+	"rail_green": [Color(0.86, 0.72, 0.38), Color(0.16, 0.42, 0.22), 0.45, 1.5],
+}
+const LANDMARK_POST_M: float = 2.6
+const LANDMARK_BAR_M: float = 0.2
+const KAAVI_WALL_H: float = 4.2
+
+## A landmark's compound: [style, x0, z0, x1, z1]. Railings are a plinth, piers every 2.6 m and
+## two rails with thin bars (each bar two quads, no box), all in the chunk's one mesh; the collider
+## is one slab to pier height.
+func _landmark_wall(m: MeshBuf, faces: PackedVector3Array, w: Array) -> void:
+	var style: String = str(w[0])
+	var a: Vector2 = Vector2(float(w[1]), float(w[2]))
+	var b: Vector2 = Vector2(float(w[3]), float(w[4]))
+	var length: float = a.distance_to(b)
+	if length < 0.3:
+		return
+	if style == "kaavi":
+		_compound_wall(m, faces, [a.x, a.y, b.x, b.y, KAAVI_WALL_H, 0.6, "tp", 0, 0])
+		return
+	var along: Vector2 = (b - a) / length
+	var n2: Vector2 = Vector2(-along.y, along.x)
+	if style == "wall_grey":
+		var grey: Color = Color(0.8, 0.79, 0.75)
+		var mid: Vector2 = (a + b) * 0.5
+		_dbox(m, Vector3(mid.x, 1.1, mid.y), Vector3(length, 2.2, 0.3), along, grey)
+		_dbox(m, Vector3(mid.x, 2.26, mid.y), Vector3(length + 0.1, 0.12, 0.42), along, grey.darkened(0.18))
+		var count_g: int = maxi(1, int(length / 4.0))
+		for i: int in count_g + 1:
+			var pg: Vector2 = a.lerp(b, float(i) / float(count_g))
+			_dbox(m, Vector3(pg.x, 1.2, pg.y), Vector3(0.45, 2.4, 0.45), along, grey.lightened(0.06))
+		_wall_faces(faces, a, b, 0.0, 2.3, 0.3)
+		return
+	var spec: Array = LANDMARK_RAILS.get(style, LANDMARK_RAILS["rail_white"]) as Array
+	var stone: Color = spec[0]
+	var rail: Color = spec[1]
+	var plinth: float = float(spec[2])
+	var top: float = float(spec[3])
+	var mid_p: Vector2 = (a + b) * 0.5
+	_dbox(m, Vector3(mid_p.x, plinth * 0.5, mid_p.y), Vector3(length, plinth, 0.34), along, stone)
+	_dbox(m, Vector3(mid_p.x, plinth + 0.03, mid_p.y), Vector3(length + 0.04, 0.06, 0.4), along, stone.darkened(0.1))
+	var posts: int = maxi(1, int(roundf(length / LANDMARK_POST_M)))
+	for i: int in posts + 1:
+		var pp: Vector2 = a.lerp(b, float(i) / float(posts))
+		_dbox(m, Vector3(pp.x, top * 0.5, pp.y), Vector3(0.36, top, 0.36), along, stone)
+		_dbox(m, Vector3(pp.x, top + 0.06, pp.y), Vector3(0.46, 0.12, 0.46), along, stone.darkened(0.12))
+	# Rails and bars between the posts, on the wall's centre line.
+	for y: float in [plinth + 0.12, top - 0.18]:
+		_dbox(m, Vector3(mid_p.x, y, mid_p.y), Vector3(length, 0.05, 0.05), along, rail)
+	var bars: int = int(length / LANDMARK_BAR_M)
+	var half_bar: Vector2 = along * 0.018
+	for i: int in bars:
+		var c: Vector2 = a + along * (float(i) + 0.5) * LANDMARK_BAR_M
+		var y0: float = plinth + 0.06
+		var y1: float = top - 0.1
+		for side: float in [1.0, -1.0]:
+			var off: Vector2 = n2 * 0.018 * side
+			_face(m, [_v3(c - half_bar + off, y0), _v3(c + half_bar + off, y0), _v3(c + half_bar + off, y1), _v3(c - half_bar + off, y1)],
+				Vector3(n2.x, 0.0, n2.y) * side, rail)
+	_wall_faces(faces, a, b, 0.0, top + 0.1, 0.36)
+
+## A landmark gate: two tall piers and (arched styles) a beam across the top. The way stays open:
+## the collider covers the piers only.
+func _landmark_gate(m: MeshBuf, faces: PackedVector3Array, g: Array) -> void:
+	var style: String = str(g[0])
+	var a: Vector2 = Vector2(float(g[1]), float(g[2]))
+	var b: Vector2 = Vector2(float(g[3]), float(g[4]))
+	var length: float = a.distance_to(b)
+	if length < 1.0:
+		return
+	var along: Vector2 = (b - a) / length
+	var pier: Color = Color(0.94, 0.94, 0.91)
+	var trim: Color = Color(0.1, 0.24, 0.5)
+	var h: float = 3.2
+	var w: float = 0.7
+	match style:
+		"arch_cream":
+			pier = Color(0.91, 0.84, 0.68)
+			trim = Color(0.72, 0.5, 0.22)
+		"temple":
+			pier = Color(0.95, 0.93, 0.86)
+			trim = Color(0.72, 0.2, 0.14)
+			h = KAAVI_WALL_H + 0.8
+			w = 0.95
+		"plain":
+			pier = Color(0.8, 0.79, 0.75)
+			trim = pier.darkened(0.2)
+			h = 2.6
+			w = 0.55
+		"park":
+			pier = Color(0.86, 0.72, 0.38)
+			trim = Color(0.16, 0.42, 0.22)
+			h = 1.9
+			w = 0.5
+	for p: Vector2 in [a, b]:
+		_dbox(m, Vector3(p.x, h * 0.5, p.y), Vector3(w, h, w), along, pier)
+		_dbox(m, Vector3(p.x, h + 0.09, p.y), Vector3(w + 0.16, 0.18, w + 0.16), along, trim)
+		_wall_faces(faces, p - along * w * 0.5, p + along * w * 0.5, 0.0, h + 0.2, w)
+	if style in ["arch_white", "arch_cream", "temple"]:
+		var mid: Vector2 = (a + b) * 0.5
+		_dbox(m, Vector3(mid.x, h - 0.25, mid.y), Vector3(length, 0.5, w * 0.7), along, pier)
+		_dbox(m, Vector3(mid.x, h + 0.05, mid.y), Vector3(length + 0.2, 0.12, w * 0.8), along, trim)
+		# A raised centre over the gateway, like the arches on Kamarajar Salai's old compounds.
+		_dbox(m, Vector3(mid.x, h + 0.35, mid.y), Vector3(minf(length * 0.4, 2.4), 0.5, w * 0.6), along, pier)
 
 static func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)

@@ -847,7 +847,35 @@ func _mark(spec: Variant, ground: bool) -> Vector3:
 			var mirrored: Vector3 = _frame * Vector3(-float(a2[0]), 0.0, -float(a2[2]))
 			if SignalBus.walkable(mirrored.x, mirrored.z):
 				p = mirrored
+		# Walking off home ("place:") may end behind a gate on purpose; every other mark must stay
+		# in plain view of the auto (Nov 27 device report: Meena stood behind the house wall).
+		if not (spec is String and str(spec).begins_with("place:")):
+			p = _in_view_of_auto(p)
 		p.y = SignalBus.surface_height(p.x, p.z, _frame.origin.y)
+	return p
+
+## Pulls a standing spot towards the auto until nothing solid (a building, a compound wall, a
+## parked car) stands between the auto and the person, and the spot is outside any building.
+## Never closer than IN_VIEW_MIN_M to the auto's centre, so nobody stands inside it.
+const IN_VIEW_MIN_M: float = 1.6
+func _in_view_of_auto(p: Vector3) -> Vector3:
+	if _auto == null or not is_inside_tree():
+		return p
+	var origin: Vector3 = _auto.global_position
+	origin.y += 1.0
+	var flat: Vector3 = Vector3(p.x, 0.0, p.z) - Vector3(origin.x, 0.0, origin.z)
+	var dist: float = flat.length()
+	if dist <= IN_VIEW_MIN_M:
+		return p
+	var steps: int = 8
+	for i: int in range(steps + 1):
+		var d: float = lerpf(dist, IN_VIEW_MIN_M, float(i) / float(steps))
+		var q: Vector3 = Vector3(origin.x, p.y, origin.z) + flat.normalized() * d
+		if not SignalBus.walkable(q.x, q.z):
+			continue
+		var head: Vector3 = Vector3(q.x, origin.y, q.z)
+		if not _occluded(origin, head):
+			return q
 	return p
 
 ## A camera position: a mark, or {"from": "role:x" | "prop:x", "toward": "auto", "dist": m,
@@ -977,7 +1005,14 @@ func line_seconds(line: String) -> float:
 		return 0.0
 	var path: String = story.voice_path(line, _language())
 	var stream: AudioStream = QuestAssets.get_resource(path) as AudioStream
-	return stream.get_length() if stream != null else 1.8
+	return stream.get_length() if stream != null else reading_seconds(line)
+
+## How long a line stays up when its voice file isn't there yet (a new quest before the voice
+## workflow has run): long enough to read the subtitle, never the old flat 1.8 s that flashed
+## whole conversations past (Nov 27 owner report on The Wedding Gold).
+func reading_seconds(line: String) -> float:
+	var text: String = tr("VO_" + line.to_upper())
+	return clampf(0.9 + float(text.length()) / 15.0, 2.2, 9.0)
 
 func _play_voice(line: String) -> void:
 	lines_said.append(line)

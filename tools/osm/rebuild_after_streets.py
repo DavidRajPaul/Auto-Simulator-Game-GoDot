@@ -6,7 +6,8 @@ lanes, new widths) all of them must run again, in this order (see AGENTS.md less
   world + graph -> water, bus stops -> street dressing -> parking -> city props + street shops
   -> empty lots -> signal posts, street signs -> barricades -> beach carts -> beach fence
   -> medians -> road works -> roundabout islands -> street lights -> police booths -> compounds -> building names -> lodges/eateries
-  -> building types (classify) -> plots (walls, gates) -> street life -> density audit.
+  -> building types (classify) -> plots (walls, gates) -> street life -> landmark compounds
+  -> trees set back from the road -> density audit.
 Usage: python3 tools/osm/rebuild_after_streets.py [--from build_street_dressing.py]
        (needs data/osm/streets from run_osm2streets.py; --from resumes the chain at a step)
 """
@@ -42,6 +43,8 @@ ORDER = [
     "classify_buildings.py",
     "build_plots.py",
     "place_street_life.py",
+    "build_landmark_compounds.py",
+    "set_back_trees.py",
     "audit_city_density.py",
 ]
 

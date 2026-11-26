@@ -7,12 +7,28 @@ extends Control
 ##
 ## Drawing is cached: everything is redrawn only when the view changes, not every frame.
 
-const BG: Color = Color(0.13, 0.14, 0.16, 1.0)
+## Nov 27 owner request: "the map can be more colourful and look like a real game". A game-map
+## palette (deep blue-slate land, saturated parks and water, orange / yellow / white road classes
+## with a dark casing under each, a vignette and a ribbon header) instead of the flat grey sheet.
+const BG: Color = Color(0.12, 0.15, 0.22, 1.0)
+const BG_GRID: Color = Color(0.18, 0.22, 0.31, 0.55)
 const ROAD_STYLE: Dictionary = { # class -> [colour, metres-width multiplier, min px]
-	"trunk": [Color(0.98, 0.78, 0.35), 1.0, 3.0], "primary": [Color(0.98, 0.86, 0.5), 1.0, 2.5],
-	"secondary": [Color(0.92, 0.92, 0.88), 1.0, 2.0], "tertiary": [Color(0.85, 0.85, 0.82), 1.0, 1.6],
+	"trunk": [Color(1.0, 0.56, 0.18), 1.0, 3.4], "primary": [Color(1.0, 0.8, 0.26), 1.0, 2.8],
+	"secondary": [Color(0.98, 0.95, 0.84), 1.0, 2.2], "tertiary": [Color(0.86, 0.88, 0.92), 1.0, 1.8],
 }
-const MINOR: Color = Color(0.62, 0.63, 0.65)
+const MINOR: Color = Color(0.55, 0.6, 0.72)
+const ROAD_CASING: Color = Color(0.05, 0.06, 0.1, 0.9)
+const AREA_COLOURS: Dictionary = {"sea": Color(0.09, 0.33, 0.62), "water": Color(0.16, 0.52, 0.86),
+	"park": Color(0.2, 0.52, 0.28), "beach": Color(0.93, 0.8, 0.5)}
+const GOLD: Color = Color(1.0, 0.74, 0.16)
+const PANEL: Color = Color(0.07, 0.09, 0.15, 0.96)
+const DONE_GREEN: Color = Color(0.2, 0.84, 0.46)
+## Each quest kind has its own ring colour on the map and its own stripe in the journal.
+const CATEGORY_COLOURS: Dictionary = {"mystery": Color(0.72, 0.4, 1.0), "help": Color(1.0, 0.42, 0.5),
+	"exploration": Color(0.25, 0.8, 1.0), "skill": Color(1.0, 0.6, 0.15), "community": Color(0.42, 0.9, 0.42)}
+
+static func category_colour(category: String) -> Color:
+	return CATEGORY_COLOURS.get(category, GOLD) as Color
 const MIN_SCALE: float = 0.05 # px per metre (whole city)
 const MAX_SCALE: float = 3.0
 const LABEL_CELL_PX: float = 170.0
@@ -118,9 +134,15 @@ func set_open(open: bool) -> void:
 		scale_px = 0.6
 		queue_redraw()
 
+var _pulse_ms: int = 0
+
 func _process(_delta: float) -> void:
 	if _toast_text != "" and Time.get_ticks_msec() >= _toast_until_ms:
 		_toast_text = ""
+		queue_redraw()
+	# The open-quest halos pulse: redraw ~8 times a second while the map is open.
+	if visible and Time.get_ticks_msec() - _pulse_ms >= 120:
+		_pulse_ms = Time.get_ticks_msec()
 		queue_redraw()
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -440,6 +462,7 @@ func to_world(s: Vector2) -> Vector2:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BG)
 	var view: Rect2 = Rect2(to_world(Vector2.ZERO), size / scale_px).grow(60.0)
+	_draw_grid(view)
 	_draw_areas(view)
 	if graph != null:
 		_draw_roads(view)
@@ -452,9 +475,44 @@ func _draw() -> void:
 	_draw_quests(view)
 	# Last of the world layer: a quest badge must never hide the player's own auto.
 	_draw_player()
+	_draw_frame()
 	_draw_chrome()
 	_draw_quest_ui()
 	_draw_toast()
+
+## A faint 250 m survey grid on the land, like a paper game map.
+func _draw_grid(view: Rect2) -> void:
+	var step: float = 250.0 if scale_px >= 0.12 else 1000.0
+	var lines: PackedVector2Array = PackedVector2Array()
+	var x: float = floorf(view.position.x / step) * step
+	while x <= view.end.x:
+		lines.append(to_screen(Vector2(x, view.position.y)))
+		lines.append(to_screen(Vector2(x, view.end.y)))
+		x += step
+	var z: float = floorf(view.position.y / step) * step
+	while z <= view.end.y:
+		lines.append(to_screen(Vector2(view.position.x, z)))
+		lines.append(to_screen(Vector2(view.end.x, z)))
+		z += step
+	if not lines.is_empty():
+		draw_multiline(lines, BG_GRID, 1.0)
+
+## Dark edges and a header band so the map reads as a game screen, drawn over the world layer.
+func _draw_frame() -> void:
+	var edge: float = 70.0
+	var clear: Color = Color(0.02, 0.03, 0.06, 0.0)
+	var dark: Color = Color(0.02, 0.03, 0.06, 0.55)
+	var w: float = size.x
+	var h: float = size.y
+	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w, 0), Vector2(w, edge), Vector2(0, edge)]),
+		PackedColorArray([dark, dark, clear, clear]))
+	draw_polygon(PackedVector2Array([Vector2(0, h - edge), Vector2(w, h - edge), Vector2(w, h), Vector2(0, h)]),
+		PackedColorArray([clear, clear, dark, dark]))
+	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(edge, 0), Vector2(edge, h), Vector2(0, h)]),
+		PackedColorArray([dark, clear, clear, dark]))
+	draw_polygon(PackedVector2Array([Vector2(w - edge, 0), Vector2(w, 0), Vector2(w, h), Vector2(w - edge, h)]),
+		PackedColorArray([clear, dark, dark, clear]))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(GOLD, 0.55), false, 3.0)
 
 func _draw_quests(view: Rect2) -> void:
 	_quest_hits.clear()
@@ -464,7 +522,7 @@ func _draw_quests(view: Rect2) -> void:
 		if not view.has_point(Vector2(pos.x, pos.z)):
 			continue
 		if bool(q["completed"]):
-			_draw_done_badge(to_screen(Vector2(pos.x, pos.z)))
+			_draw_done_badge(to_screen(Vector2(pos.x, pos.z)), str(q["id"]) == _quest_selected)
 			continue
 		var screen: Vector2 = to_screen(Vector2(pos.x, pos.z))
 		var key: Vector2i = Vector2i(floori(screen.x / 52.0), floori(screen.y / 52.0))
@@ -480,7 +538,12 @@ func _draw_quests(view: Rect2) -> void:
 		var point: Vector2 = cluster["point"]
 		var members: PackedStringArray = cluster["members"]
 		var selected: bool = members.has(_quest_selected)
-		_draw_quest_badge(point, str(members.size()) if members.size() > 1 else "!", selected)
+		var ring: Color = GOLD
+		if members.size() == 1:
+			for q: Dictionary in _quest_rows:
+				if str(q["id"]) == members[0]:
+					ring = category_colour(str(q.get("category", "")))
+		_draw_quest_badge(point, str(members.size()) if members.size() > 1 else "!", selected, 20.0, ring)
 		_quest_hits.append({"rect": Rect2(point - Vector2(24, 24), Vector2(48, 48)), "members": members})
 
 func _draw_quest_ui() -> void:
@@ -510,7 +573,9 @@ func _draw_quest_ui() -> void:
 	var height: float = 92.0 + body_h + (0.0 if bool(q["completed"]) else 54.0)
 	var y: float = maxf(124.0, size.y - 108.0 - height)
 	_card_rect = Rect2(Vector2(16, y), Vector2(width, height))
-	draw_rect(_card_rect, Color(0.05, 0.06, 0.09, 0.97))
+	draw_rect(_card_rect, PANEL)
+	draw_rect(Rect2(_card_rect.position, Vector2(width, 6)), DONE_GREEN if bool(q["completed"]) else category_colour(str(q.get("category", ""))))
+	draw_rect(_card_rect, Color(GOLD, 0.8), false, 2.0)
 	_card_close_rect = Rect2(Vector2(16 + width - 48, y + 4), Vector2(44, 44))
 	draw_string(_font, _card_close_rect.position + Vector2(0, 30), "✕", HORIZONTAL_ALIGNMENT_CENTER, 44, 22, Color(1, 1, 1, 0.8))
 	draw_string(_font, Vector2(28, y + 28), str(q["title"]), HORIZONTAL_ALIGNMENT_LEFT, width - 76, 21, Color("ffcf58"))
@@ -536,16 +601,29 @@ func _draw_journal() -> void:
 	var height: float = minf(size.y - 170.0, 390.0)
 	_journal_page = clampi(_journal_page, 0, _journal_pages() - 1)
 	_journal_panel = Rect2(Vector2(12, 124), Vector2(width + 8, height))
-	draw_rect(_journal_panel, Color(0.06, 0.07, 0.1, 0.97))
+	draw_rect(_journal_panel, PANEL)
+	draw_rect(_journal_panel, Color(GOLD, 0.8), false, 2.0)
 	if _quest_rows.is_empty():
 		draw_string(_font, Vector2(26, 170), tr("QUEST_EMPTY"), HORIZONTAL_ALIGNMENT_LEFT, width - 28, 17, Color.WHITE)
+	# Progress across every side quest: "7 / 24" and a bar.
+	var done: int = 0
+	for q: Dictionary in _quest_rows:
+		done += 1 if bool(q["completed"]) else 0
+	if not _quest_rows.is_empty():
+		# A chip beside the Legend button: "7 / 24" with a progress bar.
+		var chip: Rect2 = Rect2(Vector2(_legend_rect.end.x + 8.0, _legend_rect.position.y), Vector2(132, _legend_rect.size.y))
+		draw_rect(chip, PANEL)
+		draw_rect(chip, Color(GOLD, 0.8), false, 2.0)
+		_draw_done_badge(chip.position + Vector2(22, 22))
+		draw_string(_font, chip.position + Vector2(40, 28), "%d / %d" % [done, _quest_rows.size()], HORIZONTAL_ALIGNMENT_LEFT, 86, 17, Color.WHITE)
+		var bar: Rect2 = Rect2(chip.position + Vector2(40, 36), Vector2(82, 7))
+		draw_rect(bar, Color(1, 1, 1, 0.15))
+		draw_rect(Rect2(bar.position, Vector2(bar.size.x * float(done) / float(_quest_rows.size()), bar.size.y)), DONE_GREEN)
 	var first: int = _journal_page * JOURNAL_ROWS
 	for i: int in range(first, mini(first + JOURNAL_ROWS, _quest_rows.size())):
 		var q: Dictionary = _quest_rows[i]
 		var y: float = 158.0 + (i - first) * 58.0
-		var status: String = tr("QUEST_DONE") if bool(q["completed"]) else (tr("QUEST_LOCKED") if not bool(q["unlocked"]) else (tr("QUEST_TRACKED") if bool(q["tracked"]) else tr("QUEST_AVAILABLE")))
-		draw_string(_font, Vector2(26, y), "%s  %s" % [str(q["title"]), status], HORIZONTAL_ALIGNMENT_LEFT, width - 28, 17, Color("ffcf58"))
-		draw_string(_font, Vector2(26, y + 20), str(q["description"]) if bool(q["unlocked"]) else str(q["locked_reason"]), HORIZONTAL_ALIGNMENT_LEFT, width - 28, 14, Color.WHITE)
+		_draw_journal_row(q, Vector2(20, y - 20), width - 14)
 	var pages: int = _journal_pages()
 	var row_y: float = 124 + height - 58
 	if pages > 1:
@@ -556,6 +634,29 @@ func _draw_journal() -> void:
 	if _journal_page < pages - 1:
 		_journal_next = Rect2(Vector2(width - 90, row_y), Vector2(90, 48))
 		_draw_quest_button(_journal_next, "›")
+
+## One journal row: a card with the quest kind's colour stripe, the title, a status pill and the
+## description. Finished quests get the green medal and a "DONE" stamp, and their text dims.
+func _draw_journal_row(q: Dictionary, at: Vector2, width: float) -> void:
+	var completed: bool = bool(q["completed"])
+	var stripe: Color = category_colour(str(q.get("category", "")))
+	var card: Rect2 = Rect2(at, Vector2(width, 52))
+	draw_rect(card, Color(0.1, 0.25, 0.17, 0.85) if completed else Color(0.13, 0.16, 0.25, 0.9))
+	draw_rect(Rect2(at, Vector2(5, 52)), DONE_GREEN if completed else stripe)
+	var status: String = tr("QUEST_DONE") if completed else (tr("QUEST_LOCKED") if not bool(q["unlocked"]) else (tr("QUEST_TRACKED") if bool(q["tracked"]) else tr("QUEST_AVAILABLE")))
+	var pill_col: Color = DONE_GREEN if completed else (Color(0.5, 0.5, 0.55) if not bool(q["unlocked"]) else (Color(0.25, 0.6, 1.0) if bool(q["tracked"]) else GOLD))
+	var pill_w: float = _font.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 18.0
+	var pill: Rect2 = Rect2(Vector2(at.x + width - pill_w - 6, at.y + 6), Vector2(pill_w, 20))
+	draw_rect(pill, pill_col)
+	draw_string(_font, pill.position + Vector2(0, 15), status, HORIZONTAL_ALIGNMENT_CENTER, pill_w, 13, Color(0.05, 0.05, 0.08))
+	var text_x: float = at.x + 14.0
+	if completed:
+		_draw_done_badge(Vector2(at.x + 24, at.y + 22))
+		text_x = at.x + 44.0
+	draw_string(_font, Vector2(text_x, at.y + 21), str(q["title"]), HORIZONTAL_ALIGNMENT_LEFT, pill.position.x - text_x - 6, 17,
+		Color(0.75, 0.95, 0.8) if completed else Color(1.0, 0.85, 0.4))
+	draw_string(_font, Vector2(text_x, at.y + 42), str(q["description"]) if bool(q["unlocked"]) else str(q["locked_reason"]),
+		HORIZONTAL_ALIGNMENT_LEFT, at.x + width - text_x - 8, 14, Color(1, 1, 1, 0.55) if completed else Color.WHITE)
 
 const LEGEND_ITEMS: Array[String] = ["player", "route", "destination", "pin", "hail", "quest", "quest_group",
 	"quest_done", "landmark", "stand", "lpg", "ev", "garage", "main_road", "closed", "water", "park", "sea"]
@@ -611,15 +712,30 @@ func _draw_legend_icon(kind: String, at: Vector2) -> void:
 		_:
 			_draw_poi_icon(at, kind)
 
-func _draw_quest_badge(point: Vector2, label: String, selected: bool, radius: float = 20.0) -> void:
-	draw_circle(point, radius, Color("ffe59a") if selected else Color("ffcf58"))
-	draw_arc(point, radius - 1.0, 0.0, TAU, 24, Color("ffcf58"), 3.0)
-	var fs: int = int(radius * 1.15)
-	draw_string(_font, point + Vector2(-radius, fs * 0.33), label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, fs, Color.BLACK)
+## An open quest: a gold medallion with a drop shadow, a ring in the quest kind's colour and a
+## pulsing halo, so it reads as something to go and do.
+func _draw_quest_badge(point: Vector2, label: String, selected: bool, radius: float = 20.0, ring: Color = GOLD) -> void:
+	var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.004)
+	draw_circle(point, radius + 7.0 + pulse * 4.0, Color(ring, 0.18 + 0.12 * pulse))
+	draw_circle(point + Vector2(2, 3), radius + 1.0, Color(0, 0, 0, 0.45))
+	draw_circle(point, radius + 2.5, ring)
+	draw_circle(point, radius - 1.5, Color(1.0, 0.92, 0.55) if selected else GOLD)
+	draw_circle(point + Vector2(-radius * 0.3, -radius * 0.35), radius * 0.35, Color(1, 1, 1, 0.35))
+	var fs: int = int(radius * 1.2)
+	draw_string(_font, point + Vector2(-radius, fs * 0.36), label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, fs, Color(0.12, 0.07, 0.0))
 
-func _draw_done_badge(point: Vector2) -> void:
-	draw_circle(point, 9.0, Color(0.2, 0.22, 0.26))
-	draw_polyline(PackedVector2Array([point + Vector2(-4, 0), point + Vector2(-1, 4), point + Vector2(5, -4)]), Color("3ddc84"), 2.5)
+## A finished quest: a green medal with a gold rim and a bold tick, ribbon tails under it
+## (Nov 27: the old grey dot with a thin tick looked unfinished itself).
+func _draw_done_badge(point: Vector2, selected: bool = false) -> void:
+	var r: float = 13.0 if selected else 11.0
+	var tail: Color = Color(0.1, 0.55, 0.3)
+	draw_colored_polygon(PackedVector2Array([point + Vector2(-8, 4), point + Vector2(-2, 6), point + Vector2(-6, r + 12), point + Vector2(-10, r + 8)]), tail)
+	draw_colored_polygon(PackedVector2Array([point + Vector2(8, 4), point + Vector2(2, 6), point + Vector2(6, r + 12), point + Vector2(10, r + 8)]), tail)
+	draw_circle(point + Vector2(1.5, 2.5), r + 2.0, Color(0, 0, 0, 0.45))
+	draw_circle(point, r + 2.5, GOLD)
+	draw_circle(point, r, DONE_GREEN)
+	draw_circle(point + Vector2(-r * 0.3, -r * 0.35), r * 0.32, Color(1, 1, 1, 0.3))
+	draw_polyline(PackedVector2Array([point + Vector2(-5.5, 0.5), point + Vector2(-1.5, 4.5), point + Vector2(6, -4.5)]), Color.WHITE, 3.2)
 
 func _draw_toast() -> void:
 	if _toast_text == "":
@@ -632,12 +748,18 @@ func _draw_toast() -> void:
 	draw_string(_font, box.position + Vector2(24, 33), _toast_text, HORIZONTAL_ALIGNMENT_CENTER, w - 48, fs, Color.WHITE)
 
 func _draw_quest_button(rect: Rect2, label: String, active: bool = false) -> void:
-	draw_rect(rect, Color(0.7, 0.47, 0.08) if active else Color(0.09, 0.09, 0.11, 0.95))
-	draw_rect(rect, Color("ffcf58"), false, 2.0)
+	_draw_game_button(rect, active)
 	draw_string(_font, rect.position + Vector2(0, 32), label, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 17, Color.WHITE)
 
+## Map buttons: a dark glossy slab with a gold rim and a bevel; active ones glow amber.
+func _draw_game_button(rc: Rect2, active: bool) -> void:
+	draw_rect(Rect2(rc.position + Vector2(2, 3), rc.size), Color(0, 0, 0, 0.45))
+	draw_rect(rc, Color(0.85, 0.5, 0.06) if active else Color(0.09, 0.12, 0.2, 0.95))
+	draw_rect(Rect2(rc.position, Vector2(rc.size.x, rc.size.y * 0.45)), Color(1, 1, 1, 0.1 if active else 0.06))
+	draw_rect(rc, GOLD, false, 2.0)
+
 func _draw_areas(view: Rect2) -> void:
-	var cols: Dictionary = {"sea": Color(0.12, 0.3, 0.45), "water": Color(0.16, 0.36, 0.52), "park": Color(0.17, 0.33, 0.2), "beach": Color(0.55, 0.5, 0.36)}
+	var cols: Dictionary = AREA_COLOURS
 	for kind: String in ["sea", "beach", "park", "water"]:
 		for poly: Array in _areas.get(kind, []):
 			if poly.size() < 3:
@@ -685,6 +807,11 @@ func _draw_roads(view: Rect2) -> void:
 			minor = target
 	if not minor.is_empty():
 		draw_multiline(minor, MINOR, maxf(1.0, 6.0 * scale_px))
+	# A dark casing under every main road first, then the colours: roads read as raised strips.
+	for cls: String in ["tertiary", "secondary", "primary", "trunk"]:
+		if major.has(cls):
+			var st0: Array = ROAD_STYLE[cls]
+			draw_multiline(major[cls], ROAD_CASING, maxf(float(st0[2]), 12.0 * scale_px * float(st0[1])) + 3.0)
 	for cls: String in ["tertiary", "secondary", "primary", "trunk"]:
 		if major.has(cls):
 			var st: Array = ROAD_STYLE[cls]
@@ -805,8 +932,7 @@ func _draw_chrome() -> void:
 	_me_rect = Rect2(Vector2(size.x - b - 20.0, size.y * 0.5 + b + 18.0), Vector2(b, b))
 	for pair: Array in [[_close_rect, "✕"], [_plus_rect, "+"], [_minus_rect, "−"], [_me_rect, "◎"]]:
 		var rc: Rect2 = pair[0]
-		draw_rect(rc, Color(0.05, 0.05, 0.06, 0.85))
-		draw_rect(rc, Color(1.0, 0.72, 0.1), false, 2.0)
+		_draw_game_button(rc, false)
 		draw_string(_font, rc.position + Vector2(0, rc.size.y * 0.68), str(pair[1]), HORIZONTAL_ALIGNMENT_CENTER, rc.size.x, 34, Color.WHITE)
 	draw_string_outline(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, 6, Color.BLACK)
 	draw_string(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(1.0, 0.72, 0.1))
@@ -820,8 +946,7 @@ func _draw_chrome() -> void:
 	for entry: Array in [[_destination_rect, "Drop Pin", 2], [_navigate_rect, "Set Route", 0], [_clear_rect, "Clear", 0]]:
 		var rc: Rect2 = entry[0]
 		var selected: bool = _select_mode == int(entry[2]) and _select_mode != 0
-		draw_rect(rc, Color(0.7, 0.47, 0.08) if selected else Color(0.05, 0.05, 0.06, 0.92))
-		draw_rect(rc, Color(1.0, 0.72, 0.1), false, 2.0)
+		_draw_game_button(rc, selected)
 		draw_string(_font, rc.position + Vector2(0.0, 35.0), str(entry[1]), HORIZONTAL_ALIGNMENT_CENTER, rc.size.x, 17, Color.WHITE)
 	if _select_mode != 0:
 		draw_string(_font, Vector2(20.0, size.y - 114.0), tr("MAP_PIN_HELP"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)

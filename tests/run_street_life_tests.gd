@@ -819,8 +819,10 @@ func _test_living_city() -> void:
 		and lady.pos.distance_to(spot_used[0] as Vector3) < 1.5)
 	GameState.shift_minute = 600.0
 	# She finishes on her next calm frame; a passing vehicle or a startle can take a moment
-	# first (10 frames was flaky on the slower CI runners, Nov 23).
-	for i: int in 180:
+	# first (10 frames was flaky on the slower CI runners, Nov 23). A vehicle passing close can
+	# also knock her into a stumble, a 2.5-4.5 s fall and the get-up first; a reacting walker skips
+	# the kolam check (Nov 27: after the kerb trees moved she was still busy at 180 frames), so allow 10 s.
+	for i: int in 600:
 		await get_tree().process_frame
 		if lady == null or (lady.role == "" and lady.pose.mode == PoseModifier.Mode.NONE):
 			break
