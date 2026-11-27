@@ -219,12 +219,10 @@ OUT_FRONT = [-4.2, 1.35, 4.2]
 OUT_FRONT_TO = [-3.9, 1.35, 3.8]
 OUT_BACK = [-1.4, 1.55, -2.3]
 OUT_SIDE = [-4.3, 1.35, -0.6]
-# The front gate: the volunteer comes to the kerb ahead of the door; the queue stays behind him.
-VOL_AT = [-2.1, 0, 1.7]
-VOL_CAM = [0.5, 1.5, 5.0]
-VOL_CAM_TO = [0.4, 1.5, 4.7]
-QUEUE_CAM = [1.3, 1.85, 8.8]
-QUEUE_LOOK = [-2.6, 1.2, 1.0]
+# Shots framed on people where they stand ({"from": person} puts the lens between them and the auto).
+VOL_SHOT = {"from": "role:volunteer", "dist": 3.4, "up": 1.55, "side": 1.2}
+VOL_WIDE = {"from": "role:volunteer", "dist": 5.2, "up": 1.7, "side": -1.8}
+
 # The back gate: Sankaran by the door, Lalitha 2 m ahead, both facing the auto; cameras in the road
 # ahead, so the hall is behind them.
 BACK_SANKARAN = [-2.0, 0, 0.0]
@@ -266,29 +264,31 @@ cutscenes = {
         {"cam": {"eye": DOOR_CAM, "look": "role:ganesan", "fov": 42}, "act": {"ganesan": {"anim": "wave", "face": "auto"}}, "line": "sq03_g05"},
         {"cam": {"eye": SEAT_CAM, "look": "rider", "fov": 44}, "min_s": 1.0, "fade_out": 0.5},
     ],
-    # The packed front gate: a volunteer and a queue of rasikas. Ends held on the gate question.
+    # The packed front gate: a volunteer and a queue of rasikas. The volunteer keeps his post at the
+    # gate and every shot is framed on the people where they stand, so the scene reads the same from
+    # whichever side of the road the auto stops (Nov 27 shots: walking him to an auto-relative mark
+    # made him cross the road in front of the lens).
     "hall": [
-        {"fade_in": 0.4, "cam": {"eye": QUEUE_CAM, "eye_to": [1.1, 1.8, 8.3], "look": QUEUE_LOOK, "fov": 56},
+        {"fade_in": 0.4, "cam": {"eye": {"from": "role:rasika_2", "dist": 6.0, "up": 1.8, "side": -2.5}, "look": "role:rasika_2", "fov": 58},
          "act": {"volunteer": {"face": "auto", "anim": "wave"}}, "line": "sq03_v01", "line_at": 0.5, "min_s": 2.0},
-        {"cam": {"eye": SEAT_CAM, "eye_to": SEAT_CAM_TO, "look": "rider", "fov": 42},
-         "act": {"volunteer": {"to": VOL_AT, "gait": "walk", "then": "idle", "face": "auto"}}, "line": "sq03_s15"},
-        {"cam": {"eye": VOL_CAM, "eye_to": VOL_CAM_TO, "look": "role:volunteer", "fov": 44},
-         "act": {"volunteer": {"anim": "talk", "face": "auto"}}, "wait": "volunteer", "max_s": 8.0, "line": "sq03_v02"},
+        {"cam": {"eye": SEAT_CAM, "eye_to": SEAT_CAM_TO, "look": "rider", "fov": 42}, "line": "sq03_s15"},
+        {"cam": {"eye": VOL_SHOT, "look": "role:volunteer", "fov": 42}, "act": {"volunteer": {"anim": "talk", "face": "auto"}},
+         "line": "sq03_v02"},
         {"cam": {"eye": SEAT_CAM, "look": "rider", "fov": 40}, "line": "sq03_s16"},
-        {"cam": {"eye": QUEUE_CAM, "look": QUEUE_LOOK, "fov": 54}, "act": {"volunteer": {"anim": "idle"}}, "min_s": 0.6, "hold": True},
+        {"cam": {"eye": VOL_WIDE, "look": "role:volunteer", "fov": 54}, "act": {"volunteer": {"anim": "idle"}}, "min_s": 0.6, "hold": True},
     ],
     "front_line": [
         {"cam": {"eye": FRONT, "eye_to": FRONT_TO, "look": AUTO_LOOK, "fov": 46}, "line": "sq03_d06"},
-        {"cam": {"eye": VOL_CAM, "look": "role:volunteer", "fov": 40}, "act": {"volunteer": {"anim": "talk", "face": "auto"}},
+        {"cam": {"eye": VOL_SHOT, "look": "role:volunteer", "fov": 40}, "act": {"volunteer": {"anim": "talk", "face": "auto"}},
          "line": "sq03_v03"},
         {"cam": {"eye": SEAT_CAM, "look": "rider", "fov": 40}, "line": "sq03_s17"},
-        {"cam": {"eye": VOL_CAM, "look": "role:volunteer", "fov": 46}, "act": {"volunteer": {"anim": "wave"}}, "min_s": 1.0,
+        {"cam": {"eye": VOL_WIDE, "look": "role:volunteer", "fov": 48}, "act": {"volunteer": {"anim": "wave"}}, "min_s": 1.0,
          "line": "sq03_d08", "fade_out": 0.4},
     ],
     "rear_line": [
         {"cam": {"eye": FRONT, "eye_to": FRONT_TO, "look": AUTO_LOOK, "fov": 46}, "line": "sq03_d07"},
         {"cam": {"eye": SEAT_CAM, "look": "rider", "fov": 40}, "line": "sq03_s18"},
-        {"cam": {"eye": VOL_CAM, "look": "role:volunteer", "fov": 44}, "act": {"volunteer": {"anim": "wave", "face": "auto"}},
+        {"cam": {"eye": VOL_SHOT, "look": "role:volunteer", "fov": 44}, "act": {"volunteer": {"anim": "wave", "face": "auto"}},
          "line": "sq03_v04", "fade_out": 0.4},
     ],
     # The back gate: Sankaran gets out with his drum, Lalitha comes to meet him. Ends held on the
