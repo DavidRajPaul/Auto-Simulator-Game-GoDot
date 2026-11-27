@@ -41,8 +41,13 @@ class Slot:
 	var held: float = 0.0
 	## The player's auto, kept out of this body's collisions for the first moments (see knock).
 	var ignoring: PhysicsBody3D = null
+	## A two-wheeler's rider, hidden while a rag doll of the same person lies in the road.
+	var rider: Node3D = null
+	var doll: RiderRagdolls.Doll = null
 
 var slots: Array[Slot] = []
+## Riders thrown off hit two-wheelers (Nov 27); built once in _ready like the bodies.
+var ragdolls: RiderRagdolls = null
 
 func _ready() -> void:
 	name = "KnockedVehicles"
@@ -72,6 +77,8 @@ func _ready() -> void:
 		s.body = b
 		s.shape = cs
 		slots.append(s)
+	ragdolls = RiderRagdolls.new()
+	add_child(ragdolls)
 
 ## True if `v` was handed to a rigid body (the caller then skips the kinematic recoil).
 func knock(v: TrafficVehicleAI, impact_mps: float, push: Vector3, player_mass: float, player_pos: Vector3, player: PhysicsBody3D = null) -> bool:
@@ -95,8 +102,23 @@ func knock(v: TrafficVehicleAI, impact_mps: float, push: Vector3, player_mass: f
 	var flat: Vector3 = Vector3(push.x, 0.0, push.z).normalized() if Vector3(push.x, 0.0, push.z).length() > 0.01 else forward
 	s.owner = v
 	s.held = 0.0
-	s.nodes = visuals
 	s.locals.clear()
+	s.rider = null
+	s.doll = null
+	# A two-wheeler's rider comes off as a rag doll instead of riding the toppling bike down.
+	if v.archetype == TrafficVehicleAI.Archetype.TWO_WHEELER and ragdolls != null:
+		for n: Node3D in visuals:
+			if n.name == "Rider" and n.has_meta("model_path"):
+				s.rider = n
+		if s.rider != null:
+			var throw_v: Vector3 = (forward * v.current_speed_mps + flat * dv * 0.8)
+			s.doll = ragdolls.throw(s.rider, throw_v)
+			if s.doll != null:
+				s.rider.visible = false
+				visuals.erase(s.rider)
+			else:
+				s.rider = null
+	s.nodes = visuals
 	for n: Node3D in visuals:
 		s.locals.append(n.transform)
 	var b: RigidBody3D = s.body
@@ -177,6 +199,13 @@ func give_back(s: Slot) -> void:
 			s.body.remove_child(n)
 			v.add_child(n)
 			n.transform = s.locals[i]
+	if s.rider != null and is_instance_valid(s.rider):
+		s.rider.visible = true
+	# Release only if the doll is still this crash's (a later crash may have reused it).
+	if s.doll != null and ragdolls != null and s.doll.busy and s.doll.rider == s.rider:
+		ragdolls.release(s.doll)
+	s.rider = null
+	s.doll = null
 	s.owner = null
 	s.nodes = []
 	s.shape.disabled = true

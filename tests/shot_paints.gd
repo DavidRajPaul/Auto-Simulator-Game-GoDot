@@ -18,7 +18,7 @@ func _run() -> void:
 	var rows: Array = [
 		["res://assets/models/traffic/share_auto.glb", Vector3(1.5, 1.8, 2.9), [PaintSwap.NO_PAINT, PaintSwap.AUTO_ELECTRIC[0], PaintSwap.AUTO_ELECTRIC[1], PaintSwap.AUTO_PINK]],
 		["res://assets/models/traffic/two_wheeler.glb", Vector3(0.8, 1.0, 2.0), PaintSwap.TWO_WHEELER_PAINTS.slice(0, 7)],
-		["res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb", Vector3(0.8, 1.0, 2.0), PaintSwap.TWO_WHEELER_PAINTS.slice(0, 7)],
+		["res://assets/models/traffic/chennai/sport_bike.glb", Vector3(0.66, 1.05, 1.97), PaintSwap.TWO_WHEELER_PAINTS.slice(0, 7)],
 		["res://assets/models/people/waiting/woman_saree_green_stand.glb", Vector3(0.6, 1.6, 0.5), PaintSwap.SAREE_PAINTS.slice(0, 7)],
 		["res://assets/models/people/waiting/man_casual_stand.glb", Vector3(0.6, 1.7, 0.5), PaintSwap.DRESS_PAINTS.slice(0, 7)],
 		["res://assets/models/people/waiting/girl_churidar_stand.glb", Vector3(0.6, 1.6, 0.5), PaintSwap.DRESS_PAINTS.slice(3, 10)],

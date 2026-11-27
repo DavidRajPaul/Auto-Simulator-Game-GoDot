@@ -10,7 +10,8 @@ extends RefCounted
 ## snack strips, a wooden flower cart on spoked wheels under the big striped umbrella, garlands
 ## hanging in loops. Colours vary a little piece by piece so nothing reads as flat paint. Each kind
 ## stays around 1,000-1,600 triangles; the city has ~1,500 stalls but a chunk holds only a few, and
-## they cost no draw calls (one chunk mesh).
+## they cost no draw calls (one chunk mesh). The flower stall (Nov 27: coiled jasmine, lotuses, a
+## curtain of garland strands) is the richest at ~2.2k.
 const PAINT_LIFT: float = 1.5
 const WOOD: Color = Color(0.42, 0.27, 0.15)
 const WOOD_LIGHT: Color = Color(0.6, 0.44, 0.27)
@@ -162,6 +163,33 @@ static func _garland(st: SurfaceTool, a: Vector3, b: Vector3, drop: float, cols:
 		var t: float = (float(i) + 0.5) / float(count)
 		var p: Vector3 = a.lerp(b, t) + Vector3(0, -drop * sin(PI * t), 0)
 		_ball(st, p, 0.04, cols[i % cols.size()], 3)
+
+## Loose flowers piled on a leaf: a soft mound in the flower colour with a few heads on top.
+static func _mound(st: SurfaceTool, at: Vector3, col: Color, r: float, h: float) -> void:
+	_lathe(st, at, PackedVector2Array([Vector2(r, 0.0), Vector2(r * 0.85, h * 0.45), Vector2(r * 0.5, h * 0.85), Vector2(0.0, h)]), 8, _vary(col, 0.04))
+	for k: int in 5:
+		var a: float = TAU * float(k) / 5.0 + 0.3
+		var d: float = r * (0.35 + 0.3 * float(k % 2))
+		_ball(st, at + Vector3(cos(a) * d, h * (0.9 - d / r * 0.6), sin(a) * d), 0.035, _vary(col, 0.08), 4)
+
+## A coil of jasmine string lying in a basket: a ring of small white buds.
+static func _coil(st: SurfaceTool, c: Vector3, r: float, col: Color) -> void:
+	var n: int = maxi(7, int(r * 45.0))
+	for k: int in n:
+		var a: float = TAU * float(k) / float(n)
+		_ball(st, c + Vector3(cos(a) * r, 0.0, sin(a) * r), 0.03, _vary(col, 0.03), 3)
+
+## A pink lotus: a cup of pointed petals round a yellow centre.
+static func _lotus(st: SurfaceTool, at: Vector3) -> void:
+	var pink: Color = Color(0.96, 0.55, 0.7)
+	for k: int in 6:
+		var a: float = TAU * float(k) / 6.0
+		var d: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = at + d * 0.02
+		var tip: Vector3 = at + d * 0.07 + Vector3.UP * 0.08
+		var side: Vector3 = Vector3(-d.z, 0.0, d.x) * 0.03
+		_sheet(st, base - side, base + side, tip, tip, pink.lerp(Color.WHITE, 0.2 * float(k % 2)))
+	_ball(st, at + Vector3.UP * 0.03, 0.025, Color(0.95, 0.8, 0.2), 4)
 
 ## A banana bunch: two tiers of curved fingers round a stalk.
 static func _bananas(st: SurfaceTool, top: Vector3) -> void:
@@ -343,27 +371,45 @@ static func _flower(st: SurfaceTool, cloth: Color) -> void:
 	# Two spoked wheels with a rim and hub, and a prop leg at the handle end.
 	for z: float in [-0.62, 0.62]:
 		var hub: Vector3 = Vector3(0.35, 0.42, z)
-		for k: int in 8:
-			var a0: float = TAU * float(k) / 8.0
-			var a1: float = TAU * float(k + 1) / 8.0
+		for k: int in 12:
+			var a0: float = TAU * float(k) / 12.0
+			var a1: float = TAU * float(k + 1) / 12.0
 			MeshKit.tube(st, hub + Vector3(cos(a0), sin(a0), 0) * 0.4, hub + Vector3(cos(a1), sin(a1), 0) * 0.4, 0.025, Color(0.15, 0.13, 0.12), 3)
-			if k % 2 == 0:
+			if k % 3 == 0:
 				MeshKit.tube(st, hub, hub + Vector3(cos(a0), sin(a0), 0) * 0.38, 0.012, WOOD, 3)
 		MeshKit.tube(st, hub + Vector3(0, 0, -0.05), hub + Vector3(0, 0, 0.05), 0.05, STEEL, 6)
 	_pole(st, Vector3(-w * 0.5 + 0.1, 0, 0), Vector3(-w * 0.5 + 0.1, 0.78, 0), 0.03, WOOD)
-	# Heaps on banana-leaf mats: jasmine, marigold, roses, and baskets of loose petals.
-	var heaps: Array[Color] = [GARLAND[0], GARLAND[1], GARLAND[2], GARLAND[0], GARLAND[3], GARLAND[2]]
-	for i: int in 6:
-		var at: Vector3 = Vector3(-0.75 + float(i % 3) * 0.75, 0.82, -0.25 + float(i / 3) * 0.5)
-		MeshKit.box(st, at + Vector3(0, 0.005, 0), Vector3(0.6, 0.01, 0.42), _vary(LEAF, 0.05))
-		_heap(st, at, heaps[i], 0.07, 0.13)
-	# Rail across the front with garlands hanging in loops.
-	for x: float in [-w * 0.5 + 0.05, w * 0.5 - 0.05]:
-		_pole(st, Vector3(x, 0.8, 0.5), Vector3(x, 1.75, 0.5), 0.02, BAMBOO)
-	_pole(st, Vector3(-w * 0.5, 1.75, 0.5), Vector3(w * 0.5, 1.75, 0.5), 0.02, BAMBOO)
+	# Nov 27 (owner: "the flower stalls can be even more realistic"), modelled on the Mylapore
+	# kerb sellers: coiled strings of jasmine (malli) in flat baskets, heaps of marigold, roses and
+	# kanakambaram on banana leaves, a few pink lotuses, and a curtain of garlands hanging in
+	# strands from the front rail with a tassel at each end.
+	var heaps: Array[Color] = [GARLAND[1], GARLAND[2], Color(0.98, 0.5, 0.2), GARLAND[3]]
 	for i: int in 4:
-		var x0: float = -w * 0.5 + 0.1 + float(i) * (w - 0.2) / 4.0
-		var x1: float = x0 + (w - 0.2) / 4.0
-		var pair: Array[Color] = [GARLAND[i % 4], GARLAND[(i + 1) % 4]]
-		_garland(st, Vector3(x0, 1.73, 0.52), Vector3(x1, 1.73, 0.52), 0.32 + 0.06 * float(i % 2), pair, 6)
+		var at: Vector3 = Vector3(-0.8 + float(i % 2) * 0.55, 0.82, -0.25 + float(i / 2) * 0.48)
+		MeshKit.box(st, at + Vector3(0, 0.005, 0), Vector3(0.5, 0.01, 0.4), _vary(LEAF, 0.05))
+		_mound(st, at, heaps[i], 0.2, 0.12)
+	for i: int in 2:
+		var bc: Vector3 = Vector3(0.45, 0.82, -0.22 + float(i) * 0.46)
+		_basket(st, bc, 0.28, 0.06)
+		_coil(st, bc + Vector3(0, 0.07, 0), 0.2, GARLAND[0])
+		_coil(st, bc + Vector3(0, 0.1, 0), 0.12, GARLAND[0].darkened(0.05))
+	for i: int in 3:
+		_lotus(st, Vector3(0.85, 0.84, -0.3 + float(i) * 0.3))
+	# Front rail and the garland curtain.
+	for x: float in [-w * 0.5 + 0.05, w * 0.5 - 0.05]:
+		_pole(st, Vector3(x, 0.8, 0.5), Vector3(x, 1.8, 0.5), 0.02, BAMBOO)
+	_pole(st, Vector3(-w * 0.5, 1.8, 0.5), Vector3(w * 0.5, 1.8, 0.5), 0.02, BAMBOO)
+	for i: int in 9:
+		var x: float = -w * 0.5 + 0.15 + float(i) * (w - 0.3) / 8.0
+		var c0: Color = GARLAND[i % 4]
+		var c1: Color = GARLAND[(i + 2) % 4]
+		var drop: int = 6 + 2 * ((i * 7) % 2)
+		# A thick rope of flowers in coloured bands, a rounded end and a tassel.
+		for k: int in drop / 2:
+			var y0: float = 1.78 - float(k) * 0.18
+			MeshKit.tube(st, Vector3(x, y0, 0.53), Vector3(x + 0.006 * float(k % 2), y0 - 0.18, 0.53), 0.036,
+				_vary(c0 if k % 2 == 0 else c1, 0.04), 6)
+		var end_y: float = 1.78 - float(drop / 2) * 0.18
+		_ball(st, Vector3(x, end_y, 0.53), 0.04, c1, 5)
+		MeshKit.box(st, Vector3(x, end_y - 0.07, 0.53), Vector3(0.025, 0.08, 0.01), Color(0.95, 0.75, 0.2))
 	_umbrella(st, Vector3(0.0, 0.0, -0.2), 1.35, cloth)

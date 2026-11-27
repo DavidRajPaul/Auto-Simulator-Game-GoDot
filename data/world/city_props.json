@@ -158,7 +158,7 @@
     },
     {
       "model": "parked_sport_bike",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb",
+      "asset": "res://assets/models/traffic/chennai/sport_bike.glb",
       "x": 890.4,
       "z": -1862.3,
       "yaw": 1.571,
@@ -203,7 +203,7 @@
     },
     {
       "model": "parked_sport_bike",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_1.glb",
+      "asset": "res://assets/models/traffic/chennai/sport_bike.glb",
       "x": -3064.4,
       "z": 1719.7,
       "yaw": 0,
@@ -248,7 +248,7 @@
     },
     {
       "model": "parked_sport_bike",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_2.glb",
+      "asset": "res://assets/models/traffic/chennai/sport_bike.glb",
       "x": -1729.4,
       "z": -859.6,
       "yaw": 1.571,
@@ -293,7 +293,7 @@
     },
     {
       "model": "parked_sport_bike",
-      "asset": "res://assets/models/traffic/two_wheeler_pack/sport_bike_3.glb",
+      "asset": "res://assets/models/traffic/chennai/sport_bike.glb",
       "x": 837.1,
       "z": 277.5,
       "yaw": 0,

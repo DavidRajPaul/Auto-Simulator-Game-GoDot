@@ -457,16 +457,36 @@ func _test_living_city() -> void:
 		traffic._on_bumped(bike, 6.0)
 		var slot: KnockedVehicles.Slot = traffic.knocked.slots[0]
 		_check("A hard hit hands the two-wheeler to a rigid body", bike.knocked and not bike.active and traffic.knocked.busy_count() == 1 and slot.owner == bike)
-		_check("The rigid body carries the bike's own model and rider from where it was", model.get_parent() == slot.body and slot.nodes.size() == 2
+		_check("The rigid body carries the bike's own model from where it was", model.get_parent() == slot.body and slot.nodes.size() == 1
 			and not slot.body.freeze and slot.body.global_position.distance_to(where) < 0.5, "%d nodes" % slot.nodes.size())
+		# Nov 27: the rider comes off as a rag doll of the same person; the seated mesh hides.
+		var doll: RiderRagdolls.Doll = slot.doll
+		var rider_hip: Vector3 = where + Vector3.UP * 0.8
+		_check("The rider is thrown off as a rag doll of the same person", doll != null and slot.rider != null and not slot.rider.visible
+			and doll.root.visible and doll.sim.is_simulating_physics()
+			and doll.source == RiderRagdolls.source_of(str(slot.rider.get_meta("model_path", ""))))
 		_check("It has the bike's real mass and the speed the hit gave it", is_equal_approx(slot.body.mass, 180.0) and slot.body.linear_velocity.length() > 1.5, "%.1f m/s" % slot.body.linear_velocity.length())
 		for i: int in 90:
 			await get_tree().physics_frame
 		var up: float = slot.body.global_basis.y.dot(Vector3.UP)
 		_check("The knocked bike is thrown and goes over on its side", slot.body.global_position.distance_to(where) > 0.6 and up < 0.75, "moved %.1f m, up %.2f" % [slot.body.global_position.distance_to(where), up])
 		_check("A knocked vehicle is never respawned while it lies there", not traffic._respawn_queue.has(bike))
+		if doll != null:
+			var hips: PhysicalBone3D = doll.sim.get_node("PB_Hips") as PhysicalBone3D
+			var head: PhysicalBone3D = doll.sim.get_node("PB_Head") as PhysicalBone3D
+			var ground: float = SignalBus.surface_height(hips.global_position.x, hips.global_position.z, 0.0)
+			# Down (head no longer above the hips as it is when seated), maybe across the fallen bike,
+			# never through the ground, and away from where the seat was.
+			_check("The rag doll falls in the road, off the seat and not through the ground",
+				head.global_position.y < hips.global_position.y + 0.3 and hips.global_position.y - ground < 0.9
+				and hips.global_position.y > ground - 0.2 and head.global_position.y > ground - 0.2
+				and hips.global_position.distance_to(rider_hip) > 0.4,
+				"hips %.2f m above ground, head %.2f, moved %.1f m" % [hips.global_position.y - ground, head.global_position.y - ground, hips.global_position.distance_to(rider_hip)])
+		var rider: Node3D = slot.rider
 		traffic.knocked.give_back(slot)
 		_check("Handing it back returns the model to its traffic slot", not bike.knocked and model.get_parent() == bike and traffic.knocked.busy_count() == 0 and slot.body.freeze)
+		_check("...and the rider to the seat, the rag doll hidden and still", rider == null or (rider.visible and doll != null and not doll.root.visible
+			and not doll.sim.is_simulating_physics() and traffic.knocked.ragdolls.busy_count() == 0))
 	# --- Nov 14 device report: "when I go fast and hit a vehicle, it disappears". The hit comes
 	# from inside the auto's physics step; a hand-over made there left the body under the map.
 	var auto_body: RigidBody3D = city.get_node("AutoRickshaw") as RigidBody3D

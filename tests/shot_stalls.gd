@@ -46,15 +46,22 @@ func _ready() -> void:
 		add_child(mi)
 		counts.append("%d: %d tris" % [i, (d["v"] as PackedVector3Array).size() / 3])
 	print("stall triangles: ", ", ".join(counts))
+	# The roadside fruit carts (tools/art/make_fruit_cart.py), front (-Z) towards the camera.
+	for k: int in 2:
+		var cart: Node3D = (load("res://assets/models/city/shops/fruit_cart_%s.glb" % ["a", "c"][k]) as PackedScene).instantiate() as Node3D
+		cart.position = Vector3(16.5 + float(k) * 3.2, 0.0, 0.0)
+		cart.rotation.y = PI
+		add_child(cart)
 	var cam: Camera3D = Camera3D.new()
 	add_child(cam)
 	cam.current = true
 	cam.fov = 40
 	var out: String = OS.get_environment("SHOT_OUT") if OS.has_environment("SHOT_OUT") else "/tmp/stalls.png"
-	for view: int in 2:
-		var from: Vector3 = Vector3(0.0, 3.6, 17.0) if view == 0 else Vector3(10.5, 2.2, 5.5)
-		cam.position = from
-		cam.look_at(Vector3(0.0 if view == 0 else 10.0, 1.0, 0.0))
+	var views: Array = [[Vector3(0.0, 3.6, 17.0), Vector3(0.0, 1.0, 0.0)], [Vector3(11.0, 2.0, 4.6), Vector3(12.0, 1.1, 0.0)],
+		[Vector3(18.6, 2.2, 5.6), Vector3(18.1, 1.0, 0.0)]]
+	for view: int in views.size():
+		cam.position = views[view][0] as Vector3
+		cam.look_at(views[view][1] as Vector3)
 		for f: int in 6:
 			await get_tree().process_frame
 		get_viewport().get_texture().get_image().save_png(out.replace(".png", "_%d.png" % view))

@@ -421,7 +421,9 @@ def main() -> int:
         if not (SRC / f).exists():
             print(f"missing source {SRC / f}: put the owner's Tripo export there", file=sys.stderr)
             return 1
-    report = {"transformer": bake_transformer(), "tea": bake_tea(), "fruit": bake_fruit(),
+    # Fruit carts are modelled by tools/art/make_fruit_cart.py since Nov 27 (bake_fruit kept for
+    # reference; running it would overwrite the new carts).
+    report = {"transformer": bake_transformer(), "tea": bake_tea(),
               "biryani": bake_biryani()}
     print(json.dumps(report, indent=1, ensure_ascii=False))
     return 0

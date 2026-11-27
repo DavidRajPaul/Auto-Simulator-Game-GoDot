@@ -27,6 +27,7 @@ const BIKE_FILES: Array[String] = [
 	"res://assets/models/traffic/chennai/moped.glb",
 	"res://assets/models/traffic/chennai/commuter_bike.glb",
 	"res://assets/models/traffic/chennai/cruiser_bike.glb",
+	"res://assets/models/traffic/chennai/sport_bike.glb",
 	"res://assets/models/traffic/chennai/bicycle.glb",
 ]
 const CAR_FILES: Array[String] = [
@@ -43,7 +44,7 @@ const CAR_EXTRA_FILES: Array[String] = [
 const LENGTHS_M: Array[float] = [1.83, 3.8, 2.9]
 ## Models with their own real length (the Chennai set is built at real size).
 const FILE_LENGTHS_M: Dictionary = {
-	"moped": 1.82, "commuter_bike": 1.92, "cruiser_bike": 2.1, "bicycle": 1.8,
+	"moped": 1.85, "commuter_bike": 1.89, "cruiser_bike": 2.12, "sport_bike": 1.97, "bicycle": 1.8,
 	"hatchback": 3.87, "tallboy": 3.62, "micro_van": 3.39, "mini_truck": 3.82, "suv_silver": 4.4,
 }
 

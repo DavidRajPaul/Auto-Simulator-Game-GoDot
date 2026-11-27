@@ -159,28 +159,12 @@ def _normalise(mesh: trimesh.Trimesh, length_m: float) -> trimesh.Trimesh:
 
 
 def split_two_wheelers() -> list[dict]:
-    scene = trimesh.load(SRC / "two_wheeler_pack.glb", force="scene")
-    mesh = trimesh.util.concatenate(scene.dump())
-    vehicles = _groups(mesh, 0.3)
-    # Sport bikes: the only groups longer than 13 units and taller than 7 (the 15.2 x 7.7
-    # silhouettes in the first showroom row). One per colour column, sorted left to right.
-    bikes = [v for v in vehicles if (v.bounds[1] - v.bounds[0])[2] > 13.0 and (v.bounds[1] - v.bounds[0])[1] > 7.0
-             and v.bounds[0][2] < -45.0]
-    bikes.sort(key=lambda v: v.bounds.mean(0)[0])
-    if len(bikes) != 4:
-        raise SystemExit(f"expected 4 sport bikes in the pack, found {len(bikes)}")
+    # Nov 27: the pack's sport bikes came out shredded (owner: "these models are deformed") and
+    # were replaced by tools/art/make_chennai_vehicles.py sport_bike(); only the parked scooter
+    # copy is still made here.
     out_dir = OUT / "two_wheeler_pack"
     out_dir.mkdir(parents=True, exist_ok=True)
     written = []
-    for i, bike in enumerate(bikes):
-        # The pack's bikes already face +Z (windscreen and front wheel at the +Z end).
-        bike = _normalise(bike, BIKE_LENGTH_M)
-        bike = _palette_mesh(bike, _face_colours(bike))
-        path = out_dir / f"sport_bike_{i}.glb"
-        bike.export(path)
-        size = bike.bounds[1] - bike.bounds[0]
-        written.append({"file": path.relative_to(ROOT).as_posix(), "size": [round(float(s), 3) for s in size],
-                        "triangles": int(len(bike.faces))})
     # A real-size, grounded copy of the Activa-style traffic scooter for parked rows (the
     # traffic file is a 1-unit box centred on its origin, so it would sink if just scaled).
     scooter = trimesh.util.concatenate(trimesh.load(OUT / "two_wheeler.glb", force="scene").dump())
