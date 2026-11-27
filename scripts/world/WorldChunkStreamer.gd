@@ -10,11 +10,9 @@ extends Node3D
 ## Visual layering (ground plane sits at -0.15 so far-away flat layers never z-fight).
 ## OSM footprint anchors, verified against the shipped chunks. Seed plus position prevents
 ## unrelated buildings sharing the modulo seed from receiving landmark architecture.
-## (Senate House is the procedural model in data/world/landmark_models.json since Nov 27.)
-const HERITAGE_SITES: Array[Dictionary] = [
-	{"seed": 3505, "point": Vector2(2443.58, -1676.04), "style": "palace"},
-	{"seed": 3507, "point": Vector2(2462.20, -1573.74), "style": "palace"},
-]
+## (Senate House and both Chepauk Palace blocks are procedural models in
+## data/world/landmark_models.json since Nov 27; the list is kept for future footprint accents.)
+const HERITAGE_SITES: Array[Dictionary] = []
 const GROUND_VISUAL_Y: float = -0.15
 const ROAD_Y: float = 0.06
 const SIDEWALK_Y: float = 0.08
@@ -1078,7 +1076,13 @@ const LANDMARK_RAILS: Dictionary = {
 	"rail_green": [Color(0.86, 0.72, 0.38), Color(0.16, 0.42, 0.22), 0.45, 1.5],
 	# San Thome churchyard: low white wall, black iron railings (owner photos, Nov 27).
 	"rail_black": [Color(0.93, 0.93, 0.9), Color(0.05, 0.05, 0.06), 0.75, 1.95],
+	# Senate House (Nov 27): red-brick piers banded in cream, black spear railings.
+	"saracenic": [Color(0.74, 0.36, 0.24), Color(0.05, 0.05, 0.06), 0.7, 2.1],
 }
+## Pier finial per railing style (Nov 27 "decorated compounds"): ball, urn, cap, dome.
+const LANDMARK_FINIAL: Dictionary = {"rail_white": "ball", "rail_cream": "urn", "rail_black": "cap",
+	"rail_green": "ball", "saracenic": "dome"}
+const CREAM_BAND: Color = Color(0.93, 0.88, 0.77)
 const LANDMARK_POST_M: float = 2.6
 const LANDMARK_BAR_M: float = 0.2
 const KAAVI_WALL_H: float = 4.2
@@ -1109,6 +1113,9 @@ func _landmark_wall(m: MeshBuf, faces: PackedVector3Array, w: Array) -> void:
 			_dbox(m, Vector3(pg.x, 1.2, pg.y), Vector3(0.45, 2.4, 0.45), along, grey.lightened(0.06))
 		_wall_faces(faces, a, b, 0.0, 2.3, 0.3)
 		return
+	if style == "palace_red":
+		_palace_wall(m, faces, a, b, along, length)
+		return
 	var spec: Array = LANDMARK_RAILS.get(style, LANDMARK_RAILS["rail_white"]) as Array
 	var stone: Color = spec[0]
 	var rail: Color = spec[1]
@@ -1118,10 +1125,17 @@ func _landmark_wall(m: MeshBuf, faces: PackedVector3Array, w: Array) -> void:
 	_dbox(m, Vector3(mid_p.x, plinth * 0.5, mid_p.y), Vector3(length, plinth, 0.34), along, stone)
 	_dbox(m, Vector3(mid_p.x, plinth + 0.03, mid_p.y), Vector3(length + 0.04, 0.06, 0.4), along, stone.darkened(0.1))
 	var posts: int = maxi(1, int(roundf(length / LANDMARK_POST_M)))
+	var finial: String = str(LANDMARK_FINIAL.get(style, ""))
+	var pier_w: float = 0.5 if style == "saracenic" else 0.36
 	for i: int in posts + 1:
 		var pp: Vector2 = a.lerp(b, float(i) / float(posts))
-		_dbox(m, Vector3(pp.x, top * 0.5, pp.y), Vector3(0.36, top, 0.36), along, stone)
-		_dbox(m, Vector3(pp.x, top + 0.06, pp.y), Vector3(0.46, 0.12, 0.46), along, stone.darkened(0.12))
+		_dbox(m, Vector3(pp.x, top * 0.5, pp.y), Vector3(pier_w, top, pier_w), along, stone)
+		var cap: Color = CREAM_BAND if style == "saracenic" else stone.darkened(0.12)
+		_dbox(m, Vector3(pp.x, top + 0.06, pp.y), Vector3(pier_w + 0.1, 0.12, pier_w + 0.1), along, cap)
+		if style == "saracenic":
+			for y: float in [plinth + 0.35, top - 0.45]:
+				_dbox(m, Vector3(pp.x, y, pp.y), Vector3(pier_w + 0.04, 0.12, pier_w + 0.04), along, CREAM_BAND)
+		_finial(m, Vector3(pp.x, top + 0.12, pp.y), finial, cap)
 	# Rails and bars between the posts, on the wall's centre line.
 	for y: float in [plinth + 0.12, top - 0.18]:
 		_dbox(m, Vector3(mid_p.x, y, mid_p.y), Vector3(length, 0.05, 0.05), along, rail)
@@ -1135,6 +1149,10 @@ func _landmark_wall(m: MeshBuf, faces: PackedVector3Array, w: Array) -> void:
 			var off: Vector2 = n2 * 0.018 * side
 			_face(m, [_v3(c - half_bar + off, y0), _v3(c + half_bar + off, y0), _v3(c + half_bar + off, y1), _v3(c - half_bar + off, y1)],
 				Vector3(n2.x, 0.0, n2.y) * side, rail)
+		if style in ["saracenic", "rail_black"] and i % 2 == 0:
+			# Spear head on every other bar.
+			_face(m, [_v3(c - along * 0.05, y1), _v3(c + along * 0.05, y1), _v3(c + along * 0.01, y1 + 0.16), _v3(c - along * 0.01, y1 + 0.16)],
+				Vector3(n2.x, 0.0, n2.y), rail)
 	_wall_faces(faces, a, b, 0.0, top + 0.1, 0.36)
 
 ## A landmark gate: two tall piers and (arched styles) a beam across the top. The way stays open:
@@ -1147,6 +1165,9 @@ func _landmark_gate(m: MeshBuf, faces: PackedVector3Array, g: Array) -> void:
 	if length < 1.0 or style == "gopuram":
 		return # a gopuram stands in the wall line: the opening is its gateway (LandmarkModels)
 	var along: Vector2 = (b - a) / length
+	if style in ["saracenic", "tripolia"]:
+		_saracenic_gate(m, faces, a, b, along, length, style == "tripolia")
+		return
 	var pier: Color = Color(0.94, 0.94, 0.91)
 	var trim: Color = Color(0.1, 0.24, 0.5)
 	var h: float = 3.2
@@ -1179,12 +1200,106 @@ func _landmark_gate(m: MeshBuf, faces: PackedVector3Array, g: Array) -> void:
 		_dbox(m, Vector3(p.x, h * 0.5, p.y), Vector3(w, h, w), along, pier)
 		_dbox(m, Vector3(p.x, h + 0.09, p.y), Vector3(w + 0.16, 0.18, w + 0.16), along, trim)
 		_wall_faces(faces, p - along * w * 0.5, p + along * w * 0.5, 0.0, h + 0.2, w)
+		if style in ["arch_white", "arch_cream", "church"]:
+			# A gate lamp on each pier: a dark post and a white globe.
+			_trunk(m, Vector3(p.x, h + 0.18, p.y), Vector3(p.x, h + 0.6, p.y), 0.06, 0.06, Color(0.08, 0.08, 0.09))
+			_trunk(m, Vector3(p.x, h + 0.6, p.y), Vector3(p.x, h + 0.78, p.y), 0.08, 0.17, Color(0.98, 0.97, 0.9))
+			_trunk(m, Vector3(p.x, h + 0.78, p.y), Vector3(p.x, h + 0.98, p.y), 0.17, 0.03, Color(0.98, 0.97, 0.9))
+		elif style == "park":
+			_finial(m, Vector3(p.x, h + 0.18, p.y), "ball", pier)
 	if style in ["arch_white", "arch_cream", "temple"]:
 		var mid: Vector2 = (a + b) * 0.5
 		_dbox(m, Vector3(mid.x, h - 0.25, mid.y), Vector3(length, 0.5, w * 0.7), along, pier)
 		_dbox(m, Vector3(mid.x, h + 0.05, mid.y), Vector3(length + 0.2, 0.12, w * 0.8), along, trim)
 		# A raised centre over the gateway, like the arches on Kamarajar Salai's old compounds.
 		_dbox(m, Vector3(mid.x, h + 0.35, mid.y), Vector3(minf(length * 0.4, 2.4), 0.5, w * 0.6), along, pier)
+
+## A pier finial: "ball" (lighthouse, parks), "urn" (Vivekananda House), "cap" (San Thome),
+## "dome" (Indo-Saracenic: a little white onion dome on a cream drum).
+func _finial(m: MeshBuf, base: Vector3, kind: String, col: Color) -> void:
+	match kind:
+		"ball":
+			_trunk(m, base, base + Vector3(0, 0.14, 0), 0.08, 0.16, col.lightened(0.1))
+			_trunk(m, base + Vector3(0, 0.14, 0), base + Vector3(0, 0.34, 0), 0.16, 0.03, col.lightened(0.1))
+		"urn":
+			_trunk(m, base, base + Vector3(0, 0.1, 0), 0.07, 0.07, col)
+			_trunk(m, base + Vector3(0, 0.1, 0), base + Vector3(0, 0.3, 0), 0.07, 0.17, col.lightened(0.05))
+			_trunk(m, base + Vector3(0, 0.3, 0), base + Vector3(0, 0.42, 0), 0.17, 0.05, col.lightened(0.05))
+		"cap":
+			_trunk(m, base, base + Vector3(0, 0.26, 0), 0.24, 0.02, col)
+		"dome":
+			_trunk(m, base, base + Vector3(0, 0.12, 0), 0.2, 0.2, CREAM_BAND)
+			_trunk(m, base + Vector3(0, 0.12, 0), base + Vector3(0, 0.3, 0), 0.22, 0.25, Color(0.97, 0.95, 0.9))
+			_trunk(m, base + Vector3(0, 0.3, 0), base + Vector3(0, 0.62, 0), 0.25, 0.02, Color(0.97, 0.95, 0.9))
+
+## Chepauk Palace wall (Nov 27; the Nawab's 117 acres were walled in): red brick, white
+## crenellated coping, piers every 6 m with small white domes.
+func _palace_wall(m: MeshBuf, faces: PackedVector3Array, a: Vector2, b: Vector2, along: Vector2, length: float) -> void:
+	var red: Color = Color(0.78, 0.34, 0.24)
+	var white: Color = Color(0.95, 0.93, 0.88)
+	var h: float = 2.3
+	var mid: Vector2 = (a + b) * 0.5
+	_dbox(m, Vector3(mid.x, h * 0.5, mid.y), Vector3(length, h, 0.4), along, red)
+	_dbox(m, Vector3(mid.x, 0.2, mid.y), Vector3(length + 0.04, 0.4, 0.5), along, Color(0.62, 0.56, 0.5))
+	_dbox(m, Vector3(mid.x, h + 0.06, mid.y), Vector3(length + 0.05, 0.12, 0.5), along, white)
+	var merlons: int = int(length / 0.8)
+	for i: int in merlons:
+		var c: Vector2 = a + along * (float(i) + 0.5) * length / float(merlons)
+		if i % 2 == 0:
+			_dbox(m, Vector3(c.x, h + 0.3, c.y), Vector3(0.42, 0.36, 0.42), along, white)
+	var piers: int = maxi(1, int(roundf(length / 6.0)))
+	for i: int in piers + 1:
+		var pp: Vector2 = a.lerp(b, float(i) / float(piers))
+		_dbox(m, Vector3(pp.x, (h + 0.6) * 0.5, pp.y), Vector3(0.75, h + 0.6, 0.75), along, red.darkened(0.06))
+		_dbox(m, Vector3(pp.x, h + 0.68, pp.y), Vector3(0.9, 0.14, 0.9), along, white)
+		_finial(m, Vector3(pp.x, h + 0.75, pp.y), "dome", white)
+	_wall_faces(faces, a, b, 0.0, h + 0.4, 0.45)
+
+## Indo-Saracenic gates (Nov 27): "saracenic" (Senate House: two tall banded brick piers with
+## onion domes and a red-and-cream striped arch over the way) and "tripolia" (Chepauk Palace's
+## triple arch: four domed piers, a tall centre arch between two lower ones). The way stays open.
+func _saracenic_gate(m: MeshBuf, faces: PackedVector3Array, a: Vector2, b: Vector2, along: Vector2, length: float, triple: bool) -> void:
+	var red: Color = Color(0.76, 0.34, 0.23)
+	var stripe: Color = Color(0.64, 0.24, 0.17)
+	var white: Color = Color(0.96, 0.94, 0.89)
+	var piers: Array[float] = [0.0, 1.0] if not triple else [0.0, 0.28, 0.72, 1.0]
+	for t: float in piers:
+		var p: Vector2 = a.lerp(b, t)
+		var tall: bool = not triple or (t > 0.1 and t < 0.9)
+		var h: float = 5.2 if tall else 4.0
+		_dbox(m, Vector3(p.x, h * 0.5, p.y), Vector3(1.0, h, 1.0), along, red)
+		for y: float in [1.0, 2.2, 3.4]:
+			if y < h - 0.4:
+				_dbox(m, Vector3(p.x, y, p.y), Vector3(1.05, 0.16, 1.05), along, CREAM_BAND)
+		_dbox(m, Vector3(p.x, h + 0.1, p.y), Vector3(1.25, 0.2, 1.25), along, white)
+		_trunk(m, Vector3(p.x, h + 0.2, p.y), Vector3(p.x, h + 0.6, p.y), 0.5, 0.62, white)
+		_trunk(m, Vector3(p.x, h + 0.6, p.y), Vector3(p.x, h + 1.4, p.y), 0.62, 0.04, Color(0.93, 0.62, 0.38))
+		_wall_faces(faces, p - along * 0.5, p + along * 0.5, 0.0, h, 1.0)
+	# Arches: voussoir blocks along a pointed curve between neighbouring piers, alternating colours.
+	for k: int in piers.size() - 1:
+		var p0: Vector2 = a.lerp(b, piers[k]) + along * 0.5
+		var p1: Vector2 = a.lerp(b, piers[k + 1]) - along * 0.5
+		var span: float = p0.distance_to(p1)
+		var centre: bool = not triple or k == 1
+		var spring: float = 3.3 if centre else 2.4
+		var rise: float = span * 0.55
+		var prev: Vector3 = _v3(p0, spring)
+		var segs: int = 9
+		for i: int in range(1, segs + 1):
+			var u: float = float(i) / float(segs)
+			var q: Vector2 = p0.lerp(p1, u)
+			var nxt: Vector3 = _v3(q, spring + rise * pow(sin(u * PI), 0.7))
+			_beam(m, prev, nxt, 0.42, white if i % 2 == 0 else stripe)
+			prev = nxt
+		# Beam over the arch with a white crenellated top.
+		var mid: Vector2 = (p0 + p1) * 0.5
+		var top: float = spring + rise + 0.5
+		_dbox(m, Vector3(mid.x, top, mid.y), Vector3(span, 0.5, 0.6), along, red)
+		_dbox(m, Vector3(mid.x, top + 0.3, mid.y), Vector3(span + 0.1, 0.12, 0.66), along, white)
+		var merl: int = int(span / 0.7)
+		for i: int in range(0, merl, 2):
+			var c: Vector2 = p0 + along * (float(i) + 0.5) * span / float(merl)
+			_dbox(m, Vector3(c.x, top + 0.55, c.y), Vector3(0.36, 0.38, 0.5), along, white)
 
 static func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)

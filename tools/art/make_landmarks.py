@@ -28,6 +28,9 @@ import argparse
 import json
 import math
 import random
+
+import mapbox_earcut as earcut
+import numpy as np
 import sys
 from pathlib import Path
 
@@ -1038,6 +1041,16 @@ SENATE_ORIGIN = (2594.3, -1778.55)
 SENATE_AXIS_DEG = -79.33
 SENATE_FOOTPRINT = [(2570.2, -1735.7), (2601.1, -1729.6), (2618.4, -1821.4), (2587.5, -1827.5)]
 
+
+def senate_campus():
+    """The lawn between Senate House and Kamarajar Salai (owner, Nov 27: it must be seen from the
+    road): infill buildings in it are cleared (\"clear_fill\"); local x -62..62, z -26..62 (to the kerb)."""
+    ax = math.radians(SENATE_AXIS_DEG)
+    ux, uz = math.cos(ax), math.sin(ax)      # local +x (north)
+    vx, vz = -uz, ux                          # local +z (east, the road)
+    ox, oz = SENATE_ORIGIN
+    return [(ox + lx * ux + lz * vx, oz + lx * uz + lz * vz) for lx, lz in ((-62, -26), (62, -26), (62, 62), (-62, 62))]
+
 SH_BRICK = (198, 98, 64)
 SH_BRICK_D = (178, 84, 56)
 SH_BRICK_L = (212, 116, 80)
@@ -1286,12 +1299,222 @@ def senate() -> LM:
             sh_turret(m, sx * (PORCH_X1 - 0.6), sz * (PORCH_Z + 0.4), 17.5)
             # Inner turrets where the porch meets the towers.
             sh_turret(m, sx * (PORCH_X0 + 1.0), sz * (PORCH_Z + 0.2), 15.0, r=0.95)
+    # The lawn between the hall and Kamarajar Salai (owner: it must be seen from the road), a
+    # drive from the gate, flower beds and trimmed hedges along the verandahs.
+    lawn = (86, 140, 62)
+    lawn2 = (78, 128, 56)
+    for k, (z0, z1) in enumerate(((VER_Z + 1.2, 54.0), (-24.0, -VER_Z - 1.2))):
+        for j in range(6):
+            x0 = -48.0 + j * 16.0
+            m.flat_y(x0, x0 + 16.0, z0, z1, 0.05, lawn if (j + k) % 2 == 0 else lawn2)
+    m.flat_y(-2.6, 2.6, VER_Z + 0.2, 58.0, 0.07, (204, 196, 178))
+    m.flat_y(-40.0, 40.0, VER_Z + 0.2, VER_Z + 1.4, 0.07, (204, 196, 178))
+    for sx in (-1.0, 1.0):
+        m.ybox(sx * 3.2 - 0.4, sx * 3.2 + 0.4, 0.0, 0.7, VER_Z + 3.0, 52.0, (52, 104, 44))
+        for k in range(5):
+            m.ybox(sx * 12.0 + k * sx * 6.0 - 1.2, sx * 12.0 + k * sx * 6.0 + 1.2, 0.05, 0.3, 24.0, 27.0, (196, 60, 70) if k % 2 else (236, 190, 60))
     # Steps up to each porch.
     for sx in (-1.0, 1.0):
         for k in range(3):
             xa = sx * (PORCH_X1 + 0.5 * (3 - k))
             x0, x1 = sorted((xa, sx * PORCH_X1))
             m.ybox(x0, x1, 0.0, 0.3 * (k + 1), -3.0, 3.0, SH_STONE)
+    return m
+
+
+# ================================================================= Chepauk Palace
+
+# Chepauk Palace (Nawab of Arcot, 1768; Paul Benfield; reworked by Robert Chisholm 1868-71), from
+# Wikipedia, TN Tourism, Madras Musings and photos (Nov 27): two red-brick, white-trimmed
+# Indo-Saracenic blocks. Kalas Mahal (south, restored 2017) is two storeys with arcaded verandahs,
+# a white balustraded parapet and minareted entrances on its west and south sides. Humayun Mahal
+# (north) got a first floor and a Madras terrace from Chisholm, its new front matching Kalas Mahal,
+# a new east entrance facing the beach, and the tall striped tower (~75 ft) built in front of it.
+# Each block is built on its real OSM footprint (seeds 3505 / 3507), local frame = world axes.
+CP_RED = (200, 86, 60)
+CP_RED_D = (176, 70, 50)
+CP_WHITE = (240, 236, 224)
+CP_DOME = (238, 234, 222)
+HUMAYUN_FOOTPRINT = [(2428.0, -1700.0), (2427.6, -1698.3), (2425.8, -1698.7), (2412.6, -1645.1), (2476.9, -1629.4), (2490.6, -1684.8)]
+KALAS_FOOTPRINT = [(2456.6, -1618.2), (2452.2, -1619.2), (2438.4, -1560.6), (2450.3, -1557.7), (2448.6, -1550.5), (2442.0, -1552.2),
+                   (2436.8, -1530.5), (2472.7, -1521.7), (2477.7, -1543.1), (2472.8, -1544.3), (2474.6, -1551.9), (2481.8, -1550.1),
+                   (2495.6, -1608.7), (2466.8, -1615.8), (2469.3, -1626.5), (2459.1, -1629.0)]
+
+
+def _centroid(poly):
+    return (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+
+
+def _local(poly):
+    cx, cz = _centroid(poly)
+    pts = [(x - cx, z - cz) for x, z in poly]
+    # Drop slivers (< 2.5 m edges) so every wall gets real bays.
+    out = []
+    for p in pts:
+        if not out or math.dist(out[-1], p) > 2.5:
+            out.append(p)
+    if math.dist(out[0], out[-1]) < 2.5:
+        out.pop()
+    return out
+
+
+def _ccw(poly):
+    area = sum(poly[i - 1][0] * poly[i][1] - poly[i][0] * poly[i - 1][1] for i in range(len(poly)))
+    return poly if area > 0 else list(reversed(poly))
+
+
+def _roof(m: LM, poly, y: float, col) -> None:
+    pts = np.array(poly, dtype=np.float64)
+    idx = earcut.triangulate_float64(pts, np.array([len(poly)], dtype=np.uint32))
+    for t in range(0, len(idx), 3):
+        a, b, c = (poly[int(idx[t + k])] for k in range(3))
+        m.tri((a[0], y, a[1]), (c[0], y, c[1]), (b[0], y, b[1]), col, (0, 1, 0))
+
+
+def palace_block(m: LM, poly, h: float, rng: random.Random, minar_h: float) -> list:
+    """Red Indo-Saracenic block on a footprint: arcaded ground floor, arched first-floor windows,
+    white string courses, balustraded parapet with pinnacles, a slim minaret at every corner.
+    Returns the walls as (a, b, outward normal) for the features added afterwards."""
+    poly = _ccw(poly)
+    n = len(poly)
+    m.collider((0.0, h / 2, 0.0), (1.0, 1.0, 1.0))  # replaced below by per-wall boxes
+    m.boxes.pop()
+    walls_out = []
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        ex, ez = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(ex, ez)
+        # CCW in (x, z) with z pointing south: outward is (ez, -ex) / ln.
+        nx, nz = ez / ln, -ex / ln
+        yaw = math.atan2(nx, nz)  # local +z = outward
+        walls_out.append((a, b, (nx, nz)))
+        # Frame at the wall's midpoint, local +x along the wall.
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        m.push((mx, 0.0, mz), yaw=yaw)
+        hl = ln / 2
+        m.ybox(-hl, hl, 0.0, 0.8, -0.6, 0.15, SH_STONE)
+        m.quad((-hl, 0.8, 0.0), (hl, 0.8, 0.0), (hl, h, 0.0), (-hl, h, 0.0), CP_RED, (0, 0, 1))
+        bays = max(1, int(round(ln / 3.8)))
+        bw = ln / bays
+        for k in range(bays):
+            bx = -hl + bw * (k + 0.5)
+            if ln >= 3.0:
+                pointed_opening(m, bx, 0.8, bw * 0.62, 3.6, frame=0.26, depth=0.22, rise=bw * 0.42)
+                if h > 8.0:
+                    pointed_opening(m, bx, 6.0, bw * 0.42, 8.0, col=(70, 44, 36), frame=0.2, depth=0.16)
+                    # Jharokha hood over the first-floor window.
+                    m.ybox(bx - bw * 0.36, bx + bw * 0.36, 9.3, 9.5, -0.05, 0.55, CP_WHITE)
+            if k > 0:
+                px = -hl + bw * k
+                m.ybox(px - 0.32, px + 0.32, 0.8, h - 0.4, -0.05, 0.28, CP_RED_D)
+        for y, hh in ((5.0, 0.4), (h - 0.6, 0.6)):
+            m.ybox(-hl - 0.1, hl + 0.1, y, y + hh, -0.05, 0.3, CP_WHITE)
+        crenels(m, -hl, hl, h, h=0.95, step=0.85, depth=0.3, col=CP_WHITE)
+        for k in range(bays + 1):
+            sh_pinnacle(m, -hl + bw * k, h + 0.35, 0.0, 0.26)
+        m.pop()
+        # Collider: a slab along the wall (the courtyard is inside the box anyway).
+        m.boxes.append(((round(mx - nx * 2.0, 3), round(h / 2, 3), round(mz - nz * 2.0, 3)), (round(ln, 3), round(h, 3), 4.0), round(yaw, 4)))
+    _roof(m, poly, h - 0.05, (178, 132, 108))  # Madras terrace, brick-tile finish
+    # Minarets at the convex corners.
+    for i in range(n):
+        p0, p1, p2 = poly[i - 1], poly[i], poly[(i + 1) % n]
+        cross = (p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])
+        if cross > 0 and min(math.dist(p0, p1), math.dist(p1, p2)) > 6.0:
+            cp_minaret(m, p1[0], p1[1], minar_h, 1.15)
+    return walls_out
+
+
+def cp_minaret(m: LM, cx: float, cz: float, top: float, r: float) -> None:
+    """White-banded red octagonal minaret with balconies, a chhatri and a white dome."""
+    rot = math.pi / 8
+    m.prism(8, r + 0.2, r + 0.2, 0.0, 0.9, SH_STONE, top=False, rot=rot, cx=cx, cz=cz)
+    y = 0.9
+    for k, (hh, col) in enumerate(((top * 0.42, CP_RED), (0.35, CP_WHITE), (top * 0.25, CP_RED), (0.35, CP_WHITE))):
+        rr = r if k < 2 else r * 0.85
+        m.prism(8, rr, rr, y, y + hh, col, top=False, rot=rot, cx=cx, cz=cz)
+        y += hh
+    m.prism(8, r + 0.35, r + 0.35, y, y + 0.25, CP_WHITE, top=True, bottom=True, rot=rot, cx=cx, cz=cz)
+    for i in range(8):
+        a = rot + i * math.pi / 4
+        px, pz = cx + math.cos(a) * r * 0.75, cz + math.sin(a) * r * 0.75
+        m.ybox(px - 0.09, px + 0.09, y + 0.25, y + 1.6, pz - 0.09, pz + 0.09, CP_WHITE)
+    m.prism(8, r * 0.95, r * 0.95, y + 1.6, y + 1.9, CP_WHITE, top=True, rot=rot, cx=cx, cz=cz)
+    onion_dome(m, cx, y + 1.9, cz, r * 0.78, seg=10, col=CP_DOME, lace=CP_WHITE)
+
+
+def cp_entrance(m: LM, a, b, nrm, h: float, minar: float, width: float = 9.0) -> None:
+    """A minareted entrance: a projecting porch with a big cusped arch, two tall minarets."""
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    yaw = math.atan2(nrm[0], nrm[1])
+    m.push((mx, 0.0, mz), yaw=yaw)
+    hw = width / 2
+    m.ybox(-hw, hw, 0.0, h + 1.6, 0.0, 4.0, CP_RED, skip="-y")
+    m.boxes.append((tuple(round(float(v), 3) for v in m.world((0.0, (h + 1.6) / 2, 2.0))), (width, h + 1.6, 4.0), round(m.yaw_now(), 4)))
+    m.push((0.0, 0.0, 4.0))
+    striped_arch(m, 0.0, 0.8, width * 0.48, h * 0.42, depth=0.3, band=0.6, n=9)
+    pointed_opening(m, 0.0, h * 0.62, width * 0.3, h * 0.82, col=(70, 44, 36))
+    crenels(m, -hw, hw, h + 1.6, h=1.1, step=0.9, col=CP_WHITE)
+    m.pop()
+    for sx in (-1.0, 1.0):
+        lx, lz = m.world((sx * (hw + 0.6), 0.0, 4.0))[0], m.world((sx * (hw + 0.6), 0.0, 4.0))[2]
+        m.pop()
+        cp_minaret(m, lx, lz, minar, 1.35)
+        m.push((mx, 0.0, mz), yaw=yaw)
+    m.pop()
+
+
+def cp_tower(m: LM, a, b, nrm, h_base: float) -> None:
+    """Chisholm's tower in front of Humayun Mahal: square, four storeys, white bands, domed top."""
+    mx, mz = (a[0] + b[0]) / 2 + nrm[0] * 5.0, (a[1] + b[1]) / 2 + nrm[1] * 5.0
+    S = 4.6
+    top = 22.8
+    m.ybox(mx - S - 0.3, mx + S + 0.3, 0.0, 0.9, mz - S - 0.3, mz + S + 0.3, SH_STONE)
+    m.ybox(mx - S, mx + S, 0.9, top, mz - S, mz + S, CP_RED, skip="-y")
+    m.collider((mx, top / 2, mz), (2 * S + 0.6, top, 2 * S + 0.6))
+    for y in (5.2, 10.6, 16.0):
+        course(m, mx - S, mx + S, mz - S, mz + S, y, 0.45, 0.16, CP_WHITE)
+    for face, fx, fz in (("-x", mx - S, mz), ("+x", mx + S, mz), ("-z", mx, mz - S), ("+z", mx, mz + S)):
+        wall_frame(m, face, fx, fz)
+        striped_arch(m, 0.0, 0.9, 3.6, 3.8, depth=0.3, band=0.5, n=8)
+        for y0, y1 in ((6.6, 9.2), (12.0, 14.6)):
+            pointed_opening(m, 0.0, y0, 1.6, y1, col=(70, 44, 36))
+        striped_arch(m, 0.0, 17.2, 3.0, 20.0, band=0.45, n=7, glass=True)
+        crenels(m, -S - 0.2, S + 0.2, top, h=0.9, step=0.95, col=CP_WHITE)
+        m.pop()
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            cp_minaret(m, mx + sx * S, mz + sz * S, top + 2.0, 0.75)
+    rot = math.pi / 8
+    m.prism(8, S * 0.8, S * 0.8, top, top + 2.4, CP_WHITE, top=True, rot=rot, cx=mx, cz=mz)
+    onion_dome(m, mx, top + 2.4, mz, S * 0.78, seg=16, col=CP_DOME, lace=(214, 200, 176))
+
+
+def chepauk_humayun() -> LM:
+    m = LM()
+    rng = random.Random(3505)
+    poly = _local(HUMAYUN_FOOTPRINT)
+    walls = palace_block(m, poly, 12.8, rng, 18.5)
+    # The east entrance facing the beach, with the tower in front of it.
+    east = max(walls, key=lambda w: w[2][0] * math.dist(w[0], w[1]) ** 0.2)
+    cp_tower(m, east[0], east[1], east[2], 12.8)
+    # The new front on Wallajah Road (north) matches Kalas Mahal: a minareted entrance.
+    north = min(walls, key=lambda w: w[2][1])
+    cp_entrance(m, north[0], north[1], north[2], 12.8, 21.0)
+    return m
+
+
+def chepauk_kalas() -> LM:
+    m = LM()
+    rng = random.Random(3507)
+    poly = _local(KALAS_FOOTPRINT)
+    walls = palace_block(m, poly, 12.4, rng, 17.5)
+    # Minareted entrances on the west and south sides (Wikipedia).
+    longest = lambda ws: max(ws, key=lambda w: math.dist(w[0], w[1]))  # noqa: E731
+    west = longest([w for w in walls if w[2][0] < -0.7])
+    south = longest([w for w in walls if w[2][1] > 0.7])
+    for w in (west, south):
+        cp_entrance(m, w[0], w[1], w[2], 12.4, 21.5)
     return m
 
 
@@ -1323,11 +1546,24 @@ def world_place(origin, axis_deg: float):
     return {"x": round(origin[0], 3), "z": round(origin[1], 3), "yaw": round(-math.radians(axis_deg), 5)}
 
 
+# Grounds round a model where only procedural infill ("f" buildings) and dress points go.
+def chepauk_grounds():
+    """The palace grounds inside the compound (build_landmark_compounds.py "chepauk_palace" rect):
+    procedural infill goes, the real government buildings on the grounds stay."""
+    cx, cz, w, d, yaw = 2455.0, -1612.0, 112.0, 208.0, 2.903
+    c, s_ = math.cos(yaw), math.sin(yaw)
+    return [(cx + lx * c + lz * s_, cz - lx * s_ + lz * c) for lx, lz in ((-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2))]
+
+
+CLEAR_FILL = {"senate_house": lambda: senate_campus(), "chepauk_humayun_mahal": lambda: chepauk_grounds()}
+
 BUILDERS = {
     "santhome_basilica": (santhome, SANTHOME_ORIGIN, SANTHOME_AXIS_DEG, lambda: SANTHOME_FOOTPRINT),
     "kapaleeshwarar_temple": (kapaleeshwarar, KAPALI_ORIGIN, KAPALI_ROT_DEG, kapali_clear),
     "kapaleeshwarar_tank_mandapam": (tank_mandapam, TANK_CENTRE, TANK_AXIS_DEG, lambda: []),
     "senate_house": (senate, SENATE_ORIGIN, SENATE_AXIS_DEG, lambda: SENATE_FOOTPRINT),
+    "chepauk_humayun_mahal": (chepauk_humayun, _centroid(HUMAYUN_FOOTPRINT), 0.0, lambda: HUMAYUN_FOOTPRINT),
+    "chepauk_kalas_mahal": (chepauk_kalas, _centroid(KALAS_FOOTPRINT), 0.0, lambda: KALAS_FOOTPRINT),
 }
 
 
@@ -1350,6 +1586,8 @@ def main() -> int:
         place.update({"id": name, "glb": f"res://assets/models/landmarks/{name}.glb", "tris": tris,
                       "boxes": [list(c) + list(s) + [y] for c, s, y in m.boxes],
                       "clear": [[round(x, 2), round(z, 2)] for x, z in clear()]})
+        if name in CLEAR_FILL:
+            place["clear_fill"] = [[round(x, 2), round(z, 2)] for x, z in CLEAR_FILL[name]()]
         by_id[name] = place
         print(f"{name}: {tris} triangles, {len(m.boxes)} collider boxes")
     placements = {"_note": "Generated by tools/art/make_landmarks.py: one GLB per landmark; boxes = "

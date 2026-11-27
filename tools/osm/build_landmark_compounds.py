@@ -19,6 +19,17 @@ surrounded with compounds". What the real places look like (Nov 2026 research):
   to Santhome High Road (owner photos, Nov 27). Never kaavi: the stripes are for Hindu temples.
 * LIC Building (Anna Salai): an office compound wall with a gate to the road.
 * Panagal Park: a corporation park with green railings on a low plinth and openings on each side.
+* Senate House (Nov 27 owner photos + research): it stands in the University's Chepauk campus on
+  Kamarajar Salai, seen across its lawn from the road; cream-capped gate piers and black iron
+  railings in front. -> "saracenic": red-brick piers banded in cream with little white domed
+  finials, black spear railings; a "saracenic" gate (tall domed piers, a striped arch) to the road.
+  The infill between the hall and the road is cleared (landmark_models.json "clear_fill").
+* Chepauk Palace (Wikipedia, Madras Musings): the Nawab's palace was walled in; its main entrance
+  was a Tripolia gate, a triple arch, on Wallajah Road, and its gate pillars carried terracotta
+  reliefs. -> "palace_red": a red-brick wall with white crenellated coping and domed piers; a
+  "tripolia" gate.
+Decoration (Nov 27): every railing pier now has a finial (ball, urn or cap by style) and the
+arched gates carry lamps.
 
 How a site is fitted: each landmark has a rectangle (centre, size, yaw), or for a park its mapped
 outline. Every side is pulled inwards until it stays clear of the drawn carriageway and footpath,
@@ -44,6 +55,7 @@ STEP = 0.5         # wall sampling step along a side
 ROAD_CLEAR_M = 1.5  # keep this far from the carriageway
 MAX_PULL = 0.45
 PARK_NEAR_M = 30.0  # a park landmark is fenced only along its own mapped outline    # a side may move in by at most this share of the site's half size
+WALLS_AVOID_MODELS = ("senate_house", "chepauk_humayun_mahal", "chepauk_kalas_mahal")
 CARRIAGEWAY = ("road", "lane", "junction", "centre", "road_up", "lane_up", "junction_up", "centre_up")
 
 # Sites. "rect": centre x, z, width (local x), depth (local z), yaw (radians, local +z = front).
@@ -73,7 +85,18 @@ SITES = [
     {"id": "lic_building", "style": "wall_grey", "gate": "plain",
      "rect": (316.2, -1534.2, 34.0, 34.0, None), "gates": [("front", 0.0, 7.0)],
      "keep_out": [(316.2, -1534.2, 20.0, 20.0, 0.0)]},
-    {"id": "panagal_park", "style": "rail_green", "gate": "park", "park": True, "gates_every_m": 45.0, "gate_w": 3.5},
+    # The mapped Panagal Park (OSM way 209513246) is ~200 m west of the old marker (fixed Nov 27).
+    {"id": "panagal_park", "style": "rail_green", "gate": "park", "park": True, "gates_every_m": 45.0, "gate_w": 3.5,
+     "anchor": (-2805.0, 845.0)},
+    # Senate House: front (+z) on the Kamarajar Salai kerb (owner: seen from the road), local x
+    # along the hall (north), as the model.
+    {"id": "senate_house", "style": "saracenic", "gate": "saracenic", "anchor": (2594.3, -1778.55),
+     "rect": (2611.0, -1775.4, 100.0, 84.0, 1.385), "gates": [("front", 0.0, 8.0), ("front", -34.0, 4.0)],
+     "keep_out": []},
+    # Chepauk Palace: both mahals, front (+z) north to Wallajah Road on the blocks' 13.7 deg grid.
+    {"id": "chepauk_palace", "style": "palace_red", "gate": "tripolia", "anchor": (2458.0, -1610.0),
+     "rect": (2455.0, -1612.0, 112.0, 208.0, 2.903), "gates": [("front", 0.0, 11.0), ("right", 30.0, 11.0), ("left", -20.0, 11.0), ("back", 0.0, 11.0)],
+     "keep_out": []},
 ]
 
 
@@ -110,6 +133,11 @@ class Window:
                 for b in d.get("blds", []):
                     p = b["p"]
                     db.polygon([self.px(p[2 * k], p[2 * k + 1]) for k in range(len(p) // 2)], fill=1)
+        # The procedural landmark models (landmark_models.json) stand where their footprints were.
+        # (Not the temple and basilica: their outlines are whole precincts these walls go round.)
+        for model in load(WORLD / "landmark_models.json").get("models", []):
+            if model["id"] in WALLS_AVOID_MODELS and len(model.get("clear", [])) >= 3:
+                db.polygon([self.px(float(q[0]), float(q[1])) for q in model["clear"]], fill=1)
         areas = load(WORLD / "areas.json")
         for kind in ("water", "sea"):
             for poly in areas.get(kind, []):
@@ -213,7 +241,9 @@ def runs(win, points, gate_mask):
         c = win.cell(*p)
         if g:
             close(cur, walls)
-            if c is not None and not win.street(*p) and not win.water[c]:
+            # A gate never stands in a building (Nov 27: a pulled-in front put Chepauk's
+            # Tripolia inside Humayun Mahal's facade).
+            if c is not None and not win.street(*p) and not win.water[c] and not win.bld[c]:
                 cur_gate.append(p)
             else:
                 close(cur_gate, gates)
@@ -346,9 +376,14 @@ def main() -> int:
             parks = [[(float(p[0]), float(p[1])) for p in poly] for poly in areas.get("park", []) if len(poly) >= 3]
             if not parks:
                 continue
-            x, z = float(lm["x"]), float(lm["z"])
+            x, z = site["anchor"] if site.get("anchor") else (float(lm["x"]), float(lm["z"]))
             outline = min(parks, key=lambda poly: min(math.hypot(px - x, pz - z) for px, pz in poly))
-            if min(math.hypot(px - x, pz - z) for px, pz in outline) > PARK_NEAR_M:
+            inside = False
+            for k in range(len(outline)):
+                (x0, z0), (x1, z1) = outline[k - 1], outline[k]
+                if (z0 > z) != (z1 > z) and x < x0 + (z - z0) * (x1 - x0) / (z1 - z0):
+                    inside = not inside
+            if not inside and min(math.hypot(px - x, pz - z) for px, pz in outline) > PARK_NEAR_M:
                 print(f"{site['id']}: no mapped park outline within {PARK_NEAR_M:.0f} m, skipped")
                 continue
             xs = [p[0] for p in outline]

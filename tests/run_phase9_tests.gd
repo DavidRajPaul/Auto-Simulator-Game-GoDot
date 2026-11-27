@@ -352,10 +352,11 @@ func _test_landmark_kit() -> void:
 			var style: String = WorldChunkStreamer.heritage_style(building)
 			if style != "":
 				heritage_counts[style] = int(heritage_counts.get(style, 0)) + 1
-	# The basilica and Senate House footprints are gone: both are procedural models (LandmarkModels) since Nov 27.
-	_check("Heritage styles match only their two shipped OSM footprints", heritage_counts == {"palace": 2}, str(heritage_counts))
+	# The basilica, Senate House and Chepauk Palace footprints are gone: procedural models (LandmarkModels) since Nov 27.
+	_check("No OSM footprint still gets a heritage roof accent", heritage_counts.is_empty(), str(heritage_counts))
 	_test_landmark_models()
 	_test_napier_cooum()
+	_test_landmark_compounds()
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))
@@ -1199,7 +1200,7 @@ func _test_landmark_models() -> void:
 		_check("Landmark %s within 110k triangles, has colliders" % entry["id"], int(entry["tris"]) <= 110000 and (entry["boxes"] as Array).size() >= 1)
 		if n != null:
 			n.free()
-	_check("Basilica, temple, tank mandapam and Senate House are listed", ids.has("santhome_basilica") and ids.has("kapaleeshwarar_temple") and ids.has("kapaleeshwarar_tank_mandapam") and ids.has("senate_house"))
+	_check("Basilica, temple, tank mandapam, Senate House and Chepauk Palace are listed", ids.has("santhome_basilica") and ids.has("kapaleeshwarar_temple") and ids.has("kapaleeshwarar_tank_mandapam") and ids.has("senate_house") and ids.has("chepauk_humayun_mahal") and ids.has("chepauk_kalas_mahal"))
 	var holder: Node3D = Node3D.new()
 	var body: StaticBody3D = StaticBody3D.new()
 	holder.add_child(body)
@@ -1209,7 +1210,7 @@ func _test_landmark_models() -> void:
 	holder.queue_free()
 	# Nothing of the city stands inside a model's site, and no church or mosque is a temple.
 	var church_types: Dictionary = {}
-	for file_name: String in ["c_8_6.json", "c_4_6.json", "c_10_-8.json"]:
+	for file_name: String in ["c_8_6.json", "c_4_6.json", "c_10_-8.json", "c_9_-7.json"]:
 		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
 		var chunk: Dictionary = JSON.parse_string(cf.get_as_text()) as Dictionary
 		for b: Dictionary in chunk.get("blds", []):
@@ -1294,3 +1295,41 @@ func _test_napier_cooum() -> void:
 	var lights: ArrayMesh = LandmarkKit.napier_lights(decks)
 	_check("Napier arches stand ~7 m over the deck", bridge.get_aabb().size.y > 6.0 and bridge.get_aabb().size.y < 10.0, str(bridge.get_aabb().size))
 	_check("Napier night lights are one additive mesh", lights.get_surface_count() == 1 and NapierLights.material().shader != null)
+
+## Nov 27 owner request: "add proper decorated compounds for all the iconic buildings … Senate
+## House should be visible from the road, near to the road from its compound".
+func _test_landmark_compounds() -> void:
+	var f: FileAccess = FileAccess.open("res://data/world/landmark_compounds.json", FileAccess.READ)
+	var data: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	var sites: Dictionary = {}
+	for site: Dictionary in data.get("sites", []):
+		sites[str(site["id"])] = site
+	for id: String in ["marina_lighthouse", "vivekananda_house", "kapaleeshwarar", "santhome_basilica", "lic_building", "panagal_park", "senate_house", "chepauk_palace"]:
+		var site: Dictionary = sites.get(id, {})
+		_check("%s has a compound with a gate" % id, int(site.get("walls", 0)) > 0 and int(site.get("gates", 0)) > 0, str(site))
+	var styles: Dictionary = {}
+	for list: Variant in (data.get("gates", {}) as Dictionary).values():
+		for g: Array in list:
+			styles[str(g[0])] = true
+	_check("Senate House and Chepauk Palace have Indo-Saracenic gates", styles.has("saracenic") and styles.has("tripolia"), str(styles.keys()))
+	# The Senate House gate is on the Kamarajar Salai kerb, and nothing stands between it and the hall.
+	var gate: Vector2 = Vector2.INF
+	for list: Variant in (data.get("gates", {}) as Dictionary).values():
+		for g: Array in list:
+			if str(g[0]) == "saracenic":
+				var c: Vector2 = (Vector2(float(g[1]), float(g[2])) + Vector2(float(g[3]), float(g[4]))) * 0.5
+				if gate == Vector2.INF or c.x > gate.x:
+					gate = c
+	var hall: Vector2 = Vector2(2594.3, -1778.55)
+	var blocked: int = 0
+	for file_name: String in ["c_10_-8.json", "c_10_-7.json"]:
+		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		for bl: Dictionary in (JSON.parse_string(cf.get_as_text()) as Dictionary).get("blds", []):
+			var p: Array = bl["p"]
+			var poly: PackedVector2Array = PackedVector2Array()
+			for i: int in range(0, p.size(), 2):
+				poly.append(Vector2(float(p[i]), float(p[i + 1])))
+			if not Geometry2D.intersect_polyline_with_polygon(PackedVector2Array([hall, gate]), poly).is_empty():
+				blocked += 1
+	_check("Senate House gate is within 15 m of the road side of the campus", gate != Vector2.INF and gate.x > 2640.0, str(gate))
+	_check("Nothing stands between Senate House and its gate", blocked == 0, str(blocked))

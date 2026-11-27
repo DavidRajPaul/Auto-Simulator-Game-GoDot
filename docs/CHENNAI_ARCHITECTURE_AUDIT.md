@@ -59,3 +59,24 @@ Test route: Mylapore temple → Santhome → Lighthouse → Vivekananda House �
   mesh lighting every arch green / violet / blue / red after dark (cycling), with streaks
   reflected on the water. Parapet colliders along both edges of each carriageway.
 - The deck is at road level (the city has one ground plane), so the bridge sits low over the water.
+
+## Nov 27 (2): decorated compounds, Chepauk Palace, Senate House on the road
+
+- **Chepauk Palace** is two procedural models on the real footprints (`make_landmarks.py`
+  `chepauk_humayun()` / `chepauk_kalas()`): red brick, white courses and crenellated parapets,
+  arcaded ground floor, hooded first-floor windows, minarets at the corners, minareted entrances
+  (Kalas Mahal west + south, Humayun Mahal north) and Chisholm's striped domed tower in front of
+  Humayun Mahal's east entrance. The `"palace"` roof-accent style is gone (`HERITAGE_SITES` is empty).
+- **Compounds** (`build_landmark_compounds.py`): Senate House gets `"saracenic"` railings
+  (banded brick piers, white domed finials, black spear railings) and two domed striped-arch
+  gates on the Kamarajar Salai kerb; Chepauk Palace gets a `"palace_red"` wall (red brick, white
+  crenellated coping, domed piers) and `"tripolia"` triple-arch gates (its historic Tripolia gate).
+  Every railing pier now has a finial (ball / urn / cap / dome) and the arched gates carry lamps.
+  Panagal Park's compound was skipped: the marker was ~200 m from the mapped park (fixed).
+- **Senate House on the road**: `landmark_models.json` `"clear_fill"` lists grounds where only
+  procedural infill and dress points are cleared (`clear_landmark_sites.py`, which now also drops
+  plot walls / paving and `compounds.json` walls in cleared areas). The Senate House lawn, drive,
+  flower beds and hedges run to its gate on the kerb; Chepauk's grounds lose their infill too
+  (the real government buildings on them stay).
+- Gates never stand inside a building (`runs()`): a pulled-in front had put a Tripolia inside
+  Humayun Mahal's facade.

@@ -40,7 +40,7 @@ LANDMARKS = [
     {"id": "chitrakulam_tank", "name": "Mylapore Temple Tank", "lat": 13.03354, "lon": 80.268701, "kind": "tank"},
     {"id": "lic_building", "name": "LIC Building", "lat": 13.0627, "lon": 80.2617, "kind": "tower"},
     {"id": "gemini_flyover", "name": "Gemini Flyover", "lat": 13.0558, "lon": 80.2503, "kind": "flyover"},
-    {"id": "panagal_park", "name": "Panagal Park", "lat": 13.0405, "lon": 80.2354, "kind": "park"},
+    {"id": "panagal_park", "name": "Panagal Park", "lat": 13.04066, "lon": 80.23314, "kind": "park"},  # OSM way 209513246
     # Imported GLBs are placed via city_props, not generic landmark placeholders.
 
 ]
