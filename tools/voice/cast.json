@@ -318,5 +318,66 @@
       "seed": 938,
       "description": "{name} speaks in a {emotion} tone with a bright, cheerful, slightly fast delivery, like a flower seller at his stall. The recording is very clear audio, close up, with almost no background noise."
     }
+  },
+  "Sankaran": {
+    "gender": "male",
+    "age": [
+      "old",
+      "middle_aged"
+    ],
+    "search": [
+      "gentle",
+      "witty"
+    ],
+    "parler": {
+      "speaker": "Vikas",
+      "seed": 1018,
+      "description": "{name} speaks in a {emotion} tone with a gentle, unhurried delivery and a warm, slightly gravelly voice, like a Carnatic musician in his sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Ganesan": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "cheerful",
+      "fatherly"
+    ],
+    "parler": {
+      "speaker": "Ravi",
+      "seed": 1028,
+      "description": "{name} speaks in a {emotion} tone with a cheerful, fatherly delivery and a deep, warm voice, like a shopkeeper in his sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Volunteer": {
+    "gender": "male",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "flustered",
+      "busy"
+    ],
+    "parler": {
+      "speaker": "Aakash",
+      "seed": 1038,
+      "description": "{name} speaks in a {emotion} tone with a fast, slightly flustered delivery and a light young voice, like a college student volunteering at a crowded hall. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Lalitha": {
+    "gender": "female",
+    "age": [
+      "middle_aged"
+    ],
+    "search": [
+      "brisk",
+      "warm"
+    ],
+    "parler": {
+      "speaker": "Sneha",
+      "seed": 1048,
+      "description": "{name} speaks in a {emotion} tone with a brisk, confident delivery and a warm mid-pitched voice, like a woman in her forties who runs a music hall. The recording is very clear audio, close up, with almost no background noise."
+    }
   }
 }

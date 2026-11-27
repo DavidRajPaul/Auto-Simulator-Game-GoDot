@@ -237,7 +237,7 @@ SQ04_TITLE,Paati Knows the Way,பாட்டிக்கு வழி தெ�
 SQ04_RIDER,Paati,பாட்டி
 RIDER_IN,%s is in the auto.,%s ஆட்டோவில் ஏறிவிட்டார்.
 QUEST_NOT_ON_FIRE,Put the fire out before starting a quest.,தீயை அணைத்த பிறகு வேலையைத் ஆரம்பி.
-SQ03_RIDER,Musician,இசைக்கலைஞர்
+SQ03_RIDER,Sankaran (mridangam),சங்கரன் (மிருதங்கம்)
 SQ09_RIDER,Kutty,குட்டி
 SQ14_RIDER,Student,மாணவி
 SQ21_RIDER,Job seeker,வேலை தேடுபவர்
@@ -478,16 +478,12 @@ QUEST_TRANSFER,Load / unload,ஏற்று / இறக்கு
 QUEST_CARGO_CAPACITY,The auto is full. Unload first.,ஆட்டோ நிறைந்துவிட்டது. முதலில் இறக்கு.
 QUEST_FAIL_DIVERSION,that road is closed.,அந்தச் ரோடு மூடியிருக்கு.
 SQ03_TITLE,Margazhi Missing Beat,மார்கழியின் தவறிய தாளம்
-SQ03_DESC,A musician forgot his mridangam drum. Bring it to the music hall before the concert.,மியூசிக் அண்ணா மிருதங்கத்தை மறந்துட்டாரு. கச்சேரி ஆரம்பிக்குறதுக்குள்ள சபாவுக்கு எடுத்துட்டு போ.
-SQ03_BRIEF,The drum is at the music shop. Remember: the hall wants it at the back gate.,மிருதங்கம் இசைக் கடையில் உள்ளது. ஞாபகம் வச்சுக்கோ: சபாவின் பின் வாசலில் கொடுக்கணும்.
-SQ03_READY,Let's go,போகலாம்
-SQ03_CASE,Go to the music shop and load the drum.,இசைக் கடைக்குப் போய் மிருதங்கத்தை ஏற்று.
+SQ03_DESC,A mridangam player left his drum at the music shop. Get it to the sabha before his Margazhi concert.,மிருதங்க வித்வான் தன் மிருதங்கத்தை இசைக் கடையில் விட்டுவிட்டார். மார்கழிக் கச்சேரிக்கு முன் சபாவுக்குக் கொண்டு சேர்.
 SQ03_APPROACH,Drive slowly to the music hall. Don't shake the drum!,சபாவுக்கு மெதுவா ஓட்டு. மிருதங்கத்தைக் குலுக்காதே!
-SQ03_GATE,There is a long queue at the front. Which gate takes the drum?,முன்னால் நீண்ட வரிசை. மிருதங்கம் எந்த வாசல் வழியாகச் செல்லும்?
+SQ03_GATE,Which gate takes the drum?,மிருதங்கம் எந்த வாசல் வழியாகச் செல்லும்?
 SQ03_REAR,Back gate,பின்னாடி கேட்
 SQ03_FRONT,Front gate,முன்னாடி கேட்
-SQ03_VERIFY,Not the front. Read the notice board to be sure.,முன்னாடி கேட் இல்லை. உறுதி செய்ய அறிவிப்புப் பலகையைப் படி.
-SQ03_HANDOVER,Go to the back gate and unload the drum.,பின் வாசலுக்குப் போய் மிருதங்கத்தை இறக்கு.
+SQ03_HANDOVER,Drive to the back gate and stop beside the secretary. Keep the drum safe.,பின் வாசலுக்குப் போய் செயலாளர் அருகே நிறுத்து. மிருதங்கம் பத்திரம்.
 SQ05_TITLE,Festival Detour,திருவிழா மாற்றுப் பாதை
 SQ05_DESC,A temple procession has closed the road. Take festival lamps around it.,ஊர்வலத்தால் ரோடு மூடியிருக்கு. திருவிழா விளக்குகளைச் சுற்றி எடுத்துச் செல்.
 SQ05_LAMPS,Stop at the lamp shop and load the lamps.,விளக்குக் கடையில் நிறுத்தி விளக்குகளை ஏற்று.
@@ -731,10 +727,9 @@ SQ02_JOB,"1. Pick which shop gets coffee first.\n2. Deliver to all three shops.\
 SQ02_P_TAILOR,Tailor Shop,தையல் கடை
 SQ02_P_BOOKS,Book Shop,புத்தகக் கடை
 SQ02_P_TEA,Tea Shop,டீக்கடை
-SQ03_JOB,1. Load the drum at the music shop.\n2. Drive to the music hall. Stay under 32 km/h.\n3. Bumps and crashes damage the drum.\nThe drum goes in by the back gate.,1. இசைக் கடையில் மிருதங்கத்தை ஏற்று.\n2. சபாவுக்குப் போ. 32 கி.மீ/மணிக்குள் ஓட்டு.\n3. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\nமிருதங்கம் பின்னாடி கேட் வழியாகச் செல்லும்.
+SQ03_JOB,1. Pick up Sankaran sir.\n2. Stop beside Ganesan at the music shop for the drum.\n3. Drive to the music hall under 32 km/h. Bumps and crashes hurt the drum.\n4. Take it in by the right gate.,1. சங்கரன் சாரை ஏற்றிக்கொள்.\n2. மிருதங்கத்துக்காக இசைக் கடையில் கணேசன் அருகே நிறுத்து.\n3. 32 கி.மீ/மணிக்குள் சபாவுக்கு ஓட்டு. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\n4. சரியான வாசல் வழியாகக் கொண்டு போ.
 SQ03_P_SHOP,Music Shop,இசைக் கடை
 SQ03_P_HALL,Music Hall,சபா மண்டபம்
-SQ03_P_NOTICE,Notice Board,அறிவிப்புப் பலகை
 SQ03_P_BACK,Hall Back Gate,சபா பின்னாடி கேட்
 SQ05_JOB,1. Load the lamps.\n2. Take the open road around the procession. Stay under 25 km/h.\n3. Back up at the store and unload.\nBumps and crashes can break the lamps.,1. விளக்குகளை ஏற்று.\n2. திறந்த சாலையில் சுற்றிப் போ. 25 கி.மீ/மணிக்குள் ஓட்டு.\n3. கிடங்கில் பின்னால் நகர்த்தி இறக்கு.\nகுலுக்கலும் மோதலும் விளக்குகளை உடைக்கும்.
 SQ05_OUTER_GO,Take the outer road. Drive slowly.,வெளிச் சாலையில் மெதுவாப் போ.
@@ -1149,3 +1144,64 @@ DAILY_DOUBLE_DONE,Bonus doubled! +₹%d,போனஸ் இரட்டிப்
 QUEST_DOUBLE_BTN,2× reward  +₹%d,இரட்டிப்பு பரிசு  +₹%d
 QUEST_DOUBLE_DONE,Quest reward doubled! +₹%d,குவெஸ்ட் பரிசு இரட்டிப்பு! +₹%d
 PRIVACY_POLICY,Privacy policy,தனியுரிமைக் கொள்கை
+SQ03_INTRO,Sankaran sir needs a ride.,சங்கரன் சாருக்கு சவாரி வேண்டும்.
+SQ03_ASK_SHOP,Drive to the music shop and stop beside Ganesan.,இசைக் கடைக்குப் போய் கணேசன் அருகே நிறுத்து.
+SQ03_SHOP,Ganesan brings the mridangam.,கணேசன் மிருதங்கத்தைக் கொண்டு வருகிறார்.
+SQ03_HALL,The front gate is full of people.,முன் வாசலில் கூட்டம் நிரம்பியிருக்கிறது.
+SQ03_FRONT_LINE,Not this gate.,இந்த வாசல் இல்லை.
+SQ03_REAR_LINE,To the back gate.,பின் வாசலுக்கு.
+SQ03_BACKSTAGE,Sankaran sir checks his drum.,சங்கரன் சார் மிருதங்கத்தைச் சோதிக்கிறார்.
+SQ03_PAYOFF,There is an empty seat for you in the hall.,கூடத்தில் உனக்கு ஒரு இருக்கை காலியாக இருக்கிறது.
+SQ03_TAKE_FARE,Take the fare,சவாரிக் காசை வாங்கு
+SQ03_STAY,Stay for the concert,கச்சேரி கேட்க இரு
+SQ03_THANKS,The concert begins.,கச்சேரி தொடங்குகிறது.
+VO_SPK_SANKARAN,Sankaran (mridangam),சங்கரன் (மிருதங்கம்)
+VO_SPK_GANESAN,Ganesan (music shop),கணேசன் (இசைக் கடை)
+VO_SPK_VOLUNTEER,Sabha volunteer,சபா தன்னார்வலர்
+VO_SPK_LALITHA,Lalitha (sabha secretary),லலிதா (சபா செயலாளர்)
+VO_SQ03_S01,"Auto! Thambi, please stop! I have a concert at the sabha in one hour!","ஆட்டோ! தம்பி, கொஞ்சம் நிறுத்துப்பா! இன்னும் ஒரு மணி நேரத்துல சபாவுல எனக்குக் கச்சேரி!"
+VO_SQ03_D01,"Margazhi season, sir? Everyone in Mylapore is running to some sabha!",மார்கழி சீசனா சார்? மைலாப்பூர்ல எல்லாரும் ஏதோ ஒரு சபாவுக்குத்தான் ஓடறாங்க!
+VO_SQ03_S02,"I am Sankaran, I play the mridangam. And I left my mridangam at Ganesan's shop for new straps!","நான் சங்கரன், மிருதங்கம் வாசிக்கிறேன். புது வார் போடறதுக்கு என் மிருதங்கத்தை கணேசன் கடையில விட்டுட்டு வந்துட்டேன்!"
+VO_SQ03_D02,A mridangam player without his mridangam? That's like an auto without a meter!,மிருதங்கம் இல்லாத மிருதங்க வித்வானா? மீட்டர் இல்லாத ஆட்டோ மாதிரி!
+VO_SQ03_S03,"Exactly! The shop is just round the corner. We pick it up, then straight to the sabha.",அதேதான்! கடை இங்க பக்கத்துலதான். அதை எடுத்துக்கிட்டு நேரா சபாவுக்கு.
+VO_SQ03_S04,"But listen, thambi. A freshly tuned mridangam is like a newborn baby. No bumps, no sudden brakes.","ஆனா கேளு தம்பி. புதுசா சுருதி சேர்த்த மிருதங்கம் பச்சைக் குழந்தை மாதிரி. குலுக்கல் கூடாது, திடீர் பிரேக் கூடாது."
+VO_SQ03_D03,"Don't worry, sir. Get in. I'll drive like I'm carrying eggs.",கவலைப்படாதீங்க சார். ஏறுங்க. முட்டை கொண்டு போற மாதிரி ஓட்டுவேன்.
+VO_SQ03_S05,Ganesan's music shop is just ahead. He has made mridangams for forty years.,கணேசன் இசைக் கடை இதோ முன்னாடி. நாப்பது வருஷமா மிருதங்கம் செய்யறாரு.
+VO_SQ03_S06,Every December the whole city sings. Even the auto horns sound in tune!,டிசம்பர் வந்தா ஊரே பாடும். ஆட்டோ ஹாரன்கூட சுருதியில கேக்கும்!
+VO_SQ03_S07,"My first concert was in this very season, thirty years ago.","என் முதல் கச்சேரி இதே மார்கழியிலதான், முப்பது வருஷத்துக்கு முன்னாடி."
+VO_SQ03_S08,"Careful! If you shake me like this, imagine what you'll do to the drum!","பார்த்து! என்னையே இப்படிக் குலுக்கினா, மிருதங்கத்தை என்ன பண்ணுவே!"
+VO_SQ03_G01,Sankaran sir! I knew you'd come running. Your mridangam is ready!,சங்கரன் சார்! ஓடி வருவீங்கன்னு தெரியும். உங்க மிருதங்கம் தயார்!
+VO_SQ03_S09,"Ganesa, you've saved my life. Did you tighten the straps?","கணேசா, என் உயிரைக் காப்பாத்திட்டே. வாரை இறுக்கினியா?"
+VO_SQ03_G02,"New leather straps, and fresh black paste on the right side. It rings like a temple bell now!","புது தோல் வார், வலது பக்கம் புதுசா சோறு போட்டேன். இப்ப கோயில் மணி மாதிரி ஒலிக்குது!"
+VO_SQ03_D04,"Brother, is it heavy? Shall I help you carry it?","அண்ணா, கனமா இருக்கா? தூக்க உதவி பண்ணட்டுமா?"
+VO_SQ03_G03,"Carry it like your own child. Flat on the seat, with the cloth under it.","உன் சொந்தக் குழந்தை மாதிரி தூக்கு. சீட்டுல படுக்க வச்சு, கீழ துணி போட்டு."
+VO_SQ03_G04,"And sir, the sabha secretary called. The front gate is full of people. Artists and instruments go in by the back gate.","அப்புறம் சார், சபா செயலாளர் போன் பண்ணாங்க. முன் வாசல்ல கூட்டம் நிரம்பி இருக்கு. கலைஞர்களும் வாத்தியங்களும் பின் வாசல் வழியாதான் போகணும்."
+VO_SQ03_D05,"The back gate. Got it, brother.",பின் வாசல். புரிஞ்சுது அண்ணா.
+VO_SQ03_G05,"Go slowly, thambi. Under thirty. One big bump and the tuning is gone. Play well, sir!","மெதுவா போ தம்பி. முப்பதுக்குள்ள. ஒரு பெரிய குலுக்கல் போதும், சுருதி போயிடும். நல்லா வாசிங்க சார்!"
+VO_SQ03_S10,"Slowly now, thambi. Below thirty, please.","இப்ப மெதுவா தம்பி. முப்பதுக்குக் கீழ, ப்ளீஸ்."
+VO_SQ03_S11,"Feel that? Even the road has a rhythm. Tha ka dhi mi, tha ka dhi mi…","கேக்குதா? ரோட்டுக்கும் ஒரு தாளம் இருக்கு. தக திமி, தக திமி…"
+VO_SQ03_S12,The violinist will be tuning by now. We still have time.,வயலின்காரர் இப்ப சுருதி சேர்த்துக்கிட்டு இருப்பாரு. இன்னும் நேரம் இருக்கு.
+VO_SQ03_S13,"Ayyo! My mridangam! Thambi, gently!","ஐயோ! என் மிருதங்கம்! தம்பி, மெதுவா!"
+VO_SQ03_S14,"Easy on the brakes, please!",பிரேக்கை மெதுவா போடுப்பா!
+VO_SQ03_V01,"Tickets only, please! The queue starts at the corner! Sir, are you coming in?","டிக்கெட் இருந்தா மட்டும்! வரிசை அந்த மூலையில இருந்து! சார், நீங்க உள்ள வர்றீங்களா?"
+VO_SQ03_S15,"I am the mridangam artist for the four o'clock concert, thambi.",நாலு மணி கச்சேரிக்கு நான்தான் மிருதங்கம் வாசிக்கிறேன் தம்பி.
+VO_SQ03_V02,"Sir! Sorry, sir! It's so crowded today. Which way are you taking the mridangam?",சார்! மன்னிச்சுக்கோங்க சார்! இன்னிக்கு ரொம்பக் கூட்டம். மிருதங்கத்தை எந்த வழியா கொண்டு போறீங்க?
+VO_SQ03_S16,"Thambi, Ganesan said something about the gate. Do you remember?","தம்பி, கணேசன் வாசலைப் பத்தி ஏதோ சொன்னாரே. ஞாபகம் இருக்கா?"
+VO_SQ03_D06,"The front gate, sir. It's right here.",முன் வாசல்தான் சார். இதோ இங்கேயே இருக்கு.
+VO_SQ03_V03,"No, no! A mridangam can't go through this crowd! Artists go in by the back gate, round the corner.","இல்ல இல்ல! இந்தக் கூட்டத்துல மிருதங்கம் போக முடியாது! கலைஞர்கள் பின் வாசல் வழியா, அந்தத் திருப்பத்துல."
+VO_SQ03_S17,"Ganesan told us that, thambi. Never mind. The back gate, quickly!","அதை கணேசன் சொன்னாரே தம்பி. பரவாயில்ல. பின் வாசல், சீக்கிரம்!"
+VO_SQ03_D07,"Ganesan said artists and instruments go in by the back gate, sir.",கலைஞர்களும் வாத்தியங்களும் பின் வாசல் வழியான்னு கணேசன் சொன்னாரு சார்.
+VO_SQ03_S18,"Good memory, thambi! You'd make a fine accompanist.",நல்ல ஞாபக சக்தி தம்பி! நீ நல்ல பக்கவாத்தியக்காரன் ஆவே.
+VO_SQ03_V04,"Yes sir, the back gate, just round the corner! They're waiting for you.","ஆமா சார், பின் வாசல், அந்தத் திருப்பத்துலதான்! உங்களுக்காகக் காத்திருக்காங்க."
+VO_SQ03_D08,"Round the corner to the back gate. Hold on to it, sir.",திருப்பத்துல பின் வாசலுக்கு. நல்லா புடிச்சுக்கோங்க சார்.
+VO_SQ03_L01,Sankaran sir! Thank God! The singer is already on the stage.,சங்கரன் சார்! கடவுளுக்கு நன்றி! பாடகர் ஏற்கனவே மேடையில இருக்காரு.
+VO_SQ03_S19,"Lalitha amma, the mridangam is here, and not a scratch on it.","லலிதா அம்மா, மிருதங்கம் வந்தாச்சு, ஒரு கீறல்கூட இல்ல."
+VO_SQ03_L02,Let me hear it first. Last year you blamed the rain for the tuning!,முதல்ல கேக்கட்டும். போன வருஷம் சுருதி சரியில்லைன்னு மழை மேல பழி போட்டீங்க!
+VO_SQ03_S20,Listen. Tham! Tha dhi! Perfect. Thambi drove the way a veena is played: gently.,கேளுங்க. தொம்! த தி! அருமை. வீணை வாசிக்கிற மாதிரி மெதுவா ஓட்டினான் தம்பி.
+VO_SQ03_L03,"Thank you, thambi. There is an empty chair at the back of the hall, if you want to stay and listen.","நன்றி தம்பி. கூடத்துக்குப் பின்னாடி ஒரு நாற்காலி காலியா இருக்கு, இருந்து கேக்கணும்னா."
+VO_SQ03_S21,"Stay, thambi. Or take your fare. Either way, you've earned it.",இருந்து கேளு தம்பி. இல்லைன்னா உன் சவாரிக் காசை வாங்கிக்கோ. எப்படியும் நீ சம்பாதிச்சதுதான்.
+VO_SQ03_S22,"Here, thambi, your fare, and a little extra for the careful driving.","இந்தா தம்பி, உன் காசு, கவனமா ஓட்டினதுக்கு கொஞ்சம் கூடவே."
+VO_SQ03_D09,"Thank you, sir. Play well tonight!",நன்றி சார். இன்னிக்கு நல்லா வாசிங்க!
+VO_SQ03_D10,"A real Margazhi concert, from inside the hall? I'll stay, sir!",கூடத்துக்குள்ள இருந்து நிஜ மார்கழி கச்சேரியா? நான் இருக்கேன் சார்!
+VO_SQ03_L04,"Come, I'll show you your seat. Sit quietly during the mridangam solo!","வா, உன் இடத்தைக் காட்டறேன். தனி ஆவர்த்தனம் நடக்கும்போது அமைதியா உக்காரு!"
+VO_SQ03_S23,"Wish me luck, thambi. Margazhi comes only once a year!",வாழ்த்து சொல்லு தம்பி. மார்கழி வருஷத்துக்கு ஒரு தடவைதான்!

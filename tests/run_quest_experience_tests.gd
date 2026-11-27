@@ -185,8 +185,13 @@ func _check_load_rules() -> void:
 	var q: MissionDef = director.registry.get_mission("sq_003")
 	pose(q.start_anchor)
 	director.start("sq_003")
-	director.choose("sq_003", "brief", "SQ03_READY")
-	check("Drum takes no harm before it is loaded", director.current_stage().id == "case" and director.current_stage().quality_key == "")
+	# The drum goes into the auto in Ganesan's scene: nothing before it can hurt it.
+	var before_load: bool = true
+	for st: MissionStage in q.stages:
+		if st.id == "approach":
+			break
+		before_load = before_load and st.quality_key == ""
+	check("Drum takes no harm before it is loaded", director.current_stage().id == "intro" and before_load)
 	director.abandon()
 
 func _check_prompt() -> void:
@@ -309,10 +314,12 @@ func _check_markers() -> void:
 	check("No marker far from every quest", markers._mm.visible_instance_count == 0 and not markers._sign.visible)
 	pose(anchor)
 	director.start("sq_003")
-	director.choose("sq_003", "brief", "SQ03_READY")
+	director.tick(director.current_stage().duration_s + 0.1) # the intro scene (no story player here)
 	markers._refresh()
 	check("A job shows only its own stop, named", markers._mm.visible_instance_count == 1 and markers._sign.text == tr("SQ03_P_SHOP"))
-	check("Someone waits at the stop", markers._person == null or markers._person.visible)
+	# sq_003 is a story quest: its own cast (Ganesan) stands at the stop, so the generic figure stays hidden.
+	var storied: bool = director.registry.get_mission("sq_003").story != null
+	check("Someone waits at the stop (the story's own person, or the stand-in)", markers._person == null or markers._person.visible != storied)
 	director.abandon()
 	markers._refresh()
 	check("Job stop clears after leaving", not markers._person.visible)

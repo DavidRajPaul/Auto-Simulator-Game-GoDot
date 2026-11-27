@@ -1,23 +1,30 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=16 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
-[sub_resource type="Resource" id="brief"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_003_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
 script = ExtResource("stage")
-id = "brief"
-kind = "dialogue"
-objective_key = "SQ03_BRIEF"
-choices = PackedStringArray("SQ03_READY")
-[sub_resource type="Resource" id="case"]
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ03_INTRO"
+duration_s = 40.0
+cutscene_id = "intro"
+[sub_resource type="Resource" id="ask_shop"]
 script = ExtResource("stage")
-id = "case"
-kind = "cargo"
-objective_key = "SQ03_CASE"
+id = "ask_shop"
+kind = "ask"
+objective_key = "SQ03_ASK_SHOP"
 target = Vector3(968.1, 0, 1557.4)
 radius_m = 9.0
-cargo_delta = 1
 place_key = "SQ03_P_SHOP"
 place_pos = Vector3(959.7, 0, 1556.7)
-action_key = "QUEST_ACT_LOAD"
+[sub_resource type="Resource" id="shop"]
+script = ExtResource("stage")
+id = "shop"
+kind = "cutscene"
+objective_key = "SQ03_SHOP"
+duration_s = 40.0
+cutscene_id = "shop"
 [sub_resource type="Resource" id="approach"]
 script = ExtResource("stage")
 id = "approach"
@@ -27,53 +34,95 @@ target = Vector3(1058.0, 0, 1534.6)
 radius_m = 9.0
 deadline_s = 200.0
 max_speed_kmh = 32.0
-quality_floor = 15.0
 quality_key = "instrument"
+quality_floor = 15.0
 place_key = "SQ03_P_HALL"
 place_pos = Vector3(1057.7, 0, 1539.2)
+[sub_resource type="Resource" id="hall"]
+script = ExtResource("stage")
+id = "hall"
+kind = "cutscene"
+objective_key = "SQ03_HALL"
+duration_s = 24.0
+cutscene_id = "hall"
 [sub_resource type="Resource" id="gate"]
 script = ExtResource("stage")
 id = "gate"
 kind = "dialogue"
 objective_key = "SQ03_GATE"
 choices = PackedStringArray("SQ03_REAR", "SQ03_FRONT")
-next_by_choice = {"SQ03_REAR": "handover", "SQ03_FRONT": "verify"}
-[sub_resource type="Resource" id="verify"]
+next_by_choice = {
+"SQ03_REAR": "rear_line",
+"SQ03_FRONT": "front_line"
+}
+[sub_resource type="Resource" id="front_line"]
 script = ExtResource("stage")
-id = "verify"
-kind = "inspect"
-objective_key = "SQ03_VERIFY"
-target = Vector3(969.2, 0, 1652.9)
-radius_m = 9.0
-place_key = "SQ03_P_NOTICE"
-place_pos = Vector3(961.2, 0, 1645.1)
-action_key = "QUEST_ACT_READ"
-[sub_resource type="Resource" id="handover"]
+id = "front_line"
+kind = "cutscene"
+objective_key = "SQ03_FRONT_LINE"
+duration_s = 14.0
+cutscene_id = "front_line"
+next_id = "to_back"
+[sub_resource type="Resource" id="rear_line"]
 script = ExtResource("stage")
-id = "handover"
-kind = "cargo"
+id = "rear_line"
+kind = "cutscene"
+objective_key = "SQ03_REAR_LINE"
+duration_s = 12.0
+cutscene_id = "rear_line"
+[sub_resource type="Resource" id="to_back"]
+script = ExtResource("stage")
+id = "to_back"
+kind = "ask"
 objective_key = "SQ03_HANDOVER"
 target = Vector3(1105.4, 0, 1614.1)
 radius_m = 9.0
-cargo_delta = -1
-quality_floor = 15.0
 quality_key = "instrument"
+quality_floor = 15.0
 place_key = "SQ03_P_BACK"
 place_pos = Vector3(1104.6, 0, 1618.6)
-action_key = "QUEST_ACT_UNLOAD"
+[sub_resource type="Resource" id="backstage"]
+script = ExtResource("stage")
+id = "backstage"
+kind = "cutscene"
+objective_key = "SQ03_BACKSTAGE"
+duration_s = 34.0
+cutscene_id = "backstage"
+[sub_resource type="Resource" id="payoff"]
+script = ExtResource("stage")
+id = "payoff"
+kind = "dialogue"
+objective_key = "SQ03_PAYOFF"
+choices = PackedStringArray("SQ03_TAKE_FARE", "SQ03_STAY")
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "cutscene"
+objective_key = "SQ03_THANKS"
+duration_s = 16.0
+cutscene_id = "thanks"
 [resource]
 script = ExtResource("def")
 id = "sq_003"
-content_version = 2
+content_version = 3
 title_key = "SQ03_TITLE"
 description_key = "SQ03_DESC"
 job_key = "SQ03_JOB"
 discoverable = true
 start_anchor = Vector3(1021.0, 0, 1599.5)
-estimated_minutes = 5
+estimated_minutes = 10
 category = "skill"
 reward_inr = 155
 reward_xp = 15
-stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("case"), SubResource("approach"), SubResource("gate"), SubResource("verify"), SubResource("handover")])
 rider_model = "res://assets/models/people/quest/musician.glb"
 rider_name_key = "SQ03_RIDER"
+reward_choice_stage = "payoff"
+reward_choice_inr = {
+"SQ03_TAKE_FARE": 155,
+"SQ03_STAY": 0
+}
+reward_choice_xp = {
+"SQ03_STAY": 45
+}
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("ask_shop"), SubResource("shop"), SubResource("approach"), SubResource("hall"), SubResource("gate"), SubResource("front_line"), SubResource("rear_line"), SubResource("to_back"), SubResource("backstage"), SubResource("payoff"), SubResource("thanks")])

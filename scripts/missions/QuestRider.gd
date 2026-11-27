@@ -404,7 +404,23 @@ func _stand() -> void:
 	if _anim != null:
 		_anim.stop()
 	if _skeleton != null:
-		_skeleton.reset_bone_poses() # the bind pose is a natural standing pose
+		_skeleton.reset_bone_poses() # the bind pose is a natural standing pose…
+		_lower_t_pose_arms() # …except a T-pose bind (the musician): bring the arms down
+
+## A rider rigged in a T-pose would stand with his arms straight out (Nov 27 Margazhi shots): when a
+## hand sits level with its shoulder, turn each upper arm down to the side in the body's front plane.
+func _lower_t_pose_arms() -> void:
+	for side: Array in [["L_Upperarm", "L_Hand"], ["R_Upperarm", "R_Hand"]]:
+		var arm: int = _skeleton.find_bone(str(side[0]))
+		var hand: int = _skeleton.find_bone(str(side[1]))
+		if arm < 0 or hand < 0:
+			continue
+		var g: Transform3D = _skeleton.get_bone_global_pose(arm)
+		var reach: Vector3 = _skeleton.get_bone_global_pose(hand).origin - g.origin
+		if reach.length() < 0.001 or absf(reach.y) > reach.length() * 0.35:
+			continue # already hanging down
+		var turn: float = -signf(reach.x) * deg_to_rad(78.0) # +x arm turns clockwise (down), -x anticlockwise
+		_skeleton.set_bone_global_pose(arm, Transform3D(Basis(Vector3(0, 0, 1), turn) * g.basis, g.origin))
 
 ## Sits with her hip at `hip`, facing `facing`.
 func _place_sitting(hip: Vector3, facing: Vector3) -> void:

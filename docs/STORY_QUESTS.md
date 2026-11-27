@@ -8,7 +8,8 @@ things to find, and voiced dialogue that stays in sync with the scenes.
 "The Little Red Kite" (`sq_007`, content version 3) was the first quest built this way;
 "Paati Knows the Way" (`sq_004`, content version 3) is the second, and the first with a rider.
 "The Wedding Gold" (`sq_001`, content version 4) is the third (Nov 27 owner report: "zero dialogues, the
-cut scenes are very fast, no NPCs talking").
+cut scenes are very fast, no NPCs talking"). "Margazhi Missing Beat" (`sq_003`, content version 3) is the
+fourth, the second with a rider.
 
 ## How a story quest is built
 
@@ -139,3 +140,28 @@ script and the subtitles. No rider: the people are at the places.
 
 Voices: `docs/voice/SQ01_Wedding_Gold_Voice_Script.md` (Sundaram, Kavya, Revathi and Muthu have their own
 Parler voices in `tools/voice/cast.json`). `SHOT_QUEST=sq_001` in `tests/shot_story.tscn` renders it.
+
+## Margazhi Missing Beat
+
+`tools/quests/build_sq03_story.py` holds every line once (46 lines) and writes the mission, the story, the
+voice script `docs/voice/SQ03_Margazhi_Voice_Script.md` and the subtitles. Sankaran rides in the back
+(QuestRider, `quest/musician.glb`).
+
+1. **Intro** (cutscene): Sankaran, a mridangam player, stops the auto: his concert at the sabha is in an
+   hour and his mridangam is still at Ganesan's music shop (new straps). "A freshly tuned mridangam is like a
+   newborn baby: no bumps." He gets in.
+2. **Ask** Ganesan at the music shop (stop beside him). He brings the drum to the auto, warns "under thirty",
+   and passes on the sabha secretary's message: artists and instruments go in by the **back gate**.
+3. **Drive to the hall** (timed 200 s, capped at 32 km/h, quality "instrument": every knock costs the drum,
+   below 15 the quest fails). Sankaran hums, and cries out at every bump.
+4. **The front gate** (cutscene): a queue of rasikas and a flustered volunteer: "which way is the
+   mridangam going?" Sankaran asks whether you remember what Ganesan said: the choice in the letterbox.
+   Front gate: the volunteer sends you round. Back gate: "good memory, thambi".
+5. **Ask** Lalitha, the sabha secretary, at the back gate (the drum must still be safe).
+6. **Backstage**: Sankaran gets out, tests the drum ("tham! tha dhi!"), Lalitha offers you an empty chair:
+   take the fare (Rs 155) or stay for the concert (+45 XP).
+
+The musician's rig is bound in a T-pose (the other riders' bind poses hang the arms down), so a standing
+rider whose hands sit level with the shoulders gets the upper arms turned down (`QuestRider._lower_t_pose_arms`).
+Tests: `run_story_quest_tests` plays it (wrong gate, back gate, staying); `SHOT_QUEST=sq_003` in
+`tests/shot_story.tscn` renders it.
