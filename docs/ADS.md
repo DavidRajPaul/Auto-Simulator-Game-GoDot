@@ -20,6 +20,9 @@ on-screen placeholder ads (`MockAdProvider`) are used automatically.
 
 ## Test ads now, real ads after approval
 
+Real ids already filled in (Nov 27): app `~4014084312`, rewarded `/3387398358`, interstitial
+`/8284501810`, banner `/6842908112`. Only `use_test_ads` / `is_real` remain to flip after approval.
+
 Today the game uses **Google's official test app id and test ad units**. They are safe to tap and
 earn nothing. Keep them until AdMob has approved the account, and **never tap your own real ads**.
 

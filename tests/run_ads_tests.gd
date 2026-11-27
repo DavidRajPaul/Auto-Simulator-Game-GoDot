@@ -103,10 +103,15 @@ func _test_config_agrees() -> void:
 	if not cfg.use_test_ads:
 		var real_ok: bool = cfg.admob_app_id.begins_with("ca-app-pub-") and cfg.admob_app_id.contains("~") \
 			and cfg.rewarded_unit_id.begins_with("ca-app-pub-") and cfg.interstitial_unit_id.begins_with("ca-app-pub-") \
+			and cfg.banner_unit_id.begins_with("ca-app-pub-") \
 			and str(exp.get_value("Release", "app_id", "")) == cfg.admob_app_id
 		_check("Real ads: every real id is filled in and the manifest gets the same app id", real_ok)
 	else:
 		_check("Real ids stay empty until AdMob approval (no half-real config)", cfg.admob_app_id == "" or cfg.admob_app_id.begins_with("ca-app-pub-"))
+	_check("Every ad unit id (rewarded, interstitial, banner) belongs to the same AdMob app",
+		cfg.admob_app_id == "" or (cfg.rewarded_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)
+		and cfg.interstitial_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)
+		and cfg.banner_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)))
 	_check("Ad content ceiling is a valid rating", cfg.max_ad_content_rating in ["G", "PG", "T", "MA"])
 
 func _test_mock_off_device() -> void:
