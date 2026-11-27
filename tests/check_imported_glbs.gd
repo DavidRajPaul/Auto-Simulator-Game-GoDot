@@ -14,7 +14,7 @@ const CANDIDATES: PackedStringArray = [
     "res://assets/models/traffic/maintenance_pack/maintenance_vehicle_pack.glb",
     "res://assets/models/traffic/cars/bolero_police.glb",
     "res://assets/models/traffic/cars/sedan_white.glb",
-    "res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb",
+    "res://assets/models/traffic/chennai/sport_bike.glb",
     "res://assets/models/traffic/two_wheeler_pack/scooter_parked.glb",
 ]
 

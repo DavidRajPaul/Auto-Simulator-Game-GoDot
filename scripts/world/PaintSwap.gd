@@ -19,10 +19,6 @@ const CONFIG: Dictionary = {
 	"share_auto": [Color8(227, 198, 0), 0.07, 0.45, Vector4(0, 0, 1, 1)],
 	"two_wheeler": [Color8(71, 110, 94), 0.07, 0.2, Vector4(0, 0, 1, 1)],
 	"scooter_parked": [Color8(71, 110, 94), 0.07, 0.2, Vector4(0, 0, 1, 1)],
-	"sport_bike_0": [Color8(255, 204, 24), 0.05, 0.4, Vector4(0, 0, 1, 1)],
-	"sport_bike_1": [Color8(38, 188, 35), 0.06, 0.4, Vector4(0, 0, 1, 1)],
-	"sport_bike_2": [Color8(215, 0, 38), 0.03, 0.6, Vector4(0, 0, 1, 1)],
-	"sport_bike_3": [Color8(252, 97, 133), 0.03, 0.4, Vector4(0, 0, 1, 1)],
 	# People: the garment's block in the texture.
 	# Nov 20: rects and colours come from people.json "paint" (process_people.py writes them when
 	# it rebuilds a character); the atlas layout changed with the face / hands fix.
@@ -83,7 +79,7 @@ const TROUSER_PAINTS: Array[Color] = [
 
 ## Chennai vehicles built by tools/art/make_chennai_vehicles.py: no texture; the body panels
 ## carry vertex alpha 0 and shaders/vehicle_paint.gdshader repaints them per instance.
-const VERTEX_PAINTED: Array[String] = ["moped", "commuter_bike", "cruiser_bike", "bicycle", "hatchback", "tallboy", "micro_van", "mini_truck"]
+const VERTEX_PAINTED: Array[String] = ["moped", "commuter_bike", "cruiser_bike", "sport_bike", "bicycle", "hatchback", "tallboy", "micro_van", "mini_truck"]
 const VERTEX_SHADER: Shader = preload("res://shaders/vehicle_paint.gdshader")
 ## Car colours on Chennai roads: white and silver lead, then grey, red, maroon, dark blue, black,
 ## and the brighter small-car colours (orange, sky blue, beige). NO_PAINT keeps the silver.

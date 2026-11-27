@@ -149,14 +149,18 @@ func _run() -> void:
 		camb2.look_at(at + Vector3(0, 1.8, 0))
 		(city.get_node("AutoRickshaw") as Node3D).visible = false
 	if OS.get_environment("SHOT_MAP") == "1":
+		# SHOT_MAP_DONE=sq_004,sq_007: those quests show as finished (medals, journal stamps).
+		for id: String in OS.get_environment("SHOT_MAP_DONE").split(",", false):
+			GameState.mission_completed[id] = true
 		SignalBus.full_map_requested.emit(true)
 		var fm: FullMap = (city.get_node("PassengerHUD") as PassengerHUD).full_map
+		fm._refresh_quests()
 		match OS.get_environment("SHOT_MAP_PANEL"):
 			"legend":
 				fm._legend_open = true
 			"journal":
 				fm._journal_open = true
-				fm._journal_page = 999 # clamps to the last page that has quests
+				fm._journal_page = int(OS.get_environment("SHOT_MAP_PAGE")) if OS.has_environment("SHOT_MAP_PAGE") else 999 # 999 clamps to the last page
 			"pin":
 				# Drop Pin mode with a pin placed a few hundred metres ahead of the auto.
 				fm._select_mode = 2

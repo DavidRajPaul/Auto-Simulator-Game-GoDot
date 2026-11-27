@@ -50,6 +50,7 @@ static func rider_node(variant: int) -> Node3D:
 	var holder: Node3D = Node3D.new()
 	holder.name = "Rider"
 	var path: String = RIDER_MODELS[posmod(variant, RIDER_MODELS.size())]
+	holder.set_meta("model_path", path) # RiderRagdolls throws the same person off in a crash
 	var scene: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
 	if scene != null:
 		var person: Node3D = scene.instantiate() as Node3D

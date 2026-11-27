@@ -66,9 +66,12 @@ func _play(id: String, alternate: String) -> void:
 			"dialogue":
 				var selected: String = alternate if stage.choices.has(alternate) else stage.choices[0]
 				check(id + "/" + before + " choice", director.choose(id, before, selected))
-			"goto":
+			"goto", "ask":
 				_pose(director._stage_target(stage))
 				director.tick(0.1)
+			"cutscene":
+				# No QuestStory here: a scene moves on after its duration.
+				director.tick(stage.duration_s + 0.5)
 			"inspect":
 				_pose(director._stage_target(stage))
 				check(id + "/" + before + " inspect", director.interact(id, before))
@@ -95,22 +98,20 @@ func _check_wedding_gold() -> void:
 	check("wedding cannot accept choice before Start", not director.choose("sq_001", "decision", "SQ01_OWNER"))
 	check("wedding starts only on explicit request", director.start("sq_001"))
 	var intro: MissionStage = director.current_stage()
-	check("wedding begins with an in-auto stop", intro.id == "hall")
-	check("wedding cannot inspect out of order", not director.interact("sq_001", "receipt"))
+	check("wedding begins with a stop beside the organiser", intro.id == "ask_hall" and intro.kind == "ask")
+	check("wedding is a voiced story quest", quest.story != null and quest.story.cutscenes.has("hall") and quest.story.cutscenes.has("ending"))
+	check("wedding cannot choose out of order", not director.choose("sq_001", "decision", "SQ01_OTHER"))
 	for _step: int in 20:
 		if director.run == null or director.run.status != "active":
 			break
 		var stage: MissionStage = director.current_stage()
-		if stage.kind == "goto":
+		if stage.kind in ["goto", "ask"]:
 			_pose(director._stage_target(stage))
 			director.tick(0.1)
-		elif stage.kind == "inspect":
-			_pose(director._stage_target(stage))
-			check("wedding receipt requires a tap", director.interact("sq_001", stage.id))
-		elif stage.kind == "dialogue":
-			var choice: String = "SQ01_OTHER" if stage.id == "decision" else stage.choices[0]
-			if stage.id == "resolution":
-				check("incorrect claimant has distinct ending", director._stage_objective(stage) == "SQ01_RESOLVED_WRONG")
+		elif stage.kind == "cutscene":
+			if stage.id == "ending":
 				check("incorrect claimant lowers reward", director._current_reward() == 45)
-			check("wedding dialogue advances", director.choose("sq_001", stage.id, choice))
+			director.tick(stage.duration_s + 0.5)
+		elif stage.kind == "dialogue":
+			check("wedding dialogue advances", director.choose("sq_001", stage.id, "SQ01_OTHER" if stage.id == "decision" else stage.choices[0]))
 	check("wrong outcome is completed and saved", director.run == null and GameState.mission_completed.has("sq_001"))

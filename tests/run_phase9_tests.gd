@@ -352,7 +352,9 @@ func _test_landmark_kit() -> void:
 			var style: String = WorldChunkStreamer.heritage_style(building)
 			if style != "":
 				heritage_counts[style] = int(heritage_counts.get(style, 0)) + 1
-	_check("Heritage styles match only their four shipped OSM footprints", heritage_counts == {"senate": 1, "palace": 2, "cathedral": 1}, str(heritage_counts))
+	# The basilica footprint is gone: San Thome is the procedural model (LandmarkModels) since Nov 27.
+	_check("Heritage styles match only their three shipped OSM footprints", heritage_counts == {"senate": 1, "palace": 2}, str(heritage_counts))
+	_test_landmark_models()
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))
@@ -1171,3 +1173,61 @@ func _test_reactions(pm: PedestrianManager) -> void:
 	_check("A stumble ends lying on the road, then they get up", was != "stumble" or lay, was)
 	_check("After reacting they walk or stand again", w2.react == "" and w2.anim.current_animation in ["walk", "idle", "run"], w2.anim.current_animation)
 	_check("…and never end up inside a wall", SignalBus.walkable(w2.pos.x, w2.pos.z))
+
+## Nov 27 owner report: San Thome Basilica was drawn as a kaavi-striped temple block and the
+## Kapaleeshwarar gopuram as a stepped box. The procedural models (tools/art/make_landmarks.py):
+## one surface each, inside the triangle budget, with colliders; nothing else stands on their sites;
+## churches and mosques never take the temple type (kaavi stripes are for Hindu temples only).
+func _test_landmark_models() -> void:
+	var f: FileAccess = FileAccess.open("res://data/world/landmark_models.json", FileAccess.READ)
+	_check("Landmark models file exists", f != null)
+	if f == null:
+		return
+	var models: Array = (JSON.parse_string(f.get_as_text()) as Dictionary).get("models", [])
+	var ids: Array[String] = []
+	for entry: Dictionary in models:
+		ids.append(str(entry["id"]))
+		var scene: PackedScene = load(str(entry["glb"])) as PackedScene
+		var ok: bool = false
+		var n: Node = null
+		if scene != null:
+			n = scene.instantiate()
+			var meshes: Array[Node] = n.find_children("*", "MeshInstance3D", true, false)
+			ok = meshes.size() == 1 and (meshes[0] as MeshInstance3D).mesh.get_surface_count() == 1
+		_check("Landmark %s is one mesh, one surface" % entry["id"], ok)
+		_check("Landmark %s within 110k triangles, has colliders" % entry["id"], int(entry["tris"]) <= 110000 and (entry["boxes"] as Array).size() >= 1)
+		if n != null:
+			n.free()
+	_check("Basilica, temple and tank mandapam are listed", ids.has("santhome_basilica") and ids.has("kapaleeshwarar_temple") and ids.has("kapaleeshwarar_tank_mandapam"))
+	var holder: Node3D = Node3D.new()
+	var body: StaticBody3D = StaticBody3D.new()
+	holder.add_child(body)
+	add_child(holder)
+	var placed: int = LandmarkModels.build("res://data/world/landmark_models.json", holder, body)
+	_check("LandmarkModels places every model with box colliders", placed == models.size() and body.get_child_count() >= models.size())
+	holder.queue_free()
+	# Nothing of the city stands inside a model's site, and no church or mosque is a temple.
+	var church_types: Dictionary = {}
+	for file_name: String in ["c_8_6.json", "c_4_6.json"]:
+		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		var chunk: Dictionary = JSON.parse_string(cf.get_as_text()) as Dictionary
+		for b: Dictionary in chunk.get("blds", []):
+			var p: Array = b["p"]
+			var c: Vector2 = Vector2.ZERO
+			for i: int in range(0, p.size(), 2):
+				c += Vector2(float(p[i]), float(p[i + 1]))
+			c /= float(p.size() / 2)
+			for entry: Dictionary in models:
+				var poly: PackedVector2Array = PackedVector2Array()
+				for q: Array in entry.get("clear", []):
+					poly.append(Vector2(float(q[0]), float(q[1])))
+				if poly.size() >= 3 and Geometry2D.is_point_in_polygon(c, poly):
+					church_types["inside_" + str(entry["id"])] = true
+	_check("No chunk building stands on a landmark model's site", church_types.is_empty(), str(church_types))
+	var plots: FileAccess = FileAccess.open("res://data/world/plots/c_2_-4.json", FileAccess.READ)
+	var walls: Array = (JSON.parse_string(plots.get_as_text()) as Dictionary).get("walls", [])
+	var church_walls: int = 0
+	for w: Array in walls:
+		if str(w[6]) in ["ch", "mq"]:
+			church_walls += 1
+	_check("Church and mosque compounds keep their own type (not kaavi)", church_walls > 0)

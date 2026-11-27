@@ -3,6 +3,8 @@ shader_type spatial;
 // vertex colours (linear); body panels carry vertex alpha 0, glass 0.5, the rest 1. Each instance repaints
 // exactly those panels: from INSTANCE_CUSTOM in a MultiMesh (parked rows, use_custom) or from
 // the `paint` instance uniform (traffic). paint.a < 0.5 keeps the model's own silver.
+// Vertex alpha ~0.78 is the ACCENT (Nov 27: two-tone bikes): stripes and graphics in a contrast
+// colour picked from the paint (white on dark or saturated paint, near-black on pale paint).
 // One material for every model and every colour, so a kerb of mixed colours is one draw call.
 render_mode cull_back, specular_schlick_ggx;
 
@@ -21,10 +23,16 @@ void vertex() {
 
 void fragment() {
 	float body = 1.0 - step(0.25, COLOR.a);
-	float glass = step(0.25, COLOR.a) * (1.0 - step(0.75, COLOR.a));
+	float glass = step(0.25, COLOR.a) * (1.0 - step(0.7, COLOR.a));
+	float accent = step(0.7, COLOR.a) * (1.0 - step(0.9, COLOR.a));
 	vec3 c = COLOR.rgb;
 	if (v_paint.a > 0.5) {
-		c = mix(c, to_linear(v_paint.rgb), body);
+		vec3 p = to_linear(v_paint.rgb);
+		c = mix(c, p, body);
+		float luma = dot(v_paint.rgb, vec3(0.299, 0.587, 0.114));
+		vec3 contrast = luma > 0.62 ? vec3(0.012) : vec3(0.83);
+		c = mix(c, contrast, accent);
+		body = max(body, accent);
 	}
 	ALBEDO = c;
 	// Paint is a soft gloss, glass a dark mirror, everything else matte.

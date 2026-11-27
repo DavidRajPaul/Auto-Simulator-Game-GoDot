@@ -16,7 +16,7 @@ the terrace, and the hoardings (silks, jewellers, Aadi sale, TNPSC coaching, fla
 
 Cell map (row, col). Rows 0–3 keep the meaning they had in the 8×4 atlas:
   0 upper floors   0 grilled window + sunshade · 1 balcony · 2 twin windows · 3 ventilators + pipe
-                   4 sliding window + AC · 5 office glass · 6 office strip window · 7 PLAIN plaster
+                   4 sliding window (AC units are 3D: WorldChunkStreamer._ac_unit) · 5 office glass · 6 office strip window · 7 PLAIN plaster
   1 ground floor   0 house door + window · 1 compound wall run / gate leaf / stencilled panel
                    2 shutter (closed) · 3–7 shops
   2 ground floor   0–7 shops
@@ -430,7 +430,9 @@ def c_sliding_ac() -> Cell:
     c.rect(127, 58, 131, 150, ALU)
     c.grille(57, 63, 199, 145, "bars")
     c.rect(44, 150, 212, 156, (228, 227, 222), tint=True)
-    c.ac_unit(92, 176)
+    # The AC outdoor unit is a real 3D box now (WorldChunkStreamer._ac_unit), so nothing is painted here.
+    # The scratch cell still runs ac_unit so the random stream, and every other cell, stays identical.
+    Cell().ac_unit(92, 176)
     return c
 
 

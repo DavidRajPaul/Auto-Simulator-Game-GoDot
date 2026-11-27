@@ -100,7 +100,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | File | Archetype | Source | Licence |
 |---|---|---|---|
 | `two_wheeler.glb` | Scooter (procedural rider on top) | Indian Scooter, Shiveloper (Sketchfab) | CC BY 4.0 |
-| `chennai/moped.glb`, `commuter_bike.glb`, `cruiser_bike.glb`, `bicycle.glb` | Parked (all four) and moving (not the bicycle) two-wheelers: step-through moped, 100 cc commuter bike, classic cruiser, roadster bicycle. One mesh, vertex colours, body panels alpha 0 = repainted per instance (`shaders/vehicle_paint.gdshader`, `PaintSwap.VERTEX_PAINTED`) | Built by `tools/art/make_chennai_vehicles.py` (original, no badges) | Project's own |
+| `chennai/moped.glb`, `commuter_bike.glb`, `cruiser_bike.glb`, `sport_bike.glb`, `bicycle.glb` | Parked (all five) and moving (not the bicycle) two-wheelers: TVS XL-style moped, Splendor-style 100 cc commuter, Thunderbird-style cruiser, faired sports bike, roadster bicycle (Nov 27: replaced the deformed SymetrikGames sport bikes). One mesh, vertex colours, body panels alpha 0 = repainted per instance, alpha ~0.78 = contrast graphics (`shaders/vehicle_paint.gdshader`, `PaintSwap.VERTEX_PAINTED`) | Built by `tools/art/make_chennai_vehicles.py` (original, no badges) | Project's own |
 | `chennai/hatchback.glb`, `tallboy.glb`, `micro_van.glb`, `mini_truck.glb` | Parked and moving cars: small hatchback, tall-boy hatchback, micro van, mini truck with 20 L water cans; same paint scheme (`PaintSwap.CAR_PAINTS`) | Built by `tools/art/make_chennai_vehicles.py` (original, no badges) | Project's own |
 | `../people/shop_people.glb` | Shopkeepers and customers (`ShopPeople.gd`): the eight standing figures of `people/waiting/` on one atlas, baked by `tools/assets/bake_shop_people.py` | Same sources as `people/waiting/` (see `people/CREDITS_static.md`) | CC BY 4.0 |
 | `cars/*.glb` | Traffic and parked cars (sedan, SUV, sports in 7 Chennai paints) baked one-mesh by `tools/assets/bake_car_colours.py` from `quaternius_normal_car/suv/sports_car.glb` | Quaternius Cars Bundle | CC0 |
@@ -132,9 +132,11 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 `chennai_central.glb` (SudharsanArivalagan), `water_tower.glb` (TamilarasanRG), `slum_cluster.glb` (aswin.baskaran),
 `gas_station.glb` (Karim.Fares, rebranded as the fictional NAMMA GAS) — all Sketchfab, CC BY 4.0.
 Roadside shops `shops/tea_stall_<a-d>.glb`, `shops/fruit_cart_<a-d>.glb`, `shops/biryani_stall_<a-d>.glb` and the
-transformer tank `eb_transformer.glb`: the owner's own models (Tripo tea stall, fruit cart and transformer; the
+transformer tank `eb_transformer.glb`: the owner's own models (Tripo tea stall and transformer; the
 biryani stall, source kept at `assets_src/models/biryani_shop_src.glb`), baked by `tools/assets/bake_street_shops.py`
-(simplified 1.9 M → 1.4–9k triangles, vertex-painted liveries, painted Tamil signs in Baloo Thambi 2). Used by
+(simplified 1.9 M → 1.4–9k triangles, vertex-painted liveries, painted Tamil signs in Baloo Thambi 2). The fruit carts
+are modelled by `tools/art/make_fruit_cart.py` (Nov 27: wooden bed on four spoked wheels, striped canopy, fruit pyramids,
+grapes, cut melon and papaya, pineapples, hanging bananas and scale; same liveries and signs, ~4.4k triangles). Used by
 `WorldChunkStreamer` (shops via `city_props.json`, the tank merged into chunk meshes on the DP pole structures).
 Street trees `trees/neem.glb`, `trees/coconut_palm.glb`, `trees/ashoka_a.glb`, `trees/ashoka_b.glb`, `trees/pungai.glb`
 and the far impostor atlas `trees/tree_impostors.png` (+ `trees/trees.json`): the owner's own Tripo models (sources in
@@ -148,7 +150,9 @@ split apart) — all Sketchfab, CC BY 4.0, sources kept (gitignored) in `assets_
 with mipmaps; leaf cards thinned and enlarged, bark simplified: 4.2–10.9k triangles) and impostor rows 5–14. The
 collection's Bush006 is a 14 m wide shrub, not a street tree, and is not baked. They replace about half the broadleaf
 trees block by block (`StreetTrees.remap_code`); the tree count is unchanged.
-The Marina lighthouse and Kapaleeshwarar-style gopuram are **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
+The Marina lighthouse is **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
+
+`assets/models/landmarks/` (Nov 27, our own work, no licence terms): **San Thome Basilica** (`santhome_basilica.glb`, ~27k tris), the **Kapaleeshwarar temple** (`kapaleeshwarar_temple.glb`, ~98k tris: east 7-tier rajagopuram, west gopuram, shrine vimanas, mandapams, flagstaff, Nandi) and the tank's **neerazhi mandapam** (`kapaleeshwarar_tank_mandapam.glb`). Built by `tools/art/make_landmarks.py` from the owner's photos and published dimensions; one vertex-coloured mesh each (one draw call), placed by `data/world/landmark_models.json` through `scripts/world/LandmarkModels.gd`.
 
 Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/people/CREDITS_people.md`, `models/people/CREDITS_static.md`, `models/traffic/CREDITS_static.md`.
 

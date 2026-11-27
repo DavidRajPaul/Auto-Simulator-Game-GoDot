@@ -54,6 +54,13 @@ CAN_BLUE = (36, 96, 176)
 CAN_CAP = (228, 232, 236)
 BED = (72, 78, 84)
 RUST = (104, 96, 90)
+# Second paint (Nov 27: "sports bike with multiple colours"): vertex alpha 200, repainted by
+# shaders/vehicle_paint.gdshader in a contrast colour picked from the instance paint (graphics,
+# stripes, tank decals). Unpainted it shows this off-white.
+ACCENT = (232, 232, 228)
+GOLD = (196, 150, 46)
+SPRING = (196, 36, 30)
+FRAME_SILVER = (150, 154, 160)
 
 
 class Mesh:
@@ -76,7 +83,7 @@ class Mesh:
             n = -n
             if normals is not None:
                 normals = (normals[0], normals[2], normals[1])
-        rgba = (col[0], col[1], col[2], 0 if col is BODY else (128 if col is GLASS else 255))
+        rgba = (col[0], col[1], col[2], 0 if col is BODY else (128 if col is GLASS else (200 if col is ACCENT else 255)))
         for i, v in enumerate((a, b, c)):
             self.p.append(tuple(v))
             if normals is None:
@@ -250,9 +257,10 @@ class Mesh:
             col = colour(i, j)
             self.quad(P[i, j], P[i + 1, j], P[i + 1, j1], P[i, j1], col, n, (N[i, j], N[i + 1, j], N[i + 1, j1], N[i, j1]))
 
-    def blob(self, rings, col, seg: int = 10, caps: bool = True, cols=None) -> None:
+    def blob(self, rings, col, seg: int = 10, caps: bool = True, cols=None, square: float = 2.0) -> None:
         """Rounded part: ellipse rings [(x, y, z, rx, ry)] along a path that runs in a Y-Z plane
-        (tanks, seats, cowls, silencers). rx is the half-width across the bike."""
+        (tanks, seats, cowls, silencers). rx is the half-width across the bike. `square` > 2
+        makes the section a superellipse (fairings, sculpted tanks)."""
         cs = [np.array(r[:3], dtype=float) for r in rings]
         pts = []
         for i, r in enumerate(rings):
@@ -263,7 +271,11 @@ class Mesh:
             row = []
             for k in range(seg):
                 a = 2 * math.pi * k / seg
-                row.append(cs[i] + np.array([1.0, 0.0, 0.0]) * r[3] * math.cos(a) + v * r[4] * math.sin(a))
+                ca, sa = math.cos(a), math.sin(a)
+                if square != 2.0:
+                    ca = math.copysign(abs(ca) ** (2.0 / square), ca)
+                    sa = math.copysign(abs(sa) ** (2.0 / square), sa)
+                row.append(cs[i] + np.array([1.0, 0.0, 0.0]) * r[3] * ca + v * r[4] * sa)
             pts.append(row)
         self.grid(pts, (lambda i, j: col if cols is None else cols[i]), lambda i: cs[i], closed_j=True)
         if caps:
@@ -394,126 +406,327 @@ def _shocks(m: Mesh, lower, upper, spread: float) -> None:
 
 # ---------------------------------------------------------------- two-wheelers
 
-def moped() -> Mesh:
-    """Step-through moped: thin 16 inch spoked wheels, flat seat, load carrier (1.83 m)."""
+def _path(m: Mesh, pts, r: float, col, seg: int = 7) -> None:
+    """A bent tube through `pts` (frames, exhausts, grab rails), with a ball at every bend."""
+    for p0, p1 in zip(pts, pts[1:]):
+        m.tube(p0, p1, r, col, seg)
+    for p in pts[1:-1]:
+        x, y, z = p
+        m.blob([(x, y, z - r, r * 0.6, r * 0.6), (x, y, z, r, r), (x, y, z + r, r * 0.6, r * 0.6)], col, seg)
+
+
+def _ring_at(rings, z: float):
+    """Interpolated (y, rx, ry) of a blob's rings at length z (rings run in falling or rising z)."""
+    rs = sorted(rings, key=lambda r: r[2])
+    if z <= rs[0][2]:
+        return rs[0][1], rs[0][3], rs[0][4]
+    for r0, r1 in zip(rs, rs[1:]):
+        if r0[2] <= z <= r1[2]:
+            t = (z - r0[2]) / max(r1[2] - r0[2], 1e-9)
+            return (r0[1] + (r1[1] - r0[1]) * t, r0[3] + (r1[3] - r0[3]) * t, r0[4] + (r1[4] - r0[4]) * t)
+    return rs[-1][1], rs[-1][3], rs[-1][4]
+
+
+def _decal(m: Mesh, rings, poly_zy, col, square: float = 2.0, cell: float = 0.02) -> None:
+    """Paint a flat shape (z, y) onto both flanks of a blob (tank stripes, fairing graphics). The
+    shape is cut into small cells first and every cell vertex sits on the blob's own surface at
+    its (z, y), lifted a few millimetres, so the decal follows the curve instead of slicing
+    through it (Nov 27: big flat triangles on the fairing showed as white shards)."""
+    from shapely.geometry import box as sbox
+
+    def x_at(z: float, y: float) -> float:
+        yc, rx, ry = _ring_at(rings, z)
+        t = min(abs(y - yc) / max(ry, 1e-6), 0.999)
+        # Superellipse |x/rx|^p + |y/ry|^p = 1.
+        return rx * (1.0 - t ** square) ** (1.0 / square)
+
+    shape = Polygon(poly_zy)
+    z0, y0, z1, y1 = shape.bounds
+    z = z0
+    while z < z1:
+        y = y0
+        while y < y1:
+            piece = shape.intersection(sbox(z, y, z + cell, y + cell))
+            parts = [] if piece.is_empty else (list(piece.geoms) if hasattr(piece, "geoms") else [piece])
+            for part in parts:
+                if part.geom_type == "Polygon" and part.area > 1e-7:
+                    m.panel(list(part.exterior.coords)[:-1], x_at, col, 0.004)
+            y += cell
+        z += cell
+
+
+def _sprocket_chain(m: Mesh, front, rear, r_rear: float, side: float, col=BLACK) -> None:
+    """Chain run between the gearbox sprocket (z, y) and the rear sprocket, on one side."""
+    fz, fy = front
+    rz, ry = rear
+    m.disc_x(side - 0.006, side + 0.006, ry, rz, r_rear, ENGINE, 14)
+    for dy in (0.04, -0.04):
+        m.tube((side, fy + dy, fz), (side, ry + dy * r_rear / 0.04, rz), 0.007, col, 4)
+
+
+def sport_bike() -> Mesh:
+    """Faired 150-250 cc sports bike: full fairing with twin lamps and a screen, sculpted tank,
+    split seat on a high tail, USD fork, mono-shock, belly exhaust, 17 inch alloys (2.0 m).
+    Body = main paint, ACCENT = contrast graphics (fairing flash, tank and tail stripes)."""
     m = Mesh()
-    r, rz, fz = 0.28, -0.60, 0.63
-    _bike_wheel(m, rz, r, 0.034, CHROME, 7)
-    _bike_wheel(m, fz, r, 0.034, CHROME, 7)
-    m.arc_x(r, fz, r + 0.02, 30, 155, 0.05, 0.012, BODY, 9)
-    m.arc_x(r, rz, r + 0.02, 45, 180, 0.055, 0.012, BODY, 9)
-    head = (0.44, 0.88)
-    _fork(m, fz, r, head)
-    m.tube((0, 0.88, 0.44), (0, 1.00, 0.40), 0.022, BLACK, 7)
-    _bars(m, 0.40, 1.00, 0.30, 0.03)
-    m.blob([(0, 0.87, 0.42, 0.06, 0.07), (0, 0.875, 0.49, 0.088, 0.088), (0, 0.875, 0.55, 0.07, 0.07)], BODY, 10)   # headlamp cowl
-    m.disc_z(0.55, 0.566, 0.0, 0.875, 0.06, CHROME, 12, LAMP)
-    for s in (-0.11, 0.11):
-        _blinker(m, s, 0.86, 0.47)
-        _blinker(m, s, 0.64, -0.84)
-    m.tube((0, 0.86, 0.42), (0, 0.40, 0.12), 0.042, BODY, 8)                  # underbone spine
-    m.box((-0.13, 0.30, -0.02), (0.13, 0.345, 0.24), PLASTIC)                 # footboard
-    m.blob([(0, 0.33, -0.38, 0.06, 0.07), (0, 0.33, -0.24, 0.095, 0.11), (0, 0.33, -0.06, 0.09, 0.10), (0, 0.34, 0.02, 0.05, 0.06)], ENGINE, 9)
-    m.blob([(0, 0.58, -0.60, 0.06, 0.06), (0, 0.59, -0.44, 0.105, 0.11), (0, 0.59, -0.12, 0.11, 0.12), (0, 0.57, 0.02, 0.06, 0.07)], BODY, 10)   # tank / side body
-    m.blob([(0, 0.735, -0.54, 0.08, 0.025), (0, 0.745, -0.36, 0.125, 0.04), (0, 0.745, -0.12, 0.115, 0.04), (0, 0.735, 0.0, 0.07, 0.028)], SEAT, 10)
-    m.box((-0.12, 0.705, -0.90), (0.12, 0.72, -0.56), CHROME)                 # carrier
-    for s in (-0.11, 0.11):
-        m.tube((s, 0.71, -0.88), (s, 0.30, -0.62), 0.009, CHROME, 4)
-    m.tube((0.10, 0.34, 0.02), (0.12, 0.30, -0.04), 0.016, CHROME, 5)
-    m.blob([(0.12, 0.30, -0.02, 0.018, 0.018), (0.12, 0.31, -0.2, 0.036, 0.036), (0.12, 0.33, -0.62, 0.04, 0.04), (0.12, 0.33, -0.7, 0.02, 0.02)], CHROME, 8)
-    m.blob([(0, 0.63, -0.885, 0.045, 0.035), (0, 0.63, -0.905, 0.035, 0.026)], TAIL, 8)
-    _plate(m, -0.89, 0.46, 0.08)
+    r, rz, fz = 0.30, -0.69, 0.68
+    _bike_wheel(m, rz, r, 0.068, BLACK, alloy=True, hub=0.07)
+    _bike_wheel(m, fz, r, 0.045, BLACK, alloy=True, hub=0.05, disc=True)
+    m.disc_x(-0.078, -0.07, r, rz, 0.11, CHROME, 12)                            # rear disc
+    m.arc_x(r, fz, r + 0.02, 40, 135, 0.05, 0.01, BODY, 8)                     # front hugger mudguard
+    m.arc_x(r, rz, r + 0.03, 70, 150, 0.075, 0.01, BLACK, 6)                   # rear hugger
+    head = (0.47, 0.90)
+    for sx in (-0.07, 0.07):                                                    # upside-down fork
+        mid = (sx, r + (head[1] - r) * 0.5, fz + (head[0] - fz) * 0.5)
+        m.tube((sx, r, fz), mid, 0.022, BLACK, 7)
+        m.tube(mid, (sx, head[1], head[0]), 0.03, GOLD, 8)
+        m.blob([(sx * 1.1, r + 0.03, fz - 0.04, 0.012, 0.03), (sx * 1.1, r + 0.08, fz - 0.07, 0.016, 0.04)], GOLD, 6)   # caliper
+    m.box((-0.09, 0.90, 0.43), (0.09, 0.93, 0.52), FRAME_SILVER)               # top yoke
+    # Twin-spar frame from the head to the swing-arm pivot, seen behind the fairing.
+    for sx in (-1.0, 1.0):
+        _path(m, [(sx * 0.07, 0.88, 0.45), (sx * 0.135, 0.72, 0.22), (sx * 0.14, 0.58, -0.04), (sx * 0.12, 0.44, -0.13)], 0.024, FRAME_SILVER, 6)
+        _path(m, [(sx * 0.12, 0.44, -0.13), (sx * 0.10, 0.38, -0.40), (sx * 0.09, r, rz)], 0.022, BLACK, 6)   # swing arm
+        _path(m, [(sx * 0.12, 0.70, -0.10), (sx * 0.08, 0.84, -0.55)], 0.012, BLACK, 5)   # sub-frame
+    m.tube((0, 0.44, -0.26), (0, 0.66, -0.14), 0.024, SPRING, 8)               # mono-shock, tucked in
+    m.tube((0, 0.42, -0.28), (0, 0.7, -0.12), 0.012, CHROME, 6)
+    _sprocket_chain(m, (0.04, 0.40), (rz, r), 0.085, -0.085)
+    # Engine: crankcase and sump below the fairing.
+    m.blob([(0, 0.34, -0.12, 0.1, 0.09), (0, 0.33, 0.02, 0.14, 0.12), (0, 0.35, 0.22, 0.13, 0.11), (0, 0.40, 0.32, 0.08, 0.07)], ENGINE, 10)
+    m.disc_x(0.13, 0.155, 0.36, 0.06, 0.1, ENGINE, 14)
+    # Sculpted tank, square-ish in section, with a stripe each side.
+    tank = [(0, 0.86, -0.08, 0.1, 0.07), (0, 0.91, 0.04, 0.155, 0.1), (0, 0.95, 0.2, 0.165, 0.11), (0, 0.95, 0.34, 0.15, 0.1), (0, 0.92, 0.44, 0.1, 0.07)]
+    m.blob(tank, BODY, 12, square=2.6)
+    _decal(m, tank, [(0.34, 0.95), (0.06, 0.93), (0.06, 0.905), (0.32, 0.925)], ACCENT, 2.6)
+    # Front fairing: sharp nose, wide flanks, a contrast flash along each side.
+    nose = [(0, 0.76, 0.92, 0.03, 0.035), (0, 0.78, 0.86, 0.11, 0.085), (0, 0.8, 0.75, 0.17, 0.14), (0, 0.79, 0.62, 0.2, 0.18), (0, 0.76, 0.48, 0.2, 0.2), (0, 0.71, 0.38, 0.18, 0.19)]
+    m.blob(nose, BODY, 14, square=2.4)
+    _decal(m, nose, [(0.84, 0.77), (0.6, 0.83), (0.44, 0.8), (0.46, 0.75), (0.6, 0.77)], ACCENT, 2.4)
+    for sx in (-1.0, 1.0):                                                      # twin headlamps
+        m.blob([(sx * 0.065, 0.765, 0.88, 0.01, 0.01), (sx * 0.065, 0.77, 0.865, 0.045, 0.024), (sx * 0.07, 0.775, 0.83, 0.05, 0.026)], LAMP, 8)
+        m.blob([(sx * 0.2, 0.86, 0.6, 0.012, 0.01), (sx * 0.23, 0.9, 0.58, 0.015, 0.01)], BLACK, 5)   # mirror stalk
+        m.blob([(sx * 0.27, 0.93, 0.6, 0.02, 0.016), (sx * 0.27, 0.935, 0.57, 0.06, 0.035), (sx * 0.27, 0.93, 0.55, 0.05, 0.03)], BODY, 8)
+        _blinker(m, sx * 0.2, 0.83, 0.66)
+    # Smoked screen.
+    m.blob([(0, 0.9, 0.76, 0.1, 0.01), (0, 0.95, 0.68, 0.13, 0.012), (0, 0.99, 0.59, 0.12, 0.012), (0, 1.0, 0.54, 0.09, 0.01)], GLASS, 10)
+    # Side fairings over the engine and a black belly pan with the exhaust.
+    side = [(0, 0.62, 0.46, 0.2, 0.17), (0, 0.6, 0.3, 0.21, 0.18), (0, 0.58, 0.12, 0.19, 0.17), (0, 0.6, -0.0, 0.14, 0.13)]
+    m.blob(side, BODY, 12, cols=[BODY, BODY, BODY, BLACK], square=2.6)
+    _decal(m, side, [(0.4, 0.62), (0.08, 0.66), (0.06, 0.63), (0.38, 0.58)], ACCENT, 2.6)
+    # Body-colour covers under the seat, so the frame doesn't show between fairing and tail.
+    under = [(0, 0.74, 0.02, 0.12, 0.09), (0, 0.76, -0.16, 0.13, 0.1), (0, 0.8, -0.34, 0.12, 0.08)]
+    m.blob(under, BODY, 10, square=2.6)
+    m.blob([(0, 0.27, 0.3, 0.06, 0.04), (0, 0.25, 0.14, 0.13, 0.06), (0, 0.27, -0.06, 0.12, 0.06), (0, 0.33, -0.2, 0.06, 0.05)], BLACK, 10)
+    m.blob([(0.06, 0.3, -0.14, 0.05, 0.05), (0.07, 0.31, -0.28, 0.065, 0.06), (0.07, 0.33, -0.36, 0.05, 0.045)], ENGINE, 9)   # stubby muffler
+    m.disc_z(-0.39, -0.36, 0.07, 0.33, 0.028, BLACK, 8)
+    # Split seat: low rider seat, raised pillion on a high tail with a stripe and an LED lamp.
+    m.blob([(0, 0.82, -0.36, 0.08, 0.025), (0, 0.84, -0.26, 0.13, 0.04), (0, 0.85, -0.12, 0.15, 0.045), (0, 0.85, -0.04, 0.13, 0.04), (0, 0.86, 0.02, 0.08, 0.03)], SEAT, 10)
+    tail = [(0, 0.84, -0.3, 0.14, 0.08), (0, 0.88, -0.46, 0.12, 0.07), (0, 0.93, -0.66, 0.08, 0.05), (0, 0.96, -0.82, 0.04, 0.03)]
+    m.blob(tail, BODY, 10, square=2.4)
+    _decal(m, tail, [(-0.34, 0.83), (-0.8, 0.95), (-0.8, 0.935), (-0.4, 0.81)], ACCENT, 2.4)
+    m.blob([(0, 0.94, -0.42, 0.06, 0.018), (0, 0.97, -0.52, 0.09, 0.03), (0, 0.99, -0.66, 0.06, 0.022)], SEAT, 8)   # pillion pad
+    m.blob([(0, 0.95, -0.82, 0.05, 0.015), (0, 0.95, -0.845, 0.04, 0.012)], TAIL, 8)
+    _path(m, [(0, 0.9, -0.8), (0, 0.72, -0.86), (0, 0.62, -0.84)], 0.012, BLACK, 5)   # plate hugger
+    _plate(m, -0.85, 0.56, 0.085)
+    for sx in (-1.0, 1.0):
+        _blinker(m, sx * 0.09, 0.68, -0.84)
+        m.tube((sx * 0.06, 0.93, 0.47), (sx * 0.27, 0.9, 0.4), 0.014, BLACK, 6)  # clip-on bars
+        m.tube((sx * 0.21, 0.9, 0.41), (sx * 0.31, 0.9, 0.39), 0.02, BLACK, 7, True)
+        m.tube((sx * 0.1, 0.46, -0.22), (sx * 0.2, 0.46, -0.22), 0.012, CHROME, 4)   # rear-set pegs
+    return m
+
+
+def moped() -> Mesh:
+    """TVS XL style moped (1.84 m): a thick open backbone frame you step through, the tank and
+    side box under a long flat seat, a low engine with a round flywheel cover, flat foot rests,
+    16 inch spoked wheels, a big rear carrier and a hook carrier on the handlebar cowl."""
+    m = Mesh()
+    r, rz, fz = 0.28, -0.6, 0.63
+    _bike_wheel(m, rz, r, 0.036, CHROME, 8, hub=0.07)
+    _bike_wheel(m, fz, r, 0.034, CHROME, 8, hub=0.06)
+    m.disc_x(-0.05, 0.05, r, rz, 0.075, ENGINE, 12)                            # drum hubs
+    m.disc_x(-0.045, 0.045, r, fz, 0.065, ENGINE, 12)
+    m.arc_x(r, fz, r + 0.03, 25, 160, 0.055, 0.012, BODY, 10)
+    m.arc_x(r, rz, r + 0.03, 50, 185, 0.06, 0.012, BODY, 10)
+    head = (0.45, 0.9)
+    for sx in (-0.07, 0.07):                                                    # fork with gaiters
+        m.tube((sx, r, fz), (sx, 0.55, 0.56), 0.02, CHROME, 6)
+        m.tube((sx, 0.55, 0.56), (sx, head[1], head[0]), 0.028, BLACK, 7)
+    # Handlebar cowl with the round lamp and the speedometer, a hook carrier in front.
+    m.blob([(0, 0.92, 0.36, 0.08, 0.07), (0, 0.95, 0.44, 0.13, 0.1), (0, 0.94, 0.52, 0.12, 0.095), (0, 0.92, 0.57, 0.08, 0.07)], BODY, 12)
+    m.disc_z(0.565, 0.585, 0.0, 0.92, 0.066, CHROME, 14, LAMP)
+    m.disc_z(0.40, 0.41, 0.0, 1.04, 0.045, BLACK, 10, (236, 236, 230))          # speedo face
+    _bars(m, 0.42, 1.0, 0.33, 0.02)
+    _path(m, [(-0.08, 0.86, 0.6), (-0.08, 0.8, 0.66), (0.08, 0.8, 0.66), (0.08, 0.86, 0.6)], 0.008, CHROME, 4)
+    for sx in (-0.12, 0.12):
+        _blinker(m, sx, 0.9, 0.5)
+        _blinker(m, sx, 0.66, -0.86)
+    # The thick black backbone: down from the head, low through the step-through, up to the seat.
+    _path(m, [(0, 0.86, 0.44), (0, 0.6, 0.32), (0, 0.42, 0.18), (0, 0.38, -0.02), (0, 0.5, -0.24), (0, 0.66, -0.42)], 0.045, BLACK, 10)
+    for sx in (-1.0, 1.0):
+        _path(m, [(sx * 0.08, 0.66, -0.42), (sx * 0.09, 0.7, -0.86)], 0.013, BLACK, 5)
+        m.box((sx * 0.1 - 0.07, 0.3, 0.02), (sx * 0.1 + 0.07, 0.315, 0.24), PLASTIC)   # flat foot rests
+        m.tube((sx * 0.06, 0.33, 0.12), (sx * 0.13, 0.31, 0.12), 0.01, BLACK, 4)
+    # Low engine: crankcase, finned cylinder, a round flywheel cover on the left.
+    m.blob([(0, 0.27, -0.24, 0.07, 0.07), (0, 0.27, -0.12, 0.11, 0.1), (0, 0.28, 0.0, 0.11, 0.1), (0, 0.3, 0.06, 0.07, 0.07)], ENGINE, 10)
+    m.disc_x(-0.15, -0.105, 0.28, -0.1, 0.11, CHROME, 16)
+    m.disc_x(-0.16, -0.15, 0.28, -0.1, 0.06, ENGINE, 10)
+    for k in range(4):
+        m.box((-0.08, 0.32 + k * 0.035, 0.0 + k * 0.012), (0.08, 0.33 + k * 0.035, 0.12 + k * 0.012), ENGINE)
+    # Tank and side box under the seat, with a decal.
+    box = [(0, 0.6, -0.08, 0.08, 0.07), (0, 0.6, -0.2, 0.125, 0.11), (0, 0.6, -0.42, 0.13, 0.115), (0, 0.6, -0.58, 0.1, 0.09), (0, 0.6, -0.64, 0.05, 0.05)]
+    m.blob(box, BODY, 12, square=2.6)
+    _decal(m, box, [(-0.12, 0.66), (-0.5, 0.66), (-0.52, 0.63), (-0.12, 0.63)], ACCENT, 2.6)
+    m.blob([(0, 0.73, -0.62, 0.08, 0.025), (0, 0.75, -0.5, 0.13, 0.045), (0, 0.755, -0.24, 0.13, 0.045), (0, 0.75, -0.06, 0.11, 0.04), (0, 0.74, 0.0, 0.06, 0.03)], SEAT, 12)
+    # Big rear carrier: a frame of rails over the wheel, the luggage hook rail at the back.
+    m.box((-0.15, 0.77, -0.9), (0.15, 0.785, -0.62), CHROME, skip="-y")
+    for z in (-0.86, -0.78, -0.7):
+        m.tube((-0.15, 0.79, z), (0.15, 0.79, z), 0.006, BLACK, 4)
+    for sx in (-0.14, 0.14):
+        m.tube((sx, 0.77, -0.9), (sx * 0.8, 0.32, -0.62), 0.009, CHROME, 4)
+    m.tube((-0.15, 0.80, -0.92), (0.15, 0.80, -0.92), 0.01, CHROME, 5)
+    # Exhaust low on the right.
+    _path(m, [(0.06, 0.32, 0.08), (0.13, 0.24, -0.02), (0.14, 0.24, -0.28)], 0.016, BLACK, 6)
+    m.blob([(0.14, 0.24, -0.28, 0.03, 0.03), (0.15, 0.25, -0.4, 0.042, 0.042), (0.15, 0.28, -0.66, 0.042, 0.042), (0.15, 0.29, -0.72, 0.025, 0.025)], BLACK, 9)
+    _sprocket_chain(m, (-0.06, 0.28), (rz, r), 0.07, -0.07)
+    _shocks(m, (-0.56, 0.32), (-0.42, 0.68), 0.12)
+    m.tube((-0.06, 0.3, -0.12), (-0.14, 0.01, -0.06), 0.009, BLACK, 4)        # side stand
+    m.blob([(0, 0.62, -0.905, 0.04, 0.03), (0, 0.62, -0.925, 0.03, 0.022)], TAIL, 8)
+    _plate(m, -0.91, 0.45, 0.08)
     return m
 
 
 def commuter() -> Mesh:
-    """100 cc commuter motorcycle: tank, long seat, saree guard, upswept silencer (2.0 m)."""
+    """Hero Splendor style 100 cc commuter (1.99 m): tank with knee recesses and stripes, long
+    flat seat, striped side panels, round lamp under a small visor, black 5-spoke alloys,
+    silver finned engine, full chain cover, chrome silencer with a black guard, saree guard."""
     m = Mesh()
-    r, rz, fz = 0.31, -0.63, 0.65
-    _bike_wheel(m, rz, r, 0.045, PLASTIC, alloy=True, hub=0.065)
-    _bike_wheel(m, fz, r, 0.04, PLASTIC, alloy=True, hub=0.05, disc=True)
-    m.arc_x(r, fz, r + 0.025, 30, 150, 0.055, 0.012, BODY, 9)
-    m.arc_x(r, rz, r + 0.03, 55, 185, 0.06, 0.012, BLACK, 9)
-    head = (0.44, 0.94)
-    _fork(m, fz, r, head)
-    m.tube((0, 0.92, 0.42), (0, 0.44, 0.28), 0.022, BLACK, 6)                 # down tube
-    m.blob([(0, 0.93, 0.44, 0.085, 0.09), (0, 0.935, 0.50, 0.108, 0.108), (0, 0.925, 0.565, 0.09, 0.085)], BODY, 10)   # headlamp cowl
-    m.disc_z(0.565, 0.58, 0.0, 0.925, 0.072, CHROME, 12, LAMP)
-    m.blob([(0, 1.02, 0.46, 0.085, 0.012), (0, 1.075, 0.51, 0.06, 0.01)], GLASS, 8)   # visor
-    _bars(m, 0.40, 1.03, 0.33, 0.03)
-    for s in (-0.13, 0.13):
-        _blinker(m, s, 0.91, 0.47)
-        _blinker(m, s * 0.85, 0.74, -0.80)
-    m.blob([(0, 0.80, 0.02, 0.07, 0.05), (0, 0.84, 0.10, 0.125, 0.085), (0, 0.85, 0.24, 0.13, 0.095), (0, 0.83, 0.36, 0.105, 0.08), (0, 0.80, 0.44, 0.05, 0.04)], BODY, 12)   # tank
-    m.disc_x(-0.02, 0.02, 0.945, 0.26, 0.028, CHROME, 8)                      # filler cap
-    m.blob([(0, 0.80, -0.66, 0.07, 0.025), (0, 0.81, -0.55, 0.115, 0.04), (0, 0.80, -0.25, 0.13, 0.045), (0, 0.80, -0.02, 0.115, 0.04), (0, 0.81, 0.05, 0.07, 0.03)], SEAT, 12)
-    m.blob([(0, 0.66, -0.42, 0.08, 0.07), (0, 0.66, -0.30, 0.118, 0.11), (0, 0.66, -0.08, 0.12, 0.11), (0, 0.66, 0.02, 0.09, 0.08)], BODY, 10)   # side panels
-    m.blob([(0, 0.75, -0.60, 0.10, 0.05), (0, 0.77, -0.76, 0.085, 0.045), (0, 0.78, -0.88, 0.045, 0.03)], BODY, 10)   # tail cowl
+    r, rz, fz = 0.3, -0.62, 0.62
+    _bike_wheel(m, rz, r, 0.045, BLACK, alloy=True, hub=0.075)
+    _bike_wheel(m, fz, r, 0.04, BLACK, alloy=True, hub=0.065)
+    m.disc_x(-0.055, 0.055, r, rz, 0.085, ENGINE, 12)                          # drums
+    m.disc_x(-0.05, 0.05, r, fz, 0.075, ENGINE, 12)
+    m.arc_x(r, fz, r + 0.025, 25, 150, 0.055, 0.012, BODY, 10)
+    m.arc_x(r, rz, r + 0.03, 50, 190, 0.065, 0.012, BLACK, 10)
+    head = (0.43, 0.93)
+    _fork(m, fz, r, head, CHROME, 0.072, BLACK)
+    # Headlamp in a small cowl with a visor, speedo pod behind.
+    m.blob([(0, 0.92, 0.42, 0.08, 0.085), (0, 0.93, 0.48, 0.11, 0.11), (0, 0.92, 0.55, 0.095, 0.09)], BLACK, 12)
+    m.disc_z(0.55, 0.565, 0.0, 0.92, 0.078, CHROME, 14, LAMP)
+    m.blob([(0, 1.0, 0.46, 0.08, 0.012), (0, 1.02, 0.52, 0.09, 0.012), (0, 1.02, 0.56, 0.06, 0.01)], BODY, 8)   # visor
+    m.blob([(0, 1.03, 0.4, 0.05, 0.04), (0, 1.04, 0.42, 0.07, 0.05), (0, 1.03, 0.44, 0.05, 0.04)], BLACK, 10)
+    _bars(m, 0.38, 1.03, 0.34, 0.03)
+    for sx in (-0.13, 0.13):
+        _blinker(m, sx, 0.91, 0.47)
+        _blinker(m, sx * 0.85, 0.74, -0.8)
+    m.tube((0, 0.92, 0.42), (0, 0.44, 0.27), 0.024, BLACK, 6)
+    tank = [(0, 0.81, 0.0, 0.08, 0.05), (0, 0.85, 0.1, 0.13, 0.085), (0, 0.87, 0.24, 0.14, 0.1), (0, 0.85, 0.36, 0.115, 0.085), (0, 0.81, 0.44, 0.055, 0.045)]
+    m.blob(tank, BODY, 12, square=2.3)
+    _decal(m, tank, [(0.36, 0.88), (0.06, 0.85), (0.06, 0.83), (0.36, 0.86)], ACCENT, 2.3)
+    m.blob([(-0.05, 0.84, 0.2, 0.02, 0.035), (-0.06, 0.84, 0.15, 0.02, 0.04)], PLASTIC, 6)   # knee pads
+    m.blob([(0.05, 0.84, 0.2, 0.02, 0.035), (0.06, 0.84, 0.15, 0.02, 0.04)], PLASTIC, 6)
+    m.disc_x(-0.02, 0.02, 0.96, 0.26, 0.028, CHROME, 8)
+    m.blob([(0, 0.8, -0.68, 0.07, 0.025), (0, 0.815, -0.56, 0.12, 0.042), (0, 0.815, -0.26, 0.13, 0.046), (0, 0.81, -0.02, 0.115, 0.042), (0, 0.815, 0.05, 0.07, 0.03)], SEAT, 12)
+    panels = [(0, 0.66, 0.02, 0.09, 0.08), (0, 0.66, -0.08, 0.125, 0.11), (0, 0.66, -0.3, 0.125, 0.11), (0, 0.66, -0.42, 0.09, 0.08)]
+    m.blob(panels, BODY, 10, square=2.6)
+    _decal(m, panels, [(-0.04, 0.72), (-0.36, 0.69), (-0.36, 0.665), (-0.04, 0.695)], ACCENT, 2.6)
+    m.blob([(0, 0.75, -0.6, 0.1, 0.05), (0, 0.77, -0.76, 0.085, 0.045), (0, 0.78, -0.88, 0.045, 0.03)], BODY, 10)
     m.blob([(0, 0.78, -0.885, 0.04, 0.028), (0, 0.78, -0.91, 0.03, 0.02)], TAIL, 8)
-    m.blob([(0, 0.36, -0.14, 0.10, 0.09), (0, 0.36, -0.02, 0.135, 0.12), (0, 0.36, 0.16, 0.135, 0.12), (0, 0.38, 0.26, 0.09, 0.08)], ENGINE, 10)   # crank case
-    m.blob([(0, 0.44, 0.13, 0.07, 0.07), (0, 0.55, 0.17, 0.078, 0.078), (0, 0.66, 0.21, 0.07, 0.07)], PLASTIC, 8)   # cylinder
-    for k in range(4):
-        y = 0.47 + k * 0.05
-        m.box((-0.092, y, 0.06 + k * 0.016), (0.092, y + 0.012, 0.25 + k * 0.016), ENGINE)   # cooling fins
-    for s in (-0.09, 0.09):
-        m.tube((s, 0.34, -0.12), (s, r, rz), 0.02, ENGINE, 5)                 # swing arm
-        m.tube((s, 0.72, -0.10), (s, 0.76, -0.70), 0.014, BLACK, 5)           # sub frame
-    m.tube((0.10, 0.42, 0.22), (0.16, 0.33, -0.10), 0.018, CHROME, 6)         # exhaust pipe
-    m.blob([(0.16, 0.33, -0.10, 0.03, 0.03), (0.17, 0.35, -0.30, 0.05, 0.05), (0.17, 0.42, -0.70, 0.055, 0.055), (0.17, 0.45, -0.86, 0.035, 0.035)], CHROME, 9)
-    _shocks(m, (-0.56, 0.36), (-0.40, 0.72), 0.125)
-    for y in (0.34, 0.46, 0.58):                                              # saree guard (left)
-        m.tube((-0.135, y, -0.88), (-0.135, y, -0.40), 0.006, CHROME, 4)
-    m.tube((-0.135, 0.30, -0.88), (-0.135, 0.62, -0.88), 0.006, CHROME, 4)
-    m.tube((-0.11, 0.84, -0.88), (0.11, 0.84, -0.88), 0.011, CHROME, 5)       # grab rail
-    for s in (-0.11, 0.11):
-        m.tube((s, 0.84, -0.88), (s, 0.82, -0.56), 0.011, CHROME, 5)
-        m.tube((s * 1.5, 0.34, 0.30), (s * 0.7, 0.62, 0.30), 0.011, CHROME, 5)   # leg guard
-        m.tube((s * 0.9, 0.30, 0.02), (s * 1.7, 0.30, 0.02), 0.012, BLACK, 4)    # foot pegs
-    _plate(m, -0.89, 0.60)
+    # Engine: silver crankcase, finned cylinder leaning forward, kick lever.
+    m.blob([(0, 0.36, -0.14, 0.1, 0.09), (0, 0.36, -0.02, 0.135, 0.12), (0, 0.36, 0.16, 0.135, 0.12), (0, 0.38, 0.26, 0.09, 0.08)], FRAME_SILVER, 10)
+    m.disc_x(-0.15, -0.13, 0.36, 0.06, 0.1, FRAME_SILVER, 14)
+    m.blob([(0, 0.44, 0.13, 0.07, 0.07), (0, 0.55, 0.17, 0.078, 0.078), (0, 0.66, 0.21, 0.07, 0.07)], ENGINE, 8)
+    for k in range(5):
+        y = 0.46 + k * 0.042
+        m.box((-0.095, y, 0.06 + k * 0.016), (0.095, y + 0.012, 0.26 + k * 0.016), FRAME_SILVER)
+    m.tube((0.14, 0.4, -0.1), (0.16, 0.3, 0.06), 0.01, BLACK, 4)              # kick lever
+    for sx in (-0.09, 0.09):
+        m.tube((sx, 0.34, -0.12), (sx, r, rz), 0.02, BLACK, 5)
+        m.tube((sx, 0.72, -0.1), (sx, 0.76, -0.7), 0.014, BLACK, 5)
+    # Full chain cover on the left.
+    m.blob([(-0.1, 0.34, -0.04, 0.02, 0.05), (-0.1, 0.33, -0.3, 0.025, 0.07), (-0.1, 0.32, -0.62, 0.025, 0.09), (-0.1, 0.32, -0.7, 0.02, 0.06)], BLACK, 8)
+    # Silencer: chrome with a black heat guard.
+    _path(m, [(0.1, 0.42, 0.22), (0.16, 0.3, 0.02), (0.16, 0.31, -0.12)], 0.018, CHROME, 6)
+    sil = [(0.16, 0.31, -0.12, 0.03, 0.03), (0.17, 0.33, -0.3, 0.05, 0.05), (0.17, 0.41, -0.7, 0.055, 0.055), (0.17, 0.44, -0.86, 0.035, 0.035)]
+    m.blob(sil, CHROME, 10)
+    m.blob([(0.19, 0.38, -0.28, 0.02, 0.04), (0.2, 0.4, -0.4, 0.02, 0.05), (0.2, 0.42, -0.5, 0.018, 0.04)], BLACK, 6)
+    _shocks(m, (-0.56, 0.36), (-0.4, 0.72), 0.125)
+    for y in (0.34, 0.46, 0.58):                                              # saree guard
+        m.tube((-0.14, y, -0.88), (-0.14, y, -0.4), 0.006, CHROME, 4)
+    m.tube((-0.14, 0.3, -0.88), (-0.14, 0.62, -0.88), 0.006, CHROME, 4)
+    _path(m, [(-0.11, 0.82, -0.56), (-0.11, 0.84, -0.88), (0.11, 0.84, -0.88), (0.11, 0.82, -0.56)], 0.011, CHROME, 5)   # grab rail
+    for sx in (-0.11, 0.11):
+        m.tube((sx * 1.5, 0.34, 0.3), (sx * 0.7, 0.62, 0.3), 0.011, CHROME, 5)   # leg guard
+        m.tube((sx * 0.9, 0.3, 0.02), (sx * 1.7, 0.3, 0.02), 0.012, BLACK, 4)
+    _plate(m, -0.89, 0.6)
     return m
 
 
 def cruiser() -> Mesh:
-    """Classic 350 cc cruiser: teardrop tank, round lamp, deep mudguards, long silencer (2.14 m)."""
+    """Royal Enfield Thunderbird style 350 cc cruiser (2.16 m): big teardrop tank, tall pulled-
+    back bars, twin-pod console, round lamp with a ring light and visor, stepped seat with a
+    backrest, wide rear tyre, black finned engine, long chrome exhaust, crash guard."""
     m = Mesh()
-    r, rz, fz = 0.33, -0.70, 0.70
-    _bike_wheel(m, rz, r, 0.055, CHROME, 8, hub=0.075)
-    _bike_wheel(m, fz, r, 0.045, CHROME, 8, hub=0.06, disc=True)
-    m.arc_x(r, fz, r + 0.02, 15, 160, 0.068, 0.014, BODY, 10)
-    m.arc_x(r, rz, r + 0.025, 35, 200, 0.078, 0.014, BODY, 10)
-    head = (0.50, 0.96)
-    _fork(m, fz, r, head, CHROME, 0.088)
-    for s in (-0.088, 0.088):
-        m.tube((s, 0.66, 0.60), (s, 0.96, 0.50), 0.03, BODY, 8)               # fork shrouds
-    m.disc_z(0.52, 0.64, 0.0, 0.92, 0.095, BODY, 14)                          # headlamp nacelle
-    m.disc_z(0.64, 0.655, 0.0, 0.92, 0.102, CHROME, 14, LAMP)
-    _bars(m, 0.46, 1.06, 0.37, 0.02)
-    for s in (-0.15, 0.15):
-        _blinker(m, s, 0.90, 0.56)
-        _blinker(m, s * 0.9, 0.70, -0.92)
-    m.blob([(0, 0.82, -0.04, 0.06, 0.04), (0, 0.87, 0.06, 0.13, 0.09), (0, 0.89, 0.22, 0.155, 0.105), (0, 0.87, 0.38, 0.13, 0.09), (0, 0.83, 0.48, 0.06, 0.045)], BODY, 12)   # tank
-    m.disc_x(-0.022, 0.022, 0.995, 0.24, 0.03, CHROME, 8)
-    m.blob([(0, 0.82, -0.40, 0.11, 0.04), (0, 0.83, -0.25, 0.15, 0.05), (0, 0.83, -0.08, 0.14, 0.045), (0, 0.84, 0.0, 0.08, 0.035)], SEAT_TAN, 10)   # rider seat
-    m.blob([(0, 0.83, -0.74, 0.08, 0.035), (0, 0.84, -0.62, 0.12, 0.045), (0, 0.84, -0.46, 0.11, 0.04)], SEAT_TAN, 10)   # pillion
-    m.blob([(0, 0.62, -0.36, 0.10, 0.09), (0, 0.62, -0.25, 0.152, 0.13), (0, 0.62, -0.08, 0.152, 0.13), (0, 0.62, 0.0, 0.11, 0.10)], BODY, 10)   # tool boxes
-    m.blob([(0, 0.38, -0.10, 0.11, 0.10), (0, 0.38, 0.02, 0.16, 0.14), (0, 0.38, 0.20, 0.16, 0.14), (0, 0.40, 0.32, 0.10, 0.09)], ENGINE, 10)   # crank case
-    m.disc_x(-0.175, 0.175, 0.38, 0.06, 0.115, CHROME, 14)
-    m.blob([(0, 0.50, 0.16, 0.09, 0.09), (0, 0.62, 0.17, 0.097, 0.097), (0, 0.75, 0.18, 0.085, 0.085)], PLASTIC, 9)   # barrel
-    for k in range(5):
-        y = 0.52 + k * 0.045
-        m.box((-0.11, y, 0.06), (0.11, y + 0.012, 0.29), ENGINE)
-    m.tube((0, 0.94, 0.48), (0, 0.44, 0.36), 0.024, BLACK, 6)
-    for s in (-0.10, 0.10):
-        m.tube((s, 0.36, -0.10), (s, r, rz), 0.022, BLACK, 5)
-        m.tube((s, 0.74, -0.10), (s, 0.74, -0.80), 0.015, BLACK, 5)
-    m.tube((0.12, 0.60, 0.26), (0.18, 0.32, 0.20), 0.024, CHROME, 6)
-    m.blob([(0.18, 0.32, 0.20, 0.03, 0.03), (0.19, 0.31, -0.10, 0.045, 0.045), (0.19, 0.33, -0.80, 0.056, 0.056), (0.19, 0.34, -1.0, 0.04, 0.04)], CHROME, 10)
-    _shocks(m, (-0.64, 0.36), (-0.46, 0.76), 0.145)
-    m.blob([(0, 0.66, -1.03, 0.05, 0.04), (0, 0.66, -1.06, 0.035, 0.028)], TAIL, 8)
-    _plate(m, -1.045, 0.48, 0.10)
-    for s in (-0.19, 0.19):                                                   # crash bar, pegs
-        m.tube((s, 0.30, 0.38), (s * 0.4, 0.66, 0.38), 0.013, CHROME, 5)
-        m.tube((s * 0.5, 0.30, 0.0), (s * 1.0, 0.30, 0.0), 0.012, BLACK, 4)
+    r, rz, fz = 0.32, -0.71, 0.7
+    _bike_wheel(m, rz, r, 0.07, BLACK, alloy=True, hub=0.075)
+    _bike_wheel(m, fz, r, 0.048, BLACK, alloy=True, hub=0.06, disc=True)
+    m.disc_x(-0.082, -0.074, r, rz, 0.12, CHROME, 12)
+    m.arc_x(r, fz, r + 0.02, 15, 160, 0.07, 0.014, BODY, 10)
+    m.arc_x(r, rz, r + 0.03, 35, 200, 0.085, 0.014, BODY, 10)
+    for sx in (-0.1, 0.1):
+        m.tube((sx, r + 0.04, rz - 0.1), (sx, 0.62, rz - 0.34), 0.008, CHROME, 4)   # mudguard stays
+    head = (0.52, 0.96)
+    _fork(m, fz, r, head, CHROME, 0.09)
+    for sx in (-0.09, 0.09):
+        m.tube((sx, 0.66, 0.6), (sx, 0.96, 0.5), 0.032, BLACK, 8)               # fork gaiters
+    # Lamp: chrome bowl, a ring light round the lens, small visor; twin pods behind.
+    m.blob([(0, 0.93, 0.5, 0.07, 0.07), (0, 0.93, 0.56, 0.105, 0.105), (0, 0.93, 0.63, 0.105, 0.105)], CHROME, 14)
+    m.disc_z(0.63, 0.645, 0.0, 0.93, 0.1, LAMP, 16, LAMP)
+    m.disc_z(0.645, 0.65, 0.0, 0.93, 0.07, CHROME, 14, LAMP)
+    m.blob([(0, 1.02, 0.55, 0.08, 0.01), (0, 1.04, 0.61, 0.09, 0.012), (0, 1.04, 0.64, 0.06, 0.01)], BODY, 8)
+    for sx in (-0.06, 0.06):
+        m.disc_z(0.46, 0.5, sx, 1.07, 0.045, CHROME, 12, (236, 236, 230))
+    # Tall pulled-back cruiser bars.
+    for sx in (-1.0, 1.0):
+        _path(m, [(sx * 0.05, 1.0, 0.5), (sx * 0.16, 1.15, 0.46), (sx * 0.32, 1.17, 0.34), (sx * 0.38, 1.15, 0.26)], 0.014, CHROME, 6)
+        m.tube((sx * 0.3, 1.16, 0.32), (sx * 0.41, 1.14, 0.22), 0.021, BLACK, 7, True)
+        m.tube((sx * 0.2, 1.16, 0.44), (sx * 0.27, 1.27, 0.45), 0.007, CHROME, 4)
+        m.blob([(sx * 0.27, 1.29, 0.43, 0.03, 0.022), (sx * 0.27, 1.295, 0.45, 0.055, 0.04), (sx * 0.27, 1.29, 0.46, 0.05, 0.035)], CHROME, 8)
+        _blinker(m, sx * 0.16, 0.9, 0.55)
+        _blinker(m, sx * 0.15, 0.7, -0.94)
+    tank = [(0, 0.81, -0.06, 0.07, 0.045), (0, 0.87, 0.04, 0.15, 0.1), (0, 0.9, 0.2, 0.175, 0.12), (0, 0.89, 0.36, 0.155, 0.105), (0, 0.84, 0.48, 0.07, 0.05)]
+    m.blob(tank, BODY, 14)
+    _decal(m, tank, [(0.4, 0.905), (0.05, 0.905), (0.04, 0.89), (0.4, 0.89)], ACCENT)
+    m.disc_x(-0.024, 0.024, 1.01, 0.24, 0.032, CHROME, 10)
+    # Stepped seat: low rider seat, raised pillion, a backrest on chrome loops.
+    m.blob([(0, 0.79, -0.4, 0.11, 0.04), (0, 0.8, -0.26, 0.17, 0.055), (0, 0.8, -0.1, 0.15, 0.05), (0, 0.81, -0.02, 0.08, 0.035)], SEAT, 12)
+    m.blob([(0, 0.86, -0.72, 0.09, 0.035), (0, 0.87, -0.6, 0.13, 0.045), (0, 0.86, -0.46, 0.12, 0.04)], SEAT, 10)
+    for sx in (-0.1, 0.1):
+        _path(m, [(sx * 1.3, 0.78, -0.56), (sx, 0.95, -0.8), (sx, 1.08, -0.82)], 0.012, CHROME, 5)
+    m.blob([(0, 1.06, -0.84, 0.1, 0.05), (0, 1.07, -0.82, 0.12, 0.07), (0, 1.06, -0.8, 0.1, 0.05)], SEAT, 10)   # backrest pad
+    box = [(0, 0.62, -0.36, 0.1, 0.09), (0, 0.62, -0.25, 0.155, 0.13), (0, 0.62, -0.08, 0.155, 0.13), (0, 0.62, 0.0, 0.11, 0.1)]
+    m.blob(box, BODY, 10)
+    # Black engine with chrome covers.
+    m.blob([(0, 0.38, -0.1, 0.11, 0.1), (0, 0.38, 0.02, 0.16, 0.14), (0, 0.38, 0.2, 0.16, 0.14), (0, 0.4, 0.32, 0.1, 0.09)], (40, 40, 44), 10)
+    m.disc_x(-0.18, -0.15, 0.38, 0.06, 0.12, CHROME, 16)
+    m.disc_x(0.15, 0.18, 0.4, 0.14, 0.09, CHROME, 14)
+    m.blob([(0, 0.5, 0.16, 0.09, 0.09), (0, 0.62, 0.17, 0.097, 0.097), (0, 0.75, 0.18, 0.085, 0.085)], (40, 40, 44), 10)
+    for k in range(6):
+        y = 0.5 + k * 0.042
+        m.box((-0.12, y, 0.05), (0.12, y + 0.012, 0.3), (58, 58, 62))
+    m.blob([(0, 0.8, 0.18, 0.07, 0.03), (0, 0.82, 0.18, 0.09, 0.04)], CHROME, 10)   # rocker cover
+    m.tube((0, 0.96, 0.48), (0, 0.44, 0.36), 0.026, BLACK, 6)
+    for sx in (-0.1, 0.1):
+        m.tube((sx, 0.36, -0.1), (sx, r, rz), 0.024, BLACK, 5)
+        m.tube((sx, 0.74, -0.1), (sx, 0.76, -0.82), 0.016, BLACK, 5)
+    _path(m, [(0.12, 0.62, 0.26), (0.19, 0.34, 0.2), (0.2, 0.31, -0.06)], 0.025, CHROME, 7)
+    m.blob([(0.2, 0.31, -0.06, 0.03, 0.03), (0.21, 0.31, -0.2, 0.05, 0.05), (0.21, 0.35, -0.86, 0.06, 0.06), (0.21, 0.37, -1.02, 0.045, 0.045)], CHROME, 12)
+    _sprocket_chain(m, (0.06, 0.36), (rz, r), 0.1, -0.1)
+    _shocks(m, (-0.64, 0.36), (-0.46, 0.78), 0.15)
+    m.blob([(0, 0.66, -1.02, 0.055, 0.05), (0, 0.66, -1.05, 0.045, 0.04)], TAIL, 10)
+    _plate(m, -1.04, 0.46, 0.1)
+    for sx in (-0.2, 0.2):
+        _path(m, [(sx * 0.4, 0.66, 0.4), (sx, 0.52, 0.42), (sx, 0.3, 0.36)], 0.014, CHROME, 5)   # crash guard
+        m.tube((sx * 0.5, 0.32, 0.08), (sx * 1.05, 0.32, 0.08), 0.013, BLACK, 4)
     return m
 
 
@@ -766,7 +979,7 @@ def mini_truck() -> Mesh:
 
 
 VEHICLES = {
-    "moped": moped, "commuter_bike": commuter, "cruiser_bike": cruiser, "bicycle": bicycle,
+    "moped": moped, "commuter_bike": commuter, "cruiser_bike": cruiser, "sport_bike": sport_bike, "bicycle": bicycle,
     "hatchback": hatchback, "tallboy": tallboy, "micro_van": van, "mini_truck": mini_truck,
 }
 

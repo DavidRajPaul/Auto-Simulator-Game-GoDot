@@ -7,6 +7,8 @@ things to find, and voiced dialogue that stays in sync with the scenes.
 
 "The Little Red Kite" (`sq_007`, content version 3) was the first quest built this way;
 "Paati Knows the Way" (`sq_004`, content version 3) is the second, and the first with a rider.
+"The Wedding Gold" (`sq_001`, content version 4) is the third (Nov 27 owner report: "zero dialogues, the
+cut scenes are very fast, no NPCs talking").
 
 ## How a story quest is built
 
@@ -115,3 +117,25 @@ cut. `"wait": "rider"` waits until she has stopped walking or climbing; looks an
 
 Tests: `tests/run_story_quest_tests.tscn` plays it too (both choices, skips, the rider out and in).
 `SHOT_QUEST=sq_004` in `tests/shot_story.tscn` renders its scenes.
+
+## The Wedding Gold
+
+`tools/quests/build_sq01_story.py` holds every line once and writes the mission, the story, the voice
+script and the subtitles. No rider: the people are at the places.
+
+1. **Ask** Sundaram, the organiser, at the wedding hall on Ponnambalam Vathiyar Street (stop beside him).
+2. **The hall** (cutscene, ~13 lines): he walks up to the auto; Kavya (the bride's cousin, Kanchi silk
+   saree) runs up from ahead and Revathi (violet saree) walks up from behind; all three stand in a row on
+   the kerb facing the auto. Kavya knows what is in the pouch (a mango-design chain, two thin bangles);
+   Revathi can't say. The receipt has a blue lotus stamp from M.R. Flowers on East Tank Square Street.
+3. **Ask** Muthu at M.R. Flowers (the driver mutters lines on the way).
+4. **The stall** (cutscene, ~9 lines): Kamala amma bought the blue-lotus pouch for her niece Kavya; and a
+   lady in a violet saree left a red pouch on his counter this morning. He hands it over.
+5. **Back at the hall**: both women wait at the gate; the verdict scene ends held on all three, and the
+   choice (Kavya / Revathi) shows in the letterbox.
+6. **Ending**: Kavya gets her gold and Revathi her forgotten red pouch, and Sundaram invites you to the
+   feast (Rs 155); or Revathi opens it, finds a mango chain that isn't hers, and Sundaram tells you to trust
+   what you found out (Rs 45).
+
+Voices: `docs/voice/SQ01_Wedding_Gold_Voice_Script.md` (Sundaram, Kavya, Revathi and Muthu have their own
+Parler voices in `tools/voice/cast.json`). `SHOT_QUEST=sq_001` in `tests/shot_story.tscn` renders it.

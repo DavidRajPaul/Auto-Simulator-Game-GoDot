@@ -64,6 +64,17 @@ WALL_SIDE_M = 1.2        # how far a wall runs past the ends of its front
 GATE_M = 3.2
 MIN_FRONT_M = 5.0
 MIN_RUN_M = 1.5
+# Set-back commercial buildings (offices, showrooms, hotels, banks, malls) stand in a compound: a
+# wall round the paved yard, with one gate on the side nearest the road. Street-front shop rows keep none.
+COMPOUND_TYPES = {"of", "sr", "ht", "bk", "ml"}
+COMPOUND_MIN_SETBACK_M = 4.0  # the footprint must stand at least this far from the road surface
+COMPOUND_RING_M = 3.0         # the wall line this far outside the footprint (the apron ends 2.5 m out)
+COMPOUND_WALL_H = 1.8
+COMPOUND_WALL_TYPE = "fl"     # the plastered flats compound wall: its paint and gate style
+BIG_GATE_M = 6.0              # double gates wide enough for a car, a van or an auto
+TWO_GATES_M = 34.0            # a street side this long gets an IN and an OUT gate
+COMPOUND_GATE_H = 2.1
+TRUNK_CLEAR_M = 0.45          # a compound wall may pass this close to a tree's trunk
 ZONE_IDS = ["", "marina", "mylapore", "anna_salai", "t_nagar"]
 CELL = 1.0
 SURF_KINDS = ("road", "junction", "walk", "lane", "centre")
@@ -142,15 +153,22 @@ def main() -> int:
                 bld_d.polygon([grid.px(*q) for q in pts], fill=1)
                 buildings.append((b, pts))
 
-    def disc(x: float, z: float, r: float) -> None:
+    tree_im, tree_d = grid.image()    # tree crowns: street walls keep clear of them
+    trunk_im, trunk_d = grid.image()  # tree trunks: compound walls run right past them, as in Chennai
+
+    def disc(x: float, z: float, r: float, draw=None) -> None:
         cx, cz = grid.px(x, z)
-        keep_d.ellipse([cx - r / CELL, cz - r / CELL, cx + r / CELL, cz + r / CELL], fill=1)
+        (draw or keep_d).ellipse([cx - r / CELL, cz - r / CELL, cx + r / CELL, cz + r / CELL], fill=1)
 
     radii = {"poles": 0.7, "trees": 1.1, "parking": 1.7, "stalls": 2.3, "barricades": 1.3, "carts": 2.3,
              "beach_fence": 1.2, "xfmr": 2.8, "lamps": 0.8, "booths": 3.2}
     for f in sorted((WORLD / "dress").glob("c_*.json")):
         for key, items in json.loads(f.read_text()).items():
-            if key in radii:
+            if key == "trees":
+                for it in items:
+                    disc(float(it[0]), float(it[1]), radii[key], tree_d)
+                    disc(float(it[0]), float(it[1]), TRUNK_CLEAR_M, trunk_d)
+            elif key in radii:
                 for it in items:
                     disc(float(it[0]), float(it[1]), radii[key])
             elif key == "islands":  # roundabout islands (build_roundabouts.py): [kind, cx, cz, yaw, x0, z0, ...]
@@ -193,7 +211,9 @@ def main() -> int:
 
     surf = np.asarray(surf_im) > 0
     dist_road = ndimage.distance_transform_edt(~surf).astype(np.float32) * CELL
-    blocked = (np.asarray(keep_im) > 0) | (np.asarray(bld_im) > 0) | (dist_road < 1.8)
+    blocked_base = (np.asarray(keep_im) > 0) | (np.asarray(bld_im) > 0) | (dist_road < 1.8)
+    blocked = blocked_base | (np.asarray(tree_im) > 0)
+    blocked_compound = blocked_base | (np.asarray(trunk_im) > 0) | (dist_road < WALL_KERB_M)
     walls_px = wall_im.load()
     print(f"rasters ready: {len(buildings)} buildings, {int(surf.sum())} m² of road and footpath", flush=True)
 
@@ -211,14 +231,20 @@ def main() -> int:
             return False
         return not blocked[j, i] and not walls_px[i, j]
 
-    def runs(p0: tuple, p1: tuple) -> list:
+    def free_kerb(x: float, z: float) -> bool:
+        i, j = int((x - grid.x0) / CELL), int((z - grid.z0) / CELL)
+        if not (0 <= i < grid.w and 0 <= j < grid.h):
+            return False
+        return not blocked_compound[j, i] and not walls_px[i, j]
+
+    def runs(p0: tuple, p1: tuple, ok_fn=free) -> list:
         """The stretches of p0 → p1 where a wall may stand."""
         L = math.dist(p0, p1)
         n = max(1, int(L / 0.5))
         out, start = [], None
         for k in range(n + 1):
             t = k / n
-            ok = free(p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t)
+            ok = ok_fn(p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t)
             if ok and start is None:
                 start = t
             if (not ok or k == n) and start is not None:
@@ -231,8 +257,8 @@ def main() -> int:
 
     pending_marks: list = []
 
-    def add_wall(a: tuple, c: tuple, h: float, t: str, seed: int, zone: int) -> None:
-        for q0, q1 in runs(a, c):
+    def add_wall(a: tuple, c: tuple, h: float, t: str, seed: int, zone: int, ok_fn=free) -> None:
+        for q0, q1 in runs(a, c, ok_fn):
             # Cut at chunk borders so mesh and collision never vanish with a neighbour.
             L = math.dist(q0, q1)
             cuts = [0.0, 1.0]
@@ -254,6 +280,83 @@ def main() -> int:
                 stats["wall_m"] += (t1 - t0) * L
             pending_marks.append((q0, q1))
             stats["walls"] += 1
+
+    def add_compound(foot, pts: list, fronts: set, sign: float, seed: int, zone: int) -> None:
+        """A compound round a set-back building: the front wall runs along the back of the
+        footpath (WALL_KERB_M from the road), returns to the building on each side and rings the
+        rest 3 m out. Big double gates on the street side stand OPEN (leaves swung into the yard),
+        so the yard reads as enclosed but the auto can still drive in."""
+        n = len(pts)
+        setback = min(grid.at(dist_road, a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f)
+                      for a, c in zip(pts, pts[1:] + pts[:1]) for f in (0.0, 0.5))
+        if setback < COMPOUND_MIN_SETBACK_M:
+            return
+        parts = [foot.buffer(COMPOUND_RING_M, join_style=2, mitre_limit=2.0)]
+        for i in sorted(fronts):
+            a, c = pts[i - 1], pts[i]
+            ex, ez = c[0] - a[0], c[1] - a[1]
+            L = math.hypot(ex, ez)
+            if L < 2.4:
+                continue
+            ux, uz = ex / L, ez / L
+            nx, nz = uz * sign, -ux * sign
+            d = min(grid.at(dist_road, a[0] + ex * f + nx * 0.6, a[1] + ez * f + nz * 0.6) for f in (0.1, 0.3, 0.5, 0.7, 0.9)) + 0.6
+            reach = min(d, FRONT_REACH_M) - WALL_KERB_M - 0.3
+            if reach <= COMPOUND_RING_M:
+                continue
+            o = COMPOUND_RING_M
+            parts.append(Polygon([(a[0] - ux * o, a[1] - uz * o), (c[0] + ux * o, c[1] + uz * o),
+                                  (c[0] + ux * o + nx * reach, c[1] + uz * o + nz * reach),
+                                  (a[0] - ux * o + nx * reach, a[1] - uz * o + nz * reach)]))
+        plot = unary_union(parts).simplify(0.3)
+        if plot.geom_type != "Polygon":
+            plot = max(plot.geoms, key=lambda g: g.area)
+        ring = list(plot.exterior.coords)[:-1]
+        edges = [(ring[i - 1], ring[i]) for i in range(len(ring)) if math.dist(ring[i - 1], ring[i]) > 0.2]
+        if not edges:
+            return
+        cx, cz = foot.centroid.x, foot.centroid.y
+
+        def edge_road(e: tuple) -> float:
+            return grid.at(dist_road, (e[0][0] + e[1][0]) * 0.5, (e[0][1] + e[1][1]) * 0.5)
+        # Gates: on the street-side edges (or, failing that, the edge nearest the road).
+        street = [i for i, e in enumerate(edges) if edge_road(e) <= WALL_KERB_M + 2.0 and math.dist(*e) >= BIG_GATE_M + 2.0]
+        if not street:
+            cands = [i for i, e in enumerate(edges) if math.dist(*e) >= GATE_M + 1.0]
+            street = [min(cands, key=lambda i: edge_road(edges[i]))] if cands else []
+        gate_at: dict = {}
+        for i in street:
+            L = math.dist(*edges[i])
+            w = BIG_GATE_M if L >= BIG_GATE_M + 2.0 else GATE_M
+            gate_at[i] = [(0.25, w), (0.75, w)] if L >= TWO_GATES_M else [(0.5 + ((seed % 5) - 2) * 0.04, w)]
+        for i, (p, q) in enumerate(edges):
+            stats["compound_m"] += math.dist(p, q)
+            if i not in gate_at:
+                add_wall(p, q, COMPOUND_WALL_H, COMPOUND_WALL_TYPE, seed, zone, free_kerb)
+                pending_marks.append((p, q))
+                continue
+            L = math.dist(p, q)
+            ux, uz = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+            # Which side of the edge is the yard: the leaves swing that way (+1 = the streamer's n2).
+            mx, mz = (p[0] + q[0]) * 0.5, (p[1] + q[1]) * 0.5
+            swing = 1 if (-uz) * (cx - mx) + ux * (cz - mz) > 0 else -1
+            cur = p
+            for f, w in gate_at[i]:
+                g0 = (p[0] + ux * (L * f - w * 0.5), p[1] + uz * (L * f - w * 0.5))
+                g1 = (p[0] + ux * (L * f + w * 0.5), p[1] + uz * (L * f + w * 0.5))
+                add_wall(cur, g0, COMPOUND_WALL_H, COMPOUND_WALL_TYPE, seed, zone, free_kerb)
+                cur = g1
+                r = runs(g0, g1, free_kerb)
+                if len(r) == 1 and math.dist(*r[0]) > w - 0.6:
+                    gm = ((g0[0] + g1[0]) * 0.5, (g0[1] + g1[1]) * 0.5)
+                    chunks.setdefault(chunk_of(*gm), {"walls": [], "gates": []})["gates"].append(
+                        [round(float(g0[0]), 2), round(float(g0[1]), 2), round(float(g1[0]), 2), round(float(g1[1]), 2),
+                         COMPOUND_GATE_H, GATE_THICK_M, COMPOUND_WALL_TYPE, seed, zone, swing])
+                    stats["gates"] += 1
+                    stats["open_gates"] += 1
+            add_wall(cur, q, COMPOUND_WALL_H, COMPOUND_WALL_TYPE, seed, zone, free_kerb)
+            pending_marks.append((p, q))
+        stats["compounds"] += 1
 
     for b, pts in buildings:
         t = b.get("t", "")
@@ -315,11 +418,14 @@ def main() -> int:
                 add_wall(w0, (a[0] - ux * side_a, a[1] - uz * side_a), h, t, seed, zone)
             if side_c > 0.0:
                 add_wall(w1, (c[0] + ux * side_c, c[1] + uz * side_c), h, t, seed, zone)
+        if t in COMPOUND_TYPES and foot.geom_type == "Polygon":
+            add_compound(foot, pts, fronts, sign, seed, zone)
         for q0, q1 in pending_marks:   # marked after the building is done: its own walls may meet
             wall_d.line([grid.px(*q0), grid.px(*q1)], fill=1, width=3)
         paving.append((unary_union(parts) if len(parts) > 1 else parts[0], "paver" if t in PAVER_TYPES else "cement"))
 
-    print(f"walls: {stats['walls']} runs, {stats['wall_m'] / 1000.0:.1f} km, {stats['gates']} gates", flush=True)
+    print(f"walls: {stats['walls']} runs, {stats['wall_m'] / 1000.0:.1f} km, {stats['gates']} gates; "
+          f"compounds: {stats['compounds']} ({stats['compound_m'] / 1000.0:.1f} km, {stats['open_gates']} open gates)", flush=True)
 
     # --- paving per chunk ---------------------------------------------------------------------
     keep_out = unary_union(area_polys) if area_polys else None

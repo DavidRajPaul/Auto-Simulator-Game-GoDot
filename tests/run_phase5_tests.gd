@@ -75,7 +75,9 @@ func _test_world_data(m: Dictionary) -> void:
 	for b: Dictionary in blds:
 		if not b.has("f"):
 			real += 1
-	_check("Stand chunk has real building footprints", real >= 15, "%d real of %d" % [real, blds.size()])
+	# Nov 27: the Kapaleeshwarar block's 8 mapped footprints are now the temple model
+	# (tools/osm/clear_landmark_sites.py), so the chunk keeps 13 real buildings.
+	_check("Stand chunk has real building footprints", real >= 12, "%d real of %d" % [real, blds.size()])
 
 func _test_chunk_meshes(world: WorldChunkStreamer) -> void:
 	var tree_models: bool = true

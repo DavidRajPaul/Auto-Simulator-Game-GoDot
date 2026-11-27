@@ -39,6 +39,9 @@ func _run() -> void:
 	if OS.get_environment("SHOT_QUEST") == "sq_004":
 		await _run_paati()
 		return
+	if OS.get_environment("SHOT_QUEST") == "sq_001":
+		await _run_wedding()
+		return
 	var def: MissionDef = director.registry.get_mission("sq_007")
 	await _go(def.start_anchor)
 	print("start ok=", director.start("sq_007"))
@@ -79,6 +82,28 @@ func _run() -> void:
 	_save("14_payoff_letterbox")
 	story._choose(1)
 	await _shots("15_thanks", [0.5, 2.5, 5.0], "")
+	print("done stage=", director.run.stage_id if director.run != null else "complete")
+	get_tree().quit()
+
+## SHOT_QUEST=sq_001: "The Wedding Gold" (the hall, the flower stall, the verdict, both endings
+## with SHOT_CHOICE=0 / 1).
+func _run_wedding() -> void:
+	var def: MissionDef = director.registry.get_mission("sq_001")
+	await _go(def.start_anchor)
+	await _wait(1.0)
+	# A street hail near North Mada Street can keep Savari busy: this shot is about the quest.
+	SignalBus.savari_busy_provider = Callable()
+	print("start ok=", director.start("sq_001"))
+	await _go(director.current_stage().target)
+	await _shots("w01_hall", [0.6, 2.5, 5.0, 8.0, 12.0, 15.0, 19.0, 23.0, 27.0, 31.0, 35.0, 40.0, 45.0], "ask_flower")
+	await _go(director.current_stage().target)
+	await _shots("w02_flower", [0.6, 2.5, 5.0, 8.0, 12.0, 16.0, 20.0, 24.0], "back_hall")
+	await _go(director.current_stage().target)
+	await _shots("w03_verdict", [0.6, 3.0, 6.0, 9.0, 12.0], "decision")
+	await _wait(0.8)
+	_save("w04_choice_letterbox")
+	story._choose(int(OS.get_environment("SHOT_CHOICE")) if OS.has_environment("SHOT_CHOICE") else 0)
+	await _shots("w05_ending", [0.5, 3.0, 6.0, 9.5, 13.0, 17.0, 20.0], "")
 	print("done stage=", director.run.stage_id if director.run != null else "complete")
 	get_tree().quit()
 

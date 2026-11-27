@@ -81,23 +81,21 @@ const SERVICE_VARIANTS: Array = [
 	["res://assets/models/traffic/svc_fire_truck.glb", Vector3(2.6, 3.02, 8.6), 1],
 ]
 ## Two-wheelers: [file, fit box (w, h, l) m, flip, uniform, spawn weight, rider seat].
-## The Activa-style scooter is the everyday Chennai two-wheeler; the sport bikes come from the
-## SymetrikGames pack, split into single bikes by tools/assets/process_vehicle_packs.py (the raw
-## pack is one merged showroom grid and must never be fitted to a traffic box as a whole).
-## Each pool slot takes the next entry of the weighted cycle, so the mix stays stable.
+## The Activa-style scooter is the everyday Chennai two-wheeler. Each pool slot takes the next entry of the weighted cycle, so the mix stays stable.
 ## Nov 13: the Chennai two-wheelers (tools/art/make_chennai_vehicles.py: step-through moped,
 ## 100 cc commuter bike, classic cruiser) are built at real size facing +Z and repaint from
 ## PaintSwap.TWO_WHEELER_PAINTS. Every two-wheeler slot carries all variants and shows one per
 ## respawn (pick_vehicle_variant). The bicycle is parked only: it can't keep traffic speed.
 const TWO_WHEELER_VARIANTS: Array = [
 	["res://assets/models/traffic/two_wheeler.glb", Vector3(0.8, 1.0, 2.0), false, false, 5, Vector3(0.0, 0.72, 0.22)],
-	["res://assets/models/traffic/chennai/commuter_bike.glb", Vector3(0.68, 1.25, 1.92), true, true, 4, Vector3(0.0, 0.76, 0.22)],
-	["res://assets/models/traffic/chennai/moped.glb", Vector3(0.62, 1.23, 1.82), true, true, 2, Vector3(0.0, 0.68, 0.20)],
-	["res://assets/models/traffic/chennai/cruiser_bike.glb", Vector3(0.76, 1.26, 2.1), true, true, 2, Vector3(0.0, 0.78, 0.15)],
-	["res://assets/models/traffic/two_wheeler_pack/sport_bike_0.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
-	["res://assets/models/traffic/two_wheeler_pack/sport_bike_1.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
-	["res://assets/models/traffic/two_wheeler_pack/sport_bike_2.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
-	["res://assets/models/traffic/two_wheeler_pack/sport_bike_3.glb", Vector3(0.8, 1.0, 2.0), true, true, 1, Vector3(0.0, 0.70, 0.28)],
+	# Nov 27 (owner: "these models are deformed, make realistic procedural ones"): Splendor-style
+	# commuter, TVS XL-style moped, Thunderbird-style cruiser and a faired sports bike, all built at
+	# real size by make_chennai_vehicles.py (the SymetrikGames sport-bike pack is gone). The seat is
+	# the rider's hip point minus PersonMesh.PROCEDURAL_HIP: just above each model's seat top.
+	["res://assets/models/traffic/chennai/commuter_bike.glb", Vector3(0.69, 1.28, 1.89), true, true, 4, Vector3(0.0, 0.756, 0.22)],
+	["res://assets/models/traffic/chennai/moped.glb", Vector3(0.67, 1.24, 1.85), true, true, 2, Vector3(0.0, 0.695, 0.22)],
+	["res://assets/models/traffic/chennai/cruiser_bike.glb", Vector3(0.85, 1.33, 2.12), true, true, 2, Vector3(0.0, 0.75, 0.2)],
+	["res://assets/models/traffic/chennai/sport_bike.glb", Vector3(0.66, 1.05, 1.97), true, true, 2, Vector3(0.0, 0.79, 0.16)],
 ]
 static var _two_wheeler_variant: int = 0
 ## Buses on Chennai roads (Nov 2026 research, docs/BUSES.md): the owner's Tripo electric bus
