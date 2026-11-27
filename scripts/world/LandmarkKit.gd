@@ -195,23 +195,136 @@ static func vivekananda_house() -> ArrayMesh:
 	return MeshKit.finish(st, material())
 
 
-## Repeating white arch ribs on each side of the existing road corridor.
-## There is no new deck or collision across the road surface.
-static func napier_bridge() -> ArrayMesh:
+## Napier Bridge (owner photos, Nov 27): two parallel carriageways over the Cooum, each with a
+## row of white bowstring arches along BOTH edges, vertical hangers from rib to deck, a white
+## balustrade and footpaths. `decks` = carriageway centre lines [[x, z], [x, z]] in the
+## landmark's local frame (manifest "decks", from the road graph). The deck sits at road level
+## (the city is one ground plane), so the auto drives straight on; WorldChunkStreamer adds the
+## parapet colliders. At night NapierLights lights the arch ribs in changing colours.
+const NAPIER_DECK_W: float = 10.5
+const NAPIER_WALK_W: float = 1.6
+const NAPIER_SPAN_M: float = 21.0
+const NAPIER_RISE: float = 5.2
+const NAPIER_ARCH_SEG: int = 14
+const NAPIER_DEFAULT_DECKS: Array = [[[-7.25, 75.0], [-7.25, -75.0]], [[7.25, -75.0], [7.25, 75.0]]]
+
+static func napier_bridge(decks: Array = NAPIER_DEFAULT_DECKS) -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	var white: Color = Color(0.84, 0.83, 0.78)
-	for side: float in [-1.0, 1.0]:
-		MeshKit.box(st, Vector3(side * 9.0, 0.65, 0), Vector3(0.65, 1.1, 40), white)
-		for span: int in 4:
-			var start_z: float = -20.0 + float(span) * 10.0
-			var previous: Vector3 = Vector3(side * 9.0, 0.8, start_z)
-			for segment: int in range(1, 13):
-				var t: float = float(segment) / 12.0
-				var next: Vector3 = Vector3(side * 9.0, 0.8 + sin(t * PI) * 4.2, start_z + t * 10.0)
-				MeshKit.tube(st, previous, next, 0.28, white, 5)
-				previous = next
-			for post: int in range(1, 5):
-				var t: float = float(post) / 5.0
-				var h: float = sin(t * PI) * 4.2
-				MeshKit.box(st, Vector3(side * 9.0, 0.8 + h * 0.5, start_z + t * 10.0), Vector3(0.16, h, 0.16), white)
+	var white: Color = Color(0.93, 0.92, 0.88)
+	var white_sh: Color = Color(0.80, 0.80, 0.77)
+	var asphalt: Color = Color(0.20, 0.20, 0.21)
+	var walk: Color = Color(0.62, 0.60, 0.56)
+	var paint: Color = Color(0.92, 0.92, 0.88)
+	var y_top: float = 0.12
+	for deck: Variant in decks:
+		var f: Dictionary = deck_frame(deck as Array)
+		var mid: Vector3 = f["mid"]
+		var dir: Vector3 = f["dir"]
+		var side: Vector3 = f["side"]
+		var length: float = f["len"]
+		var basis: Basis = f["basis"]
+		var half: float = NAPIER_DECK_W * 0.5
+		# Deck: asphalt between kerbed footpaths, a white fascia down to the water.
+		MeshKit.box(st, mid + Vector3(0, y_top - 0.35, 0), Vector3(length, 0.7, NAPIER_DECK_W - 2.0 * NAPIER_WALK_W), asphalt, basis)
+		for s: float in [-1.0, 1.0]:
+			var walk_c: Vector3 = mid + side * s * (half - NAPIER_WALK_W * 0.5)
+			MeshKit.box(st, walk_c + Vector3(0, y_top - 0.2, 0), Vector3(length, 0.64, NAPIER_WALK_W), walk, basis)
+			MeshKit.box(st, mid + side * s * (half + 0.1) + Vector3(0, -0.15, 0), Vector3(length, 0.9, 0.3), white_sh, basis)
+			# Edge line, inside the kerb.
+			MeshKit.box(st, mid + side * s * (half - NAPIER_WALK_W - 0.3) + Vector3(0, y_top + 0.005, 0), Vector3(length - 2.0, 0.02, 0.15), paint, basis)
+		# Lane dashes.
+		var n_dash: int = int(length / 6.0)
+		for k: int in n_dash:
+			var c: Vector3 = mid + dir * (-length * 0.5 + (float(k) + 0.5) * length / float(n_dash))
+			MeshKit.box(st, c + Vector3(0, y_top + 0.005, 0), Vector3(3.0, 0.02, 0.14), paint, basis)
+		# Arches along both edges.
+		var spans: int = maxi(2, int(roundf(length / NAPIER_SPAN_M)))
+		var span: float = length / float(spans)
+		for s: float in [-1.0, 1.0]:
+			var edge: Vector3 = mid + side * s * (half + 0.1)
+			# Balustrade: rails with balusters.
+			var rail_y: float = 0.45 + 0.95
+			MeshKit.box(st, edge + Vector3(0, rail_y, 0), Vector3(length, 0.16, 0.3), white, basis)
+			MeshKit.box(st, edge + Vector3(0, 0.45 + 0.08, 0), Vector3(length, 0.16, 0.34), white, basis)
+			var n_bal: int = int(length / 0.9)
+			for k: int in n_bal:
+				var c: Vector3 = edge + dir * (-length * 0.5 + (float(k) + 0.5) * length / float(n_bal))
+				MeshKit.box(st, c + Vector3(0, 0.95, 0), Vector3(0.14, 0.8, 0.14), white_sh, basis)
+			for a: int in spans + 1:
+				var p: Vector3 = edge + dir * (-length * 0.5 + float(a) * span)
+				# Pier block where two arches spring, with a lamp post on top.
+				MeshKit.box(st, p + Vector3(0, 0.9, 0), Vector3(1.3, 2.1, 0.9), white, basis)
+				MeshKit.box(st, p + Vector3(0, 1.98, 0), Vector3(1.5, 0.12, 1.1), white_sh, basis)
+			for a: int in spans:
+				var p0: Vector3 = edge + dir * (-length * 0.5 + float(a) * span)
+				var prev: Vector3 = p0 + Vector3(0, 1.6, 0)
+				for k: int in range(1, NAPIER_ARCH_SEG + 1):
+					var t: float = float(k) / float(NAPIER_ARCH_SEG)
+					var nxt: Vector3 = p0 + dir * span * t + Vector3(0, 1.6 + _napier_rise(t, span), 0)
+					MeshKit.box(st, (prev + nxt) * 0.5, Vector3(prev.distance_to(nxt) + 0.08, 0.62, 0.55), white,
+						Basis(Vector3.UP, atan2(-dir.z, dir.x)) * Basis(Vector3.BACK, atan2(nxt.y - prev.y, Vector2(nxt.x - prev.x, nxt.z - prev.z).length())))
+					prev = nxt
+				# Hangers from the rib down to the rail.
+				for h: int in range(1, 6):
+					var t: float = float(h) / 6.0
+					var top: float = 1.6 + _napier_rise(t, span)
+					var hp: Vector3 = p0 + dir * span * t
+					MeshKit.box(st, hp + Vector3(0, (rail_y + top) * 0.5, 0), Vector3(0.22, top - rail_y, 0.22), white, basis)
+		# Piers under the deck into the water.
+		for a: int in range(1, spans):
+			var p: Vector3 = mid + dir * (-length * 0.5 + float(a) * span)
+			MeshKit.box(st, p + Vector3(0, -0.6, 0), Vector3(2.2, 1.2, NAPIER_DECK_W + 0.6), white_sh, basis)
 	return MeshKit.finish(st, material())
+
+## Arch height above its springing at t in 0..1 along one span: a flattened elliptic bow.
+static func _napier_rise(t: float, span: float) -> float:
+	return NAPIER_RISE * minf(1.0, span / NAPIER_SPAN_M) * pow(sin(t * PI), 0.8)
+
+static func deck_frame(deck: Array) -> Dictionary:
+	var a: Vector2 = Vector2(float((deck[0] as Array)[0]), float((deck[0] as Array)[1]))
+	var b: Vector2 = Vector2(float((deck[deck.size() - 1] as Array)[0]), float((deck[deck.size() - 1] as Array)[1]))
+	var d: Vector2 = (b - a).normalized()
+	return {"mid": Vector3((a.x + b.x) * 0.5, 0.0, (a.y + b.y) * 0.5), "dir": Vector3(d.x, 0.0, d.y),
+		"side": Vector3(-d.y, 0.0, d.x), "len": a.distance_to(b), "basis": Basis(Vector3.UP, atan2(-d.y, d.x))}
+
+## The LED strips on top of every arch rib (night lighting, NapierLights): one mesh, the colour
+## of each arch in its vertex colour, alpha = which colour group it belongs to (for the cycle).
+static func napier_lights(decks: Array = NAPIER_DEFAULT_DECKS) -> ArrayMesh:
+	var st: SurfaceTool = MeshKit.begin()
+	for deck: Variant in decks:
+		var f: Dictionary = deck_frame(deck as Array)
+		var mid: Vector3 = f["mid"]
+		var dir: Vector3 = f["dir"]
+		var side: Vector3 = f["side"]
+		var length: float = f["len"]
+		var spans: int = maxi(2, int(roundf(length / NAPIER_SPAN_M)))
+		var span: float = length / float(spans)
+		for s: float in [-1.0, 1.0]:
+			var edge: Vector3 = mid + side * s * (NAPIER_DECK_W * 0.5 + 0.1)
+			for a: int in spans:
+				var group: float = float(a % 4) / 4.0
+				var col: Color = Color(1, 1, 1, group)
+				var p0: Vector3 = edge + dir * (-length * 0.5 + float(a) * span)
+				# A glowing shell just round the white rib, so the whole arch reads lit.
+				var prev: Vector3 = p0 + Vector3(0, 1.6, 0)
+				for k: int in range(1, NAPIER_ARCH_SEG + 1):
+					var t: float = float(k) / float(NAPIER_ARCH_SEG)
+					var nxt: Vector3 = p0 + dir * span * t + Vector3(0, 1.6 + _napier_rise(t, span), 0)
+					MeshKit.box(st, (prev + nxt) * 0.5, Vector3(prev.distance_to(nxt) + 0.1, 0.7, 0.64), col,
+						Basis(Vector3.UP, atan2(-dir.z, dir.x)) * Basis(Vector3.BACK, atan2(nxt.y - prev.y, Vector2(nxt.x - prev.x, nxt.z - prev.z).length())))
+					prev = nxt
+				for h: int in range(1, 6):
+					var t: float = float(h) / 6.0
+					var top: float = 1.6 + _napier_rise(t, span)
+					MeshKit.box(st, p0 + dir * span * t + Vector3(0, (1.4 + top) * 0.5, 0), Vector3(0.28, top - 1.4, 0.28), col,
+						Basis(Vector3.UP, atan2(-dir.z, dir.x)))
+				# The arch's reflection on the river: broken glow streaks on the water beside the
+				# outer rows (alpha + 1/8 marks them as reflections for the shader).
+				if mid.dot(side * s) < -0.1:
+					continue
+				for r: int in 4:
+					var off: float = NAPIER_DECK_W * 0.5 + 1.0 + float(r) * 1.15
+					var wc: Vector3 = p0 + dir * span * (0.5 + 0.06 * float(r % 2)) + side * s * off
+					MeshKit.box(st, wc + Vector3(0, 0.14, 0), Vector3(span * (0.75 - 0.13 * float(r)), 0.01, 0.55), Color(1, 1, 1, group + 0.125),
+						Basis(Vector3.UP, atan2(-dir.z, dir.x)))
+	return MeshKit.finish(st, NapierLights.material())

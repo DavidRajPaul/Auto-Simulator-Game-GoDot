@@ -37,6 +37,7 @@ jobs:
           python3 tools/osm/build_street_dressing.py
           python3 tools/osm/build_roadside_parking.py
           python3 tools/osm/append_street_shops.py
+          python3 tools/osm/add_cooum_napier.py
           python3 tools/osm/build_water.py
           python3 tools/osm/build_bus_stops.py
           python3 tools/osm/build_compounds.py --fetch

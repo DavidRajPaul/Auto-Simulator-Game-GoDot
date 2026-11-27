@@ -40,6 +40,9 @@ BANK_SIDE_M = 0.6     # bank beside a road stands this far outside the carriagew
 RAIL_OVERRUN_M = 3.0  # rails continue onto land past each bank
 TANK_COMPACTNESS = 0.45  # 4*pi*A/P^2 above this = pond / temple tank, below = canal
 GHAT_INSET_M = 5.0
+SEA_OPEN_M = 2.0      # water edges this close to the sea get no bank
+# Bridges with their own parapets (WorldChunkStreamer landmark models): banks open, no rails here.
+OWN_PARAPETS = ("Napier Bridge",)
 
 
 def _r(v: float) -> float:
@@ -87,6 +90,8 @@ def main() -> int:
     areas = json.loads((WORLD / "areas.json").read_text())
     graph = json.loads((WORLD / "road_graph.json").read_text())
     water = [Polygon(p).buffer(0) for p in areas.get("water", []) if len(p) >= 3]
+    # Where a river meets the sea (the Cooum mouth) there is no bank wall.
+    sea = unary_union([Polygon(p).buffer(0) for p in areas.get("sea", []) if len(p) >= 3]).buffer(SEA_OPEN_M)
     roads = [(LineString(e["pts"]), float(e["w"]), e.get("n", "")) for e in graph["edges"] if len(e["pts"]) >= 2]
 
     sv: list[float] = []
@@ -134,6 +139,8 @@ def main() -> int:
                 continue
             crossings.append(name or "(unnamed)")
             cuts.append(line.buffer(width * 0.5 + BANK_GAP_M, cap_style=2))
+            if name in OWN_PARAPETS:
+                continue
             span = line.intersection(w.buffer(RAIL_OVERRUN_M))
             for side in (-1.0, 1.0):
                 off = line.offset_curve(side * (width * 0.5 + RAIL_SIDE_M))
@@ -150,7 +157,7 @@ def main() -> int:
                 continue
             c = list(seg.coords)
             for a, b in zip(c, c[1:]):
-                if math.dist(a, b) > 0.05:
+                if math.dist(a, b) > 0.05 and not sea.contains(Point((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)):
                     banks.append([_r(a[0]), _r(a[1]), _r(b[0]), _r(b[1]), kind])
         if kind == 1:
             ghat = w.buffer(-GHAT_INSET_M, join_style=2)

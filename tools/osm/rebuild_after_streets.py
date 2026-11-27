@@ -3,7 +3,7 @@
 
 Each pass places things against the real road surface, so after osm2streets runs again (new
 lanes, new widths) all of them must run again, in this order (see AGENTS.md lessons):
-  world + graph -> water, bus stops -> street dressing -> parking -> city props + street shops
+  world + graph -> Cooum river at Napier Bridge -> water, bus stops -> street dressing -> parking -> city props + street shops
   -> empty lots -> signal posts, street signs -> barricades -> beach carts -> beach fence
   -> medians -> road works -> roundabout islands -> street lights -> police booths -> compounds -> building names -> lodges/eateries
   -> building types (classify) -> plots (walls, gates) -> street life -> landmark compounds
@@ -20,6 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ORDER = [
     "build_world.py",
+    "add_cooum_napier.py",  # also reruns build_water.py
     "build_water.py",
     "build_bus_stops.py",
     "build_street_dressing.py",

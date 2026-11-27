@@ -10,8 +10,8 @@ extends Node3D
 ## Visual layering (ground plane sits at -0.15 so far-away flat layers never z-fight).
 ## OSM footprint anchors, verified against the shipped chunks. Seed plus position prevents
 ## unrelated buildings sharing the modulo seed from receiving landmark architecture.
+## (Senate House is the procedural model in data/world/landmark_models.json since Nov 27.)
 const HERITAGE_SITES: Array[Dictionary] = [
-	{"seed": 9138, "point": Vector2(2594.32, -1778.52), "style": "senate"},
 	{"seed": 3505, "point": Vector2(2443.58, -1676.04), "style": "palace"},
 	{"seed": 3507, "point": Vector2(2462.20, -1573.74), "style": "palace"},
 ]
@@ -2979,10 +2979,7 @@ func _build_landmarks() -> void:
 			"tower":
 				_kit_part(node, holder, LandmarkKit.lic_building(), Vector3(18, 54, 18))
 			"bridge":
-				var bridge_mesh: MeshInstance3D = MeshInstance3D.new()
-				bridge_mesh.mesh = LandmarkKit.napier_bridge()
-				bridge_mesh.visibility_range_end = LANDMARK_VISIBLE_M
-				node.add_child(bridge_mesh)
+				_build_napier(node, holder, l.get("decks", LandmarkKit.NAPIER_DEFAULT_DECKS) as Array)
 			"flyover":
 				_part(node, holder, _box(Vector3(20, 1.2, 70)), Vector3(0, 7.5, 0), Color(0.6, 0.6, 0.6), false)
 				_part(node, holder, _box(Vector3(2, 7, 2)), Vector3(12, 3.5, 0), Color(0.55, 0.55, 0.55), true)
@@ -2998,6 +2995,31 @@ func _build_landmarks() -> void:
 			request_ground_snap(node)
 	# San Thome Basilica, the Kapaleeshwarar temple and its tank mandapam (tools/art/make_landmarks.py).
 	LandmarkModels.build(world_dir.path_join("landmark_models.json"), self, holder)
+
+## Napier Bridge over the Cooum: decks, arches, balustrades (one mesh), the night LEDs (one
+## additive mesh) and a parapet collider along both edges of each carriageway.
+func _build_napier(node: Node3D, holder: StaticBody3D, decks: Array) -> void:
+	var bridge_mesh: MeshInstance3D = MeshInstance3D.new()
+	bridge_mesh.name = "NapierBridge"
+	bridge_mesh.mesh = LandmarkKit.napier_bridge(decks)
+	bridge_mesh.visibility_range_end = LANDMARK_VISIBLE_M
+	node.add_child(bridge_mesh)
+	var lights: NapierLights = NapierLights.new()
+	lights.name = "NapierLights"
+	lights.mesh = LandmarkKit.napier_lights(decks)
+	lights.material_override = NapierLights.material()
+	lights.visibility_range_end = 900.0
+	node.add_child(lights)
+	for deck: Variant in decks:
+		var f: Dictionary = LandmarkKit.deck_frame(deck as Array)
+		for s: float in [-1.0, 1.0]:
+			var cs: CollisionShape3D = CollisionShape3D.new()
+			var box: BoxShape3D = BoxShape3D.new()
+			box.size = Vector3(float(f["len"]) - 1.0, 1.6, 0.4)
+			cs.shape = box
+			var c: Vector3 = (f["mid"] as Vector3) + (f["side"] as Vector3) * s * (LandmarkKit.NAPIER_DECK_W * 0.5 + 0.1) + Vector3(0, 0.8, 0)
+			cs.transform = node.transform * Transform3D(f["basis"] as Basis, c)
+			holder.add_child(cs)
 
 ## A procedural LandmarkKit mesh with a box collider round its base.
 func _kit_part(node: Node3D, holder: StaticBody3D, mesh: ArrayMesh, base: Vector3) -> void:

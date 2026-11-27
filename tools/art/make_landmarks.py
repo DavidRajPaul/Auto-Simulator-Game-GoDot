@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Procedural heritage landmarks: San Thome Basilica and the Kapaleeshwarar temple.
+"""Procedural heritage landmarks: San Thome Basilica, the Kapaleeshwarar temple and Senate House.
 
 Nov 27 owner report (with photos): the game drew the basilica's footprint as a temple (red and
 white kaavi stripes, which belong to Hindu temples only) and the Kapaleeshwarar gopuram as a
@@ -1024,6 +1024,277 @@ def tank_mandapam() -> LM:
     return m
 
 
+# ================================================================= Senate House
+
+# University of Madras Senate House (1879, Robert Chisholm; owner reference photos, Nov 27):
+# Indo-Saracenic red brick. A great hall under a steep red-tiled roof, four square corner towers
+# whose tall faces carry red-and-cream striped horseshoe arches with stained glass, each crowned
+# by a white lace cornice and an orange Byzantine (onion) dome patterned in white; a porch with
+# three striped arches at each end, flanked by slim octagonal turrets with little domes; low
+# arcaded verandahs along both long sides; rows of small white domed pinnacles at the eaves.
+# Local frame: x along the long axis (+x = north), z across (+z = east, Kamarajar Salai and
+# the sea), origin at the centre of the OSM footprint (way seed 9138, 93 x 31 m).
+SENATE_ORIGIN = (2594.3, -1778.55)
+SENATE_AXIS_DEG = -79.33
+SENATE_FOOTPRINT = [(2570.2, -1735.7), (2601.1, -1729.6), (2618.4, -1821.4), (2587.5, -1827.5)]
+
+SH_BRICK = (198, 98, 64)
+SH_BRICK_D = (178, 84, 56)
+SH_BRICK_L = (212, 116, 80)
+SH_CREAM = (236, 224, 200)
+SH_LACE = (246, 242, 232)
+SH_STONE = (168, 150, 130)
+SH_DOME = (230, 140, 82)
+SH_DOME_D = (210, 120, 70)
+SH_TILE = (178, 76, 50)
+SH_TILE2 = (160, 66, 44)
+SH_RECESS = (60, 38, 32)
+SH_GLASS = [(48, 60, 84), (128, 52, 46), (56, 96, 132), (176, 140, 60), (60, 104, 76)]
+
+HALL_X = 27.5       # hall half length (tower centres)
+HALL_Z = 9.5        # hall half width
+SH_EAVE = 15.5
+SH_RIDGE = 22.5
+TW = 4.4            # tower half size
+TW_TOP = 23.5
+VER_Z = 13.6        # verandah outer face
+VER_H = 9.0
+PORCH_X0 = HALL_X + TW
+PORCH_X1 = PORCH_X0 + 7.8
+PORCH_Z = 7.2
+PORCH_H = 11.6
+
+
+def striped_arch(m: LM, x: float, y0: float, w: float, spring: float, depth: float = 0.25,
+                 band: float = 0.55, n: int = 9, fill=SH_RECESS, glass: bool = False, kind: str = "horseshoe") -> None:
+    """Saracenic opening in the wall plane z = 0, facing +z: alternating red / cream voussoirs."""
+    h = w / 2.0
+    if kind == "horseshoe":
+        r = h * 1.1
+        cy = spring + math.sqrt(r * r - h * h)
+        a0 = math.atan2(spring - cy, h)
+    else:  # round
+        r, cy, a0 = h, spring, 0.0
+    a1 = math.pi - a0
+    arc = [(r * math.cos(a0 + (a1 - a0) * i / (2 * n)), cy + r * math.sin(a0 + (a1 - a0) * i / (2 * n))) for i in range(2 * n + 1)]
+    opening = [(-h, y0), (h, y0)] + arc
+    m.push((x, 0.0, 0.0))
+    m.flat(opening, 0.02, fill)
+    if glass:
+        # Three tall lights with coloured panes, white mullions.
+        top = cy + r * 0.55
+        for k in range(3):
+            lx = -h * 0.62 + k * h * 0.62
+            for row in range(int((top - y0 - 0.4) / 0.9)):
+                yy = y0 + 0.3 + row * 0.9
+                m.flat([(lx - h * 0.24, yy), (lx + h * 0.24, yy), (lx + h * 0.24, yy + 0.8), (lx - h * 0.24, yy + 0.8)], 0.04,
+                       SH_GLASS[(k * 3 + row) % len(SH_GLASS)])
+    # Jambs.
+    for s in (-1.0, 1.0):
+        m.ybox(s * h - 0.18, s * h + 0.18, y0, spring, -0.02, depth, SH_CREAM)
+    # Voussoirs: quads between the arc and an outer ring, alternating colours.
+    for i in range(2 * n):
+        (ax, ay), (bx, by) = arc[i], arc[i + 1]
+        oa = ((ax) * (r + band) / r, cy + (ay - cy) * (r + band) / r)
+        ob = ((bx) * (r + band) / r, cy + (by - cy) * (r + band) / r)
+        col = SH_CREAM if i % 2 == 0 else (168, 58, 42)
+        m.extrude([(ax, ay), (bx, by), ob, oa], 0.0, depth, col, back=False)
+    m.pop()
+
+
+def pointed_opening(m: LM, x: float, y0: float, w: float, spring: float, col=SH_RECESS, frame: float = 0.22,
+                    depth: float = 0.2, rise=None) -> None:
+    inner = arch(w, y0, spring, "pointed", n=5, rise=rise)
+    m.push((x, 0.0, 0.0))
+    m.flat(inner, 0.02, col)
+    m.extrude(offset(inner, frame), 0.0, depth, SH_CREAM, back=False, holes=[inner])
+    m.pop()
+
+
+def crenels(m: LM, x0: float, x1: float, y: float, h: float = 0.9, step: float = 0.9, depth: float = 0.35, col=SH_LACE) -> None:
+    """White Saracenic parapet along the wall plane z = 0: a coping strip with stepped merlons."""
+    m.ybox(x0, x1, y, y + 0.35, -depth, 0.12, col)
+    k = 0
+    xx = x0
+    while xx + step * 0.6 <= x1 + 1e-6:
+        mx = xx + step * 0.3
+        m.extrude([(mx - step * 0.28, y + 0.35), (mx + step * 0.28, y + 0.35), (mx + step * 0.28, y + h * 0.7),
+                   (mx, y + h), (mx - step * 0.28, y + h * 0.7)], -depth + 0.1, 0.1, col, back=False)
+        xx += step
+        k += 1
+
+
+def onion_dome(m: LM, cx: float, y: float, cz: float, r: float, seg: int = 16, col=SH_DOME, lace=SH_LACE) -> None:
+    """Byzantine dome: bulbous profile, horizontal white lace bands, a spike finial."""
+    prof = [(r * 0.9, 0.0), (r * 0.98, 0.18 * r), (r * 1.1, 0.5 * r), (r * 1.14, 0.8 * r), (r * 1.06, 1.1 * r),
+            (r * 0.88, 1.38 * r), (r * 0.64, 1.62 * r), (r * 0.4, 1.82 * r), (r * 0.18, 1.98 * r), (r * 0.06, 2.1 * r),
+            (0.0, 2.16 * r)]
+    # A white lace band round the base, orange above it, a thin white collar near the top.
+    cols = [lace, lace, col, SH_DOME_D, col, col, col, lace, col, col]
+    m.lathe(prof, seg, col, cx=cx, cz=cz, y=y, cols=cols)
+    m.bar((cx, y + 2.1 * r, cz), (cx, y + 2.1 * r + r * 0.55, cz), max(0.05, r * 0.05), (190, 160, 90), 4)
+    m.prism(8, r * 0.1, 0.0, y + 2.1 * r + r * 0.55, y + 2.1 * r + r * 0.75, (190, 160, 90), cx=cx, cz=cz)
+
+
+def sh_turret(m: LM, cx: float, cz: float, top: float, r: float = 1.35) -> None:
+    """Slim octagonal turret: brick with cream bands, an open arcaded lantern, a small dome."""
+    rot = math.pi / 8
+    m.prism(8, r + 0.15, r + 0.15, 0.0, 1.0, SH_STONE, top=False, rot=rot, cx=cx, cz=cz)
+    y = 1.0
+    k = 0
+    while y < top - 2.6:
+        hh = 1.4 if k % 2 == 0 else 0.35
+        m.prism(8, r, r, y, min(y + hh, top - 2.6), SH_BRICK if k % 2 == 0 else SH_CREAM, top=False, rot=rot, cx=cx, cz=cz)
+        y += hh
+        k += 1
+    m.prism(8, r + 0.22, r + 0.22, top - 2.6, top - 2.4, SH_LACE, top=True, bottom=True, rot=rot, cx=cx, cz=cz)
+    # Lantern: eight slim posts with striped arch heads.
+    for i in range(8):
+        a = rot + i * math.pi / 4
+        px, pz = cx + math.cos(a) * r * 0.85, cz + math.sin(a) * r * 0.85
+        m.ybox(px - 0.11, px + 0.11, top - 2.4, top - 0.7, pz - 0.11, pz + 0.11, SH_LACE)
+    m.prism(8, r * 0.55, r * 0.55, top - 2.4, top - 0.7, SH_RECESS, top=False, rot=rot, cx=cx, cz=cz)
+    m.prism(8, r + 0.12, r + 0.12, top - 0.7, top - 0.2, SH_BRICK, top=True, rot=rot, cx=cx, cz=cz,
+            cols=[SH_BRICK, SH_CREAM])
+    onion_dome(m, cx, top - 0.2, cz, r * 0.82, seg=10)
+
+
+def sh_pinnacle(m: LM, x: float, y: float, z: float, s: float = 0.32) -> None:
+    m.prism(6, s, s, y, y + 0.9, SH_LACE, top=False, cx=x, cz=z)
+    m.lathe([(s * 1.1, 0.0), (s * 1.25, 0.3), (s * 0.9, 0.62), (s * 0.4, 0.85), (0.0, 1.0)], 6, SH_LACE, cx=x, cz=z, y=y + 0.9)
+
+
+def sh_tower(m: LM, tx: float, tz: float) -> None:
+    m.ybox(tx - TW - 0.3, tx + TW + 0.3, 0.0, 1.0, tz - TW - 0.3, tz + TW + 0.3, SH_STONE)
+    m.ybox(tx - TW, tx + TW, 1.0, TW_TOP, tz - TW, tz + TW, SH_BRICK, skip="-y")
+    m.collider((tx, TW_TOP / 2, tz), (2 * TW + 0.6, TW_TOP, 2 * TW + 0.6))
+    for y, hh in ((7.6, 0.3), (14.6, 0.35)):
+        course(m, tx - TW, tx + TW, tz - TW, tz + TW, y, hh, 0.14, SH_CREAM)
+    # Corner piers: slightly proud, with cream quoin bands.
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            px, pz = tx + sx * (TW - 0.35), tz + sz * (TW - 0.35)
+            m.ybox(px - 0.55, px + 0.55, 1.0, TW_TOP + 0.4, pz - 0.55, pz + 0.55, SH_BRICK_D)
+            for y in range(2, int(TW_TOP), 3):
+                m.ybox(px - 0.58, px + 0.58, y, y + 0.35, pz - 0.58, pz + 0.58, SH_CREAM)
+            sh_pinnacle(m, px, TW_TOP + 1.25, pz, 0.38)
+    for face, fx, fz in (("-x", tx - TW, tz), ("+x", tx + TW, tz), ("-z", tx, tz - TW), ("+z", tx, tz + TW)):
+        wall_frame(m, face, fx, fz)
+        pointed_opening(m, 0.0, 2.2, 1.6, 4.8)
+        striped_arch(m, 0.0, 8.4, 2.4, 11.6, band=0.42, n=7, glass=True)
+        # The tall striped horseshoe arch with stained glass (the reference photos' signature).
+        striped_arch(m, 0.0, 15.3, 4.4, 20.0, band=0.62, n=9, glass=True)
+        # Small roundels either side, like the wheel ornaments on the towers.
+        for s in (-1.0, 1.0):
+            m.flat(circle(0.32, s * 2.9, 17.6, 8), 0.06, SH_CREAM)
+            m.flat(circle(0.2, s * 2.9, 17.6, 8), 0.08, SH_BRICK_D)
+        m.pop()
+    # White lace cornice and crown.
+    m.ybox(tx - TW - 0.35, tx + TW + 0.35, TW_TOP, TW_TOP + 0.8, tz - TW - 0.35, tz + TW + 0.35, SH_LACE)
+    for face, fx, fz in (("-x", tx - TW - 0.35, tz), ("+x", tx + TW + 0.35, tz), ("-z", tx, tz - TW - 0.35), ("+z", tx, tz + TW + 0.35)):
+        wall_frame(m, face, fx, fz)
+        crenels(m, -TW - 0.35, TW + 0.35, TW_TOP + 0.8, h=0.75, step=0.95, depth=0.3)
+        m.pop()
+    # Octagonal drum: cream with striped little arches, then the onion dome.
+    rot = math.pi / 8
+    R = TW * 0.86
+    m.prism(8, R, R, TW_TOP + 0.8, TW_TOP + 3.2, SH_LACE, top=True, rot=rot, cx=tx, cz=tz)
+    apo = R * math.cos(math.pi / 8)
+    for k in range(8):
+        a = rot + math.pi / 8 + k * math.pi / 4
+        m.push((tx + math.cos(a) * apo, 0.0, tz + math.sin(a) * apo), yaw=math.atan2(math.cos(a), math.sin(a)))
+        striped_arch(m, 0.0, TW_TOP + 1.2, 1.1, TW_TOP + 2.3, depth=0.12, band=0.22, n=4)
+        m.pop()
+    m.prism(8, R + 0.2, R + 0.2, TW_TOP + 3.2, TW_TOP + 3.5, SH_DOME_D, top=True, bottom=True, rot=rot, cx=tx, cz=tz)
+    onion_dome(m, tx, TW_TOP + 3.5, tz, R * 0.98, seg=16)
+
+
+def senate() -> LM:
+    m = LM()
+    # ---- Great hall: plinth, walls, roof.
+    m.ybox(-HALL_X, HALL_X, 0.0, 1.0, -HALL_Z - 0.2, HALL_Z + 0.2, SH_STONE)
+    m.ybox(-HALL_X, HALL_X, 1.0, SH_EAVE, -HALL_Z, HALL_Z, SH_BRICK, skip="-y")
+    m.collider((0.0, SH_EAVE / 2, 0.0), (2 * HALL_X, SH_EAVE, 2 * VER_Z))
+    course(m, -HALL_X, HALL_X, -HALL_Z, HALL_Z, SH_EAVE - 0.5, 0.5, 0.25, SH_LACE)
+    gable_roof(m, -HALL_X + TW, HALL_X - TW, 0.0, HALL_Z, SH_EAVE, SH_RIDGE, over=0.6, strips=9, col=SH_TILE, col2=SH_TILE2)
+    # Gable ends behind the porches: brick, a great striped window, a white coped edge.
+    for face, x in (("-x", -HALL_X + TW), ("+x", HALL_X - TW)):
+        wall_frame(m, face, x, 0.0)
+        m.extrude([(-HALL_Z, SH_EAVE), (HALL_Z, SH_EAVE), (0.0, SH_RIDGE + 0.3)], -0.4, 0.0, SH_BRICK, back=False)
+        for s in (-1.0, 1.0):
+            m.bar((s * (HALL_Z + 0.2), SH_EAVE, 0.08), (0.0, SH_RIDGE + 0.55, 0.08), 0.2, SH_LACE, 4)
+        sh_pinnacle(m, 0.0, SH_RIDGE + 0.4, 0.0, 0.4)
+        m.pop()
+    for face, x in (("-x", -HALL_X - TW), ("+x", HALL_X + TW)):
+        wall_frame(m, face, x, 0.0)
+        striped_arch(m, 0.0, PORCH_H + 0.9, 5.6, SH_EAVE + 1.0, band=0.7, n=10, glass=True)
+        m.pop()
+    # ---- Long sides: clerestory windows over arcaded verandahs.
+    bays = 9
+    span = 2 * (HALL_X - TW) / bays
+    for sz in (-1.0, 1.0):
+        face = "+z" if sz > 0 else "-z"
+        # Clerestory (hall wall above the verandah roof).
+        wall_frame(m, face, 0.0, sz * HALL_Z)
+        for b in range(bays):
+            bx = -(HALL_X - TW) + span * (b + 0.5)
+            striped_arch(m, bx, VER_H + 1.4, 2.0, VER_H + 3.6, band=0.36, n=6, glass=True)
+        m.pop()
+        # Verandah block.
+        z0, z1 = sorted((sz * HALL_Z, sz * VER_Z))
+        m.ybox(-HALL_X + TW, HALL_X - TW, 0.0, 0.9, z0, z1 + (0.25 if sz > 0 else -0.25) * 0, SH_STONE)
+        m.ybox(-HALL_X + TW, HALL_X - TW, 0.9, VER_H, z0, z1, SH_BRICK, skip="-y")
+        m.ybox(-HALL_X + TW, HALL_X - TW, VER_H - 0.05, VER_H + 0.25, z0 - 0.2, z1 + 0.2, SH_CREAM)
+        wall_frame(m, face, 0.0, sz * VER_Z)
+        for b in range(bays):
+            bx = -(HALL_X - TW) + span * (b + 0.5)
+            pointed_opening(m, bx, 0.9, span * 0.62, 5.0, frame=0.3, depth=0.25)
+            # Cream pier capitals between the arches.
+            if b > 0:
+                px = bx - span * 0.5
+                m.ybox(px - 0.45, px + 0.45, 4.8, 5.2, -0.05, 0.3, SH_CREAM)
+        crenels(m, -HALL_X + TW, HALL_X - TW, VER_H + 0.25, h=0.85, step=0.9)
+        m.pop()
+        # Small white domed pinnacles along the hall eave (the row seen in the aerial photos).
+        for b in range(bays + 1):
+            bx = -(HALL_X - TW) + span * b
+            sh_pinnacle(m, bx, SH_EAVE, sz * (HALL_Z + 0.1), 0.3)
+    # ---- Corner towers.
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            sh_tower(m, sx * HALL_X, sz * (HALL_Z + 0.6))
+    # ---- End porches with three striped arches, turrets at their corners.
+    for sx in (-1.0, 1.0):
+        x0, x1 = sorted((sx * PORCH_X0, sx * PORCH_X1))
+        m.ybox(x0, x1, 0.0, 0.9, -PORCH_Z - 0.2, PORCH_Z + 0.2, SH_STONE)
+        m.ybox(x0, x1, 0.9, PORCH_H, -PORCH_Z, PORCH_Z, SH_BRICK, skip="-y")
+        m.collider(((x0 + x1) / 2, PORCH_H / 2, 0.0), (x1 - x0, PORCH_H, 2 * PORCH_Z))
+        course(m, x0, x1, -PORCH_Z, PORCH_Z, PORCH_H - 0.4, 0.4, 0.2, SH_LACE)
+        face = "+x" if sx > 0 else "-x"
+        wall_frame(m, face, sx * PORCH_X1, 0.0)
+        striped_arch(m, 0.0, 0.9, 4.4, 6.4, depth=0.3, band=0.75, n=10)
+        for s in (-1.0, 1.0):
+            striped_arch(m, s * 4.6, 0.9, 2.6, 4.9, depth=0.3, band=0.55, n=8)
+            # Cusped (multifoil) hood: a cream band round the outer arches.
+        crenels(m, -PORCH_Z, PORCH_Z, PORCH_H, h=0.9, step=0.9)
+        m.pop()
+        for sz in (-1.0, 1.0):
+            wall_frame(m, "+z" if sz > 0 else "-z", (x0 + x1) / 2, sz * PORCH_Z)
+            striped_arch(m, 0.0, 0.9, 3.0, 5.0, depth=0.3, band=0.55, n=8)
+            crenels(m, -(x1 - x0) / 2, (x1 - x0) / 2, PORCH_H, h=0.9, step=0.9)
+            m.pop()
+            sh_turret(m, sx * (PORCH_X1 - 0.6), sz * (PORCH_Z + 0.4), 17.5)
+            # Inner turrets where the porch meets the towers.
+            sh_turret(m, sx * (PORCH_X0 + 1.0), sz * (PORCH_Z + 0.2), 15.0, r=0.95)
+    # Steps up to each porch.
+    for sx in (-1.0, 1.0):
+        for k in range(3):
+            xa = sx * (PORCH_X1 + 0.5 * (3 - k))
+            x0, x1 = sorted((xa, sx * PORCH_X1))
+            m.ybox(x0, x1, 0.0, 0.3 * (k + 1), -3.0, 3.0, SH_STONE)
+    return m
+
+
 # Areas the models replace (world x, z outlines): chunk buildings, trees, stalls, parked vehicles,
 # kolams, dogs and shop people inside them are removed by tools/osm/clear_landmark_sites.py.
 SANTHOME_FOOTPRINT = [(2014.4, 1705.1), (2037.8, 1711.1), (2036.0, 1718.3), (2057.9, 1724.0), (2061.6, 1722.6), (2062.4, 1718.9),
@@ -1056,6 +1327,7 @@ BUILDERS = {
     "santhome_basilica": (santhome, SANTHOME_ORIGIN, SANTHOME_AXIS_DEG, lambda: SANTHOME_FOOTPRINT),
     "kapaleeshwarar_temple": (kapaleeshwarar, KAPALI_ORIGIN, KAPALI_ROT_DEG, kapali_clear),
     "kapaleeshwarar_tank_mandapam": (tank_mandapam, TANK_CENTRE, TANK_AXIS_DEG, lambda: []),
+    "senate_house": (senate, SENATE_ORIGIN, SENATE_AXIS_DEG, lambda: SENATE_FOOTPRINT),
 }
 
 

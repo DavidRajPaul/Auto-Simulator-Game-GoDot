@@ -38,3 +38,24 @@ These are reference links, not licences to redistribute their photos.
 The last four footprint treatments are baked into each existing chunk building mesh with no extra draw calls. Existing footprint collision and pedestrian exclusion remain in effect. The matcher requires both OSM-derived seed and a nearby footprint centroid, and a phase 9 content test verifies all four matches. An OSM rebuild that moves/removes these footprints must revisit the anchors.
 
 Test route: Mylapore temple → Santhome → Lighthouse → Vivekananda House → Chepauk → Senate House → Napier Bridge → LIC. Use the map/custom destination controls. Inspect daylight and dusk; check driving clearance and that no tower intersects its neighbours. The new geometry is an architectural interpretation, not a measured reproduction. Original painted atlas textures remain; no photographic textures or new third-party images have been shipped. Parthasarathy and Valluvar Kottam are still pending verified placement and dedicated models.
+
+## Nov 27: Senate House model and the Cooum under Napier Bridge (owner reference photos)
+
+- **Senate House** is now a procedural model (`tools/art/make_landmarks.py` `senate()`, 35.7k tris,
+  one mesh, 7 collider boxes) on the OSM footprint (seed 9138, cleared by
+  `clear_landmark_sites.py`): red-brick great hall with a red-tiled roof, four corner towers with
+  striped horseshoe arches and stained glass, white lace cornices and orange onion domes, end
+  porches with three striped arches, octagonal turrets, arcaded verandahs and eave pinnacles.
+  The old `"senate"` roof-accent style in `WorldChunkStreamer.HERITAGE_SITES` is gone.
+- **Napier Bridge** had no river: OSM maps the Cooum mouth as a multipolygon relation that
+  `fetch_osm.py` never downloads, so infill houses covered the riverbed, and the landmark sat on
+  Adams Street ~300 m west of the bridge. `tools/osm/add_cooum_napier.py` (in the rebuild chain
+  right after `build_world.py`) adds the hand-traced `config.COOUM_NAPIER` river, merged with the
+  Buckingham Canal mouth, clears buildings / dress / plot walls / paving in it, writes the two
+  carriageway `decks` into the manifest and reruns `build_water.py` (no bank across the river
+  mouth or the decks; Napier gets its own balustrade instead of hazard rails).
+- `LandmarkKit.napier_bridge(decks)`: decks, footpaths, balustrades, piers and four rows of white
+  bowstring arches with hangers. `NapierLights` + `shaders/napier_lights.gdshader`: one additive
+  mesh lighting every arch green / violet / blue / red after dark (cycling), with streaks
+  reflected on the water. Parapet colliders along both edges of each carriageway.
+- The deck is at road level (the city has one ground plane), so the bridge sits low over the water.
