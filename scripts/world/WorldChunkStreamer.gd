@@ -3103,10 +3103,12 @@ func _build_landmarks() -> void:
 				_kit_part(node, holder, LandmarkKit.vivekananda_house(), Vector3(30, 9, 18))
 			"tank", "park":
 				pass # drawn by the water / park areas
+			"model":
+				pass # a procedural model in landmark_models.json (LIC Building since Nov 27)
 			_:
 				_part(node, holder, _box(Vector3(10, 10, 10)), Vector3(0, 5, 0), Color.MAGENTA, true)
 		# Bridges and flyovers keep their authored deck height; buildings stand on the ground.
-		if not str(l["kind"]) in ["bridge", "flyover", "tank", "park", "temple"]:
+		if not str(l["kind"]) in ["bridge", "flyover", "tank", "park", "temple", "model"]:
 			request_ground_snap(node)
 	# San Thome Basilica, the Kapaleeshwarar temple and its tank mandapam (tools/art/make_landmarks.py).
 	LandmarkModels.build(world_dir.path_join("landmark_models.json"), self, holder)

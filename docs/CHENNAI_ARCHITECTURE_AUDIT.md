@@ -80,3 +80,20 @@ Test route: Mylapore temple → Santhome → Lighthouse → Vivekananda House �
   (the real government buildings on them stay).
 - Gates never stand inside a building (`runs()`): a pulled-in front had put a Tripolia inside
   Humayun Mahal's facade.
+
+## Nov 27 (3): Anna Salai, LIC and its heritage neighbours
+
+- The LIC landmark was ~470 m from the real building (the old `config.py` lat/lon). LIC is now a
+  model on its OSM footprint (`make_landmarks.py` `lic()`, 54 m: cream long faces with close
+  vertical fins and slit windows, dark glass bands on the ends, terracotta coping, plant rooms,
+  roof sign); the manifest landmark kind is `"model"` (map POI only).
+- Heritage models on their OSM footprints: Higginbotham's (white Palladian front, stained-glass
+  round arches, pediment and cupola, Mangalore-tile roof, blue name board), Bharat Insurance
+  Building (Indo-Saracenic, minarets either end of the front, domed centre), Agurchand Mansion
+  (red brick, tall domed corner tower), Gove Building (exposed brick, gabled showroom front).
+  `palace_block` takes a palette (`WHITE_PAL`, `BHARAT_PAL`, `BRICK_PAL`) and round or pointed arches.
+- `tools/osm/build_frontage.py` (after `add_lodges_eateries.py`, before `classify_buildings.py`)
+  lines both sides of Anna Salai with 799 attached lots (`"f": 4`) right behind the footpath,
+  replacing the loose infill squares in the way and keeping clear of roads, real buildings,
+  landmark sites, kerb fixtures (booths, poles, lamps, transformers, signals, signs, carts),
+  bus stops, quest stops and props.

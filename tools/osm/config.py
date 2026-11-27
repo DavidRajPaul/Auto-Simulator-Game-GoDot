@@ -38,7 +38,8 @@ LANDMARKS = [
     # kind "temple": drawn by the procedural model in data/world/landmark_models.json (make_landmarks.py).
     {"id": "kapaleeshwarar", "name": "Kapaleeshwarar Temple", "lat": 13.033807, "lon": 80.269876, "kind": "temple"},
     {"id": "chitrakulam_tank", "name": "Mylapore Temple Tank", "lat": 13.03354, "lon": 80.268701, "kind": "tank"},
-    {"id": "lic_building", "name": "LIC Building", "lat": 13.0627, "lon": 80.2617, "kind": "tower"},
+    # The real LIC (OSM way 1110170916; Wikipedia 13.064283, 80.266065); drawn by landmark_models.json.
+    {"id": "lic_building", "name": "LIC Building", "lat": 13.06425, "lon": 80.26609, "kind": "model"},
     {"id": "gemini_flyover", "name": "Gemini Flyover", "lat": 13.0558, "lon": 80.2503, "kind": "flyover"},
     {"id": "panagal_park", "name": "Panagal Park", "lat": 13.04066, "lon": 80.23314, "kind": "park"},  # OSM way 209513246
     # Imported GLBs are placed via city_props, not generic landmark placeholders.

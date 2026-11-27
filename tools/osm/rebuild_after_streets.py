@@ -5,7 +5,7 @@ Each pass places things against the real road surface, so after osm2streets runs
 lanes, new widths) all of them must run again, in this order (see AGENTS.md lessons):
   world + graph -> Cooum river at Napier Bridge -> water, bus stops -> street dressing -> parking -> city props + street shops
   -> empty lots -> signal posts, street signs -> barricades -> beach carts -> beach fence
-  -> medians -> road works -> roundabout islands -> street lights -> police booths -> compounds -> building names -> lodges/eateries
+  -> medians -> road works -> roundabout islands -> street lights -> police booths -> compounds -> building names -> lodges/eateries -> Anna Salai frontage
   -> building types (classify) -> plots (walls, gates) -> street life -> landmark compounds
   -> trees set back from the road -> density audit.
 Usage: python3 tools/osm/rebuild_after_streets.py [--from build_street_dressing.py]
@@ -41,6 +41,7 @@ ORDER = [
     "build_compounds.py",
     "build_building_names.py",
     "add_lodges_eateries.py",
+    "build_frontage.py",
     "classify_buildings.py",
     "build_plots.py",
     "place_street_life.py",

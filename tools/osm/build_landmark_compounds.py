@@ -82,9 +82,10 @@ SITES = [
     {"id": "santhome_basilica", "style": "rail_black", "gate": "church",
      "rect": (2034.0, 1699.57, 96.0, 50.0, -math.radians(14.2)), "gates": [("left", 1.0, 8.0)],
      "keep_out": [(2036.0, 1702.0, 70.0, 38.0, -math.radians(14.2))]},
+    # LIC on its real footprint (Nov 27): the slab's long side is on Anna Salai.
     {"id": "lic_building", "style": "wall_grey", "gate": "plain",
-     "rect": (316.2, -1534.2, 34.0, 34.0, None), "gates": [("front", 0.0, 7.0)],
-     "keep_out": [(316.2, -1534.2, 20.0, 20.0, 0.0)]},
+     "rect": (769.1, -1680.3, 60.0, 34.0, None), "gates": [("front", 0.0, 7.0), ("left", 0.0, 6.0)],
+     "keep_out": [(769.1, -1680.3, 50.0, 21.0, 0.7)]},
     # The mapped Panagal Park (OSM way 209513246) is ~200 m west of the old marker (fixed Nov 27).
     {"id": "panagal_park", "style": "rail_green", "gate": "park", "park": True, "gates_every_m": 45.0, "gate_w": 3.5,
      "anchor": (-2805.0, 845.0)},

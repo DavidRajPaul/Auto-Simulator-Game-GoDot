@@ -2173,9 +2173,9 @@
   {
    "id": "lic_building",
    "name": "LIC Building",
-   "kind": "tower",
-   "x": 316.17,
-   "z": -1534.17,
+   "kind": "model",
+   "x": 769.1,
+   "z": -1680.3,
    "yaw": 0.0
   },
   {

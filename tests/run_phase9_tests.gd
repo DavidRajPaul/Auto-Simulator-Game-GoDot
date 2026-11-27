@@ -357,6 +357,7 @@ func _test_landmark_kit() -> void:
 	_test_landmark_models()
 	_test_napier_cooum()
 	_test_landmark_compounds()
+	_test_anna_salai_frontage()
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
 	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))
@@ -1333,3 +1334,34 @@ func _test_landmark_compounds() -> void:
 				blocked += 1
 	_check("Senate House gate is within 15 m of the road side of the campus", gate != Vector2.INF and gate.x > 2640.0, str(gate))
 	_check("Nothing stands between Senate House and its gate", blocked == 0, str(blocked))
+
+## Nov 27 owner photos of Anna Salai: "just after the roads there will be buildings, no empty
+## spaces". tools/osm/build_frontage.py lines both sides with attached lots ("f": 4); LIC and its
+## heritage neighbours are models on their real footprints.
+func _test_anna_salai_frontage() -> void:
+	var lots: int = 0
+	var lic_chunk_lots: int = 0
+	for file_name: String in DirAccess.get_files_at("res://data/world/chunks"):
+		if not file_name.ends_with(".json"):
+			continue
+		var f: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		for b: Dictionary in (JSON.parse_string(f.get_as_text()) as Dictionary).get("blds", []):
+			if int(b.get("f", 0)) == 4:
+				lots += 1
+				if file_name == "c_3_-7.json" or file_name == "c_3_-8.json":
+					lic_chunk_lots += 1
+				_check_once("Frontage lots have a type and street walls", b.has("t") and b.has("fw"))
+	_check("Anna Salai is lined with attached street-front lots", lots >= 500, str(lots))
+	_check("Lots stand along Anna Salai beside LIC", lic_chunk_lots >= 12, str(lic_chunk_lots))
+	var mf: FileAccess = FileAccess.open("res://data/world/landmark_models.json", FileAccess.READ)
+	var ids: Array[String] = []
+	for m: Dictionary in (JSON.parse_string(mf.get_as_text()) as Dictionary).get("models", []):
+		ids.append(str(m["id"]))
+	_check("LIC, Higginbotham's, Bharat Insurance, Agurchand Mansion and Gove Building are models",
+		ids.has("lic_building") and ids.has("higginbothams") and ids.has("bharat_insurance_building") and ids.has("agurchand_mansion") and ids.has("gove_building"))
+
+var _once_failed: Dictionary = {}
+func _check_once(name: String, ok: bool) -> void:
+	if not ok and not _once_failed.has(name):
+		_once_failed[name] = true
+		_check(name, false)

@@ -1371,14 +1371,18 @@ def _roof(m: LM, poly, y: float, col) -> None:
         m.tri((a[0], y, a[1]), (c[0], y, c[1]), (b[0], y, b[1]), col, (0, 1, 0))
 
 
-def palace_block(m: LM, poly, h: float, rng: random.Random, minar_h: float) -> list:
+CP_PAL = {"wall": None, "pier": None, "trim": None, "roof": (178, 132, 108), "window": (70, 44, 36), "arch": "pointed",
+          "minaret": True}
+
+
+def palace_block(m: LM, poly, h: float, rng: random.Random, minar_h: float, pal=None) -> list:
     """Red Indo-Saracenic block on a footprint: arcaded ground floor, arched first-floor windows,
     white string courses, balustraded parapet with pinnacles, a slim minaret at every corner.
     Returns the walls as (a, b, outward normal) for the features added afterwards."""
+    pal = dict(CP_PAL, **(pal or {}))
+    wall, pier, trim = pal["wall"] or CP_RED, pal["pier"] or CP_RED_D, pal["trim"] or CP_WHITE
     poly = _ccw(poly)
     n = len(poly)
-    m.collider((0.0, h / 2, 0.0), (1.0, 1.0, 1.0))  # replaced below by per-wall boxes
-    m.boxes.pop()
     walls_out = []
     for i in range(n):
         a, b = poly[i], poly[(i + 1) % n]
@@ -1393,40 +1397,63 @@ def palace_block(m: LM, poly, h: float, rng: random.Random, minar_h: float) -> l
         m.push((mx, 0.0, mz), yaw=yaw)
         hl = ln / 2
         m.ybox(-hl, hl, 0.0, 0.8, -0.6, 0.15, SH_STONE)
-        m.quad((-hl, 0.8, 0.0), (hl, 0.8, 0.0), (hl, h, 0.0), (-hl, h, 0.0), CP_RED, (0, 0, 1))
+        m.quad((-hl, 0.8, 0.0), (hl, 0.8, 0.0), (hl, h, 0.0), (-hl, h, 0.0), wall, (0, 0, 1))
         bays = max(1, int(round(ln / 3.8)))
         bw = ln / bays
+        floors = max(1, int((h - 1.0) / 4.4))
         for k in range(bays):
             bx = -hl + bw * (k + 0.5)
             if ln >= 3.0:
-                pointed_opening(m, bx, 0.8, bw * 0.62, 3.6, frame=0.26, depth=0.22, rise=bw * 0.42)
-                if h > 8.0:
-                    pointed_opening(m, bx, 6.0, bw * 0.42, 8.0, col=(70, 44, 36), frame=0.2, depth=0.16)
-                    # Jharokha hood over the first-floor window.
-                    m.ybox(bx - bw * 0.36, bx + bw * 0.36, 9.3, 9.5, -0.05, 0.55, CP_WHITE)
+                if pal["arch"] == "round":
+                    _round_opening(m, bx, 0.8, bw * 0.6, 3.4, pal["window"], trim)
+                else:
+                    pointed_opening(m, bx, 0.8, bw * 0.62, 3.6, frame=0.26, depth=0.22, rise=bw * 0.42)
+                for f in range(1, floors):
+                    y0 = 1.0 + f * 4.4 + 0.6
+                    if y0 + 2.6 > h - 0.8:
+                        break
+                    if pal["arch"] == "round":
+                        _round_opening(m, bx, y0, bw * 0.42, y0 + 1.9, pal["window"], trim)
+                    else:
+                        pointed_opening(m, bx, y0, bw * 0.42, y0 + 2.0, col=pal["window"], frame=0.2, depth=0.16)
+                    # Hood over the upper window.
+                    m.ybox(bx - bw * 0.36, bx + bw * 0.36, y0 + 3.3, y0 + 3.5, -0.05, 0.55, trim)
             if k > 0:
                 px = -hl + bw * k
-                m.ybox(px - 0.32, px + 0.32, 0.8, h - 0.4, -0.05, 0.28, CP_RED_D)
-        for y, hh in ((5.0, 0.4), (h - 0.6, 0.6)):
-            m.ybox(-hl - 0.1, hl + 0.1, y, y + hh, -0.05, 0.3, CP_WHITE)
-        crenels(m, -hl, hl, h, h=0.95, step=0.85, depth=0.3, col=CP_WHITE)
+                m.ybox(px - 0.32, px + 0.32, 0.8, h - 0.4, -0.05, 0.28, pier)
+        for f in range(1, floors):
+            y = 1.0 + f * 4.4 - 0.2
+            if y < h - 1.5:
+                m.ybox(-hl - 0.1, hl + 0.1, y, y + 0.4, -0.05, 0.3, trim)
+        m.ybox(-hl - 0.1, hl + 0.1, h - 0.6, h, -0.05, 0.3, trim)
+        crenels(m, -hl, hl, h, h=0.95, step=0.85, depth=0.3, col=trim)
         for k in range(bays + 1):
             sh_pinnacle(m, -hl + bw * k, h + 0.35, 0.0, 0.26)
         m.pop()
         # Collider: a slab along the wall (the courtyard is inside the box anyway).
         m.boxes.append(((round(mx - nx * 2.0, 3), round(h / 2, 3), round(mz - nz * 2.0, 3)), (round(ln, 3), round(h, 3), 4.0), round(yaw, 4)))
-    _roof(m, poly, h - 0.05, (178, 132, 108))  # Madras terrace, brick-tile finish
+    _roof(m, poly, h - 0.05, pal["roof"])  # Madras terrace, brick-tile finish
     # Minarets at the convex corners.
-    for i in range(n):
+    for i in range(n if pal["minaret"] else 0):
         p0, p1, p2 = poly[i - 1], poly[i], poly[(i + 1) % n]
         cross = (p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])
         if cross > 0 and min(math.dist(p0, p1), math.dist(p1, p2)) > 6.0:
-            cp_minaret(m, p1[0], p1[1], minar_h, 1.15)
+            cp_minaret(m, p1[0], p1[1], minar_h, 1.15, pal)
     return walls_out
 
 
-def cp_minaret(m: LM, cx: float, cz: float, top: float, r: float) -> None:
+def _round_opening(m: LM, x: float, y0: float, w: float, spring: float, fill, trim) -> None:
+    inner = arch(w, y0, spring, "round", n=6)
+    m.push((x, 0.0, 0.0))
+    m.flat(inner, 0.02, fill)
+    m.extrude(offset(inner, 0.22), 0.0, 0.18, trim, back=False, holes=[inner])
+    m.pop()
+
+
+def cp_minaret(m: LM, cx: float, cz: float, top: float, r: float, pal=None) -> None:
     """White-banded red octagonal minaret with balconies, a chhatri and a white dome."""
+    pal = dict(CP_PAL, **(pal or {}))
+    CP_RED, CP_WHITE = pal["wall"] or globals()["CP_RED"], pal["trim"] or globals()["CP_WHITE"]  # noqa: N806
     rot = math.pi / 8
     m.prism(8, r + 0.2, r + 0.2, 0.0, 0.9, SH_STONE, top=False, rot=rot, cx=cx, cz=cz)
     y = 0.9
@@ -1518,6 +1545,237 @@ def chepauk_kalas() -> LM:
     return m
 
 
+# ================================================================= Anna Salai (Mount Road)
+
+# Owner photos (Nov 27): LIC Building, 54 m, 1959 (Wikipedia): a slab whose long cream faces carry
+# close vertical fins over slit windows, the short ends dark horizontal glass bands, a terracotta
+# coping, rooftop plant rooms and the blue-and-white LIC sign on the roof. It stands on the real
+# OSM footprint (way 1110170916), long side along Anna Salai: local +x along the road (north-east),
+# local -z faces the road. The old box was ~470 m away, at the wrong LIC.
+LIC_FOOTPRINT = [(781.6, -1703.5), (794.3, -1688.4), (756.7, -1657.0), (743.9, -1672.2)]
+LIC_AXIS_DEG = -39.9
+LIC_CREAM = (248, 244, 230)
+LIC_CREAM_D = (230, 222, 200)
+LIC_GLASS = (52, 70, 78)
+LIC_SLIT = (96, 118, 120)
+LIC_COPING = (190, 92, 64)
+LIC_BLUE = (24, 74, 158)
+
+
+def lic() -> LM:
+    m = LM()
+    L, W, H = 24.4, 9.8, 54.0
+    floor_h = H / 14.0
+    m.ybox(-L, L, 0.0, H, -W, W, LIC_CREAM, skip="-y")
+    m.collider((0.0, H / 2, 0.0), (2 * L, H, 2 * W))
+    # Long faces (one on Anna Salai): cream fins close together, a narrow dark window between
+    # each pair on every floor, faint floor lines.
+    for sz in (-1.0, 1.0):
+        face = "+z" if sz > 0 else "-z"
+        wall_frame(m, face, 0.0, sz * W)
+        n = int(2 * L / 0.95)
+        gap = 2 * L / n
+        for f in range(1, 14):
+            y = f * floor_h
+            m.ybox(-L, L, y - 0.1, y + 0.1, 0.0, 0.2, LIC_CREAM_D)
+            for k in range(n):
+                x = -L + (k + 0.5) * gap
+                m.ybox(x - 0.17, x + 0.17, y + 0.55, y + floor_h - 0.45, 0.0, 0.03, LIC_SLIT)
+        for k in range(n + 1):
+            x = -L + k * gap
+            m.ybox(x - 0.16, x + 0.16, floor_h, H - 0.6, 0.0, 0.42, LIC_CREAM)
+        # Ground floor: shop fronts behind a terracotta-tiled canopy on the road side.
+        m.ybox(-L, L, 0.0, floor_h - 0.2, 0.0, 0.04, (60, 56, 52))
+        if sz < 0:
+            m.ybox(-L - 1.0, L + 1.0, floor_h - 0.4, floor_h - 0.1, 0.0, 3.2, LIC_COPING)
+            for k in range(9):
+                x = -L + 1.0 + k * (2 * L - 2.0) / 8
+                m.ybox(x - 0.14, x + 0.14, 0.0, floor_h - 0.4, 2.9, 3.18, (90, 90, 92))
+        m.pop()
+    # Short ends: dark horizontal glass bands in a cream frame.
+    for sx in (-1.0, 1.0):
+        face = "+x" if sx > 0 else "-x"
+        wall_frame(m, face, sx * L, 0.0)
+        for f in range(1, 14):
+            y = f * floor_h
+            m.ybox(-W + 0.9, W - 0.9, y + 0.45, y + floor_h - 0.35, 0.0, 0.05, LIC_GLASS)
+        for x in (-W, W):
+            m.ybox(x - 0.9 if x > 0 else x, x if x > 0 else x + 0.9, 0.0, H, 0.0, 0.35, LIC_CREAM)
+        m.pop()
+    # Coping, roof and plant rooms.
+    m.ybox(-L - 0.3, L + 0.3, H - 0.6, H + 0.5, -W - 0.3, W + 0.3, LIC_COPING)
+    m.ybox(-L + 0.4, L - 0.4, H + 0.5, H + 0.55, -W + 0.4, W - 0.4, (180, 176, 168))
+    m.ybox(-8.0, 6.0, H + 0.5, H + 4.2, -5.0, 5.0, LIC_CREAM_D)
+    m.ybox(-6.0, 4.0, H + 4.2, H + 6.4, -3.5, 3.5, LIC_CREAM)
+    # The roof sign: a white board facing Anna Salai (-z) with the blue logo panel and blue
+    # block letters L I C. Seen from the road, local +x is on the viewer's LEFT, so the sign is
+    # laid out from +x towards -x.
+    sx0, sx1, sy0, sy1, sz_ = -22.5, -9.0, H + 1.0, H + 5.6, -W + 1.2
+
+    def bx(x0, x1, y0, y1, z0, z1, col):  # mirrored: x measured from the sign's left edge
+        m.ybox(sx1 - x1, sx1 - x0, y0, y1, z0, z1, col)
+
+    for x in (0.6, sx1 - sx0 - 0.6):
+        bx(x - 0.15, x + 0.15, H + 0.5, sy0, sz_ + 0.2, sz_ + 0.5, (90, 90, 92))
+    bx(0.0, sx1 - sx0, sy0, sy1, sz_, sz_ + 0.4, (246, 246, 242))
+    bx(0.4, 4.3, sy0 + 0.4, sy1 - 0.4, sz_ - 0.05, sz_, LIC_BLUE)
+    bx(1.4, 3.3, sy0 + 1.4, sy1 - 1.4, sz_ - 0.1, sz_ - 0.05, (246, 246, 242))
+    lx, t, h0, h1 = 5.4, 0.55, sy0 + 0.7, sy1 - 0.7
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.2, h0, h0 + t, sz_ - 0.1, sz_, LIC_BLUE)
+    lx += 3.0
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    lx += 1.4
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.4, h0, h0 + t, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.4, h1 - t, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    return m
+
+
+def _front_wall(poly, road):
+    """The footprint edge whose outward normal points most at the road (local coordinates)."""
+    poly = _ccw(poly)
+    best = None
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        ex, ez = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(ex, ez)
+        nx, nz = ez / ln, -ex / ln
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        dx, dz = road[0] - mx, road[1] - mz
+        dl = math.hypot(dx, dz) or 1.0
+        score = (nx * dx + nz * dz) / dl * min(ln, 30.0)
+        if best is None or score > best[0]:
+            best = (score, a, b, (nx, nz))
+    return best[1], best[2], best[3]
+
+
+def _local_pt(poly_world, pt):
+    cx, cz = _centroid(poly_world)
+    return (pt[0] - cx, pt[1] - cz)
+
+
+# Heritage neighbours (OSM footprints; descriptions from Madras Musings, Wikipedia, Outlook):
+HIGGINBOTHAMS_FOOTPRINT = [(826.9, -1799.3), (806.9, -1783.3), (805.7, -1785.2), (804.6, -1784.7), (795.5, -1791.2), (795.9, -1791.9),
+                           (792.5, -1794.3), (782.2, -1804.8), (791.3, -1812.6), (804.6, -1810.2), (812.8, -1808.3), (819.9, -1806.0),
+                           (826.7, -1802.1), (825.5, -1800.9)]
+HIGGINBOTHAMS_ROAD = (822.4, -1778.5)
+BHARAT_FOOTPRINT = [(868.1, -1767.9), (899.4, -1794.1), (916.8, -1784.7), (911.9, -1746.6), (901.4, -1748.2), (904.4, -1767.0),
+                    (894.2, -1773.2), (876.4, -1757.7)]
+BHARAT_ROAD = (869.2, -1798.9)
+AGURCHAND_FOOTPRINT = [(525.7, -1496.9), (470.4, -1451.4), (480.9, -1428.2), (497.8, -1436.1), (516.9, -1453.9), (518.9, -1451.5),
+                       (531.4, -1461.4), (533.5, -1458.8), (547.7, -1471.1)]
+AGURCHAND_ROAD = (491.9, -1481.3)
+GOVE_FOOTPRINT = [(565.9, -1507.9), (556.1, -1499.4), (544.0, -1489.0), (532.1, -1502.6), (554.0, -1521.6)]
+GOVE_ROAD = (536.4, -1520.4)
+
+WHITE_PAL = {"wall": (242, 240, 232), "pier": (226, 224, 216), "trim": (250, 250, 246), "roof": (170, 92, 64),
+             "window": (60, 96, 120), "arch": "round", "minaret": False}
+BHARAT_PAL = {"wall": (226, 204, 166), "pier": (206, 182, 142), "trim": (246, 240, 226), "roof": (176, 160, 140),
+              "window": (70, 60, 52), "arch": "pointed"}
+BRICK_PAL = {"wall": (184, 78, 54), "pier": (160, 64, 44), "trim": (240, 232, 214), "roof": (170, 120, 96),
+             "window": (64, 44, 38), "arch": "round"}
+
+
+def _hipped_tile_roof(m: LM, poly, h: float) -> None:
+    """Mangalore-tile roof over the footprint's bounding box, kept inside the walls."""
+    xs = [p[0] for p in poly]
+    zs = [p[1] for p in poly]
+    x0, x1, z0, z1 = min(xs) + 2.0, max(xs) - 2.0, min(zs) + 2.0, max(zs) - 2.0
+    if x1 - x0 < 3 or z1 - z0 < 3:
+        return
+    m.rfrustum(x1 - x0, z1 - z0, (x1 - x0) * 0.25, (z1 - z0) * 0.25, h, h + 3.2, (176, 84, 58),
+               cx=(x0 + x1) / 2, cz=(z0 + z1) / 2, side_cols=[(184, 90, 62), (168, 80, 56), (184, 90, 62), (168, 80, 56)])
+
+
+def higginbothams() -> LM:
+    m = LM()
+    poly = _local(HIGGINBOTHAMS_FOOTPRINT)
+    h = 10.6
+    palace_block(m, poly, h, random.Random(931353321), 0.0, WHITE_PAL)
+    _hipped_tile_roof(m, poly, h)
+    a, b, nrm = _front_wall(poly, _local_pt(HIGGINBOTHAMS_FOOTPRINT, HIGGINBOTHAMS_ROAD))
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    m.push((mx, 0.0, mz), yaw=math.atan2(nrm[0], nrm[1]))
+    # Palladian frontispiece: pilasters, a pediment, the blue name board over the door,
+    # stained glass in the round arches, and the cupola marked 1844.
+    w = 9.0
+    m.ybox(-w / 2, w / 2, 0.0, h + 1.6, 0.0, 1.0, WHITE_PAL["wall"])
+    m.boxes.append((tuple(round(float(v), 3) for v in m.world((0.0, (h + 1.6) / 2, 0.5))), (w, h + 1.6, 1.0), round(m.yaw_now(), 4)))
+    for x in (-w / 2 + 0.4, -1.5, 1.5, w / 2 - 0.4):
+        m.ybox(x - 0.35, x + 0.35, 0.0, h + 1.2, 1.0, 1.35, (250, 250, 246))
+    m.push((0.0, 0.0, 1.36))
+    _round_opening(m, 0.0, 0.6, 2.4, 3.2, (70, 50, 40), (250, 250, 246))
+    for x in (-3.0, 3.0):
+        striped = [(150, 60, 60), (60, 110, 150), (190, 150, 60)]
+        _round_opening(m, x, 1.0, 1.3, 3.0, striped[int(x > 0)], (250, 250, 246))
+        _round_opening(m, x, 6.4, 1.3, 8.2, striped[2], (250, 250, 246))
+    _round_opening(m, 0.0, 6.0, 2.0, 8.4, (60, 110, 150), (250, 250, 246))
+    m.ybox(-3.6, 3.6, 4.0, 5.1, 0.0, 0.25, (32, 72, 160))  # the blue-lettered board
+    for k in range(9):
+        m.ybox(-3.1 + k * 0.7, -2.8 + k * 0.7, 4.25, 4.85, 0.25, 0.3, (246, 246, 242))
+    m.pop()
+    m.extrude([(-w / 2 - 0.3, h + 1.6), (w / 2 + 0.3, h + 1.6), (0.0, h + 3.8)], 0.0, 1.4, (250, 250, 246), back=False)
+    m.prism(8, 1.3, 1.3, h + 1.6, h + 4.4, (250, 250, 246), cx=0.0, cz=-1.5, rot=math.pi / 8)
+    m.lathe([(1.4, 0.0), (1.35, 0.6), (1.0, 1.3), (0.45, 1.8), (0.0, 2.0)], 10, (244, 244, 238), cx=0.0, cz=-1.5, y=h + 4.4)
+    m.pop()
+    return m
+
+
+def bharat_insurance() -> LM:
+    m = LM()
+    poly = _local(BHARAT_FOOTPRINT)
+    h = 15.2
+    palace_block(m, poly, h, random.Random(211864557), 19.0, BHARAT_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(BHARAT_FOOTPRINT, BHARAT_ROAD))
+    # The 100 ft minarets either end of the front, a domed centre pavilion, arched verandah.
+    for p in (a, b):
+        q = (p[0] + nrm[0] * 0.8, p[1] + nrm[1] * 0.8)
+        cp_minaret(m, q[0], q[1], 29.0, 1.6, BHARAT_PAL)
+    cp_entrance(m, a, b, nrm, h, 24.0, width=10.0)
+    c = _centroid(poly)
+    m.prism(8, 4.2, 4.2, h, h + 2.4, BHARAT_PAL["trim"], cx=c[0], cz=c[1], rot=math.pi / 8)
+    onion_dome(m, c[0], h + 2.4, c[1], 3.8, seg=16, col=(240, 236, 224), lace=(214, 196, 160))
+    return m
+
+
+def agurchand() -> LM:
+    m = LM()
+    poly = _local(AGURCHAND_FOOTPRINT)
+    h = 13.4
+    palace_block(m, poly, h, random.Random(1122927001), 17.5, BRICK_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(AGURCHAND_FOOTPRINT, AGURCHAND_ROAD))
+    # The city's first 100 ft building: a tall domed tower at the front corner.
+    q = (a[0] + nrm[0] * 0.5, a[1] + nrm[1] * 0.5)
+    m.prism(8, 3.4, 3.4, 0.0, 26.0, BRICK_PAL["wall"], cx=q[0], cz=q[1], rot=math.pi / 8,
+            cols=[BRICK_PAL["wall"], BRICK_PAL["pier"]])
+    m.collider((q[0], 13.0, q[1]), (6.8, 26.0, 6.8))
+    for y in (5.2, 9.6, 14.0, 18.4, 22.8):
+        m.prism(8, 3.6, 3.6, y, y + 0.4, BRICK_PAL["trim"], cx=q[0], cz=q[1], rot=math.pi / 8, bottom=True)
+    m.prism(8, 3.0, 3.0, 26.0, 28.0, BRICK_PAL["trim"], cx=q[0], cz=q[1], rot=math.pi / 8)
+    onion_dome(m, q[0], 28.0, q[1], 2.8, seg=12, col=(236, 230, 214), lace=(250, 248, 240))
+    return m
+
+
+def gove() -> LM:
+    m = LM()
+    poly = _local(GOVE_FOOTPRINT)
+    h = 12.0
+    palace_block(m, poly, h, random.Random(1122927002), 16.5, BRICK_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(GOVE_FOOTPRINT, GOVE_ROAD))
+    # Ornate brick front: gables over the bays of the old car showroom.
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    ln = math.dist(a, b)
+    m.push((mx, 0.0, mz), yaw=math.atan2(nrm[0], nrm[1]))
+    for k in range(3):
+        x = -ln / 3 + k * ln / 3
+        m.extrude([(x - 3.2, h), (x + 3.2, h), (x, h + 3.0)], -0.4, 0.3, BRICK_PAL["wall"], back=False)
+        m.bar((x - 3.4, h, 0.35), (x, h + 3.1, 0.35), 0.14, BRICK_PAL["trim"], 4)
+        m.bar((x + 3.4, h, 0.35), (x, h + 3.1, 0.35), 0.14, BRICK_PAL["trim"], 4)
+    m.pop()
+    return m
+
+
 # Areas the models replace (world x, z outlines): chunk buildings, trees, stalls, parked vehicles,
 # kolams, dogs and shop people inside them are removed by tools/osm/clear_landmark_sites.py.
 SANTHOME_FOOTPRINT = [(2014.4, 1705.1), (2037.8, 1711.1), (2036.0, 1718.3), (2057.9, 1724.0), (2061.6, 1722.6), (2062.4, 1718.9),
@@ -1564,6 +1822,11 @@ BUILDERS = {
     "senate_house": (senate, SENATE_ORIGIN, SENATE_AXIS_DEG, lambda: SENATE_FOOTPRINT),
     "chepauk_humayun_mahal": (chepauk_humayun, _centroid(HUMAYUN_FOOTPRINT), 0.0, lambda: HUMAYUN_FOOTPRINT),
     "chepauk_kalas_mahal": (chepauk_kalas, _centroid(KALAS_FOOTPRINT), 0.0, lambda: KALAS_FOOTPRINT),
+    "lic_building": (lic, _centroid(LIC_FOOTPRINT), LIC_AXIS_DEG, lambda: LIC_FOOTPRINT),
+    "higginbothams": (higginbothams, _centroid(HIGGINBOTHAMS_FOOTPRINT), 0.0, lambda: HIGGINBOTHAMS_FOOTPRINT),
+    "bharat_insurance_building": (bharat_insurance, _centroid(BHARAT_FOOTPRINT), 0.0, lambda: BHARAT_FOOTPRINT),
+    "agurchand_mansion": (agurchand, _centroid(AGURCHAND_FOOTPRINT), 0.0, lambda: AGURCHAND_FOOTPRINT),
+    "gove_building": (gove, _centroid(GOVE_FOOTPRINT), 0.0, lambda: GOVE_FOOTPRINT),
 }
 
 
