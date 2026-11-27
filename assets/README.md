@@ -150,7 +150,9 @@ split apart) — all Sketchfab, CC BY 4.0, sources kept (gitignored) in `assets_
 with mipmaps; leaf cards thinned and enlarged, bark simplified: 4.2–10.9k triangles) and impostor rows 5–14. The
 collection's Bush006 is a 14 m wide shrub, not a street tree, and is not baked. They replace about half the broadleaf
 trees block by block (`StreetTrees.remap_code`); the tree count is unchanged.
-The Marina lighthouse and Kapaleeshwarar-style gopuram are **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
+The Marina lighthouse is **procedural** (`scripts/world/LandmarkKit.gd`) because the free models are NC-licensed.
+
+`assets/models/landmarks/` (Nov 27, our own work, no licence terms): **San Thome Basilica** (`santhome_basilica.glb`, ~27k tris), the **Kapaleeshwarar temple** (`kapaleeshwarar_temple.glb`, ~98k tris: east 7-tier rajagopuram, west gopuram, shrine vimanas, mandapams, flagstaff, Nandi) and the tank's **neerazhi mandapam** (`kapaleeshwarar_tank_mandapam.glb`). Built by `tools/art/make_landmarks.py` from the owner's photos and published dimensions; one vertex-coloured mesh each (one draw call), placed by `data/world/landmark_models.json` through `scripts/world/LandmarkModels.gd`.
 
 Credits: `models/CREDITS_models.md`, `models/city/CREDITS_city.md`, `models/people/CREDITS_people.md`, `models/people/CREDITS_static.md`, `models/traffic/CREDITS_static.md`.
 

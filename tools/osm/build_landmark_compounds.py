@@ -15,6 +15,8 @@ surrounded with compounds". What the real places look like (Nov 2026 research):
 * Kapaleeshwarar Temple: two entrances, each under a gopuram (east and west, the west one facing
   the tank); the precinct is walled in like every big Tamil temple, in kaavi red-and-white stripes.
   -> a 4.2 m striped wall with openings on the east and west.
+* San Thome Basilica: a low white wall with black iron railings round the churchyard and a gate
+  to Santhome High Road (owner photos, Nov 27). Never kaavi: the stripes are for Hindu temples.
 * LIC Building (Anna Salai): an office compound wall with a gate to the road.
 * Panagal Park: a corporation park with green railings on a low plinth and openings on each side.
 
@@ -57,9 +59,17 @@ SITES = [
     {"id": "vivekananda_house", "style": "rail_cream", "gate": "arch_cream",
      "rect": (2314.0, -6.0, 38.0, 34.0, None), "gates": [("front", 0.0, 6.0)],
      "keep_out": [(2311.95, -5.97, 18.0, 29.0, 0.0)]},
-    {"id": "kapaleeshwarar", "style": "kaavi", "gate": "temple",
-     "rect": (1174.0, 1684.0, 64.0, 74.0, 0.0), "gates": [("left", 0.0, 9.0), ("right", 0.0, 9.0)],
+    # The temple fills the Mylapore block between the Mada streets, on the street grid's 15 deg
+    # (tools/art/make_landmarks.py KAPALI_COMPOUND_UV); the openings are the two gopurams, which
+    # stand in the wall line, so the "gopuram" gate draws no piers of its own.
+    {"id": "kapaleeshwarar", "style": "kaavi", "gate": "gopuram",
+     "rect": (1181.13, 1690.81, 85.0, 95.0, -math.radians(15.0)), "gates": [("right", -7.5, 25.0), ("left", 3.0, 17.0)],
      "keep_out": []},
+    # San Thome Basilica (model: tools/art/make_landmarks.py): a white wall with black iron
+    # railings round the churchyard, the gate on Santhome High Road to the west (owner photos).
+    {"id": "santhome_basilica", "style": "rail_black", "gate": "church",
+     "rect": (2034.0, 1699.57, 96.0, 50.0, -math.radians(14.2)), "gates": [("left", 1.0, 8.0)],
+     "keep_out": [(2036.0, 1702.0, 70.0, 38.0, -math.radians(14.2))]},
     {"id": "lic_building", "style": "wall_grey", "gate": "plain",
      "rect": (316.2, -1534.2, 34.0, 34.0, None), "gates": [("front", 0.0, 7.0)],
      "keep_out": [(316.2, -1534.2, 20.0, 20.0, 0.0)]},
@@ -330,7 +340,7 @@ def main() -> int:
     keep_outs = []
     for site in SITES:
         lm = landmarks.get(site["id"])
-        if lm is None:
+        if lm is None and site.get("park"):
             continue
         if site.get("park"):
             parks = [[(float(p[0]), float(p[1])) for p in poly] for poly in areas.get("park", []) if len(poly) >= 3]

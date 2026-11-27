@@ -52,7 +52,9 @@ func _test_plot_data() -> void:
 		biggest = maxi(biggest, text.length())
 		var d: Dictionary = JSON.parse_string(text) as Dictionary
 		for w: Array in (d.get("walls", []) as Array) + (d.get("gates", []) as Array):
-			if w.size() != 9 or not BuildingStyles.TYPES.has(str(w[6])) or int(w[8]) < 0 or int(w[8]) >= BuildingStyles.ZONE_IDS.size():
+			# An open commercial gate carries a 10th field: the side its leaves swing to (+1 / -1).
+			var open_ok: bool = w.size() == 10 and absf(float(w[9])) == 1.0
+			if (w.size() != 9 and not open_ok) or not BuildingStyles.TYPES.has(str(w[6])) or int(w[8]) < 0 or int(w[8]) >= BuildingStyles.ZONE_IDS.size():
 				bad += 1
 			if Vector2(float(w[0]), float(w[1])).distance_to(Vector2(float(w[2]), float(w[3]))) < 0.25:
 				short += 1
@@ -98,6 +100,9 @@ func _test_surface_mesh() -> void:
 	s.free()
 
 func _test_walls_and_gates() -> void:
+	# Nov 27 owner: commercial compounds have big gates standing open, so the auto can still drive in.
+	_check("Open compound gates leave their opening free for walkers and the auto",
+		WorldChunkStreamer._closed_gates([[0, 0, 6, 0, 2.1, 0.1, "fl", 1, 0, 1], [0, 0, 3, 0, 1.6, 0.1, "hs", 1, 0]]).size() == 1)
 	var s: WorldChunkStreamer = WorldChunkStreamer.new()
 	s._bld_mat = ShaderMaterial.new()
 	var wall: Array = [0.0, 0.0, 10.0, 0.0, 1.7, 0.23, "fl", 1234, 0]

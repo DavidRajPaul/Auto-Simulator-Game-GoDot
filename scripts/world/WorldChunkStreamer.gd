@@ -14,7 +14,6 @@ const HERITAGE_SITES: Array[Dictionary] = [
 	{"seed": 9138, "point": Vector2(2594.32, -1778.52), "style": "senate"},
 	{"seed": 3505, "point": Vector2(2443.58, -1676.04), "style": "palace"},
 	{"seed": 3507, "point": Vector2(2462.20, -1573.74), "style": "palace"},
-	{"seed": 3634, "point": Vector2(2041.64, 1702.52), "style": "cathedral"},
 ]
 const GROUND_VISUAL_Y: float = -0.15
 const ROAD_Y: float = 0.06
@@ -220,6 +219,10 @@ const TANK_COLOURS: Array[Color] = [Color(0.07, 0.07, 0.08), Color(0.07, 0.07, 0
 const AWNING_COLOURS: Array[Color] = [Color(0.13, 0.35, 0.78), Color(0.1, 0.5, 0.3), Color(0.8, 0.18, 0.15),
 	Color(0.95, 0.75, 0.1), Color(0.9, 0.9, 0.88), Color(0.15, 0.55, 0.75), Color(0.55, 0.2, 0.5)]
 const AC_COLOUR: Color = Color(0.9, 0.9, 0.87)
+const AC_DEPTH_M: float = 0.55       # how far an AC unit stands out from the wall
+const AC_EMBED_M: float = 0.02      # its back sits this far into the wall, so no gap shows
+const AC_BRACKET: Color = Color(0.32, 0.33, 0.35)
+const AC_GRILLE: Color = Color(0.2, 0.21, 0.23)
 const POLE_H: float = 8.5
 const POLE_ARM_Y: float = 7.9
 ## TNEB double-pole (DP) distribution transformer structure (data/world/dress "xfmr", made by
@@ -589,7 +592,7 @@ func _build_chunk(k: Vector2i) -> Node3D:
 	if df != null:
 		dress = JSON.parse_string(df.get_as_text()) as Dictionary
 	# Walkers treat every wall and gate as solid, whoever built it, and keep off roundabout islands.
-	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + gates,
+	root.set_meta("building_mask", _building_mask(k, data.get("blds", []) as Array, walls + plot_walls + _closed_gates(gates),
 		(dress.get("islands", []) as Array) + _booth_outlines(dress.get("booths", []) as Array)))
 	if df != null:
 		_block_stalls(root, k, dress.get("stalls", []) as Array)
@@ -1015,7 +1018,18 @@ func _compound_wall(m: MeshBuf, faces: PackedVector3Array, wall: Array) -> void:
 	_face(m, [_v3(b - o, 0.0), _v3(b + o, 0.0), _v3(b + o, h), _v3(b - o, h)], _v3(along, 0.0), cap.darkened(0.1))
 	_wall_faces(faces, a, b, 0.0, h + 0.06, half * 2.0)
 
-## Gate in a compound wall: two piers and a pair of steel leaves (closed, solid).
+## Gates that block the way. An OPEN gate (10th field = swing side, set by build_plots.py for
+## commercial compounds) leaves its opening free for the auto and for walkers.
+static func _closed_gates(gates: Array) -> Array:
+	var out: Array = []
+	for g: Array in gates:
+		if g.size() < 10:
+			out.append(g)
+	return out
+
+## Gate in a compound wall: two piers and a pair of steel leaves. Closed and solid, or, when the
+## gate carries a swing side (gate[9] = +1 / -1 along n2), standing open with the leaves swung into
+## the yard against the piers, so only the piers and leaves collide.
 func _compound_gate(m: MeshBuf, faces: PackedVector3Array, gate: Array) -> void:
 	var a: Vector2 = Vector2(float(gate[0]), float(gate[1]))
 	var b: Vector2 = Vector2(float(gate[2]), float(gate[3]))
@@ -1033,6 +1047,20 @@ func _compound_gate(m: MeshBuf, faces: PackedVector3Array, gate: Array) -> void:
 	var g1: Vector2 = b - along * 0.4
 	var mid: Vector2 = (g0 + g1) * 0.5
 	var top: float = h - 0.05
+	if gate.size() >= 10:
+		var inward: Vector2 = n2 * signf(float(gate[9]))
+		var leaf_len: float = g0.distance_to(g1) * 0.5
+		for hinge: Vector2 in [g0, g1]:
+			var tip: Vector2 = hinge + inward * leaf_len
+			var ln: Vector2 = Vector2(-inward.y, inward.x)
+			for side: float in [1.0, -1.0]:
+				var off: Vector2 = ln * 0.04 * side
+				_tquad(m, _v3(hinge + off, 0.06), _v3(tip + off, 0.06), _v3(tip + off, top), _v3(hinge + off, top),
+					BuildingStyles.GATE_LEAF_UV, BuildingStyles.COMPOUND, Color.WHITE, Vector3(ln.x, 0.0, ln.y) * side)
+			_wall_faces(faces, hinge, tip, 0.0, top, 0.1)
+		for p: Vector2 in [a + along * 0.2, b - along * 0.2]:
+			_wall_faces(faces, p - along * 0.2, p + along * 0.2, 0.0, h + 0.3, 0.4)
+		return
 	for side: float in [1.0, -1.0]:
 		var n: Vector3 = Vector3(n2.x, 0.0, n2.y) * side
 		var off: Vector2 = n2 * 0.04 * side
@@ -1048,6 +1076,8 @@ const LANDMARK_RAILS: Dictionary = {
 	"rail_white": [Color(0.94, 0.94, 0.91), Color(0.1, 0.24, 0.5), 0.55, 1.75],
 	"rail_cream": [Color(0.91, 0.84, 0.68), Color(0.07, 0.07, 0.07), 0.6, 1.8],
 	"rail_green": [Color(0.86, 0.72, 0.38), Color(0.16, 0.42, 0.22), 0.45, 1.5],
+	# San Thome churchyard: low white wall, black iron railings (owner photos, Nov 27).
+	"rail_black": [Color(0.93, 0.93, 0.9), Color(0.05, 0.05, 0.06), 0.75, 1.95],
 }
 const LANDMARK_POST_M: float = 2.6
 const LANDMARK_BAR_M: float = 0.2
@@ -1114,8 +1144,8 @@ func _landmark_gate(m: MeshBuf, faces: PackedVector3Array, g: Array) -> void:
 	var a: Vector2 = Vector2(float(g[1]), float(g[2]))
 	var b: Vector2 = Vector2(float(g[3]), float(g[4]))
 	var length: float = a.distance_to(b)
-	if length < 1.0:
-		return
+	if length < 1.0 or style == "gopuram":
+		return # a gopuram stands in the wall line: the opening is its gateway (LandmarkModels)
 	var along: Vector2 = (b - a) / length
 	var pier: Color = Color(0.94, 0.94, 0.91)
 	var trim: Color = Color(0.1, 0.24, 0.5)
@@ -1130,6 +1160,11 @@ func _landmark_gate(m: MeshBuf, faces: PackedVector3Array, g: Array) -> void:
 			trim = Color(0.72, 0.2, 0.14)
 			h = KAAVI_WALL_H + 0.8
 			w = 0.95
+		"church":
+			pier = Color(0.95, 0.95, 0.92)
+			trim = Color(0.08, 0.08, 0.09)
+			h = 2.8
+			w = 0.8
 		"plain":
 			pier = Color(0.8, 0.79, 0.75)
 			trim = pier.darkened(0.2)
@@ -1481,12 +1516,29 @@ func _wall_details(m: MeshBuf, a: Vector2, c: Vector2, n2: Vector2, h: float, pa
 			var p1: Vector2 = a.lerp(c, float(k + 1) / float(nb)) - along * 0.12
 			var col: Color = AWNING_COLOURS[absi(seed_i * 3 + k * 11) % AWNING_COLOURS.size()]
 			_awning(m, p0, p1, n2, 2.95, 2.5, 1.35, col)
-	# AC outdoor units: a few per building on upper floors.
+	# AC outdoor units: a few per building on upper floors, projecting from the wall.
 	if floors >= 2 and absi(seed_i) % 3 == 0:
 		var k2: int = 1 + absi(seed_i) % (floors - 1)
 		var t: float = 0.2 + fposmod(float(seed_i) * 0.37, 0.6)
-		var p: Vector2 = a.lerp(c, t) + n2 * 0.17
-		_dbox(m, Vector3(p.x, float(k2) * FLOOR_M + 1.05, p.y), Vector3(0.85, 0.6, 0.32), along, AC_COLOUR)
+		_ac_unit(m, a.lerp(c, t), n2, along, float(k2) * FLOOR_M + 1.2)
+
+## An AC outdoor unit standing OUT from the wall on a steel bracket, with a dark fan grille on its
+## face. It is real geometry (about 0.55 m deep, so the sun and shadow fall on it), not a picture.
+## base = point on the wall, n2 = outward normal, y = height of the unit's centre.
+func _ac_unit(m: MeshBuf, base: Vector2, n2: Vector2, along: Vector2, y: float) -> void:
+	var n: Vector3 = Vector3(n2.x, 0.0, n2.y)
+	var wall_pt: Vector3 = Vector3(base.x, y, base.y)
+	var back: Vector3 = wall_pt + n * (AC_DEPTH_M * 0.5 - AC_EMBED_M)   # centre of the body, sunk 2 cm into the wall
+	_dbox(m, back, Vector3(0.9, 0.6, AC_DEPTH_M), along, AC_COLOUR)
+	# Bracket: a flat steel plate directly under the unit, running back to the wall.
+	_dbox(m, Vector3(base.x, y - 0.32, base.y) + n * (AC_DEPTH_M * 0.5 - AC_EMBED_M), Vector3(0.95, 0.04, AC_DEPTH_M), along, AC_BRACKET)
+	# Louvres on the outward face: four dark slats, the air outlet of a condenser.
+	var front: Vector3 = wall_pt + n * (AC_DEPTH_M - AC_EMBED_M + 0.004)
+	var u: Vector3 = Vector3(along.x, 0.0, along.y) * 0.36
+	for k: int in 4:
+		var lo: Vector3 = front + Vector3(0.0, -0.18 + 0.12 * float(k) - 0.025, 0.0)
+		var hi: Vector3 = lo + Vector3(0.0, 0.05, 0.0)
+		_face(m, [lo - u, lo + u, hi + u, hi - u], n, AC_GRILLE)
 
 ## Terrace: parapet wall round the roof, the staircase head-room (mumty) with the black Sintex
 ## water tank on top of it — the most Chennai roofline there is.
@@ -2922,6 +2974,8 @@ func _build_landmarks() -> void:
 					_kit_part(node, holder, LandmarkKit.lighthouse(), Vector3(14.0, 9.0, 14.0))
 			"gopuram":
 				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
+			"temple":
+				pass # the procedural temple model (LandmarkModels, below)
 			"tower":
 				_kit_part(node, holder, LandmarkKit.lic_building(), Vector3(18, 54, 18))
 			"bridge":
@@ -2940,8 +2994,10 @@ func _build_landmarks() -> void:
 			_:
 				_part(node, holder, _box(Vector3(10, 10, 10)), Vector3(0, 5, 0), Color.MAGENTA, true)
 		# Bridges and flyovers keep their authored deck height; buildings stand on the ground.
-		if not str(l["kind"]) in ["bridge", "flyover", "tank", "park"]:
+		if not str(l["kind"]) in ["bridge", "flyover", "tank", "park", "temple"]:
 			request_ground_snap(node)
+	# San Thome Basilica, the Kapaleeshwarar temple and its tank mandapam (tools/art/make_landmarks.py).
+	LandmarkModels.build(world_dir.path_join("landmark_models.json"), self, holder)
 
 ## A procedural LandmarkKit mesh with a box collider round its base.
 func _kit_part(node: Node3D, holder: StaticBody3D, mesh: ArrayMesh, base: Vector3) -> void:

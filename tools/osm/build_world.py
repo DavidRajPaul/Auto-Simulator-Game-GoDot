@@ -330,7 +330,7 @@ def build_areas(elements: list[dict]) -> dict:
 R_WALK, R_PARK, R_BUILDING, R_ROAD, R_WATER = 1, 2, 3, 4, 5
 LEVEL_M = 3.2
 # OSM building=* → kind used for colour/shape in the game.
-BUILDING_KIND = {"temple": "temple", "shrine": "temple", "church": "temple", "mosque": "temple",
+BUILDING_KIND = {"temple": "temple", "shrine": "temple", "church": "church", "cathedral": "church", "mosque": "mosque",
                  "commercial": "shop", "retail": "shop", "office": "office", "hotel": "office",
                  "hospital": "office", "school": "civic", "college": "civic", "public": "civic",
                  "civic": "civic", "train_station": "civic", "transportation": "civic", "palace": "civic",

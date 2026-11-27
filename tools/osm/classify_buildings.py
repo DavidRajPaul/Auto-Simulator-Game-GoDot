@@ -80,7 +80,12 @@ POI_TYPE = {
     ("amenity", "courthouse"): "gv", ("amenity", "townhall"): "gv", ("amenity", "fire_station"): "gv",
 }
 RELIGION_TYPE = {"christian": "ch", "muslim": "mq", "hindu": "tp", "jain": "tp", "sikh": "tp", "buddhist": "tp"}
-KIND_TYPE = {"temple": "tp", "office": "of", "civic": "gv", "shed": "sd", "shop": "sh"}
+KIND_TYPE = {"temple": "tp", "church": "ch", "mosque": "mq", "office": "of", "civic": "gv", "shed": "sd", "shop": "sh"}
+# OSM building=* / religion=* of a place of worship -> type. Older worlds gave building=church and
+# building=mosque the kind "temple", which painted churches and mosques in kaavi red-and-white
+# stripes (Nov 27 owner report on San Thome Basilica: those stripes are for Hindu temples only).
+WORSHIP_BUILDING = {"church": "ch", "cathedral": "ch", "chapel": "ch", "mosque": "mq"}
+OSM_RAW = ROOT / "data" / "osm" / "chennai_mvp.osm.json.gz"
 
 FRONT_MAX_M = 26.0   # a wall further than this from a carriageway edge does not face it
 MIN_WALL_M = 3.0
@@ -215,6 +220,29 @@ def classify(chunks_dir: Path = WORLD / "chunks", write: bool = True) -> Counter
             if t in ("tp", "ch", "mq") and float(blds[best][2]["h"]) > 14.0:
                 continue
             poi_type.setdefault(best, t)
+    # Mapped worship buildings that are not Hindu temples, from the raw extract.
+    worship: dict = {}
+    if OSM_RAW.exists():
+        for e in json.loads(gzip.open(OSM_RAW).read())["elements"]:
+            tags = e.get("tags", {})
+            g = e.get("geometry") or []
+            if not g:
+                continue
+            t = WORSHIP_BUILDING.get(tags.get("building", ""))
+            if t is None and tags.get("amenity") == "place_of_worship":
+                t = RELIGION_TYPE.get(tags.get("religion", ""))
+            if t not in ("ch", "mq"):
+                continue
+            x, z = project(sum(q["lat"] for q in g) / len(g), sum(q["lon"] for q in g) / len(g))
+            best, best_d = -1, 6.0
+            for gx in (-1, 0, 1):
+                for gz in (-1, 0, 1):
+                    for k in cgrid.get((int(x // 40) + gx, int(z // 40) + gz), []):
+                        d = math.hypot(cents[k][0] - x, cents[k][1] - z)
+                        if d < best_d:
+                            best, best_d = k, d
+            if best >= 0:
+                worship[best] = t
 
     counts: Counter = Counter()
     fronts = 0
@@ -268,6 +296,8 @@ def classify(chunks_dir: Path = WORLD / "chunks", write: bool = True) -> Counter
         t = KIND_TYPE.get(b.get("k", ""))
         if t is None or t == "sh":
             t = poi_type.get(k, t)
+        if t == "tp" and (worship.get(k) or poi_type.get(k)) in ("ch", "mq"):
+            t = worship.get(k) or poi_type.get(k)
         if t is None and b.get("f") == 3:
             t = "ht"
         if t is None:
