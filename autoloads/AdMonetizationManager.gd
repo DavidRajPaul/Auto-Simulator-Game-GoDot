@@ -11,6 +11,12 @@ extends Node
 ##   • Nothing ever waits on an ad: if none is cached, the game just carries on.
 
 const CONFIG_PATH: String = "res://data/monetization/ad_config.tres"
+## Clear space kept between the banner and the nearest button (AdMob: no ads right next to
+## interactive elements — accidental clicks get the account "Confirmed Click" or worse).
+const BANNER_GAP_PX: float = 24.0
+
+## Bottom room (viewport px) screens must leave free: banner + gap, or 0 with no banner.
+signal banner_inset_changed(inset_px: float)
 
 var config: AdConfig
 var provider: AdProvider
@@ -24,6 +30,11 @@ var _speed_kmh: float = 0.0
 var _pending: Dictionary = {} # placement -> context for an in-flight rewarded ad
 
 var _ad_serial: int = 0
+var screen: String = ""
+## A plain footer band behind the banner: the ad never floats over map, menu or game content
+## (AdMob policy), and taps that miss the ad land on this band, not on whatever is under it.
+var _strip_layer: CanvasLayer
+var _strip: ColorRect
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -36,6 +47,11 @@ func _ready() -> void:
 		_pending.erase(p)
 		SignalBus.rewarded_ad_failed.emit(p, why))
 	provider.interstitial_closed.connect(func(p: String) -> void: SignalBus.interstitial_closed.emit(p))
+	_build_strip()
+	provider.banner_visibility_changed.connect(func(_v: bool) -> void:
+		_fit_strip()
+		banner_inset_changed.emit(banner_inset_px()))
+	get_viewport().size_changed.connect(_fit_strip)
 	provider.load_rewarded()
 	provider.load_interstitial()
 	SignalBus.speed_updated.connect(func(k: float) -> void: _speed_kmh = k)
@@ -136,9 +152,59 @@ func maybe_show_interstitial(placement: String) -> bool:
 
 # --- Banners ------------------------------------------------------------------
 
-## Screens call this when they open/close. Banners never show over driving.
-func set_screen(screen: String) -> void:
-	provider.show_banner(not GameState.no_ads and config.banner_screens.has(screen))
+## Screens call this when they open/close. Banners show only on AdConfig.banner_screens (menus,
+## garage, pause, full map, shift summary) — never over driving, never in the tutorial, never
+## for "No Ads" buyers. Any other name ("driving", "loading", "fine") hides the banner.
+func set_screen(name: String) -> void:
+	screen = name
+	provider.show_banner(banner_allowed(name))
+
+func banner_allowed(name: String) -> bool:
+	return not GameState.no_ads and not GameState.tutorial_active and config.banner_screens.has(name)
+
+## The banner's rectangle in viewport pixels: 320 x 50 dp, bottom centre, above the safe-area edge.
+func banner_rect_px() -> Rect2:
+	var vp: Vector2 = get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(1280, 720)
+	var win: Vector2i = DisplayServer.window_get_size()
+	var to_vp: float = vp.y / float(win.y) if win.y > 0 else 1.0
+	# Android: 1 dp = dpi / 160 physical pixels. Desktop/editor: treat a dp as one window pixel.
+	var dp: float = DisplayServer.screen_get_dpi() / 160.0 if OS.get_name() == "Android" else 1.0
+	var safe_bottom: float = 0.0
+	if win.y > 0 and OS.get_name() in ["Android", "iOS"]:
+		var safe: Rect2i = DisplayServer.get_display_safe_area()
+		var window_pos: Vector2i = DisplayServer.window_get_position()
+		safe_bottom = maxf(0.0, float(window_pos.y + win.y) - float(safe.position.y + safe.size.y))
+	var w: float = AdProvider.BANNER_W_DP * dp * to_vp
+	var h: float = AdProvider.BANNER_H_DP * dp * to_vp
+	var bottom: float = vp.y - safe_bottom * to_vp
+	return Rect2(Vector2((vp.x - w) * 0.5, bottom - h), Vector2(w, h))
+
+func _build_strip() -> void:
+	_strip_layer = CanvasLayer.new()
+	_strip_layer.layer = 109 # above every game screen, under the placeholder banner (110)
+	_strip_layer.visible = false
+	add_child(_strip_layer)
+	_strip = ColorRect.new()
+	_strip.color = Color(0.07, 0.05, 0.11)
+	_strip.mouse_filter = Control.MOUSE_FILTER_STOP
+	_strip_layer.add_child(_strip)
+
+func _fit_strip() -> void:
+	var on: bool = provider.is_banner_showing()
+	_strip_layer.visible = on
+	if on:
+		var vp: Vector2 = get_viewport().get_visible_rect().size
+		var top: float = banner_rect_px().position.y - BANNER_GAP_PX * 0.5
+		_strip.position = Vector2(0.0, top)
+		_strip.size = Vector2(vp.x, vp.y - top)
+
+## Room to leave at the bottom of the screen while a banner shows (banner + gap), else 0.
+func banner_inset_px() -> float:
+	if not provider.is_banner_showing():
+		return 0.0
+	var r: Rect2 = banner_rect_px()
+	var vp_h: float = get_viewport().get_visible_rect().size.y if get_viewport() != null else 720.0
+	return vp_h - r.position.y + BANNER_GAP_PX
 
 ## Test helper: pretend this many seconds of play happened.
 func debug_advance(seconds: float) -> void:

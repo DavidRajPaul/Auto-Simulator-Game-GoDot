@@ -23,11 +23,13 @@ extends Resource
 @export_group("Rewarded (opt-in)")
 ## Watching an opt-in rewarded video resets the interstitial cooldown (reward ad-free driving).
 @export var rewarded_resets_cooldown: bool = true
-@export var rewarded_enabled_placements: PackedStringArray = ["ad_double_fare", "ad_fuel_rescue", "ad_tow", "ad_test_drive", "ad_wreck_repair"]
+@export var rewarded_enabled_placements: PackedStringArray = ["ad_double_fare", "ad_fuel_rescue", "ad_tow", "ad_test_drive", "ad_wreck_repair",
+	"ad_daily_double", "ad_paint_trial", "ad_quest_double"]
 
 @export_group("Banners")
-## Banners only on menu/garage/pause screens, never over the driving view.
-@export var banner_screens: PackedStringArray = ["main_menu", "garage", "pause"]
+## Banners only on calm screens, never over the driving view (AdMob: no banners on a game play
+## screen). The full map pauses the game, so it counts as a calm screen.
+@export var banner_screens: PackedStringArray = ["main_menu", "garage", "pause", "full_map", "shift_summary"]
 
 @export_group("Provider")
 ## "mock" = on-screen placeholder; "admob" = the godot-sdk-integrations AdMob plugin v5.3

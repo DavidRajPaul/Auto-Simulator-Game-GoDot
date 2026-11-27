@@ -21,6 +21,7 @@ func _ready() -> void:
 		GameState.rewards.achieved = {"first_savari": "2026-11-03"}
 		GameState.progress.xp = 240
 	GameState.rewards.last_login_date = RewardsEngine.today_string()
+	GameState.rewards.streak = maxi(GameState.rewards.streak, 2)
 	var menu: Node = (load("res://scenes/main_menu.tscn") as PackedScene).instantiate()
 	add_child(menu)
 	for i: int in 30:

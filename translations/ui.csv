@@ -1131,3 +1131,20 @@ VO_SQ01_R05,Wait… a mango chain? This is not mine. My chain has a peacock on i
 VO_SQ01_K05,I told you! That is my aunty's gift!,நான் சொன்னேன்ல! அது என் அத்தையோட பரிசு!
 VO_SQ01_O07,"Thambi, the flower seller told you the truth. Next time, trust what you found out.","தம்பி, பூக்காரர் உண்மையைச் சொன்னாரு. அடுத்த முறை நீ கண்டுபிடிச்சதை நம்பு."
 VO_SQ01_D15,"Sorry, Kavya. And madam, here is your red pouch, from the flower stall.","மன்னிச்சுக்கோங்க கவ்யா. மேடம், இதோ உங்க சிவப்புப் பை, பூக்கடையில இருந்தது."
+AD_DAILY_DOUBLE,2× daily bonus,இரட்டிப்பு தினசரி போனஸ்
+AD_PAINT_TRIAL,Paint trial,பெயிண்ட் ட்ரையல்
+AD_QUEST_DOUBLE,2× quest reward,இரட்டிப்பு குவெஸ்ட் பரிசு
+AD_WATCH_PREFIX,▶ Ad,▶ விளம்பரம்
+TEST_DRIVE_TRY,Test drive,டெஸ்ட் டிரைவ்
+TEST_DRIVE_NOTE,Watch a short ad and drive it until this shift ends.,"ஒரு சின்ன விளம்பரம் பாருங்க, இந்த ஷிஃப்ட் முடியும் வரை ஓட்டுங்க."
+TEST_DRIVE_ON,On test drive,டெஸ்ட் டிரைவ்ல
+TEST_DRIVE_STARTED,Test drive! The %s is yours until the shift ends.,டெஸ்ட் டிரைவ்! ஷிஃப்ட் முடியும் வரை %s உங்களுது.
+TEST_DRIVE_ENDED,Test drive over. Back in your %s.,டெஸ்ட் டிரைவ் முடிஞ்சது. உங்க %s-க்கு திரும்பியாச்சு.
+TEST_DRIVE_NO_UPGRADES,Upgrades are for autos you own.,அப்கிரேடு உங்க சொந்த ஆட்டோவுக்கு மட்டும்.
+PAINT_TRY,Try,ட்ரை பண்ணு
+PAINT_TRYING,Trying,ட்ரை பண்றீங்க
+PAINT_TRIAL_STARTED,New paint for today's shift!,இன்னைக்கு ஷிஃப்ட்டுக்கு புது பெயிண்ட்!
+DAILY_DOUBLE_BTN,Watch an ad: +₹%d more,விளம்பரம் பாருங்க: இன்னும் +₹%d
+DAILY_DOUBLE_DONE,Bonus doubled! +₹%d,போனஸ் இரட்டிப்பு! +₹%d
+QUEST_DOUBLE_BTN,2× reward  +₹%d,இரட்டிப்பு பரிசு  +₹%d
+QUEST_DOUBLE_DONE,Quest reward doubled! +₹%d,குவெஸ்ட் பரிசு இரட்டிப்பு! +₹%d

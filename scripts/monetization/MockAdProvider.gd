@@ -14,6 +14,9 @@ var _placement: String = ""
 var _rewarded: bool = false
 var instant: bool = false # tests
 var _was_paused: bool = false
+var _banner_layer: CanvasLayer
+var _banner: ColorRect
+var _banner_on: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -46,8 +49,44 @@ func _ready() -> void:
 	_close.pressed.connect(_finish.bind(false))
 	_panel.add_child(_close)
 
+	# Banner placeholder: a grey 320 x 50 dp box, bottom centre, exactly where AdMob puts its banner.
+	_banner_layer = CanvasLayer.new()
+	_banner_layer.layer = 110
+	_banner_layer.visible = false
+	add_child(_banner_layer)
+	_banner = ColorRect.new()
+	_banner.color = Color(0.86, 0.86, 0.84)
+	_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	_banner_layer.add_child(_banner)
+	var bl: Label = Label.new()
+	bl.text = "Banner ad placeholder · 320 × 50"
+	bl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bl.add_theme_color_override("font_color", Color(0.25, 0.25, 0.25))
+	bl.add_theme_font_size_override("font_size", 14)
+	_banner.add_child(bl)
+
 func provider_name() -> String:
 	return "mock"
+
+func show_banner(visible: bool) -> void:
+	if visible == _banner_on:
+		return
+	_banner_on = visible
+	if _banner_layer != null:
+		_banner_layer.visible = visible and not instant
+		if visible:
+			_place_banner()
+	banner_visibility_changed.emit(visible)
+
+func is_banner_showing() -> bool:
+	return _banner_on
+
+func _place_banner() -> void:
+	var r: Rect2 = AdMonetizationManager.banner_rect_px()
+	_banner.position = r.position
+	_banner.size = r.size
 
 func is_rewarded_ready() -> bool:
 	return true

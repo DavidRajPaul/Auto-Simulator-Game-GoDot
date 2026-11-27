@@ -101,6 +101,7 @@ func _ready() -> void:
 			queue_redraw())
 	SignalBus.hails_updated.connect(func(h: Array) -> void: _hails = h)
 	SignalBus.full_map_requested.connect(set_open)
+	AdMonetizationManager.banner_inset_changed.connect(_on_banner_inset)
 	SignalBus.custom_navigation_state_changed.connect(_on_custom_state)
 	SignalBus.quest_catalogue_changed.connect(_refresh_quests)
 	SignalBus.quest_tracking_changed.connect(func(_id: String) -> void: _refresh_quests())
@@ -111,11 +112,21 @@ func _ready() -> void:
 		size = get_viewport().get_visible_rect().size
 		queue_redraw())
 
+## Bottom edge of the usable map chrome: the screen bottom, or just above the banner ad (the full map
+## pauses the game, so it is one of the calm screens that may carry a banner).
+func _floor() -> float:
+	return size.y - AdMonetizationManager.banner_inset_px()
+
+func _on_banner_inset(_inset: float) -> void:
+	if visible:
+		queue_redraw()
+
 func set_open(open: bool) -> void:
 	if open == visible:
 		return
 	visible = open
 	get_tree().paused = open
+	AdMonetizationManager.set_screen("full_map" if open else "driving")
 	# Fingers are tracked only from presses the map itself saw. A finger already down when the map
 	# opened (e.g. holding the gas pedal while someone taps the mini-map) must never count.
 	_touches.clear()
@@ -571,7 +582,7 @@ func _draw_quest_ui() -> void:
 	var body: String = "%s\n%s" % [str(q["description"]), str(q["job"])]
 	var body_h: float = _font.get_multiline_string_size(body, HORIZONTAL_ALIGNMENT_LEFT, width - 24, 15).y
 	var height: float = 92.0 + body_h + (0.0 if bool(q["completed"]) else 54.0)
-	var y: float = maxf(124.0, size.y - 108.0 - height)
+	var y: float = maxf(124.0, _floor() - 108.0 - height)
 	_card_rect = Rect2(Vector2(16, y), Vector2(width, height))
 	draw_rect(_card_rect, PANEL)
 	draw_rect(Rect2(_card_rect.position, Vector2(width, 6)), DONE_GREEN if bool(q["completed"]) else category_colour(str(q.get("category", ""))))
@@ -598,7 +609,7 @@ func _draw_quest_ui() -> void:
 ## pages), and the arrows hide at either end.
 func _draw_journal() -> void:
 	var width: float = minf(390.0, size.x - 32.0)
-	var height: float = minf(size.y - 170.0, 390.0)
+	var height: float = minf(_floor() - 170.0, 390.0)
 	_journal_page = clampi(_journal_page, 0, _journal_pages() - 1)
 	_journal_panel = Rect2(Vector2(12, 124), Vector2(width + 8, height))
 	draw_rect(_journal_panel, PANEL)
@@ -667,8 +678,8 @@ func _draw_legend() -> void:
 	var rows: int = ceili(LEGEND_ITEMS.size() / 2.0)
 	var width: float = minf(600.0, size.x - 120.0)
 	var height: float = 58.0 + rows * row_h
-	if 124.0 + height > size.y - 110.0: # short screens: one row less tall
-		row_h = maxf(28.0, (size.y - 110.0 - 124.0 - 58.0) / rows)
+	if 124.0 + height > _floor() - 110.0: # short screens: one row less tall
+		row_h = maxf(28.0, (_floor() - 110.0 - 124.0 - 58.0) / rows)
 		height = 58.0 + rows * row_h
 	var panel: Rect2 = Rect2(Vector2(12, 124), Vector2(width, height))
 	draw_rect(panel, Color(0.06, 0.07, 0.1, 0.97))
@@ -936,10 +947,10 @@ func _draw_chrome() -> void:
 		draw_string(_font, rc.position + Vector2(0, rc.size.y * 0.68), str(pair[1]), HORIZONTAL_ALIGNMENT_CENTER, rc.size.x, 34, Color.WHITE)
 	draw_string_outline(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, 6, Color.BLACK)
 	draw_string(_font, Vector2(24, 48), "CHENNAI", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(1.0, 0.72, 0.1))
-	draw_string(_font, Vector2(24, size.y - 18.0), "Map data © OpenStreetMap contributors", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.6))
+	draw_string(_font, Vector2(24, _floor() - 18.0), "Map data © OpenStreetMap contributors", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.6))
 	var button_width: float = minf(175.0, (size.x - 44.0) / 3.0)
 	var gap: float = 6.0
-	var y: float = size.y - 98.0
+	var y: float = _floor() - 98.0
 	_destination_rect = Rect2(Vector2(16.0, y), Vector2(button_width, 56.0))
 	_navigate_rect = Rect2(Vector2(16.0 + button_width + gap, y), Vector2(button_width, 56.0))
 	_clear_rect = Rect2(Vector2(16.0 + (button_width + gap) * 2.0, y), Vector2(button_width, 56.0))
@@ -949,7 +960,7 @@ func _draw_chrome() -> void:
 		_draw_game_button(rc, selected)
 		draw_string(_font, rc.position + Vector2(0.0, 35.0), str(entry[1]), HORIZONTAL_ALIGNMENT_CENTER, rc.size.x, 17, Color.WHITE)
 	if _select_mode != 0:
-		draw_string(_font, Vector2(20.0, size.y - 114.0), tr("MAP_PIN_HELP"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+		draw_string(_font, Vector2(20.0, _floor() - 114.0), tr("MAP_PIN_HELP"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
 	# North arrow.
 	var n: Vector2 = Vector2(48, 150)
 	draw_colored_polygon(PackedVector2Array([n + Vector2(0, -18), n + Vector2(9, 8), n + Vector2(-9, 8)]), Color(1, 0.4, 0.35))

@@ -35,6 +35,10 @@ var _placement_i: String = ""
 var _muted_before: bool = false
 var _showing: bool = false
 var _consent_wait_s: float = 0.0
+var _banner_wanted: bool = false
+var _banner_loading: bool = false
+var _banner_loaded: bool = false
+var _banner_showing: bool = false
 
 static func plugin_available() -> bool:
 	return Engine.has_singleton(SINGLETON)
@@ -64,6 +68,11 @@ static func _make_admob_node(cfg: AdConfig, debug_build: bool = OS.is_debug_buil
 	var demo: bool = use_demo_ads(cfg, debug_build)
 	node.set("is_real", not demo)
 	node.set("auto_configure_on_initialize", true)
+	# Bottom-centre standard 320 x 50 banner inside the safe area (clear of the gesture bar). A fixed
+	# size, so screens know exactly how much room to leave (AdMonetizationManager.banner_inset_px).
+	node.set("banner_position", 1) # LoadAdRequest.AdPosition.BOTTOM
+	node.set("banner_size", 0) # LoadAdRequest.RequestedAdSize.BANNER
+	node.set("banner_anchor_to_safe_area", true)
 	node.set("max_ad_content_rating", ["G", "PG", "T", "MA"].find(cfg.max_ad_content_rating) if cfg.max_ad_content_rating in ["G", "PG", "T", "MA"] else 1)
 	if not demo:
 		node.set("android_real_application_id", cfg.admob_app_id)
@@ -72,7 +81,20 @@ static func _make_admob_node(cfg: AdConfig, debug_build: bool = OS.is_debug_buil
 		node.set("android_real_banner_id", cfg.banner_unit_id)
 	return node
 
+## Release builds need a real banner unit id; without one banners stay off (no demo ads in release).
+static func banner_enabled(cfg: AdConfig, debug_build: bool = OS.is_debug_build()) -> bool:
+	return use_demo_ads(cfg, debug_build) or cfg.banner_unit_id != ""
+
 func _connect(n: Node) -> void:
+	if n.has_signal("banner_ad_loaded"):
+		n.connect("banner_ad_loaded", func(_i: Object, _r: Object) -> void:
+			_banner_loading = false
+			_banner_loaded = true
+			_apply_banner())
+		n.connect("banner_ad_failed_to_load", func(_i: Object, _e: Object) -> void:
+			_banner_loading = false
+			_banner_loaded = false
+			_set_banner_showing(false))
 	n.connect("consent_info_updated", _on_consent_info_updated)
 	n.connect("consent_info_update_failed", func(_e: Object) -> void: _consent_finished())
 	n.connect("consent_form_loaded", func() -> void: n.call("show_consent_form"))
@@ -143,6 +165,8 @@ func _flush_loads() -> void:
 		load_rewarded()
 	if _want_interstitial:
 		load_interstitial()
+	if _banner_wanted:
+		_apply_banner()
 
 # --- AdProvider ----------------------------------------------------------------------------
 
@@ -184,9 +208,37 @@ func show_interstitial(placement: String) -> bool:
 	ads.call("show_interstitial_ad")
 	return true
 
-## Banners stay off for the first release (AdConfig.banner_screens is not wired to real ads).
-func show_banner(_visible: bool) -> void:
-	pass
+## Banners: only on the calm screens in AdConfig.banner_screens (menus, garage, pause, full map,
+## shift summary), never over driving. One banner is loaded once and then shown/hidden; AdMob
+## refreshes its content on its own timer (set in the AdMob console, 60 s+).
+func show_banner(visible: bool) -> void:
+	_banner_wanted = visible and banner_enabled(config)
+	_apply_banner()
+
+func is_banner_showing() -> bool:
+	return _banner_showing
+
+func _apply_banner() -> void:
+	if ads == null or not initialized or not ads.has_method("load_banner_ad"):
+		_set_banner_showing(false)
+		return
+	if _banner_wanted and not _showing:
+		if _banner_loaded:
+			ads.call("show_banner_ad")
+			_set_banner_showing(true)
+		elif not _banner_loading:
+			_banner_loading = true
+			ads.call("load_banner_ad")
+	else:
+		# The plugin may put a freshly loaded banner straight on screen: hide it if no screen wants it.
+		if _banner_loaded:
+			ads.call("hide_banner_ad")
+		_set_banner_showing(false)
+
+func _set_banner_showing(on: bool) -> void:
+	if on != _banner_showing:
+		_banner_showing = on
+		banner_visibility_changed.emit(on)
 
 func _begin_show() -> void:
 	_showing = true
@@ -198,3 +250,5 @@ func _end_show() -> void:
 		return
 	_showing = false
 	AudioServer.set_bus_mute(0, _muted_before)
+	if _banner_wanted and not _banner_showing:
+		_apply_banner()
