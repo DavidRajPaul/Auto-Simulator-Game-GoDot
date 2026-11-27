@@ -64,6 +64,8 @@ var _stats_card: PanelContainer
 var _ticker: Label
 var _tip_index: int = 0
 var _top_chips: HBoxContainer
+## Published from site/privacy by the "Website (privacy policy)" workflow (GitHub Pages).
+const PRIVACY_URL: String = "https://davidrajpaul.github.io/Auto-Simulator-Game-GoDot/privacy/"
 const TIP_KEYS: Array[String] = ["TIP_1", "TIP_2", "TIP_3", "MENU_HINT", "TIP_4", "TIP_5", "TIP_6"]
 
 func _ready() -> void:
@@ -349,6 +351,9 @@ func open_settings() -> void:
 			GameState.set_setting("first_ride_step", 0)
 			GameState.set_setting("first_ride_done", false)
 			open_settings(), 22))
+	# Google Play requires the privacy policy to be reachable from inside the game too.
+	_panel_body.add_child(UIKit.button(tr("PRIVACY_POLICY"), UIKit.Tone.PURPLE, func() -> void:
+		OS.shell_open(PRIVACY_URL), 20))
 	# Wiping a career is rare and final, so it lives here rather than beside Continue.
 	if GameState.has_save():
 		_panel_body.add_child(UIKit.button(tr("NEW_GAME"), UIKit.Tone.RED, new_career, 22))
