@@ -340,7 +340,7 @@ func _test_landmark_kit() -> void:
 	_check("Parked two-wheelers are distributed near businesses", parked >= 10, "%d placements" % parked)
 	_check("Parked two-wheelers are single real-size bikes (scale 1, file exists)", parked_single)
 	_check("Maintenance vehicles appear at service forecourts", maintenance >= 4, "%d displays" % maintenance)
-	for landmark_mesh: ArrayMesh in [LandmarkKit.lic_building(), LandmarkKit.vivekananda_house(), LandmarkKit.napier_bridge()]:
+	for landmark_mesh: ArrayMesh in [LandmarkKit.vivekananda_house(), LandmarkKit.napier_bridge()]:
 		_check("Heritage mesh is batched and nonempty", landmark_mesh.get_surface_count() == 1 and landmark_mesh.get_aabb().size.length() > 10.0)
 	var heritage_counts: Dictionary = {}
 	for file_name: String in DirAccess.get_files_at("res://data/world/chunks"):
@@ -352,14 +352,15 @@ func _test_landmark_kit() -> void:
 			var style: String = WorldChunkStreamer.heritage_style(building)
 			if style != "":
 				heritage_counts[style] = int(heritage_counts.get(style, 0)) + 1
-	# The basilica footprint is gone: San Thome is the procedural model (LandmarkModels) since Nov 27.
-	_check("Heritage styles match only their three shipped OSM footprints", heritage_counts == {"senate": 1, "palace": 2}, str(heritage_counts))
+	# The basilica, Senate House and Chepauk Palace footprints are gone: procedural models (LandmarkModels) since Nov 27.
+	_check("No OSM footprint still gets a heritage roof accent", heritage_counts.is_empty(), str(heritage_counts))
 	_test_landmark_models()
+	_test_napier_cooum()
+	_test_landmark_compounds()
+	_test_anna_salai_frontage()
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
-	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))
-	_check("Gopuram is ~35–40 m tall on a 25 m base", gp.size.y > 32.0 and gp.size.y < 42.0 and gp.size.x > 22.0, str(gp.size))
-	_check("Landmarks share one vertex-colour material", LandmarkKit.lighthouse().surface_get_material(0) == LandmarkKit.gopuram().surface_get_material(0))
+	_check("Landmarks share one vertex-colour material", LandmarkKit.lighthouse().surface_get_material(0) == LandmarkKit.vivekananda_house().surface_get_material(0))
 
 func _test_building_details() -> void:
 	var s: WorldChunkStreamer = WorldChunkStreamer.new()
@@ -1198,7 +1199,7 @@ func _test_landmark_models() -> void:
 		_check("Landmark %s within 110k triangles, has colliders" % entry["id"], int(entry["tris"]) <= 110000 and (entry["boxes"] as Array).size() >= 1)
 		if n != null:
 			n.free()
-	_check("Basilica, temple and tank mandapam are listed", ids.has("santhome_basilica") and ids.has("kapaleeshwarar_temple") and ids.has("kapaleeshwarar_tank_mandapam"))
+	_check("Basilica, temple, tank mandapam, Senate House and Chepauk Palace are listed", ids.has("santhome_basilica") and ids.has("kapaleeshwarar_temple") and ids.has("kapaleeshwarar_tank_mandapam") and ids.has("senate_house") and ids.has("chepauk_humayun_mahal") and ids.has("chepauk_kalas_mahal"))
 	var holder: Node3D = Node3D.new()
 	var body: StaticBody3D = StaticBody3D.new()
 	holder.add_child(body)
@@ -1208,7 +1209,7 @@ func _test_landmark_models() -> void:
 	holder.queue_free()
 	# Nothing of the city stands inside a model's site, and no church or mosque is a temple.
 	var church_types: Dictionary = {}
-	for file_name: String in ["c_8_6.json", "c_4_6.json"]:
+	for file_name: String in ["c_8_6.json", "c_4_6.json", "c_10_-8.json", "c_9_-7.json"]:
 		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
 		var chunk: Dictionary = JSON.parse_string(cf.get_as_text()) as Dictionary
 		for b: Dictionary in chunk.get("blds", []):
@@ -1231,3 +1232,134 @@ func _test_landmark_models() -> void:
 		if str(w[6]) in ["ch", "mq"]:
 			church_walls += 1
 	_check("Church and mosque compounds keep their own type (not kaavi)", church_walls > 0)
+
+## Nov 27 owner report: "there is no water beneath the Napier [Bridge]". The Cooum runs under
+## both carriageways, nothing of the city stands on the river or the decks, and the bridge has
+## its night lights and parapet colliders.
+func _test_napier_cooum() -> void:
+	var mf: FileAccess = FileAccess.open("res://data/world/manifest.json", FileAccess.READ)
+	var manifest: Dictionary = JSON.parse_string(mf.get_as_text()) as Dictionary
+	var napier: Dictionary = {}
+	for l: Dictionary in manifest.get("landmarks", []):
+		if str(l["id"]) == "napier_bridge":
+			napier = l
+	var decks: Array = napier.get("decks", [])
+	_check("Napier Bridge has its two carriageway decks", decks.size() == 2, str(decks.size()))
+	if decks.size() != 2:
+		return
+	var origin: Vector2 = Vector2(float(napier["x"]), float(napier["z"]))
+	var af: FileAccess = FileAccess.open("res://data/world/areas.json", FileAccess.READ)
+	var areas: Dictionary = JSON.parse_string(af.get_as_text()) as Dictionary
+	var river: PackedVector2Array = PackedVector2Array()
+	for poly: Array in areas.get("water", []):
+		var pts: PackedVector2Array = PackedVector2Array()
+		for q: Array in poly:
+			pts.append(Vector2(float(q[0]), float(q[1])))
+		if Geometry2D.is_point_in_polygon(origin, pts):
+			river = pts
+	_check("The Cooum flows under Napier Bridge", river.size() >= 3)
+	var wet: int = 0
+	for deck: Array in decks:
+		for t: float in [0.3, 0.5, 0.7]:
+			var a: Vector2 = Vector2(float(deck[0][0]), float(deck[0][1]))
+			var b: Vector2 = Vector2(float(deck[1][0]), float(deck[1][1]))
+			wet += 1 if Geometry2D.is_point_in_polygon(origin + a.lerp(b, t), river) else 0
+	_check("Water under the middle of both carriageways", wet == 6, "%d / 6" % wet)
+	var on_river: int = 0
+	for file_name: String in ["c_10_-9.json", "c_11_-9.json", "c_10_-10.json", "c_11_-10.json", "c_12_-9.json", "c_13_-9.json"]:
+		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		if cf == null:
+			continue
+		for bl: Dictionary in (JSON.parse_string(cf.get_as_text()) as Dictionary).get("blds", []):
+			var p: Array = bl["p"]
+			var c: Vector2 = Vector2.ZERO
+			for i: int in range(0, p.size(), 2):
+				c += Vector2(float(p[i]), float(p[i + 1]))
+			c /= float(p.size() / 2)
+			on_river += 1 if Geometry2D.is_point_in_polygon(c, river) else 0
+	_check("No building stands in the Cooum", on_river == 0, str(on_river))
+	var wf: FileAccess = FileAccess.open("res://data/world/water.json", FileAccess.READ)
+	var water: Dictionary = JSON.parse_string(wf.get_as_text()) as Dictionary
+	var blocked: int = 0
+	for bank: Array in water.get("banks", []):
+		var a: Vector2 = Vector2(float(bank[0]), float(bank[1]))
+		var b: Vector2 = Vector2(float(bank[2]), float(bank[3]))
+		for deck: Array in decks:
+			var d0: Vector2 = origin + Vector2(float(deck[0][0]), float(deck[0][1]))
+			var d1: Vector2 = origin + Vector2(float(deck[1][0]), float(deck[1][1]))
+			if Geometry2D.segment_intersects_segment(a, b, d0, d1) != null:
+				blocked += 1
+	_check("No river bank wall across the Napier carriageways", blocked == 0, str(blocked))
+	var bridge: ArrayMesh = LandmarkKit.napier_bridge(decks)
+	var lights: ArrayMesh = LandmarkKit.napier_lights(decks)
+	_check("Napier arches stand ~7 m over the deck", bridge.get_aabb().size.y > 6.0 and bridge.get_aabb().size.y < 10.0, str(bridge.get_aabb().size))
+	_check("Napier night lights are one additive mesh", lights.get_surface_count() == 1 and NapierLights.material().shader != null)
+
+## Nov 27 owner request: "add proper decorated compounds for all the iconic buildings … Senate
+## House should be visible from the road, near to the road from its compound".
+func _test_landmark_compounds() -> void:
+	var f: FileAccess = FileAccess.open("res://data/world/landmark_compounds.json", FileAccess.READ)
+	var data: Dictionary = JSON.parse_string(f.get_as_text()) as Dictionary
+	var sites: Dictionary = {}
+	for site: Dictionary in data.get("sites", []):
+		sites[str(site["id"])] = site
+	for id: String in ["marina_lighthouse", "vivekananda_house", "kapaleeshwarar", "santhome_basilica", "lic_building", "panagal_park", "senate_house", "chepauk_palace"]:
+		var site: Dictionary = sites.get(id, {})
+		_check("%s has a compound with a gate" % id, int(site.get("walls", 0)) > 0 and int(site.get("gates", 0)) > 0, str(site))
+	var styles: Dictionary = {}
+	for list: Variant in (data.get("gates", {}) as Dictionary).values():
+		for g: Array in list:
+			styles[str(g[0])] = true
+	_check("Senate House and Chepauk Palace have Indo-Saracenic gates", styles.has("saracenic") and styles.has("tripolia"), str(styles.keys()))
+	# The Senate House gate is on the Kamarajar Salai kerb, and nothing stands between it and the hall.
+	var gate: Vector2 = Vector2.INF
+	for list: Variant in (data.get("gates", {}) as Dictionary).values():
+		for g: Array in list:
+			if str(g[0]) == "saracenic":
+				var c: Vector2 = (Vector2(float(g[1]), float(g[2])) + Vector2(float(g[3]), float(g[4]))) * 0.5
+				if gate == Vector2.INF or c.x > gate.x:
+					gate = c
+	var hall: Vector2 = Vector2(2594.3, -1778.55)
+	var blocked: int = 0
+	for file_name: String in ["c_10_-8.json", "c_10_-7.json"]:
+		var cf: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		for bl: Dictionary in (JSON.parse_string(cf.get_as_text()) as Dictionary).get("blds", []):
+			var p: Array = bl["p"]
+			var poly: PackedVector2Array = PackedVector2Array()
+			for i: int in range(0, p.size(), 2):
+				poly.append(Vector2(float(p[i]), float(p[i + 1])))
+			if not Geometry2D.intersect_polyline_with_polygon(PackedVector2Array([hall, gate]), poly).is_empty():
+				blocked += 1
+	_check("Senate House gate is within 15 m of the road side of the campus", gate != Vector2.INF and gate.x > 2640.0, str(gate))
+	_check("Nothing stands between Senate House and its gate", blocked == 0, str(blocked))
+
+## Nov 27 owner photos of Anna Salai: "just after the roads there will be buildings, no empty
+## spaces". tools/osm/build_frontage.py lines both sides with attached lots ("f": 4); LIC and its
+## heritage neighbours are models on their real footprints.
+func _test_anna_salai_frontage() -> void:
+	var lots: int = 0
+	var lic_chunk_lots: int = 0
+	for file_name: String in DirAccess.get_files_at("res://data/world/chunks"):
+		if not file_name.ends_with(".json"):
+			continue
+		var f: FileAccess = FileAccess.open("res://data/world/chunks/" + file_name, FileAccess.READ)
+		for b: Dictionary in (JSON.parse_string(f.get_as_text()) as Dictionary).get("blds", []):
+			if int(b.get("f", 0)) == 4:
+				lots += 1
+				if file_name == "c_3_-7.json" or file_name == "c_3_-8.json":
+					lic_chunk_lots += 1
+				_check_once("Frontage lots have a type and street walls", b.has("t") and b.has("fw"))
+	_check("Anna Salai is lined with attached street-front lots", lots >= 500, str(lots))
+	_check("Lots stand along Anna Salai beside LIC", lic_chunk_lots >= 12, str(lic_chunk_lots))
+	var mf: FileAccess = FileAccess.open("res://data/world/landmark_models.json", FileAccess.READ)
+	var ids: Array[String] = []
+	for m: Dictionary in (JSON.parse_string(mf.get_as_text()) as Dictionary).get("models", []):
+		ids.append(str(m["id"]))
+	_check("LIC, Higginbotham's, Bharat Insurance, Agurchand Mansion and Gove Building are models",
+		ids.has("lic_building") and ids.has("higginbothams") and ids.has("bharat_insurance_building") and ids.has("agurchand_mansion") and ids.has("gove_building"))
+
+var _once_failed: Dictionary = {}
+func _check_once(name: String, ok: bool) -> void:
+	if not ok and not _once_failed.has(name):
+		_once_failed[name] = true
+		_check(name, false)

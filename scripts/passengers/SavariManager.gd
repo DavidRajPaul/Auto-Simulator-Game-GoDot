@@ -552,7 +552,19 @@ func _choose_destination(a: PassengerArchetype) -> Dictionary:
 			var nm: String = graph.edges[int(c["edge"])].road_name
 			return {"name": nm if nm != "" else "Nearby street", "pos": p, "kind": "street"}
 		return {"name": "Nearby street", "pos": _player_pos + _player_fwd * 400.0, "kind": "street"}
-	return options[rng.randi() % options.size()]
+	return drop_point_for(options[rng.randi() % options.size()])
+
+## Landmarks, the tank and zone centres stand up to ~110 m from the nearest road (Nov 27 audit:
+## the Lighthouse 60 m, the Mylapore tank 77 m, Panagal Park 74 m, the Anna Salai zone 108 m),
+## and a ride only ends within DROPOFF_RADIUS_M of its destination, so those rides could never be
+## finished. The drop-off is the kerb of the nearest open road; the name stays the place's.
+func drop_point_for(d: Dictionary) -> Dictionary:
+	if graph == null or str(d.get("kind", "")) == "street":
+		return d
+	var out: Dictionary = d.duplicate()
+	out["place_pos"] = d["pos"]
+	out["pos"] = _kerb_point(d["pos"] as Vector3)
+	return out
 
 func _on_haggle_choice(choice: int) -> void:
 	if state != State.HAGGLING:

@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import streets
-from config import (AUTO_STANDS, FLOOD_SPOTS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
+from config import (COOUM_NAPIER, AUTO_STANDS, FLOOD_SPOTS, SERVICES, BBOX, CHUNK_SIZE_M, DEFAULT_ZONE_STYLE, LANDMARKS, LANE_WIDTH_M,
                     MAP_SCALE, ORIGIN, ROAD_CLASSES, ZONES)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -316,6 +316,9 @@ def build_areas(elements: list[dict]) -> dict:
         poly = simplify(pts[:-1] + [pts[0]], 0.8)[:-1]
         if len(poly) >= 3 and poly_area(poly) > 60.0:
             out[kind].append([[r2(x), r2(z)] for x, z in poly])
+    # The Cooum under Napier Bridge is an OSM relation (not fetched): add the traced river so the
+    # infill keeps off it. add_cooum_napier.py merges it with the canal mouth afterwards.
+    out["water"].append([[r2(x), r2(z)] for x, z in COOUM_NAPIER])
     if coast_pts:
         # The Marina coast runs north–south: order by z, simplify, close the polygon out to the east edge.
         coast = simplify(sorted(set(coast_pts), key=lambda p: p[1]), 2.0)

@@ -30,16 +30,18 @@ DEFAULT_ZONE_STYLE = {"bld_height": (6.0, 16.0), "bld_density": 0.94}
 # replaced with low-poly GLTF hero models in Phase 5.
 LANDMARKS = [
     {"id": "marina_lighthouse", "name": "Marina Lighthouse", "lat": 13.0398, "lon": 80.2797, "kind": "lighthouse"},
-    {"id": "napier_bridge", "name": "Napier Bridge", "lat": 13.0676, "lon": 80.2817, "kind": "bridge"},
+    # Midway along the two OSM Napier Bridge carriageways (ways 24888589 / 28295242) over the Cooum.
+    {"id": "napier_bridge", "name": "Napier Bridge", "lat": 13.06875, "lon": 80.28448, "kind": "bridge"},
     # Vivekanandar Illam stands on the LAND side of Kamarajar Salai facing the sea (Nov 27: it sat on the
     # beach side); "yaw" turns its curved front (-Z of LandmarkKit.vivekananda_house) to face east.
     {"id": "vivekananda_house", "name": "Vivekananda House", "lat": 13.049054, "lon": 80.280319, "kind": "heritage", "yaw": -1.571},
     # kind "temple": drawn by the procedural model in data/world/landmark_models.json (make_landmarks.py).
     {"id": "kapaleeshwarar", "name": "Kapaleeshwarar Temple", "lat": 13.033807, "lon": 80.269876, "kind": "temple"},
     {"id": "chitrakulam_tank", "name": "Mylapore Temple Tank", "lat": 13.03354, "lon": 80.268701, "kind": "tank"},
-    {"id": "lic_building", "name": "LIC Building", "lat": 13.0627, "lon": 80.2617, "kind": "tower"},
+    # The real LIC (OSM way 1110170916; Wikipedia 13.064283, 80.266065); drawn by landmark_models.json.
+    {"id": "lic_building", "name": "LIC Building", "lat": 13.06425, "lon": 80.26609, "kind": "model"},
     {"id": "gemini_flyover", "name": "Gemini Flyover", "lat": 13.0558, "lon": 80.2503, "kind": "flyover"},
-    {"id": "panagal_park", "name": "Panagal Park", "lat": 13.0405, "lon": 80.2354, "kind": "park"},
+    {"id": "panagal_park", "name": "Panagal Park", "lat": 13.04066, "lon": 80.23314, "kind": "park"},  # OSM way 209513246
     # Imported GLBs are placed via city_props, not generic landmark placeholders.
 
 ]
@@ -82,4 +84,19 @@ FLOOD_SPOTS = [
     {"id": "flood_royapettah", "name": "Royapettah High Road", "lat": 13.0480, "lon": 80.2625, "depth": 0.22, "r": 9.0},
     {"id": "flood_santhome", "name": "Santhome High Road", "lat": 13.0330, "lon": 80.2775, "depth": 0.3, "r": 10.0},
     {"id": "flood_gemini", "name": "Anna Salai, Gemini", "lat": 13.0545, "lon": 80.2520, "depth": 0.24, "r": 11.0},
+]
+
+# The Cooum from the Buckingham Canal mouth, under Napier Bridge, to the sea (world x, z), hand
+# traced (Nov 27): OSM maps this stretch as a multipolygon relation, which fetch_osm.py does not
+# download. South bank west -> east along Swami Sivananda Salai, then the north bank back west.
+# Applied by tools/osm/add_cooum_napier.py (merged with the canal mouth and upstream water).
+COOUM_NAPIER = [
+    (2404.0, -2312.0), (2470.0, -2298.0), (2530.0, -2299.0), (2557.0, -2297.0), (2568.0, -2250.0), (2552.0, -2180.0),
+    (2541.0, -2104.0),
+    (2566.0, -2103.0), (2600.0, -2116.0), (2660.0, -2122.0), (2720.0, -2125.0), (2780.0, -2128.0), (2860.0, -2128.0),
+    (2960.0, -2118.0), (3060.0, -2102.0), (3160.0, -2088.0), (3260.0, -2082.0), (3360.0, -2084.0), (3440.0, -2088.0),
+    (3505.0, -2084.0), (3530.0, -2084.0), (3530.0, -2160.0),  # out into the sea: the mouth has no bank
+    (3443.0, -2160.0), (3380.0, -2158.0), (3300.0, -2150.0), (3230.0, -2142.0), (3170.0, -2140.0), (3106.0, -2165.0),
+    (3040.0, -2185.0), (2975.0, -2205.0), (2890.0, -2232.0), (2850.0, -2240.0), (2790.0, -2244.0), (2760.0, -2250.0),
+    (2700.0, -2252.0), (2640.0, -2268.0), (2580.0, -2305.0), (2520.0, -2328.0), (2470.0, -2345.0), (2434.0, -2345.0),
 ]

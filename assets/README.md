@@ -103,7 +103,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | `chennai/moped.glb`, `commuter_bike.glb`, `cruiser_bike.glb`, `sport_bike.glb`, `bicycle.glb` | Parked (all five) and moving (not the bicycle) two-wheelers: TVS XL-style moped, Splendor-style 100 cc commuter, Thunderbird-style cruiser, faired sports bike, roadster bicycle (Nov 27: replaced the deformed SymetrikGames sport bikes). One mesh, vertex colours, body panels alpha 0 = repainted per instance, alpha ~0.78 = contrast graphics (`shaders/vehicle_paint.gdshader`, `PaintSwap.VERTEX_PAINTED`) | Built by `tools/art/make_chennai_vehicles.py` (original, no badges) | Project's own |
 | `chennai/hatchback.glb`, `tallboy.glb`, `micro_van.glb`, `mini_truck.glb` | Parked and moving cars: small hatchback, tall-boy hatchback, micro van, mini truck with 20 L water cans; same paint scheme (`PaintSwap.CAR_PAINTS`) | Built by `tools/art/make_chennai_vehicles.py` (original, no badges) | Project's own |
 | `../people/shop_people.glb` | Shopkeepers and customers (`ShopPeople.gd`): the eight standing figures of `people/waiting/` on one atlas, baked by `tools/assets/bake_shop_people.py` | Same sources as `people/waiting/` (see `people/CREDITS_static.md`) | CC BY 4.0 |
-| `cars/*.glb` | Traffic and parked cars (sedan, SUV, sports in 7 Chennai paints) baked one-mesh by `tools/assets/bake_car_colours.py` from `quaternius_normal_car/suv/sports_car.glb` | Quaternius Cars Bundle | CC0 |
+| `cars/*.glb` | Traffic and parked cars (sedan, SUV, sports in 7 Chennai paints) baked one-mesh by `tools/assets/bake_car_colours.py` from `quaternius_normal_car/suv/sports_car.glb` (sources in `assets_src/incoming/models/quaternius_cars/`, not shipped) | Quaternius Cars Bundle | CC0 |
 | `people/waiting/*.glb` | Static standing / bench-seated poses of the city's people for bus stops, baked by `tools/assets/bake_waiting_people.py` (same characters and credits as `people/`) | see people credits | CC BY 4.0 |
 | `buses/*.glb` | Chennai buses: MTC ordinary, pink, electric, electric AC, deluxe AC, Premium gold, small bus, college bus, all repainted from the owner's Tripo electric bus by `tools/assets/bake_ebus.py` (60 MB / 1.9 M tris -> ~0.37 MB / 11.7k tris each, one draw call). Liveries and sources: `docs/BUSES.md` | Owner-generated (Tripo AI, paid plan) | Owner |
 | `cars/bolero_*.glb`, `cars/bolero_police.glb` | Mahindra Bolero in 5 paints and the police jeep (light bar = "Beacon" surface, `shaders/police_beacon.gdshader`), baked by `tools/assets/bake_bolero.py` from the owner's 25 MB download (34.9k tris, 4k textures) to ~5.3k tris, vertex colours, ~0.5 MB | "Bolero" by Waseem Kadri (Sketchfab) | CC BY 4.0 |
@@ -126,7 +126,7 @@ Missing files are fine: `VehicleAudio.stream_or()` falls back to the synthesised
 | `man_casual.glb` | "Dhanush 3d model", Peter Charles — face repainted as a generic character | CC BY 4.0 ⚠️ see audit |
 | `girl_churidar.glb`, `girl_pavadai.glb` | "South Indian Women", alnmathew | CC BY 4.0 |
 | `quest/meena.glb` | Meena in sq_004: `girl_churidar.glb` with the churidar baked rose pink by `tools/assets/make_meena.py` (her own texture, so no repaint can fail) | as `girl_churidar.glb` (CC BY 4.0) |
-| `police_f_khaki.glb`, `police_m_ips.glb` | Umar; `@MgsGamer5` (uniform painted) | CC BY 4.0 |
+| `police_m_ips.glb` | `@MgsGamer5` (uniform painted) | CC BY 4.0 |
 
 **City** (`city/`, placed from `data/world/city_props.json`; `city_models.json` holds sizes and credits):
 `chennai_central.glb` (SudharsanArivalagan), `water_tower.glb` (TamilarasanRG), `slum_cluster.glb` (aswin.baskaran),
@@ -217,7 +217,7 @@ From the roadmap (README → Roadmap) and `docs/PLAYTEST_OCT26.md`:
 Open items found while writing this catalog — fix before a store release (roadmap Phase 11):
 
 - The Credits text in `MainMenu.gd` lists *"Indian Woman in Saree" by Pixel_Monster (Sketchfab Standard licence)*, but the shipped file is *"Modern Indian Woman"* by Pixel_Monster, **CC BY 4.0**. Standard-licence assets are not allowed; correct the credit line.
-- Not yet in the Credits text: Peter Charles (`man_casual`), Umar and `@MgsGamer5` (police), Comrade1280 (service vehicles), Karim.Fares (gas station), Kenney particle packs (CC0, optional).
+- Not yet in the Credits text: Peter Charles (`man_casual`), `@MgsGamer5` (police), Comrade1280 (service vehicles), Karim.Fares (gas station), Kenney particle packs (CC0, optional).
 - `man_casual.glb` comes from a model named after a real actor. The face is repainted, but the project rule bans likenesses of real people; consider replacing it.
 
 Architectural approximation pass: `LandmarkKit.lic_building()` and `vivekananda_house()` replace the existing plain landmark boxes with original procedural geometry. See `docs/CHENNAI_ARCHITECTURE_AUDIT.md` for limitations and pending reference/visual validation. No third-party photographs are bundled by this pass.

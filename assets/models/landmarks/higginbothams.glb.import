@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://oo57vdyep5j5"
-path="res://.godot/imported/quaternius_sports_car.glb-b828bafc1a5eecbc726c6d15bb83a7a3.scn"
+uid="uid://bqsdwcx5gdvl2"
+path="res://.godot/imported/higginbothams.glb-59d90ac7bc79c5667edea9030d079aee.scn"
 
 [deps]
 
-source_file="res://assets/models/traffic/quaternius_sports_car.glb"
-dest_files=["res://.godot/imported/quaternius_sports_car.glb-b828bafc1a5eecbc726c6d15bb83a7a3.scn"]
+source_file="res://assets/models/landmarks/higginbothams.glb"
+dest_files=["res://.godot/imported/higginbothams.glb-59d90ac7bc79c5667edea9030d079aee.scn"]
 
 [params]
 

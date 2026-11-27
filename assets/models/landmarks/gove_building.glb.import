@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://gpc4mnpq8ci3"
-path="res://.godot/imported/police_f_khaki.glb-9fdc3d1e5417aa03a5523ef266291bd3.scn"
+uid="uid://c4hecrvacow6q"
+path="res://.godot/imported/gove_building.glb-676f63720bce765bc5a808b267d92b42.scn"
 
 [deps]
 
-source_file="res://assets/models/people/police_f_khaki.glb"
-dest_files=["res://.godot/imported/police_f_khaki.glb-9fdc3d1e5417aa03a5523ef266291bd3.scn"]
+source_file="res://assets/models/landmarks/gove_building.glb"
+dest_files=["res://.godot/imported/gove_building.glb-676f63720bce765bc5a808b267d92b42.scn"]
 
 [params]
 
@@ -38,5 +38,5 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-gltf/naming_version=1
+gltf/naming_version=2
 gltf/embedded_image_handling=1

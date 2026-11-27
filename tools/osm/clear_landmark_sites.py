@@ -33,9 +33,13 @@ def inside(x: float, z: float, poly) -> bool:
 def main() -> int:
     models = json.loads((WORLD / "landmark_models.json").read_text())["models"]
     polys = [m["clear"] for m in models if len(m.get("clear", [])) >= 3]
+    # "clear_fill": grounds where only procedural infill ("f") goes, so a model can be seen from
+    # its road (Senate House lawn, Nov 27); real OSM buildings there stay.
+    fill_polys = [m["clear_fill"] for m in models if len(m.get("clear_fill", [])) >= 3]
+    every = polys + fill_polys
     size = float(json.loads((WORLD / "manifest.json").read_text())["chunk_size"])
     chunks = set()
-    for poly in polys:
+    for poly in every:
         xs = [p[0] for p in poly]
         zs = [p[1] for p in poly]
         for i in range(int(math.floor(min(xs) / size)), int(math.floor(max(xs) / size)) + 1):
@@ -43,6 +47,7 @@ def main() -> int:
                 chunks.add((i, j))
     gone_b = 0
     gone_d = 0
+    gone_w = 0
     for i, j in sorted(chunks):
         f = WORLD / "chunks" / f"c_{i}_{j}.json"
         if f.exists():
@@ -52,7 +57,7 @@ def main() -> int:
                 p = b["p"]
                 n = len(p) // 2
                 cx, cz = sum(p[0::2]) / n, sum(p[1::2]) / n
-                if any(inside(cx, cz, poly) for poly in polys):
+                if any(inside(cx, cz, poly) for poly in polys) or (b.get("f") and any(inside(cx, cz, poly) for poly in fill_polys)):
                     gone_b += 1
                 else:
                     keep.append(b)
@@ -65,14 +70,49 @@ def main() -> int:
             changed = False
             for key in POINT_KEYS:
                 items = d.get(key, [])
-                kept = [it for it in items if not any(inside(float(it[0]), float(it[1]), poly) for poly in polys)]
+                kept = [it for it in items if not any(inside(float(it[0]), float(it[1]), poly) for poly in every)]
                 if len(kept) != len(items):
                     gone_d += len(items) - len(kept)
                     d[key] = kept
                     changed = True
             if changed:
                 f.write_text(json.dumps(d, separators=(",", ":")))
-    print(f"landmark sites cleared: {gone_b} buildings, {gone_d} dress points")
+        # Plot walls, gates and paving of the cleared buildings (tools/osm/build_plots.py).
+        f = WORLD / "plots" / f"c_{i}_{j}.json"
+        if f.exists():
+            d = json.loads(f.read_text())
+            changed = False
+            for key in ("walls", "gates"):
+                segs = d.get(key, [])
+                kept = [w for w in segs if not any(inside((w[0] + w[2]) / 2, (w[1] + w[3]) / 2, poly) for poly in every)]
+                if len(kept) != len(segs):
+                    gone_w += len(segs) - len(kept)
+                    d[key] = kept
+                    changed = True
+            for part in d.get("pave", {}).values():
+                v, idx = part["v"], part["i"]
+                kept_i = []
+                for t in range(0, len(idx) - 2, 3):
+                    tri = idx[t:t + 3]
+                    cx = sum(v[2 * q] for q in tri) / 3.0
+                    cz = sum(v[2 * q + 1] for q in tri) / 3.0
+                    if not any(inside(cx, cz, poly) for poly in every):
+                        kept_i += tri
+                if len(kept_i) != len(idx):
+                    part["i"] = kept_i
+                    changed = True
+            if changed:
+                f.write_text(json.dumps(d, separators=(",", ":")))
+    comp_f = WORLD / "compounds.json"
+    if comp_f.exists():
+        comp = json.loads(comp_f.read_text())
+        for key, segs in comp.get("chunks", {}).items():
+            kept = [w for w in segs if not any(inside((w[0] + w[2]) / 2, (w[1] + w[3]) / 2, poly) for poly in every)]
+            if len(kept) != len(segs):
+                gone_w += len(segs) - len(kept)
+                comp["chunks"][key] = kept
+        comp_f.write_text(json.dumps(comp, separators=(",", ":")))
+    print(f"landmark sites cleared: {gone_b} buildings, {gone_d} dress points, {gone_w} plot / compound walls")
     return 0
 
 

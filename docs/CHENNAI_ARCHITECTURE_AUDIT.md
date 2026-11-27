@@ -38,3 +38,62 @@ These are reference links, not licences to redistribute their photos.
 The last four footprint treatments are baked into each existing chunk building mesh with no extra draw calls. Existing footprint collision and pedestrian exclusion remain in effect. The matcher requires both OSM-derived seed and a nearby footprint centroid, and a phase 9 content test verifies all four matches. An OSM rebuild that moves/removes these footprints must revisit the anchors.
 
 Test route: Mylapore temple → Santhome → Lighthouse → Vivekananda House → Chepauk → Senate House → Napier Bridge → LIC. Use the map/custom destination controls. Inspect daylight and dusk; check driving clearance and that no tower intersects its neighbours. The new geometry is an architectural interpretation, not a measured reproduction. Original painted atlas textures remain; no photographic textures or new third-party images have been shipped. Parthasarathy and Valluvar Kottam are still pending verified placement and dedicated models.
+
+## Nov 27: Senate House model and the Cooum under Napier Bridge (owner reference photos)
+
+- **Senate House** is now a procedural model (`tools/art/make_landmarks.py` `senate()`, 35.7k tris,
+  one mesh, 7 collider boxes) on the OSM footprint (seed 9138, cleared by
+  `clear_landmark_sites.py`): red-brick great hall with a red-tiled roof, four corner towers with
+  striped horseshoe arches and stained glass, white lace cornices and orange onion domes, end
+  porches with three striped arches, octagonal turrets, arcaded verandahs and eave pinnacles.
+  The old `"senate"` roof-accent style in `WorldChunkStreamer.HERITAGE_SITES` is gone.
+- **Napier Bridge** had no river: OSM maps the Cooum mouth as a multipolygon relation that
+  `fetch_osm.py` never downloads, so infill houses covered the riverbed, and the landmark sat on
+  Adams Street ~300 m west of the bridge. `tools/osm/add_cooum_napier.py` (in the rebuild chain
+  right after `build_world.py`) adds the hand-traced `config.COOUM_NAPIER` river, merged with the
+  Buckingham Canal mouth, clears buildings / dress / plot walls / paving in it, writes the two
+  carriageway `decks` into the manifest and reruns `build_water.py` (no bank across the river
+  mouth or the decks; Napier gets its own balustrade instead of hazard rails).
+- `LandmarkKit.napier_bridge(decks)`: decks, footpaths, balustrades, piers and four rows of white
+  bowstring arches with hangers. `NapierLights` + `shaders/napier_lights.gdshader`: one additive
+  mesh lighting every arch green / violet / blue / red after dark (cycling), with streaks
+  reflected on the water. Parapet colliders along both edges of each carriageway.
+- The deck is at road level (the city has one ground plane), so the bridge sits low over the water.
+
+## Nov 27 (2): decorated compounds, Chepauk Palace, Senate House on the road
+
+- **Chepauk Palace** is two procedural models on the real footprints (`make_landmarks.py`
+  `chepauk_humayun()` / `chepauk_kalas()`): red brick, white courses and crenellated parapets,
+  arcaded ground floor, hooded first-floor windows, minarets at the corners, minareted entrances
+  (Kalas Mahal west + south, Humayun Mahal north) and Chisholm's striped domed tower in front of
+  Humayun Mahal's east entrance. The `"palace"` roof-accent style is gone (`HERITAGE_SITES` is empty).
+- **Compounds** (`build_landmark_compounds.py`): Senate House gets `"saracenic"` railings
+  (banded brick piers, white domed finials, black spear railings) and two domed striped-arch
+  gates on the Kamarajar Salai kerb; Chepauk Palace gets a `"palace_red"` wall (red brick, white
+  crenellated coping, domed piers) and `"tripolia"` triple-arch gates (its historic Tripolia gate).
+  Every railing pier now has a finial (ball / urn / cap / dome) and the arched gates carry lamps.
+  Panagal Park's compound was skipped: the marker was ~200 m from the mapped park (fixed).
+- **Senate House on the road**: `landmark_models.json` `"clear_fill"` lists grounds where only
+  procedural infill and dress points are cleared (`clear_landmark_sites.py`, which now also drops
+  plot walls / paving and `compounds.json` walls in cleared areas). The Senate House lawn, drive,
+  flower beds and hedges run to its gate on the kerb; Chepauk's grounds lose their infill too
+  (the real government buildings on them stay).
+- Gates never stand inside a building (`runs()`): a pulled-in front had put a Tripolia inside
+  Humayun Mahal's facade.
+
+## Nov 27 (3): Anna Salai, LIC and its heritage neighbours
+
+- The LIC landmark was ~470 m from the real building (the old `config.py` lat/lon). LIC is now a
+  model on its OSM footprint (`make_landmarks.py` `lic()`, 54 m: cream long faces with close
+  vertical fins and slit windows, dark glass bands on the ends, terracotta coping, plant rooms,
+  roof sign); the manifest landmark kind is `"model"` (map POI only).
+- Heritage models on their OSM footprints: Higginbotham's (white Palladian front, stained-glass
+  round arches, pediment and cupola, Mangalore-tile roof, blue name board), Bharat Insurance
+  Building (Indo-Saracenic, minarets either end of the front, domed centre), Agurchand Mansion
+  (red brick, tall domed corner tower), Gove Building (exposed brick, gabled showroom front).
+  `palace_block` takes a palette (`WHITE_PAL`, `BHARAT_PAL`, `BRICK_PAL`) and round or pointed arches.
+- `tools/osm/build_frontage.py` (after `add_lodges_eateries.py`, before `classify_buildings.py`)
+  lines both sides of Anna Salai with 799 attached lots (`"f": 4`) right behind the footpath,
+  replacing the loose infill squares in the way and keeping clear of roads, real buildings,
+  landmark sites, kerb fixtures (booths, poles, lamps, transformers, signals, signs, carts),
+  bus stops, quest stops and props.

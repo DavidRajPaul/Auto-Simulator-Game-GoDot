@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://ckwymeatsnhpd"
-path="res://.godot/imported/quaternius_normal_car.glb-faca68f81131126bc873881e30593a98.scn"
+uid="uid://d05uorenolhdw"
+path="res://.godot/imported/bharat_insurance_building.glb-a6394ec7c6753a4a5ba8fd27b4fe566d.scn"
 
 [deps]
 
-source_file="res://assets/models/traffic/quaternius_normal_car.glb"
-dest_files=["res://.godot/imported/quaternius_normal_car.glb-faca68f81131126bc873881e30593a98.scn"]
+source_file="res://assets/models/landmarks/bharat_insurance_building.glb"
+dest_files=["res://.godot/imported/bharat_insurance_building.glb-a6394ec7c6753a4a5ba8fd27b4fe566d.scn"]
 
 [params]
 

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dw0xv2tbh7mq0"
-path="res://.godot/imported/quaternius_suv.glb-d080dac27c3a18409de03b5d67792b37.scn"
+uid="uid://dwos6w3ccga5d"
+path="res://.godot/imported/agurchand_mansion.glb-c9ca2a27b16252630f202ea47445a5ca.scn"
 
 [deps]
 
-source_file="res://assets/models/traffic/quaternius_suv.glb"
-dest_files=["res://.godot/imported/quaternius_suv.glb-d080dac27c3a18409de03b5d67792b37.scn"]
+source_file="res://assets/models/landmarks/agurchand_mansion.glb"
+dest_files=["res://.godot/imported/agurchand_mansion.glb-c9ca2a27b16252630f202ea47445a5ca.scn"]
 
 [params]
 

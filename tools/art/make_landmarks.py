@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Procedural heritage landmarks: San Thome Basilica and the Kapaleeshwarar temple.
+"""Procedural heritage landmarks: San Thome Basilica, the Kapaleeshwarar temple and Senate House.
 
 Nov 27 owner report (with photos): the game drew the basilica's footprint as a temple (red and
 white kaavi stripes, which belong to Hindu temples only) and the Kapaleeshwarar gopuram as a
@@ -28,6 +28,9 @@ import argparse
 import json
 import math
 import random
+
+import mapbox_earcut as earcut
+import numpy as np
 import sys
 from pathlib import Path
 
@@ -1024,6 +1027,755 @@ def tank_mandapam() -> LM:
     return m
 
 
+# ================================================================= Senate House
+
+# University of Madras Senate House (1879, Robert Chisholm; owner reference photos, Nov 27):
+# Indo-Saracenic red brick. A great hall under a steep red-tiled roof, four square corner towers
+# whose tall faces carry red-and-cream striped horseshoe arches with stained glass, each crowned
+# by a white lace cornice and an orange Byzantine (onion) dome patterned in white; a porch with
+# three striped arches at each end, flanked by slim octagonal turrets with little domes; low
+# arcaded verandahs along both long sides; rows of small white domed pinnacles at the eaves.
+# Local frame: x along the long axis (+x = north), z across (+z = east, Kamarajar Salai and
+# the sea), origin at the centre of the OSM footprint (way seed 9138, 93 x 31 m).
+SENATE_ORIGIN = (2594.3, -1778.55)
+SENATE_AXIS_DEG = -79.33
+SENATE_FOOTPRINT = [(2570.2, -1735.7), (2601.1, -1729.6), (2618.4, -1821.4), (2587.5, -1827.5)]
+
+
+def senate_campus():
+    """The lawn between Senate House and Kamarajar Salai (owner, Nov 27: it must be seen from the
+    road): infill buildings in it are cleared (\"clear_fill\"); local x -62..62, z -26..62 (to the kerb)."""
+    ax = math.radians(SENATE_AXIS_DEG)
+    ux, uz = math.cos(ax), math.sin(ax)      # local +x (north)
+    vx, vz = -uz, ux                          # local +z (east, the road)
+    ox, oz = SENATE_ORIGIN
+    return [(ox + lx * ux + lz * vx, oz + lx * uz + lz * vz) for lx, lz in ((-62, -26), (62, -26), (62, 62), (-62, 62))]
+
+SH_BRICK = (198, 98, 64)
+SH_BRICK_D = (178, 84, 56)
+SH_BRICK_L = (212, 116, 80)
+SH_CREAM = (236, 224, 200)
+SH_LACE = (246, 242, 232)
+SH_STONE = (168, 150, 130)
+SH_DOME = (230, 140, 82)
+SH_DOME_D = (210, 120, 70)
+SH_TILE = (178, 76, 50)
+SH_TILE2 = (160, 66, 44)
+SH_RECESS = (60, 38, 32)
+SH_GLASS = [(48, 60, 84), (128, 52, 46), (56, 96, 132), (176, 140, 60), (60, 104, 76)]
+
+HALL_X = 27.5       # hall half length (tower centres)
+HALL_Z = 9.5        # hall half width
+SH_EAVE = 15.5
+SH_RIDGE = 22.5
+TW = 4.4            # tower half size
+TW_TOP = 23.5
+VER_Z = 13.6        # verandah outer face
+VER_H = 9.0
+PORCH_X0 = HALL_X + TW
+PORCH_X1 = PORCH_X0 + 7.8
+PORCH_Z = 7.2
+PORCH_H = 11.6
+
+
+def striped_arch(m: LM, x: float, y0: float, w: float, spring: float, depth: float = 0.25,
+                 band: float = 0.55, n: int = 9, fill=SH_RECESS, glass: bool = False, kind: str = "horseshoe") -> None:
+    """Saracenic opening in the wall plane z = 0, facing +z: alternating red / cream voussoirs."""
+    h = w / 2.0
+    if kind == "horseshoe":
+        r = h * 1.1
+        cy = spring + math.sqrt(r * r - h * h)
+        a0 = math.atan2(spring - cy, h)
+    else:  # round
+        r, cy, a0 = h, spring, 0.0
+    a1 = math.pi - a0
+    arc = [(r * math.cos(a0 + (a1 - a0) * i / (2 * n)), cy + r * math.sin(a0 + (a1 - a0) * i / (2 * n))) for i in range(2 * n + 1)]
+    opening = [(-h, y0), (h, y0)] + arc
+    m.push((x, 0.0, 0.0))
+    m.flat(opening, 0.02, fill)
+    if glass:
+        # Three tall lights with coloured panes, white mullions.
+        top = cy + r * 0.55
+        for k in range(3):
+            lx = -h * 0.62 + k * h * 0.62
+            for row in range(int((top - y0 - 0.4) / 0.9)):
+                yy = y0 + 0.3 + row * 0.9
+                m.flat([(lx - h * 0.24, yy), (lx + h * 0.24, yy), (lx + h * 0.24, yy + 0.8), (lx - h * 0.24, yy + 0.8)], 0.04,
+                       SH_GLASS[(k * 3 + row) % len(SH_GLASS)])
+    # Jambs.
+    for s in (-1.0, 1.0):
+        m.ybox(s * h - 0.18, s * h + 0.18, y0, spring, -0.02, depth, SH_CREAM)
+    # Voussoirs: quads between the arc and an outer ring, alternating colours.
+    for i in range(2 * n):
+        (ax, ay), (bx, by) = arc[i], arc[i + 1]
+        oa = ((ax) * (r + band) / r, cy + (ay - cy) * (r + band) / r)
+        ob = ((bx) * (r + band) / r, cy + (by - cy) * (r + band) / r)
+        col = SH_CREAM if i % 2 == 0 else (168, 58, 42)
+        m.extrude([(ax, ay), (bx, by), ob, oa], 0.0, depth, col, back=False)
+    m.pop()
+
+
+def pointed_opening(m: LM, x: float, y0: float, w: float, spring: float, col=SH_RECESS, frame: float = 0.22,
+                    depth: float = 0.2, rise=None) -> None:
+    inner = arch(w, y0, spring, "pointed", n=5, rise=rise)
+    m.push((x, 0.0, 0.0))
+    m.flat(inner, 0.02, col)
+    m.extrude(offset(inner, frame), 0.0, depth, SH_CREAM, back=False, holes=[inner])
+    m.pop()
+
+
+def crenels(m: LM, x0: float, x1: float, y: float, h: float = 0.9, step: float = 0.9, depth: float = 0.35, col=SH_LACE) -> None:
+    """White Saracenic parapet along the wall plane z = 0: a coping strip with stepped merlons."""
+    m.ybox(x0, x1, y, y + 0.35, -depth, 0.12, col)
+    k = 0
+    xx = x0
+    while xx + step * 0.6 <= x1 + 1e-6:
+        mx = xx + step * 0.3
+        m.extrude([(mx - step * 0.28, y + 0.35), (mx + step * 0.28, y + 0.35), (mx + step * 0.28, y + h * 0.7),
+                   (mx, y + h), (mx - step * 0.28, y + h * 0.7)], -depth + 0.1, 0.1, col, back=False)
+        xx += step
+        k += 1
+
+
+def onion_dome(m: LM, cx: float, y: float, cz: float, r: float, seg: int = 16, col=SH_DOME, lace=SH_LACE) -> None:
+    """Byzantine dome: bulbous profile, horizontal white lace bands, a spike finial."""
+    prof = [(r * 0.9, 0.0), (r * 0.98, 0.18 * r), (r * 1.1, 0.5 * r), (r * 1.14, 0.8 * r), (r * 1.06, 1.1 * r),
+            (r * 0.88, 1.38 * r), (r * 0.64, 1.62 * r), (r * 0.4, 1.82 * r), (r * 0.18, 1.98 * r), (r * 0.06, 2.1 * r),
+            (0.0, 2.16 * r)]
+    # A white lace band round the base, orange above it, a thin white collar near the top.
+    cols = [lace, lace, col, SH_DOME_D, col, col, col, lace, col, col]
+    m.lathe(prof, seg, col, cx=cx, cz=cz, y=y, cols=cols)
+    m.bar((cx, y + 2.1 * r, cz), (cx, y + 2.1 * r + r * 0.55, cz), max(0.05, r * 0.05), (190, 160, 90), 4)
+    m.prism(8, r * 0.1, 0.0, y + 2.1 * r + r * 0.55, y + 2.1 * r + r * 0.75, (190, 160, 90), cx=cx, cz=cz)
+
+
+def sh_turret(m: LM, cx: float, cz: float, top: float, r: float = 1.35) -> None:
+    """Slim octagonal turret: brick with cream bands, an open arcaded lantern, a small dome."""
+    rot = math.pi / 8
+    m.prism(8, r + 0.15, r + 0.15, 0.0, 1.0, SH_STONE, top=False, rot=rot, cx=cx, cz=cz)
+    y = 1.0
+    k = 0
+    while y < top - 2.6:
+        hh = 1.4 if k % 2 == 0 else 0.35
+        m.prism(8, r, r, y, min(y + hh, top - 2.6), SH_BRICK if k % 2 == 0 else SH_CREAM, top=False, rot=rot, cx=cx, cz=cz)
+        y += hh
+        k += 1
+    m.prism(8, r + 0.22, r + 0.22, top - 2.6, top - 2.4, SH_LACE, top=True, bottom=True, rot=rot, cx=cx, cz=cz)
+    # Lantern: eight slim posts with striped arch heads.
+    for i in range(8):
+        a = rot + i * math.pi / 4
+        px, pz = cx + math.cos(a) * r * 0.85, cz + math.sin(a) * r * 0.85
+        m.ybox(px - 0.11, px + 0.11, top - 2.4, top - 0.7, pz - 0.11, pz + 0.11, SH_LACE)
+    m.prism(8, r * 0.55, r * 0.55, top - 2.4, top - 0.7, SH_RECESS, top=False, rot=rot, cx=cx, cz=cz)
+    m.prism(8, r + 0.12, r + 0.12, top - 0.7, top - 0.2, SH_BRICK, top=True, rot=rot, cx=cx, cz=cz,
+            cols=[SH_BRICK, SH_CREAM])
+    onion_dome(m, cx, top - 0.2, cz, r * 0.82, seg=10)
+
+
+def sh_pinnacle(m: LM, x: float, y: float, z: float, s: float = 0.32) -> None:
+    m.prism(6, s, s, y, y + 0.9, SH_LACE, top=False, cx=x, cz=z)
+    m.lathe([(s * 1.1, 0.0), (s * 1.25, 0.3), (s * 0.9, 0.62), (s * 0.4, 0.85), (0.0, 1.0)], 6, SH_LACE, cx=x, cz=z, y=y + 0.9)
+
+
+def sh_tower(m: LM, tx: float, tz: float) -> None:
+    m.ybox(tx - TW - 0.3, tx + TW + 0.3, 0.0, 1.0, tz - TW - 0.3, tz + TW + 0.3, SH_STONE)
+    m.ybox(tx - TW, tx + TW, 1.0, TW_TOP, tz - TW, tz + TW, SH_BRICK, skip="-y")
+    m.collider((tx, TW_TOP / 2, tz), (2 * TW + 0.6, TW_TOP, 2 * TW + 0.6))
+    for y, hh in ((7.6, 0.3), (14.6, 0.35)):
+        course(m, tx - TW, tx + TW, tz - TW, tz + TW, y, hh, 0.14, SH_CREAM)
+    # Corner piers: slightly proud, with cream quoin bands.
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            px, pz = tx + sx * (TW - 0.35), tz + sz * (TW - 0.35)
+            m.ybox(px - 0.55, px + 0.55, 1.0, TW_TOP + 0.4, pz - 0.55, pz + 0.55, SH_BRICK_D)
+            for y in range(2, int(TW_TOP), 3):
+                m.ybox(px - 0.58, px + 0.58, y, y + 0.35, pz - 0.58, pz + 0.58, SH_CREAM)
+            sh_pinnacle(m, px, TW_TOP + 1.25, pz, 0.38)
+    for face, fx, fz in (("-x", tx - TW, tz), ("+x", tx + TW, tz), ("-z", tx, tz - TW), ("+z", tx, tz + TW)):
+        wall_frame(m, face, fx, fz)
+        pointed_opening(m, 0.0, 2.2, 1.6, 4.8)
+        striped_arch(m, 0.0, 8.4, 2.4, 11.6, band=0.42, n=7, glass=True)
+        # The tall striped horseshoe arch with stained glass (the reference photos' signature).
+        striped_arch(m, 0.0, 15.3, 4.4, 20.0, band=0.62, n=9, glass=True)
+        # Small roundels either side, like the wheel ornaments on the towers.
+        for s in (-1.0, 1.0):
+            m.flat(circle(0.32, s * 2.9, 17.6, 8), 0.06, SH_CREAM)
+            m.flat(circle(0.2, s * 2.9, 17.6, 8), 0.08, SH_BRICK_D)
+        m.pop()
+    # White lace cornice and crown.
+    m.ybox(tx - TW - 0.35, tx + TW + 0.35, TW_TOP, TW_TOP + 0.8, tz - TW - 0.35, tz + TW + 0.35, SH_LACE)
+    for face, fx, fz in (("-x", tx - TW - 0.35, tz), ("+x", tx + TW + 0.35, tz), ("-z", tx, tz - TW - 0.35), ("+z", tx, tz + TW + 0.35)):
+        wall_frame(m, face, fx, fz)
+        crenels(m, -TW - 0.35, TW + 0.35, TW_TOP + 0.8, h=0.75, step=0.95, depth=0.3)
+        m.pop()
+    # Octagonal drum: cream with striped little arches, then the onion dome.
+    rot = math.pi / 8
+    R = TW * 0.86
+    m.prism(8, R, R, TW_TOP + 0.8, TW_TOP + 3.2, SH_LACE, top=True, rot=rot, cx=tx, cz=tz)
+    apo = R * math.cos(math.pi / 8)
+    for k in range(8):
+        a = rot + math.pi / 8 + k * math.pi / 4
+        m.push((tx + math.cos(a) * apo, 0.0, tz + math.sin(a) * apo), yaw=math.atan2(math.cos(a), math.sin(a)))
+        striped_arch(m, 0.0, TW_TOP + 1.2, 1.1, TW_TOP + 2.3, depth=0.12, band=0.22, n=4)
+        m.pop()
+    m.prism(8, R + 0.2, R + 0.2, TW_TOP + 3.2, TW_TOP + 3.5, SH_DOME_D, top=True, bottom=True, rot=rot, cx=tx, cz=tz)
+    onion_dome(m, tx, TW_TOP + 3.5, tz, R * 0.98, seg=16)
+
+
+def senate() -> LM:
+    m = LM()
+    # ---- Great hall: plinth, walls, roof.
+    m.ybox(-HALL_X, HALL_X, 0.0, 1.0, -HALL_Z - 0.2, HALL_Z + 0.2, SH_STONE)
+    m.ybox(-HALL_X, HALL_X, 1.0, SH_EAVE, -HALL_Z, HALL_Z, SH_BRICK, skip="-y")
+    m.collider((0.0, SH_EAVE / 2, 0.0), (2 * HALL_X, SH_EAVE, 2 * VER_Z))
+    course(m, -HALL_X, HALL_X, -HALL_Z, HALL_Z, SH_EAVE - 0.5, 0.5, 0.25, SH_LACE)
+    gable_roof(m, -HALL_X + TW, HALL_X - TW, 0.0, HALL_Z, SH_EAVE, SH_RIDGE, over=0.6, strips=9, col=SH_TILE, col2=SH_TILE2)
+    # Gable ends behind the porches: brick, a great striped window, a white coped edge.
+    for face, x in (("-x", -HALL_X + TW), ("+x", HALL_X - TW)):
+        wall_frame(m, face, x, 0.0)
+        m.extrude([(-HALL_Z, SH_EAVE), (HALL_Z, SH_EAVE), (0.0, SH_RIDGE + 0.3)], -0.4, 0.0, SH_BRICK, back=False)
+        for s in (-1.0, 1.0):
+            m.bar((s * (HALL_Z + 0.2), SH_EAVE, 0.08), (0.0, SH_RIDGE + 0.55, 0.08), 0.2, SH_LACE, 4)
+        sh_pinnacle(m, 0.0, SH_RIDGE + 0.4, 0.0, 0.4)
+        m.pop()
+    for face, x in (("-x", -HALL_X - TW), ("+x", HALL_X + TW)):
+        wall_frame(m, face, x, 0.0)
+        striped_arch(m, 0.0, PORCH_H + 0.9, 5.6, SH_EAVE + 1.0, band=0.7, n=10, glass=True)
+        m.pop()
+    # ---- Long sides: clerestory windows over arcaded verandahs.
+    bays = 9
+    span = 2 * (HALL_X - TW) / bays
+    for sz in (-1.0, 1.0):
+        face = "+z" if sz > 0 else "-z"
+        # Clerestory (hall wall above the verandah roof).
+        wall_frame(m, face, 0.0, sz * HALL_Z)
+        for b in range(bays):
+            bx = -(HALL_X - TW) + span * (b + 0.5)
+            striped_arch(m, bx, VER_H + 1.4, 2.0, VER_H + 3.6, band=0.36, n=6, glass=True)
+        m.pop()
+        # Verandah block.
+        z0, z1 = sorted((sz * HALL_Z, sz * VER_Z))
+        m.ybox(-HALL_X + TW, HALL_X - TW, 0.0, 0.9, z0, z1 + (0.25 if sz > 0 else -0.25) * 0, SH_STONE)
+        m.ybox(-HALL_X + TW, HALL_X - TW, 0.9, VER_H, z0, z1, SH_BRICK, skip="-y")
+        m.ybox(-HALL_X + TW, HALL_X - TW, VER_H - 0.05, VER_H + 0.25, z0 - 0.2, z1 + 0.2, SH_CREAM)
+        wall_frame(m, face, 0.0, sz * VER_Z)
+        for b in range(bays):
+            bx = -(HALL_X - TW) + span * (b + 0.5)
+            pointed_opening(m, bx, 0.9, span * 0.62, 5.0, frame=0.3, depth=0.25)
+            # Cream pier capitals between the arches.
+            if b > 0:
+                px = bx - span * 0.5
+                m.ybox(px - 0.45, px + 0.45, 4.8, 5.2, -0.05, 0.3, SH_CREAM)
+        crenels(m, -HALL_X + TW, HALL_X - TW, VER_H + 0.25, h=0.85, step=0.9)
+        m.pop()
+        # Small white domed pinnacles along the hall eave (the row seen in the aerial photos).
+        for b in range(bays + 1):
+            bx = -(HALL_X - TW) + span * b
+            sh_pinnacle(m, bx, SH_EAVE, sz * (HALL_Z + 0.1), 0.3)
+    # ---- Corner towers.
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            sh_tower(m, sx * HALL_X, sz * (HALL_Z + 0.6))
+    # ---- End porches with three striped arches, turrets at their corners.
+    for sx in (-1.0, 1.0):
+        x0, x1 = sorted((sx * PORCH_X0, sx * PORCH_X1))
+        m.ybox(x0, x1, 0.0, 0.9, -PORCH_Z - 0.2, PORCH_Z + 0.2, SH_STONE)
+        m.ybox(x0, x1, 0.9, PORCH_H, -PORCH_Z, PORCH_Z, SH_BRICK, skip="-y")
+        m.collider(((x0 + x1) / 2, PORCH_H / 2, 0.0), (x1 - x0, PORCH_H, 2 * PORCH_Z))
+        course(m, x0, x1, -PORCH_Z, PORCH_Z, PORCH_H - 0.4, 0.4, 0.2, SH_LACE)
+        face = "+x" if sx > 0 else "-x"
+        wall_frame(m, face, sx * PORCH_X1, 0.0)
+        striped_arch(m, 0.0, 0.9, 4.4, 6.4, depth=0.3, band=0.75, n=10)
+        for s in (-1.0, 1.0):
+            striped_arch(m, s * 4.6, 0.9, 2.6, 4.9, depth=0.3, band=0.55, n=8)
+            # Cusped (multifoil) hood: a cream band round the outer arches.
+        crenels(m, -PORCH_Z, PORCH_Z, PORCH_H, h=0.9, step=0.9)
+        m.pop()
+        for sz in (-1.0, 1.0):
+            wall_frame(m, "+z" if sz > 0 else "-z", (x0 + x1) / 2, sz * PORCH_Z)
+            striped_arch(m, 0.0, 0.9, 3.0, 5.0, depth=0.3, band=0.55, n=8)
+            crenels(m, -(x1 - x0) / 2, (x1 - x0) / 2, PORCH_H, h=0.9, step=0.9)
+            m.pop()
+            sh_turret(m, sx * (PORCH_X1 - 0.6), sz * (PORCH_Z + 0.4), 17.5)
+            # Inner turrets where the porch meets the towers.
+            sh_turret(m, sx * (PORCH_X0 + 1.0), sz * (PORCH_Z + 0.2), 15.0, r=0.95)
+    # The lawn between the hall and Kamarajar Salai (owner: it must be seen from the road), a
+    # drive from the gate, flower beds and trimmed hedges along the verandahs.
+    lawn = (86, 140, 62)
+    lawn2 = (78, 128, 56)
+    for k, (z0, z1) in enumerate(((VER_Z + 1.2, 54.0), (-24.0, -VER_Z - 1.2))):
+        for j in range(6):
+            x0 = -48.0 + j * 16.0
+            m.flat_y(x0, x0 + 16.0, z0, z1, 0.05, lawn if (j + k) % 2 == 0 else lawn2)
+    m.flat_y(-2.6, 2.6, VER_Z + 0.2, 58.0, 0.07, (204, 196, 178))
+    m.flat_y(-40.0, 40.0, VER_Z + 0.2, VER_Z + 1.4, 0.07, (204, 196, 178))
+    for sx in (-1.0, 1.0):
+        m.ybox(sx * 3.2 - 0.4, sx * 3.2 + 0.4, 0.0, 0.7, VER_Z + 3.0, 52.0, (52, 104, 44))
+        for k in range(5):
+            m.ybox(sx * 12.0 + k * sx * 6.0 - 1.2, sx * 12.0 + k * sx * 6.0 + 1.2, 0.05, 0.3, 24.0, 27.0, (196, 60, 70) if k % 2 else (236, 190, 60))
+    # Steps up to each porch.
+    for sx in (-1.0, 1.0):
+        for k in range(3):
+            xa = sx * (PORCH_X1 + 0.5 * (3 - k))
+            x0, x1 = sorted((xa, sx * PORCH_X1))
+            m.ybox(x0, x1, 0.0, 0.3 * (k + 1), -3.0, 3.0, SH_STONE)
+    return m
+
+
+# ================================================================= Chepauk Palace
+
+# Chepauk Palace (Nawab of Arcot, 1768; Paul Benfield; reworked by Robert Chisholm 1868-71), from
+# Wikipedia, TN Tourism, Madras Musings and photos (Nov 27): two red-brick, white-trimmed
+# Indo-Saracenic blocks. Kalas Mahal (south, restored 2017) is two storeys with arcaded verandahs,
+# a white balustraded parapet and minareted entrances on its west and south sides. Humayun Mahal
+# (north) got a first floor and a Madras terrace from Chisholm, its new front matching Kalas Mahal,
+# a new east entrance facing the beach, and the tall striped tower (~75 ft) built in front of it.
+# Each block is built on its real OSM footprint (seeds 3505 / 3507), local frame = world axes.
+CP_RED = (200, 86, 60)
+CP_RED_D = (176, 70, 50)
+CP_WHITE = (240, 236, 224)
+CP_DOME = (238, 234, 222)
+HUMAYUN_FOOTPRINT = [(2428.0, -1700.0), (2427.6, -1698.3), (2425.8, -1698.7), (2412.6, -1645.1), (2476.9, -1629.4), (2490.6, -1684.8)]
+KALAS_FOOTPRINT = [(2456.6, -1618.2), (2452.2, -1619.2), (2438.4, -1560.6), (2450.3, -1557.7), (2448.6, -1550.5), (2442.0, -1552.2),
+                   (2436.8, -1530.5), (2472.7, -1521.7), (2477.7, -1543.1), (2472.8, -1544.3), (2474.6, -1551.9), (2481.8, -1550.1),
+                   (2495.6, -1608.7), (2466.8, -1615.8), (2469.3, -1626.5), (2459.1, -1629.0)]
+
+
+def _centroid(poly):
+    return (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+
+
+def _local(poly):
+    cx, cz = _centroid(poly)
+    pts = [(x - cx, z - cz) for x, z in poly]
+    # Drop slivers (< 2.5 m edges) so every wall gets real bays.
+    out = []
+    for p in pts:
+        if not out or math.dist(out[-1], p) > 2.5:
+            out.append(p)
+    if math.dist(out[0], out[-1]) < 2.5:
+        out.pop()
+    return out
+
+
+def _ccw(poly):
+    area = sum(poly[i - 1][0] * poly[i][1] - poly[i][0] * poly[i - 1][1] for i in range(len(poly)))
+    return poly if area > 0 else list(reversed(poly))
+
+
+def _roof(m: LM, poly, y: float, col) -> None:
+    pts = np.array(poly, dtype=np.float64)
+    idx = earcut.triangulate_float64(pts, np.array([len(poly)], dtype=np.uint32))
+    for t in range(0, len(idx), 3):
+        a, b, c = (poly[int(idx[t + k])] for k in range(3))
+        m.tri((a[0], y, a[1]), (c[0], y, c[1]), (b[0], y, b[1]), col, (0, 1, 0))
+
+
+CP_PAL = {"wall": None, "pier": None, "trim": None, "roof": (178, 132, 108), "window": (70, 44, 36), "arch": "pointed",
+          "minaret": True}
+
+
+def palace_block(m: LM, poly, h: float, rng: random.Random, minar_h: float, pal=None) -> list:
+    """Red Indo-Saracenic block on a footprint: arcaded ground floor, arched first-floor windows,
+    white string courses, balustraded parapet with pinnacles, a slim minaret at every corner.
+    Returns the walls as (a, b, outward normal) for the features added afterwards."""
+    pal = dict(CP_PAL, **(pal or {}))
+    wall, pier, trim = pal["wall"] or CP_RED, pal["pier"] or CP_RED_D, pal["trim"] or CP_WHITE
+    poly = _ccw(poly)
+    n = len(poly)
+    walls_out = []
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        ex, ez = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(ex, ez)
+        # CCW in (x, z) with z pointing south: outward is (ez, -ex) / ln.
+        nx, nz = ez / ln, -ex / ln
+        yaw = math.atan2(nx, nz)  # local +z = outward
+        walls_out.append((a, b, (nx, nz)))
+        # Frame at the wall's midpoint, local +x along the wall.
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        m.push((mx, 0.0, mz), yaw=yaw)
+        hl = ln / 2
+        m.ybox(-hl, hl, 0.0, 0.8, -0.6, 0.15, SH_STONE)
+        m.quad((-hl, 0.8, 0.0), (hl, 0.8, 0.0), (hl, h, 0.0), (-hl, h, 0.0), wall, (0, 0, 1))
+        bays = max(1, int(round(ln / 3.8)))
+        bw = ln / bays
+        floors = max(1, int((h - 1.0) / 4.4))
+        for k in range(bays):
+            bx = -hl + bw * (k + 0.5)
+            if ln >= 3.0:
+                if pal["arch"] == "round":
+                    _round_opening(m, bx, 0.8, bw * 0.6, 3.4, pal["window"], trim)
+                else:
+                    pointed_opening(m, bx, 0.8, bw * 0.62, 3.6, frame=0.26, depth=0.22, rise=bw * 0.42)
+                for f in range(1, floors):
+                    y0 = 1.0 + f * 4.4 + 0.6
+                    if y0 + 2.6 > h - 0.8:
+                        break
+                    if pal["arch"] == "round":
+                        _round_opening(m, bx, y0, bw * 0.42, y0 + 1.9, pal["window"], trim)
+                    else:
+                        pointed_opening(m, bx, y0, bw * 0.42, y0 + 2.0, col=pal["window"], frame=0.2, depth=0.16)
+                    # Hood over the upper window.
+                    m.ybox(bx - bw * 0.36, bx + bw * 0.36, y0 + 3.3, y0 + 3.5, -0.05, 0.55, trim)
+            if k > 0:
+                px = -hl + bw * k
+                m.ybox(px - 0.32, px + 0.32, 0.8, h - 0.4, -0.05, 0.28, pier)
+        for f in range(1, floors):
+            y = 1.0 + f * 4.4 - 0.2
+            if y < h - 1.5:
+                m.ybox(-hl - 0.1, hl + 0.1, y, y + 0.4, -0.05, 0.3, trim)
+        m.ybox(-hl - 0.1, hl + 0.1, h - 0.6, h, -0.05, 0.3, trim)
+        crenels(m, -hl, hl, h, h=0.95, step=0.85, depth=0.3, col=trim)
+        for k in range(bays + 1):
+            sh_pinnacle(m, -hl + bw * k, h + 0.35, 0.0, 0.26)
+        m.pop()
+        # Collider: a slab along the wall (the courtyard is inside the box anyway).
+        m.boxes.append(((round(mx - nx * 2.0, 3), round(h / 2, 3), round(mz - nz * 2.0, 3)), (round(ln, 3), round(h, 3), 4.0), round(yaw, 4)))
+    _roof(m, poly, h - 0.05, pal["roof"])  # Madras terrace, brick-tile finish
+    # Minarets at the convex corners.
+    for i in range(n if pal["minaret"] else 0):
+        p0, p1, p2 = poly[i - 1], poly[i], poly[(i + 1) % n]
+        cross = (p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])
+        if cross > 0 and min(math.dist(p0, p1), math.dist(p1, p2)) > 6.0:
+            cp_minaret(m, p1[0], p1[1], minar_h, 1.15, pal)
+    return walls_out
+
+
+def _round_opening(m: LM, x: float, y0: float, w: float, spring: float, fill, trim) -> None:
+    inner = arch(w, y0, spring, "round", n=6)
+    m.push((x, 0.0, 0.0))
+    m.flat(inner, 0.02, fill)
+    m.extrude(offset(inner, 0.22), 0.0, 0.18, trim, back=False, holes=[inner])
+    m.pop()
+
+
+def cp_minaret(m: LM, cx: float, cz: float, top: float, r: float, pal=None) -> None:
+    """White-banded red octagonal minaret with balconies, a chhatri and a white dome."""
+    pal = dict(CP_PAL, **(pal or {}))
+    CP_RED, CP_WHITE = pal["wall"] or globals()["CP_RED"], pal["trim"] or globals()["CP_WHITE"]  # noqa: N806
+    rot = math.pi / 8
+    m.prism(8, r + 0.2, r + 0.2, 0.0, 0.9, SH_STONE, top=False, rot=rot, cx=cx, cz=cz)
+    y = 0.9
+    for k, (hh, col) in enumerate(((top * 0.42, CP_RED), (0.35, CP_WHITE), (top * 0.25, CP_RED), (0.35, CP_WHITE))):
+        rr = r if k < 2 else r * 0.85
+        m.prism(8, rr, rr, y, y + hh, col, top=False, rot=rot, cx=cx, cz=cz)
+        y += hh
+    m.prism(8, r + 0.35, r + 0.35, y, y + 0.25, CP_WHITE, top=True, bottom=True, rot=rot, cx=cx, cz=cz)
+    for i in range(8):
+        a = rot + i * math.pi / 4
+        px, pz = cx + math.cos(a) * r * 0.75, cz + math.sin(a) * r * 0.75
+        m.ybox(px - 0.09, px + 0.09, y + 0.25, y + 1.6, pz - 0.09, pz + 0.09, CP_WHITE)
+    m.prism(8, r * 0.95, r * 0.95, y + 1.6, y + 1.9, CP_WHITE, top=True, rot=rot, cx=cx, cz=cz)
+    onion_dome(m, cx, y + 1.9, cz, r * 0.78, seg=10, col=CP_DOME, lace=CP_WHITE)
+
+
+def cp_entrance(m: LM, a, b, nrm, h: float, minar: float, width: float = 9.0) -> None:
+    """A minareted entrance: a projecting porch with a big cusped arch, two tall minarets."""
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    yaw = math.atan2(nrm[0], nrm[1])
+    m.push((mx, 0.0, mz), yaw=yaw)
+    hw = width / 2
+    m.ybox(-hw, hw, 0.0, h + 1.6, 0.0, 4.0, CP_RED, skip="-y")
+    m.boxes.append((tuple(round(float(v), 3) for v in m.world((0.0, (h + 1.6) / 2, 2.0))), (width, h + 1.6, 4.0), round(m.yaw_now(), 4)))
+    m.push((0.0, 0.0, 4.0))
+    striped_arch(m, 0.0, 0.8, width * 0.48, h * 0.42, depth=0.3, band=0.6, n=9)
+    pointed_opening(m, 0.0, h * 0.62, width * 0.3, h * 0.82, col=(70, 44, 36))
+    crenels(m, -hw, hw, h + 1.6, h=1.1, step=0.9, col=CP_WHITE)
+    m.pop()
+    for sx in (-1.0, 1.0):
+        lx, lz = m.world((sx * (hw + 0.6), 0.0, 4.0))[0], m.world((sx * (hw + 0.6), 0.0, 4.0))[2]
+        m.pop()
+        cp_minaret(m, lx, lz, minar, 1.35)
+        m.push((mx, 0.0, mz), yaw=yaw)
+    m.pop()
+
+
+def cp_tower(m: LM, a, b, nrm, h_base: float) -> None:
+    """Chisholm's tower in front of Humayun Mahal: square, four storeys, white bands, domed top."""
+    mx, mz = (a[0] + b[0]) / 2 + nrm[0] * 5.0, (a[1] + b[1]) / 2 + nrm[1] * 5.0
+    S = 4.6
+    top = 22.8
+    m.ybox(mx - S - 0.3, mx + S + 0.3, 0.0, 0.9, mz - S - 0.3, mz + S + 0.3, SH_STONE)
+    m.ybox(mx - S, mx + S, 0.9, top, mz - S, mz + S, CP_RED, skip="-y")
+    m.collider((mx, top / 2, mz), (2 * S + 0.6, top, 2 * S + 0.6))
+    for y in (5.2, 10.6, 16.0):
+        course(m, mx - S, mx + S, mz - S, mz + S, y, 0.45, 0.16, CP_WHITE)
+    for face, fx, fz in (("-x", mx - S, mz), ("+x", mx + S, mz), ("-z", mx, mz - S), ("+z", mx, mz + S)):
+        wall_frame(m, face, fx, fz)
+        striped_arch(m, 0.0, 0.9, 3.6, 3.8, depth=0.3, band=0.5, n=8)
+        for y0, y1 in ((6.6, 9.2), (12.0, 14.6)):
+            pointed_opening(m, 0.0, y0, 1.6, y1, col=(70, 44, 36))
+        striped_arch(m, 0.0, 17.2, 3.0, 20.0, band=0.45, n=7, glass=True)
+        crenels(m, -S - 0.2, S + 0.2, top, h=0.9, step=0.95, col=CP_WHITE)
+        m.pop()
+    for sx in (-1.0, 1.0):
+        for sz in (-1.0, 1.0):
+            cp_minaret(m, mx + sx * S, mz + sz * S, top + 2.0, 0.75)
+    rot = math.pi / 8
+    m.prism(8, S * 0.8, S * 0.8, top, top + 2.4, CP_WHITE, top=True, rot=rot, cx=mx, cz=mz)
+    onion_dome(m, mx, top + 2.4, mz, S * 0.78, seg=16, col=CP_DOME, lace=(214, 200, 176))
+
+
+def chepauk_humayun() -> LM:
+    m = LM()
+    rng = random.Random(3505)
+    poly = _local(HUMAYUN_FOOTPRINT)
+    walls = palace_block(m, poly, 12.8, rng, 18.5)
+    # The east entrance facing the beach, with the tower in front of it.
+    east = max(walls, key=lambda w: w[2][0] * math.dist(w[0], w[1]) ** 0.2)
+    cp_tower(m, east[0], east[1], east[2], 12.8)
+    # The new front on Wallajah Road (north) matches Kalas Mahal: a minareted entrance.
+    north = min(walls, key=lambda w: w[2][1])
+    cp_entrance(m, north[0], north[1], north[2], 12.8, 21.0)
+    return m
+
+
+def chepauk_kalas() -> LM:
+    m = LM()
+    rng = random.Random(3507)
+    poly = _local(KALAS_FOOTPRINT)
+    walls = palace_block(m, poly, 12.4, rng, 17.5)
+    # Minareted entrances on the west and south sides (Wikipedia).
+    longest = lambda ws: max(ws, key=lambda w: math.dist(w[0], w[1]))  # noqa: E731
+    west = longest([w for w in walls if w[2][0] < -0.7])
+    south = longest([w for w in walls if w[2][1] > 0.7])
+    for w in (west, south):
+        cp_entrance(m, w[0], w[1], w[2], 12.4, 21.5)
+    return m
+
+
+# ================================================================= Anna Salai (Mount Road)
+
+# Owner photos (Nov 27): LIC Building, 54 m, 1959 (Wikipedia): a slab whose long cream faces carry
+# close vertical fins over slit windows, the short ends dark horizontal glass bands, a terracotta
+# coping, rooftop plant rooms and the blue-and-white LIC sign on the roof. It stands on the real
+# OSM footprint (way 1110170916), long side along Anna Salai: local +x along the road (north-east),
+# local -z faces the road. The old box was ~470 m away, at the wrong LIC.
+LIC_FOOTPRINT = [(781.6, -1703.5), (794.3, -1688.4), (756.7, -1657.0), (743.9, -1672.2)]
+LIC_AXIS_DEG = -39.9
+LIC_CREAM = (248, 244, 230)
+LIC_CREAM_D = (230, 222, 200)
+LIC_GLASS = (52, 70, 78)
+LIC_SLIT = (96, 118, 120)
+LIC_COPING = (190, 92, 64)
+LIC_BLUE = (24, 74, 158)
+
+
+def lic() -> LM:
+    m = LM()
+    L, W, H = 24.4, 9.8, 54.0
+    floor_h = H / 14.0
+    m.ybox(-L, L, 0.0, H, -W, W, LIC_CREAM, skip="-y")
+    m.collider((0.0, H / 2, 0.0), (2 * L, H, 2 * W))
+    # Long faces (one on Anna Salai): cream fins close together, a narrow dark window between
+    # each pair on every floor, faint floor lines.
+    for sz in (-1.0, 1.0):
+        face = "+z" if sz > 0 else "-z"
+        wall_frame(m, face, 0.0, sz * W)
+        n = int(2 * L / 0.95)
+        gap = 2 * L / n
+        for f in range(1, 14):
+            y = f * floor_h
+            m.ybox(-L, L, y - 0.1, y + 0.1, 0.0, 0.2, LIC_CREAM_D)
+            for k in range(n):
+                x = -L + (k + 0.5) * gap
+                m.ybox(x - 0.17, x + 0.17, y + 0.55, y + floor_h - 0.45, 0.0, 0.03, LIC_SLIT)
+        for k in range(n + 1):
+            x = -L + k * gap
+            m.ybox(x - 0.16, x + 0.16, floor_h, H - 0.6, 0.0, 0.42, LIC_CREAM)
+        # Ground floor: shop fronts behind a terracotta-tiled canopy on the road side.
+        m.ybox(-L, L, 0.0, floor_h - 0.2, 0.0, 0.04, (60, 56, 52))
+        if sz < 0:
+            m.ybox(-L - 1.0, L + 1.0, floor_h - 0.4, floor_h - 0.1, 0.0, 3.2, LIC_COPING)
+            for k in range(9):
+                x = -L + 1.0 + k * (2 * L - 2.0) / 8
+                m.ybox(x - 0.14, x + 0.14, 0.0, floor_h - 0.4, 2.9, 3.18, (90, 90, 92))
+        m.pop()
+    # Short ends: dark horizontal glass bands in a cream frame.
+    for sx in (-1.0, 1.0):
+        face = "+x" if sx > 0 else "-x"
+        wall_frame(m, face, sx * L, 0.0)
+        for f in range(1, 14):
+            y = f * floor_h
+            m.ybox(-W + 0.9, W - 0.9, y + 0.45, y + floor_h - 0.35, 0.0, 0.05, LIC_GLASS)
+        for x in (-W, W):
+            m.ybox(x - 0.9 if x > 0 else x, x if x > 0 else x + 0.9, 0.0, H, 0.0, 0.35, LIC_CREAM)
+        m.pop()
+    # Coping, roof and plant rooms.
+    m.ybox(-L - 0.3, L + 0.3, H - 0.6, H + 0.5, -W - 0.3, W + 0.3, LIC_COPING)
+    m.ybox(-L + 0.4, L - 0.4, H + 0.5, H + 0.55, -W + 0.4, W - 0.4, (180, 176, 168))
+    m.ybox(-8.0, 6.0, H + 0.5, H + 4.2, -5.0, 5.0, LIC_CREAM_D)
+    m.ybox(-6.0, 4.0, H + 4.2, H + 6.4, -3.5, 3.5, LIC_CREAM)
+    # The roof sign: a white board facing Anna Salai (-z) with the blue logo panel and blue
+    # block letters L I C. Seen from the road, local +x is on the viewer's LEFT, so the sign is
+    # laid out from +x towards -x.
+    sx0, sx1, sy0, sy1, sz_ = -22.5, -9.0, H + 1.0, H + 5.6, -W + 1.2
+
+    def bx(x0, x1, y0, y1, z0, z1, col):  # mirrored: x measured from the sign's left edge
+        m.ybox(sx1 - x1, sx1 - x0, y0, y1, z0, z1, col)
+
+    for x in (0.6, sx1 - sx0 - 0.6):
+        bx(x - 0.15, x + 0.15, H + 0.5, sy0, sz_ + 0.2, sz_ + 0.5, (90, 90, 92))
+    bx(0.0, sx1 - sx0, sy0, sy1, sz_, sz_ + 0.4, (246, 246, 242))
+    bx(0.4, 4.3, sy0 + 0.4, sy1 - 0.4, sz_ - 0.05, sz_, LIC_BLUE)
+    bx(1.4, 3.3, sy0 + 1.4, sy1 - 1.4, sz_ - 0.1, sz_ - 0.05, (246, 246, 242))
+    lx, t, h0, h1 = 5.4, 0.55, sy0 + 0.7, sy1 - 0.7
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.2, h0, h0 + t, sz_ - 0.1, sz_, LIC_BLUE)
+    lx += 3.0
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    lx += 1.4
+    bx(lx, lx + t, h0, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.4, h0, h0 + t, sz_ - 0.1, sz_, LIC_BLUE)
+    bx(lx, lx + 2.4, h1 - t, h1, sz_ - 0.1, sz_, LIC_BLUE)
+    return m
+
+
+def _front_wall(poly, road):
+    """The footprint edge whose outward normal points most at the road (local coordinates)."""
+    poly = _ccw(poly)
+    best = None
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        ex, ez = b[0] - a[0], b[1] - a[1]
+        ln = math.hypot(ex, ez)
+        nx, nz = ez / ln, -ex / ln
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        dx, dz = road[0] - mx, road[1] - mz
+        dl = math.hypot(dx, dz) or 1.0
+        score = (nx * dx + nz * dz) / dl * min(ln, 30.0)
+        if best is None or score > best[0]:
+            best = (score, a, b, (nx, nz))
+    return best[1], best[2], best[3]
+
+
+def _local_pt(poly_world, pt):
+    cx, cz = _centroid(poly_world)
+    return (pt[0] - cx, pt[1] - cz)
+
+
+# Heritage neighbours (OSM footprints; descriptions from Madras Musings, Wikipedia, Outlook):
+HIGGINBOTHAMS_FOOTPRINT = [(826.9, -1799.3), (806.9, -1783.3), (805.7, -1785.2), (804.6, -1784.7), (795.5, -1791.2), (795.9, -1791.9),
+                           (792.5, -1794.3), (782.2, -1804.8), (791.3, -1812.6), (804.6, -1810.2), (812.8, -1808.3), (819.9, -1806.0),
+                           (826.7, -1802.1), (825.5, -1800.9)]
+HIGGINBOTHAMS_ROAD = (822.4, -1778.5)
+BHARAT_FOOTPRINT = [(868.1, -1767.9), (899.4, -1794.1), (916.8, -1784.7), (911.9, -1746.6), (901.4, -1748.2), (904.4, -1767.0),
+                    (894.2, -1773.2), (876.4, -1757.7)]
+BHARAT_ROAD = (869.2, -1798.9)
+AGURCHAND_FOOTPRINT = [(525.7, -1496.9), (470.4, -1451.4), (480.9, -1428.2), (497.8, -1436.1), (516.9, -1453.9), (518.9, -1451.5),
+                       (531.4, -1461.4), (533.5, -1458.8), (547.7, -1471.1)]
+AGURCHAND_ROAD = (491.9, -1481.3)
+GOVE_FOOTPRINT = [(565.9, -1507.9), (556.1, -1499.4), (544.0, -1489.0), (532.1, -1502.6), (554.0, -1521.6)]
+GOVE_ROAD = (536.4, -1520.4)
+
+WHITE_PAL = {"wall": (242, 240, 232), "pier": (226, 224, 216), "trim": (250, 250, 246), "roof": (170, 92, 64),
+             "window": (60, 96, 120), "arch": "round", "minaret": False}
+BHARAT_PAL = {"wall": (226, 204, 166), "pier": (206, 182, 142), "trim": (246, 240, 226), "roof": (176, 160, 140),
+              "window": (70, 60, 52), "arch": "pointed"}
+BRICK_PAL = {"wall": (184, 78, 54), "pier": (160, 64, 44), "trim": (240, 232, 214), "roof": (170, 120, 96),
+             "window": (64, 44, 38), "arch": "round"}
+
+
+def _hipped_tile_roof(m: LM, poly, h: float) -> None:
+    """Mangalore-tile roof over the footprint's bounding box, kept inside the walls."""
+    xs = [p[0] for p in poly]
+    zs = [p[1] for p in poly]
+    x0, x1, z0, z1 = min(xs) + 2.0, max(xs) - 2.0, min(zs) + 2.0, max(zs) - 2.0
+    if x1 - x0 < 3 or z1 - z0 < 3:
+        return
+    m.rfrustum(x1 - x0, z1 - z0, (x1 - x0) * 0.25, (z1 - z0) * 0.25, h, h + 3.2, (176, 84, 58),
+               cx=(x0 + x1) / 2, cz=(z0 + z1) / 2, side_cols=[(184, 90, 62), (168, 80, 56), (184, 90, 62), (168, 80, 56)])
+
+
+def higginbothams() -> LM:
+    m = LM()
+    poly = _local(HIGGINBOTHAMS_FOOTPRINT)
+    h = 10.6
+    palace_block(m, poly, h, random.Random(931353321), 0.0, WHITE_PAL)
+    _hipped_tile_roof(m, poly, h)
+    a, b, nrm = _front_wall(poly, _local_pt(HIGGINBOTHAMS_FOOTPRINT, HIGGINBOTHAMS_ROAD))
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    m.push((mx, 0.0, mz), yaw=math.atan2(nrm[0], nrm[1]))
+    # Palladian frontispiece: pilasters, a pediment, the blue name board over the door,
+    # stained glass in the round arches, and the cupola marked 1844.
+    w = 9.0
+    m.ybox(-w / 2, w / 2, 0.0, h + 1.6, 0.0, 1.0, WHITE_PAL["wall"])
+    m.boxes.append((tuple(round(float(v), 3) for v in m.world((0.0, (h + 1.6) / 2, 0.5))), (w, h + 1.6, 1.0), round(m.yaw_now(), 4)))
+    for x in (-w / 2 + 0.4, -1.5, 1.5, w / 2 - 0.4):
+        m.ybox(x - 0.35, x + 0.35, 0.0, h + 1.2, 1.0, 1.35, (250, 250, 246))
+    m.push((0.0, 0.0, 1.36))
+    _round_opening(m, 0.0, 0.6, 2.4, 3.2, (70, 50, 40), (250, 250, 246))
+    for x in (-3.0, 3.0):
+        striped = [(150, 60, 60), (60, 110, 150), (190, 150, 60)]
+        _round_opening(m, x, 1.0, 1.3, 3.0, striped[int(x > 0)], (250, 250, 246))
+        _round_opening(m, x, 6.4, 1.3, 8.2, striped[2], (250, 250, 246))
+    _round_opening(m, 0.0, 6.0, 2.0, 8.4, (60, 110, 150), (250, 250, 246))
+    m.ybox(-3.6, 3.6, 4.0, 5.1, 0.0, 0.25, (32, 72, 160))  # the blue-lettered board
+    for k in range(9):
+        m.ybox(-3.1 + k * 0.7, -2.8 + k * 0.7, 4.25, 4.85, 0.25, 0.3, (246, 246, 242))
+    m.pop()
+    m.extrude([(-w / 2 - 0.3, h + 1.6), (w / 2 + 0.3, h + 1.6), (0.0, h + 3.8)], 0.0, 1.4, (250, 250, 246), back=False)
+    m.prism(8, 1.3, 1.3, h + 1.6, h + 4.4, (250, 250, 246), cx=0.0, cz=-1.5, rot=math.pi / 8)
+    m.lathe([(1.4, 0.0), (1.35, 0.6), (1.0, 1.3), (0.45, 1.8), (0.0, 2.0)], 10, (244, 244, 238), cx=0.0, cz=-1.5, y=h + 4.4)
+    m.pop()
+    return m
+
+
+def bharat_insurance() -> LM:
+    m = LM()
+    poly = _local(BHARAT_FOOTPRINT)
+    h = 15.2
+    palace_block(m, poly, h, random.Random(211864557), 19.0, BHARAT_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(BHARAT_FOOTPRINT, BHARAT_ROAD))
+    # The 100 ft minarets either end of the front, a domed centre pavilion, arched verandah.
+    for p in (a, b):
+        q = (p[0] + nrm[0] * 0.8, p[1] + nrm[1] * 0.8)
+        cp_minaret(m, q[0], q[1], 29.0, 1.6, BHARAT_PAL)
+    cp_entrance(m, a, b, nrm, h, 24.0, width=10.0)
+    c = _centroid(poly)
+    m.prism(8, 4.2, 4.2, h, h + 2.4, BHARAT_PAL["trim"], cx=c[0], cz=c[1], rot=math.pi / 8)
+    onion_dome(m, c[0], h + 2.4, c[1], 3.8, seg=16, col=(240, 236, 224), lace=(214, 196, 160))
+    return m
+
+
+def agurchand() -> LM:
+    m = LM()
+    poly = _local(AGURCHAND_FOOTPRINT)
+    h = 13.4
+    palace_block(m, poly, h, random.Random(1122927001), 17.5, BRICK_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(AGURCHAND_FOOTPRINT, AGURCHAND_ROAD))
+    # The city's first 100 ft building: a tall domed tower at the front corner.
+    q = (a[0] + nrm[0] * 0.5, a[1] + nrm[1] * 0.5)
+    m.prism(8, 3.4, 3.4, 0.0, 26.0, BRICK_PAL["wall"], cx=q[0], cz=q[1], rot=math.pi / 8,
+            cols=[BRICK_PAL["wall"], BRICK_PAL["pier"]])
+    m.collider((q[0], 13.0, q[1]), (6.8, 26.0, 6.8))
+    for y in (5.2, 9.6, 14.0, 18.4, 22.8):
+        m.prism(8, 3.6, 3.6, y, y + 0.4, BRICK_PAL["trim"], cx=q[0], cz=q[1], rot=math.pi / 8, bottom=True)
+    m.prism(8, 3.0, 3.0, 26.0, 28.0, BRICK_PAL["trim"], cx=q[0], cz=q[1], rot=math.pi / 8)
+    onion_dome(m, q[0], 28.0, q[1], 2.8, seg=12, col=(236, 230, 214), lace=(250, 248, 240))
+    return m
+
+
+def gove() -> LM:
+    m = LM()
+    poly = _local(GOVE_FOOTPRINT)
+    h = 12.0
+    palace_block(m, poly, h, random.Random(1122927002), 16.5, BRICK_PAL)
+    a, b, nrm = _front_wall(poly, _local_pt(GOVE_FOOTPRINT, GOVE_ROAD))
+    # Ornate brick front: gables over the bays of the old car showroom.
+    mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    ln = math.dist(a, b)
+    m.push((mx, 0.0, mz), yaw=math.atan2(nrm[0], nrm[1]))
+    for k in range(3):
+        x = -ln / 3 + k * ln / 3
+        m.extrude([(x - 3.2, h), (x + 3.2, h), (x, h + 3.0)], -0.4, 0.3, BRICK_PAL["wall"], back=False)
+        m.bar((x - 3.4, h, 0.35), (x, h + 3.1, 0.35), 0.14, BRICK_PAL["trim"], 4)
+        m.bar((x + 3.4, h, 0.35), (x, h + 3.1, 0.35), 0.14, BRICK_PAL["trim"], 4)
+    m.pop()
+    return m
+
+
 # Areas the models replace (world x, z outlines): chunk buildings, trees, stalls, parked vehicles,
 # kolams, dogs and shop people inside them are removed by tools/osm/clear_landmark_sites.py.
 SANTHOME_FOOTPRINT = [(2014.4, 1705.1), (2037.8, 1711.1), (2036.0, 1718.3), (2057.9, 1724.0), (2061.6, 1722.6), (2062.4, 1718.9),
@@ -1052,10 +1804,29 @@ def world_place(origin, axis_deg: float):
     return {"x": round(origin[0], 3), "z": round(origin[1], 3), "yaw": round(-math.radians(axis_deg), 5)}
 
 
+# Grounds round a model where only procedural infill ("f" buildings) and dress points go.
+def chepauk_grounds():
+    """The palace grounds inside the compound (build_landmark_compounds.py "chepauk_palace" rect):
+    procedural infill goes, the real government buildings on the grounds stay."""
+    cx, cz, w, d, yaw = 2455.0, -1612.0, 112.0, 208.0, 2.903
+    c, s_ = math.cos(yaw), math.sin(yaw)
+    return [(cx + lx * c + lz * s_, cz - lx * s_ + lz * c) for lx, lz in ((-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2))]
+
+
+CLEAR_FILL = {"senate_house": lambda: senate_campus(), "chepauk_humayun_mahal": lambda: chepauk_grounds()}
+
 BUILDERS = {
     "santhome_basilica": (santhome, SANTHOME_ORIGIN, SANTHOME_AXIS_DEG, lambda: SANTHOME_FOOTPRINT),
     "kapaleeshwarar_temple": (kapaleeshwarar, KAPALI_ORIGIN, KAPALI_ROT_DEG, kapali_clear),
     "kapaleeshwarar_tank_mandapam": (tank_mandapam, TANK_CENTRE, TANK_AXIS_DEG, lambda: []),
+    "senate_house": (senate, SENATE_ORIGIN, SENATE_AXIS_DEG, lambda: SENATE_FOOTPRINT),
+    "chepauk_humayun_mahal": (chepauk_humayun, _centroid(HUMAYUN_FOOTPRINT), 0.0, lambda: HUMAYUN_FOOTPRINT),
+    "chepauk_kalas_mahal": (chepauk_kalas, _centroid(KALAS_FOOTPRINT), 0.0, lambda: KALAS_FOOTPRINT),
+    "lic_building": (lic, _centroid(LIC_FOOTPRINT), LIC_AXIS_DEG, lambda: LIC_FOOTPRINT),
+    "higginbothams": (higginbothams, _centroid(HIGGINBOTHAMS_FOOTPRINT), 0.0, lambda: HIGGINBOTHAMS_FOOTPRINT),
+    "bharat_insurance_building": (bharat_insurance, _centroid(BHARAT_FOOTPRINT), 0.0, lambda: BHARAT_FOOTPRINT),
+    "agurchand_mansion": (agurchand, _centroid(AGURCHAND_FOOTPRINT), 0.0, lambda: AGURCHAND_FOOTPRINT),
+    "gove_building": (gove, _centroid(GOVE_FOOTPRINT), 0.0, lambda: GOVE_FOOTPRINT),
 }
 
 
@@ -1078,6 +1849,8 @@ def main() -> int:
         place.update({"id": name, "glb": f"res://assets/models/landmarks/{name}.glb", "tris": tris,
                       "boxes": [list(c) + list(s) + [y] for c, s, y in m.boxes],
                       "clear": [[round(x, 2), round(z, 2)] for x, z in clear()]})
+        if name in CLEAR_FILL:
+            place["clear_fill"] = [[round(x, 2), round(z, 2)] for x, z in CLEAR_FILL[name]()]
         by_id[name] = place
         print(f"{name}: {tris} triangles, {len(m.boxes)} collider boxes")
     placements = {"_note": "Generated by tools/art/make_landmarks.py: one GLB per landmark; boxes = "

@@ -52,7 +52,9 @@ func _on_player_pose(position: Vector3, _heading: Vector3) -> void:
 	_last_position = position
 	if _mission_suspended or _ride_suspended or not _active or _gps == null or _gps.path.is_empty():
 		return
-	if position.distance_to(_destination) <= ARRIVAL_M:
+	# A pin off the road (a park, a landmark's middle) is reached at the route's end, the nearest
+	# road point to it; before Nov 27 such a pin never said "arrived".
+	if position.distance_to(_destination) <= ARRIVAL_M or position.distance_to(_gps.path[_gps.path.size() - 1]) <= ARRIVAL_M:
 		_clear()
 		SignalBus.hint_requested.emit("You've arrived!", 3.0)
 		return

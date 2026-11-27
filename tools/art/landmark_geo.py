@@ -64,6 +64,10 @@ class LM(Mesh):
         self.boxes.append((tuple(round(float(v), 3) for v in self.world(centre)),
                            tuple(round(float(v), 3) for v in size), round(self.yaw_now(), 4)))
 
+    def flat_y(self, x0, x1, z0, z1, y, col) -> None:
+        """A horizontal rectangle facing up (lawns, paths)."""
+        self.quad((x0, y, z1), (x1, y, z1), (x1, y, z0), (x0, y, z0), col, (0, 1, 0))
+
     # ------------------------------------------------------------ solids
     def cbox(self, centre, size, col, skip: str = "") -> None:
         cx, cy, cz = centre
