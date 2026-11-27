@@ -257,12 +257,12 @@ func _test_banner_policy() -> void:
 	var was_tutorial: bool = GameState.tutorial_active
 	GameState.tutorial_active = false
 	GameState.no_ads = false
-	for screen: String in ["main_menu", "garage", "pause", "full_map", "shift_summary"]:
+	for screen: String in ["garage", "pause", "full_map", "shift_summary"]:
 		_check("Banner allowed on the calm screen '%s'" % screen, bool(m.call("banner_allowed", screen)))
-	for screen: String in ["driving", "loading", "fine", ""]:
+	for screen: String in ["main_menu", "driving", "loading", "fine", ""]:
 		_check("No banner on '%s'" % screen, not bool(m.call("banner_allowed", screen)))
 	GameState.tutorial_active = true
-	_check("No banner during the tutorial", not bool(m.call("banner_allowed", "main_menu")))
+	_check("No banner during the tutorial", not bool(m.call("banner_allowed", "pause")))
 	GameState.tutorial_active = false
 	GameState.no_ads = true
 	_check("No banner for No Ads buyers", not bool(m.call("banner_allowed", "pause")))

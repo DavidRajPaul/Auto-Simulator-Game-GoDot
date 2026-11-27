@@ -57,8 +57,8 @@ Ad content is capped at **PG** (`AdConfig.max_ad_content_rating`).
 ## Where ads appear
 
 **Banners** (standard 320 × 50, bottom centre, inside the safe area) only on calm screens, listed in
-`AdConfig.banner_screens`: main menu, garage, pause menu, full city map (it pauses the game) and the
-shift summary. Never while driving, never on the loading screen or a traffic-fine notice, never in
+`AdConfig.banner_screens`: garage, pause menu, full city map (it pauses the game) and the shift
+summary. Not on the home screen (owner's call; easy to add back in that list). Never while driving, never on the loading screen or a traffic-fine notice, never in
 the tutorial, never for No Ads buyers. AdMob's rules forbid banners on a game play screen and next
 to buttons, so each screen moves its bottom row up by `AdMonetizationManager.banner_inset_px()`:
 the banner plus a 24 px gap. One banner is loaded and then shown/hidden as screens change.
