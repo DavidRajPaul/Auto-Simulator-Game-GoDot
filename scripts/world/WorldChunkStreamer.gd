@@ -3087,12 +3087,8 @@ func _build_landmarks() -> void:
 					_base_collider(node, holder, Vector3(14.0, 48.0, 14.0))
 				else:
 					_kit_part(node, holder, LandmarkKit.lighthouse(), Vector3(14.0, 9.0, 14.0))
-			"gopuram":
-				_kit_part(node, holder, LandmarkKit.gopuram(), Vector3(25.5, 11.0, 15.5))
 			"temple":
 				pass # the procedural temple model (LandmarkModels, below)
-			"tower":
-				_kit_part(node, holder, LandmarkKit.lic_building(), Vector3(18, 54, 18))
 			"bridge":
 				_build_napier(node, holder, l.get("decks", LandmarkKit.NAPIER_DEFAULT_DECKS) as Array)
 			"flyover":

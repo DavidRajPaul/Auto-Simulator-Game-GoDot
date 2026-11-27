@@ -57,7 +57,7 @@ EXTRA = [
     {"id": "svc_school_bus", "src": "generic_civil_service_vehicles_pack/scene.gltf", "out": "traffic", "align": True, "under": "school_bus", "size_m": 9.5, "budget": 2400, "atlas": 512, "credit": CIVIL},
     {"id": "svc_tow_truck", "src": "generic_civil_service_vehicles_pack/scene.gltf", "out": "traffic", "align": True, "under": "towtruck", "size_m": 6.4, "budget": 2400, "atlas": 512, "credit": CIVIL},
     # Traffic police (static, arms out = directing traffic). Each uniform is its own model.
-    {"id": "police_f_khaki", "src": "female_police_officer_in_multiple_uniforms/scene.gltf", "out": "people", "under": "Female_002_1", "height_m": 1.62, "budget": 3000, "atlas": 512, "credit": POLICE_F},
+    # police_f_khaki (Umar's female officer) was removed on Nov 27: the game never used it.
     {"id": "police_m_ips", "src": "indian_ipsofficer/scene.gltf", "out": "people", "height_m": 1.76, "budget": 4000, "atlas": 512, "paint": "police_khaki", "scan": True, "no_cluster": True,
      "credit": '"Indian ipsOfficer" by @MgsGamer5 (Sketchfab), CC BY 4.0 — uniform painted (texture missing from the upload)'},
     # LPG autogas station, frontage scaled to a city lot. The real brand's logo texture is redrawn

@@ -32,6 +32,15 @@ func _run() -> void:
 
 	_check("Road graph published to SignalBus", SignalBus.current_road_graph != null and savari.graph != null)
 	_check("Hails appear around the player", savari.hails.size() >= 1, "%d hails" % savari.hails.size())
+	# Nov 27 audit: landmark / zone destinations stand up to ~110 m off the road; their drop-off
+	# is the nearest kerb, so every destination can actually be finished.
+	var far: Array[String] = []
+	for d: Dictionary in savari.destinations:
+		var drop: Vector3 = savari.drop_point_for(d)["pos"]
+		var cp: Dictionary = savari.graph.closest_point(drop)
+		if float(cp["dist"]) > SavariManager.DROPOFF_RADIUS_M * 0.6:
+			far.append("%s %.0f m" % [d["name"], float(cp["dist"])])
+	_check("Every Savari destination has a drop-off the auto can reach", far.is_empty(), ", ".join(far))
 	var mm: MiniMap = main.get_node("PassengerHUD").minimap
 	_check("Mini-map built its road grid", mm != null and not mm._grid.is_empty())
 	await _test_haggle_timeout(savari, auto)

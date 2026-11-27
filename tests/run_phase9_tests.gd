@@ -340,7 +340,7 @@ func _test_landmark_kit() -> void:
 	_check("Parked two-wheelers are distributed near businesses", parked >= 10, "%d placements" % parked)
 	_check("Parked two-wheelers are single real-size bikes (scale 1, file exists)", parked_single)
 	_check("Maintenance vehicles appear at service forecourts", maintenance >= 4, "%d displays" % maintenance)
-	for landmark_mesh: ArrayMesh in [LandmarkKit.lic_building(), LandmarkKit.vivekananda_house(), LandmarkKit.napier_bridge()]:
+	for landmark_mesh: ArrayMesh in [LandmarkKit.vivekananda_house(), LandmarkKit.napier_bridge()]:
 		_check("Heritage mesh is batched and nonempty", landmark_mesh.get_surface_count() == 1 and landmark_mesh.get_aabb().size.length() > 10.0)
 	var heritage_counts: Dictionary = {}
 	for file_name: String in DirAccess.get_files_at("res://data/world/chunks"):
@@ -359,10 +359,8 @@ func _test_landmark_kit() -> void:
 	_test_landmark_compounds()
 	_test_anna_salai_frontage()
 	var lh: AABB = LandmarkKit.lighthouse().get_aabb()
-	var gp: AABB = LandmarkKit.gopuram().get_aabb()
 	_check("Lighthouse is ~46 m tall and slender", lh.size.y > 44.0 and lh.size.y < 52.0 and lh.size.x < 16.0, str(lh.size))
-	_check("Gopuram is ~35–40 m tall on a 25 m base", gp.size.y > 32.0 and gp.size.y < 42.0 and gp.size.x > 22.0, str(gp.size))
-	_check("Landmarks share one vertex-colour material", LandmarkKit.lighthouse().surface_get_material(0) == LandmarkKit.gopuram().surface_get_material(0))
+	_check("Landmarks share one vertex-colour material", LandmarkKit.lighthouse().surface_get_material(0) == LandmarkKit.vivekananda_house().surface_get_material(0))
 
 func _test_building_details() -> void:
 	var s: WorldChunkStreamer = WorldChunkStreamer.new()

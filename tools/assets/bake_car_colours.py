@@ -24,8 +24,9 @@ import numpy as np
 import trimesh
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "assets" / "models" / "traffic"
-OUT = SRC / "cars"
+# Source cars live outside the exported assets (Nov 27 cleanup: they shipped in the APK unused).
+SRC = ROOT / "assets_src" / "incoming" / "models" / "quaternius_cars"
+OUT = ROOT / "assets" / "models" / "traffic" / "cars"
 
 # Body file -> its paintable material (everything else keeps its own flat colour).
 BODIES = {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A continuous wall of buildings along Anna Salai, right behind the footpath.
+"""A continuous wall of buildings along Anna Salai (and Binny Road), right behind the footpath.
 
 Nov 27 owner report (with aerial photos of Anna Salai round the LIC Building): "look how
 compacted the buildings are. The roads will be wide, but just after the roads there will be
@@ -29,9 +29,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
+from place_street_life import SHOP_BAY_M, SHOP_MODELS, h01
+
 ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "data" / "world"
-FRONTAGE_ROADS = ("Anna Salai (Mount Road)", "Anna Salai")
+FRONTAGE_ROADS = ("Anna Salai (Mount Road)", "Anna Salai", "Binny Road")  # Binny Road: the old LIC placeholder plot
 CELL = 0.5
 SEED = 270011
 STEP = 0.5            # station spacing along the carriageway
@@ -336,7 +338,69 @@ def main() -> int:
         else:
             kept.append(n)
     (WORLD / "building_names.json").write_text(json.dumps(kept, separators=(",", ":")))
-    print(f"Anna Salai frontage: {added} lots (replacing {len(gone_fill)} infill blocks, {removed_prev} old lots); "
+    # Shopkeepers and customers at the new shop fronts (place_street_life.py rules: a keeper
+    # 0.8 m out of every 7 m bay, one or two customers facing the shop). Shop people already
+    # standing at a lot's front (an earlier run's) are replaced, so the pass stays idempotent.
+    fronts = []
+    for q, fl in lots:
+        (ax, az), (bx, bz) = q[0], q[1]
+        ln = math.hypot(bx - ax, bz - az)
+        if ln < 3.0:
+            continue
+        tx, tz = (bx - ax) / ln, (bz - az) / ln
+        cx, cz = sum(p[0] for p in q) / 4, sum(p[1] for p in q) / 4
+        nx, nz = -tz, tx
+        if (cx - ax) * nx + (cz - az) * nz > 0:  # point away from the lot, at the street
+            nx, nz = -nx, -nz
+        fronts.append((ax, az, tx, tz, nx, nz, ln))
+    keepers = 0
+    for i in range(c0[0], c1[0] + 1):
+        for j in range(c0[1], c1[1] + 1):
+            f = WORLD / "dress" / f"c_{i}_{j}.json"
+            if not f.exists():
+                continue
+            d = load(f)
+            x0, z0, x1, z1 = i * size, j * size, (i + 1) * size, (j + 1) * size
+            mine = [fr for fr in fronts if x0 - 20 <= fr[0] < x1 + 20 and z0 - 20 <= fr[1] < z1 + 20]
+            if not mine:
+                continue
+
+            def at_front(x: float, z: float) -> bool:
+                for ax, az, tx, tz, nx, nz, ln in mine:
+                    u = (x - ax) * tx + (z - az) * tz
+                    v = (x - ax) * nx + (z - az) * nz
+                    if -0.5 <= u <= ln + 0.5 and 0.0 <= v <= 2.6:
+                        return True
+                return False
+
+            people = [p for p in d.get("shop_people", []) if int(p[4]) == 2 or not at_front(float(p[0]), float(p[1]))]
+            busy = [(float(t[0]), float(t[1]), 0.7) for t in d.get("trees", []) + d.get("poles", []) + d.get("lamps", [])]
+            busy += [(float(t[0]), float(t[1]), 1.3) for t in d.get("parking", [])]
+            busy += [(float(t[0]), float(t[1]), 1.7) for t in d.get("stalls", []) + d.get("carts", [])]
+            for ax, az, tx, tz, nx, nz, ln in mine:
+                if not (x0 <= ax < x1 and z0 <= az < z1):
+                    continue  # each front is written once, into the chunk its first corner is in
+                bays = max(1, int(round(ln / SHOP_BAY_M)))
+                out_yaw = math.atan2(nx, nz)
+                for k in range(bays):
+                    c = (k + 0.5) / bays * ln
+                    cx, cz = ax + tx * c, az + tz * c
+                    spots = [(0.35 * (h01(cx, cz, 20.0) - 0.5), 0.8, out_yaw, 0)]
+                    for q in range(1 + int(h01(cx, cz, 21.0) * 2.2)):
+                        side = (h01(cx, cz, 22.0 + q) - 0.5) * 2.6
+                        spots.append((side, 1.55 + 0.6 * h01(cx, cz, 25.0 + q), out_yaw + math.pi + (h01(cx, cz, 28.0 + q) - 0.5) * 0.9, 1))
+                    for along, out, yaw, kind in spots:
+                        px_, pz_ = cx + tx * along + nx * out, cz + tz * along + nz * out
+                        if on_lot(px_, pz_) or any(math.hypot(px_ - bx_, pz_ - bz_) < r for bx_, bz_, r in busy):
+                            continue
+                        if any(math.hypot(px_ - float(q_[0]), pz_ - float(q_[1])) < 0.6 for q_ in people[-6:]):
+                            continue
+                        people.append([round(px_, 2), round(pz_, 2), round(yaw, 2), int(h01(px_, pz_, 31.0) * SHOP_MODELS), kind])
+                        keepers += 1
+            d["shop_people"] = people
+            f.write_text(json.dumps(d, separators=(",", ":")))
+    print(f"Street frontage: {keepers} shop people at the new fronts")
+    print(f"Street frontage: {added} lots (replacing {len(gone_fill)} infill blocks, {removed_prev} old lots); "
           f"cleared {dress_gone} dress points, {walls_gone} walls, {boards_gone} name boards")
     return 0
 
