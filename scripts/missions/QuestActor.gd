@@ -95,6 +95,7 @@ func wear(items: Variant) -> void:
 		return
 	var found: Array[Node] = body.find_children("*", "Skeleton3D", true, false)
 	if found.is_empty():
+		_wear_unrigged(items)
 		return
 	var skel: Skeleton3D = found[0] as Skeleton3D
 	if _anim != null and _anim.has_animation("idle"):
@@ -129,6 +130,22 @@ func wear(items: Variant) -> void:
 		mi.transform = bone_me.affine_inverse() * want
 	if _clip != "":
 		play(_clip, 0.0)
+
+## Unrigged models (the constable) have no bones: neck and head items hang from the body root at a fixed height.
+const UNRIGGED_ANCHORS: Dictionary = {"Neck": Vector3(0.0, 1.42, 0.0), "Head": Vector3(0.0, 1.6, 0.0)}
+
+func _wear_unrigged(items: Variant) -> void:
+	for raw: Variant in items:
+		var item: String = str(raw)
+		var spec: Dictionary = QuestWear.spec(item)
+		if spec.is_empty() or not UNRIGGED_ANCHORS.has(str(spec["bone"])):
+			continue
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.name = "Wear_" + item
+		mi.mesh = QuestWear.mesh(item)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(mi)
+		mi.position = (UNRIGGED_ANCHORS[str(spec["bone"])] as Vector3) + (spec["at"] as Vector3)
 
 func place(at: Vector3) -> void:
 	_target = Vector3.INF

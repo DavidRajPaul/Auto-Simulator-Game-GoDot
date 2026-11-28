@@ -1,0 +1,783 @@
+[gd_resource type="Resource" script_class="QuestStoryData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/missions/QuestStoryData.gd" id="story"]
+[resource]
+script = ExtResource("story")
+voice_dir = "res://assets/audio/voice/sq16"
+speakers = {
+"p": "VO_SPK_PANDIAN",
+"d": "VO_SPK_DRIVER",
+"k": "VO_SPK_KANAGU",
+"s": "VO_SPK_SUNDAR",
+"n": "VO_SPK_KAVITHA_NURSE"
+}
+cast = {
+"pandian": {
+"model": "res://assets/models/people/police_m_ips.glb",
+"scale": 1.0,
+"world": Vector3(541.6, 0, -490.2),
+"face": Vector3(537.6, 0, -490.2),
+"anim": "idle",
+"wear": PackedStringArray("whistle"),
+"stages": PackedStringArray("intro", "brief"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"kanagu": {
+"model": "res://assets/models/people/woman_saree_maroon.glb",
+"scale": 1.0,
+"world": Vector3(609.1, 0, -767.6),
+"face": Vector3(602.6, 0, -769.1),
+"anim": "idle",
+"wear": PackedStringArray("basket", "jasmine"),
+"stages": PackedStringArray("yield_1", "scene_a"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"sundar": {
+"model": "res://assets/models/people/old_man_veshti.glb",
+"scale": 1.0,
+"world": Vector3(683.8, 0, -538.2),
+"face": Vector3(679.6, 0, -534.3),
+"anim": "idle",
+"wear": PackedStringArray("towel", "specs"),
+"stages": PackedStringArray("yield_2", "scene_b"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"nurse": {
+"model": "res://assets/models/people/woman_coat.glb",
+"scale": 1.0,
+"world": Vector3(648.9, 0, -352.1),
+"face": Vector3(650.6, 0, -356.2),
+"anim": "idle",
+"wear": PackedStringArray("stethoscope", "clipboard"),
+"stages": PackedStringArray("yield_3", "scene_c"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+}
+}
+props = {}
+cutscenes = {
+"intro": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:pandian",
+"fov": 60
+},
+"act": {
+"pandian": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq16_p01",
+"line_at": 0.6,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 56
+},
+"act": {
+"pandian": {
+"to": "beside:pandian",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "pandian",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d01"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 36
+},
+"act": {
+"pandian": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_p02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d02"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 38
+},
+"act": {
+"pandian": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_p03"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d03"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 36
+},
+"act": {
+"pandian": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_p04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d04"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 36
+},
+"act": {
+"pandian": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_p05"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 48
+},
+"act": {
+"pandian": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_p06"
+}, {
+"cam": {
+"eye": {
+"from": "role:pandian",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pandian",
+"fov": 46
+},
+"act": {
+"pandian": {
+"anim": "idle",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"min_s": 0.6,
+"hold": true
+}],
+"scene_a": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:kanagu",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:kanagu",
+"fov": 60
+},
+"act": {
+"kanagu": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq16_k01",
+"line_at": 0.5,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:kanagu",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:kanagu",
+"fov": 56
+},
+"act": {
+"kanagu": {
+"to": "beside:kanagu",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "kanagu",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d11"
+}, {
+"cam": {
+"eye": {
+"from": "role:kanagu",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:kanagu",
+"fov": 36
+},
+"act": {
+"kanagu": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_k02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d12"
+}, {
+"cam": {
+"eye": {
+"from": "role:kanagu",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:kanagu",
+"fov": 36
+},
+"act": {
+"kanagu": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_k03"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d13"
+}, {
+"cam": {
+"eye": {
+"from": "role:kanagu",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:kanagu",
+"fov": 48
+},
+"act": {
+"kanagu": {
+"anim": "wave",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_k04"
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"kanagu": {
+"to": Vector3(609.1, 0, -767.6),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5
+}],
+"scene_b": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:sundar",
+"fov": 60
+},
+"act": {
+"sundar": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq16_s01",
+"line_at": 0.5,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:sundar",
+"fov": 56
+},
+"act": {
+"sundar": {
+"to": "beside:sundar",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "sundar",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d14"
+}, {
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:sundar",
+"fov": 38
+},
+"act": {
+"sundar": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_s02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d15"
+}, {
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:sundar",
+"fov": 34
+},
+"act": {
+"sundar": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_s03"
+}, {
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:sundar",
+"fov": 38
+},
+"act": {
+"sundar": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_s04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d16"
+}, {
+"cam": {
+"eye": {
+"from": "role:sundar",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:sundar",
+"fov": 48
+},
+"act": {
+"sundar": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_s05"
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"sundar": {
+"to": Vector3(683.8, 0, -538.2),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5
+}],
+"scene_c": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:nurse",
+"fov": 60
+},
+"act": {
+"nurse": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq16_n01",
+"line_at": 0.5,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 56
+},
+"act": {
+"nurse": {
+"to": "beside:nurse",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "nurse",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d17"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 38
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d18"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 38
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n03"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d19"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 38
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d20"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 34
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n05"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d21"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 36
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n06"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq16_d22"
+}, {
+"cam": {
+"eye": {
+"from": "role:nurse",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:nurse",
+"fov": 46
+},
+"act": {
+"nurse": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq16_n07",
+"fade_out": 0.8
+}]
+}
+barks = {
+"yield_1": {
+"enter": ["sq16_d05"],
+"idle": ["sq16_d06", "sq16_d07", "sq16_d08"],
+"idle_s": Vector2(22.0, 36.0),
+"impact": "sq16_d10",
+"jolt": "sq16_d10"
+},
+"yield_2": {
+"enter": ["sq16_d08"],
+"idle": ["sq16_d09", "sq16_d07", "sq16_d06"],
+"idle_s": Vector2(24.0, 38.0),
+"impact": "sq16_d10",
+"jolt": "sq16_d10"
+},
+"yield_3": {
+"enter": ["sq16_d09"],
+"idle": ["sq16_d08", "sq16_d07", "sq16_d05"],
+"idle_s": Vector2(24.0, 38.0),
+"impact": "sq16_d10",
+"jolt": "sq16_d10"
+}
+}

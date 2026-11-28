@@ -208,3 +208,55 @@ fronts with painted bilingual boards from one atlas (`tools/art/make_quest_signs
 Tests: `run_story_quest_tests` plays it both ways round and both endings; `run_twelve_quest_tests` keeps
 the spill / resume / retry rules; `SHOT_QUEST=sq_002` (SHOT_CHOICE, SHOT_SECRET) in `tests/shot_story.tscn`
 renders it, and `PLACE_KEY=SQ02_P_COFFEE` (…_TAILOR, _BOOKS, _TEA) in `tests/shot_places.tscn` renders a shop.
+
+## Room for an Ambulance
+
+Owner request (Nov 28): more side quests with cutscenes and dialogue, in the order Room for an Ambulance,
+The Monsoon Supply Run, A Mirror Through Mount Road, Three Clues to Madras, Narrow-Lane Promise, Rain Before
+Pack-Up. `tools/quests/build_sq16_story.py` holds every line once (44 lines) and writes the mission, the
+story, `docs/voice/SQ16_Ambulance_Voice_Script.md` and the subtitles. The shots and the ui.csv / voice-script
+writers are shared in `tools/quests/story_common.py` (new builders use it; sq_002 still carries its own copy).
+No rider. The drive is the old one: three `yield` stages (indicator, then stop on the marker; the pooled
+ambulance from `MissionDirector`), 170 Rs + 20 XP.
+
+| Who | Model | Wears (QuestWear) | Where |
+|---|---|---|---|
+| Constable Pandian, 22 years with a whistle that has stopped nothing | `police_m_ips` | whistle | the start, Royapettah High Road |
+| Kanagu akka, vegetable seller | `woman_saree_maroon` | basket, jasmine | stop 1, Westcott Road |
+| Sundar, retired ambulance driver now in an auto | `old_man_veshti` | towel, spectacles | stop 2, Peters Road |
+| Sister Kavitha, the nurse | `woman_coat` | stethoscope, clipboard | stop 3, the hospital gate |
+
+1. **Intro**: Pandian waves the auto over and makes the driver his "second constable": indicator on, kerb,
+   marker. "In Chennai the indicator is a decoration, like the garland on a new auto." Holds on one choice
+   ("I'll make way") so the job card shows first.
+2. **Stop 1**: brinjals in the gutter, "thirty vehicles and only you used an indicator". **Stop 2**: Sundar,
+   "we never cut through, you open the road, the siren only asks". **Stop 3**: mother and baby are fine, and
+   the family named the boy after what the driver did: Indicator Kumar.
+3. Each person has their own cutscene stage after its `yield` stage (`scene_a` / `scene_b` / `scene_c`), so a
+   person is in the cast only for their `yield` + scene stages.
+
+Tests: `run_story_quest_tests` `_ambulance_playthrough`; `run_six_quest_tests` keeps the yield rules;
+`SHOT_QUEST=sq_016` in `tests/shot_story.tscn`.
+
+## The Monsoon Supply Run
+
+`tools/quests/build_sq17_story.py` (39 lines, `docs/voice/SQ17_Monsoon_Voice_Script.md`). Rain quest
+(`scenario_weather = "rain"`): the bundles lose quality in the wet, the flooded junction fails the run,
+the shelter takes two bundles and the desk one in the order the player picks. 205 Rs + 20 XP. The cargo
+stages keep every old field (`story_tres.ORDER` now also writes `cargo_delta`, `cargo_delta_options`,
+`weather_loss_per_s`, `avoid_center`, `avoid_radius_m`, `action_key`).
+
+| Who | Model | Wears (QuestWear) | Where |
+|---|---|---|---|
+| Vasanthi Madam, relief store coordinator | `woman_saree_kanchi` | spectacles, clipboard | the relief store |
+| Rafiq, volunteer who shouts from inside | `young_man` | steel glass | the relief store |
+| Jeyaraj, flood watchman (measures in his own knees) | `old_man_veshti` | umbrella, towel | the flood sign |
+| Maragatham Paati, runs the shelter (one rule: a share each, nobody gets two) | `woman_saree_green` | steel glass, jasmine | the shelter |
+| Pooja, relief desk ("signing makes you a volunteer") | `girl_churidar` | pencil, towel | the relief desk |
+
+Flow: intro scene, **load** (stop-and-do, not a scene), **read the sign** (stop-and-do) → the watchman's scene,
+held on the order choice, two timed deliveries each followed by the matching scene (`first_drop` /
+`second_drop`, `if_choice` on "order"), then a closing line over the second scene.
+Tests: `run_story_quest_tests` `_monsoon_playthrough` (both orders); `run_twenty_four_quest_tests` keeps the
+cargo rules; `SHOT_QUEST=sq_017` (SHOT_CHOICE) in `tests/shot_story.tscn`.
+New QuestWear items: `whistle`, `stethoscope`, `basket`, `umbrella`, `clipboard`.
