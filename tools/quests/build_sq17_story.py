@@ -41,7 +41,7 @@ AVOID = V3((412.8, 0, -253.6))   # the flooded junction
 # Where the people stand: clear kerb spots checked against the buildings and the road edge.
 VASANTHI = V3((400.1, 0, -195.7))
 RAFIQ = V3((395.2, 0, -194.9))
-JEYARAJ = V3((365.6, 0, -144.6))
+JEYARAJ = V3((365.5, 0, -147.4))   # beside the flood board, not behind it (the board has no collider)
 MARAGATHAM = V3((328.5, 0, -198.4))
 POOJA = V3((480.5, 0, -213.5))
 # The flood (build_flood.py): circles (x, z, radius) round every place and the streets between
