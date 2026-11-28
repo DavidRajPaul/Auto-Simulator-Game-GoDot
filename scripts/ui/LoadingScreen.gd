@@ -63,6 +63,7 @@ static func go(tree: SceneTree, path: String) -> LoadingScreen:
 func _ready() -> void:
 	layer = 100
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	AdMonetizationManager.set_screen("loading") # the menu's banner goes before the city loads
 	_build()
 	_tip_index = randi() % TIP_KEYS.size()
 	_tip.text = tr(TIP_KEYS[_tip_index])

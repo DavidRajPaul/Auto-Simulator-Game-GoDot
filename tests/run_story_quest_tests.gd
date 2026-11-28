@@ -10,6 +10,7 @@ extends Node
 const QUEST: String = "sq_007"
 const PAATI: String = "sq_004"
 const WEDDING: String = "sq_001"
+const MARGAZHI: String = "sq_003"
 const MAX_SCENE_S: float = 80.0
 
 var passed: int = 0
@@ -75,11 +76,13 @@ func _run() -> void:
 	_content_checks(QUEST)
 	_content_checks(PAATI)
 	_content_checks(WEDDING)
+	_content_checks(MARGAZHI)
 	await _full_playthrough()
 	await _skip_and_home_branch()
 	await _abandon_mid_scene()
 	await _paati_playthrough()
 	await _paati_skips()
+	await _margazhi_playthrough()
 	_language_check()
 	root.queue_free()
 	SignalBus.current_road_graph = null
@@ -574,6 +577,62 @@ func _paati_skips() -> void:
 	while clock - t0 < MAX_SCENE_S and director.run != null:
 		await get_tree().process_frame
 	check("Taking the fare pays %s" % str(last_reward), last_reward == Vector2i(180, 25) and _said("sq04_m08"))
+	rider._clear()
+
+## "Margazhi Missing Beat": Sankaran rides in the back, Ganesan brings the drum, the front-gate
+## choice (the wrong gate sends you round), the back gate, and staying for the concert.
+func _margazhi_playthrough() -> void:
+	rider._clear()
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	line_times.clear()
+	hidden_shots.clear()
+	phone_frames.clear()
+	var def: MissionDef = director.registry.get_mission(MARGAZHI)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	rider._scan = 0.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check("Sankaran waits by the marker", rider.state == QuestRider.State.WAITING and rider.quest_id == MARGAZHI)
+	check("Margazhi starts with a cutscene, controls locked", director.start(MARGAZHI) and story.cinematic and stage() == "intro" and auto.freeze)
+	watch_cast = true
+	check("Intro ends with Sankaran aboard, on to the music shop", await run_until("ask_shop", MAX_SCENE_S) and rider.is_aboard() and not director.rider_missing())
+	check("Intro dialogue in order, never overlapping", _said("sq03_d03") and _no_overlap(PackedStringArray(["sq03_s01", "sq03_d01", "sq03_s02", "sq03_d02", "sq03_s03", "sq03_s04", "sq03_d03"])))
+	check("Controls come back after the intro", not story.cinematic and not auto.freeze and not modal_open)
+	check("Ganesan stands at his shop", story.actors.has("ganesan"))
+	place_auto(director.current_stage().target)
+	check("Stopping beside Ganesan starts his scene", await run_until("shop", 2.0) and story.cinematic)
+	check("He brings the drum and tells you about the back gate", await run_until("approach", MAX_SCENE_S) and _said("sq03_g04") and _said("sq03_g05"))
+	check("Shop lines in order", _no_overlap(PackedStringArray(["sq03_g01", "sq03_s09", "sq03_g02", "sq03_d04", "sq03_g03", "sq03_g04", "sq03_d05", "sq03_g05"])))
+	var drive: MissionStage = director.current_stage()
+	check("The drive is timed, capped at 32 km/h and the drum can be hurt", drive.deadline_s > 0.0 and drive.max_speed_kmh == 32.0 and drive.quality_key == "instrument")
+	await get_tree().create_timer(0.2).timeout
+	check("Sankaran: slowly now", _said("sq03_s10"))
+	SignalBus.player_impact.emit({"severity": 0.6})
+	await get_tree().create_timer(0.3).timeout
+	check("A knock: Sankaran cries out for his drum", _said("sq03_s13"))
+	check("The queue and the volunteer are at the front gate", story.actors.has("volunteer") and story.actors.has("rasika_1"))
+	place_auto(drive.target)
+	check("At the front gate: the volunteer asks which way; the scene holds on the choice", await run_until("gate", MAX_SCENE_S) and story.holding and _said("sq03_v02") and _said("sq03_s16"))
+	story._choose(1) # "Front gate": the wrong one
+	check("Front gate: the volunteer sends you round to the back", await run_until("to_back", MAX_SCENE_S) and _said("sq03_v03") and _said("sq03_s17") and not _said("sq03_s18"))
+	check("Lalitha waits at the back gate", story.actors.has("lalitha"))
+	place_auto(director.current_stage().target)
+	check("Back gate: Sankaran gets out, tests the drum, and the fare choice holds", await run_until("payoff", MAX_SCENE_S) and story.holding and _said("sq03_s20") and _said("sq03_l03"))
+	check("Sankaran stands on the pavement with Lalitha", rider.state == QuestRider.State.OUT and rider.body.get_parent() == rider)
+	story._choose(1) # stay for the concert
+	var t0: float = clock
+	while clock - t0 < MAX_SCENE_S and director.run != null:
+		_note_lines()
+		await get_tree().process_frame
+	watch_cast = false
+	check("Staying for the concert: the quest completes", director.run == null and GameState.mission_completed.has(MARGAZHI) and _said("sq03_d10") and _said("sq03_l04") and _said("sq03_s23") and not _said("sq03_s22"))
+	check("Staying pays respect, not money %s" % str(last_reward), last_reward == Vector2i(0, 60))
+	check("No Margazhi shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
+	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
+	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
 	rider._clear()
 
 func _language_check() -> void:

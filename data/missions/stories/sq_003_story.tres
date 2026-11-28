@@ -1,0 +1,641 @@
+[gd_resource type="Resource" script_class="QuestStoryData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/missions/QuestStoryData.gd" id="story"]
+[resource]
+script = ExtResource("story")
+voice_dir = "res://assets/audio/voice/sq03"
+speakers = {
+"s": "VO_SPK_SANKARAN",
+"d": "VO_SPK_DRIVER",
+"g": "VO_SPK_GANESAN",
+"v": "VO_SPK_VOLUNTEER",
+"l": "VO_SPK_LALITHA"
+}
+cast = {
+"ganesan": {
+"model": "res://assets/models/people/old_man_veshti.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(962.8, 0, 1554.6),
+"face": Vector3(968.1, 0, 1557.4),
+"anim": "idle",
+"stages": PackedStringArray("ask_shop", "shop")
+},
+"volunteer": {
+"model": "res://assets/models/people/young_man.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1057.6, 0, 1538.0),
+"face": Vector3(1058.0, 0, 1534.6),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"rasika_1": {
+"model": "res://assets/models/people/woman_saree_kanchi.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1060.3, 0, 1538.4),
+"face": Vector3(1050.0, 0, 1537.0),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"rasika_2": {
+"model": "res://assets/models/people/man_casual.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1062.2, 0, 1538.8),
+"face": Vector3(1050.0, 0, 1537.0),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"rasika_3": {
+"model": "res://assets/models/people/woman_saree_green.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1064.2, 0, 1539.2),
+"face": Vector3(1050.0, 0, 1537.0),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"rasika_4": {
+"model": "res://assets/models/people/girl_pavadai.glb",
+"scale": 0.9,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1066.2, 0, 1539.6),
+"face": Vector3(1050.0, 0, 1537.0),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"rasika_5": {
+"model": "res://assets/models/people/woman_coat.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1068.2, 0, 1540.0),
+"face": Vector3(1050.0, 0, 1537.0),
+"anim": "idle",
+"stages": PackedStringArray("approach", "hall", "gate", "front_line", "rear_line")
+},
+"lalitha": {
+"model": "res://assets/models/people/woman_saree_maroon.glb",
+"scale": 1.0,
+"paint": Color(0.0, 0.0, 0.0, 0.0),
+"world": Vector3(1102.6, 0, 1617.1),
+"face": Vector3(1105.4, 0, 1614.1),
+"anim": "idle",
+"stages": PackedStringArray("to_back", "backstage", "payoff", "thanks")
+}
+}
+props = {}
+cutscenes = {
+"intro": [{
+"fade_in": 0.6,
+"cam": {
+"eye": {
+"from": "rider",
+"dist": 4.6,
+"up": 1.45,
+"side": 1.8
+},
+"look": "rider",
+"fov": 44
+},
+"rider": {
+"out": [-1.9, 0, 0.9],
+"face": "auto"
+},
+"line": "sq03_s01",
+"line_at": 0.5
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 48
+},
+"line": "sq03_d01"
+}, {
+"cam": {
+"eye": [-4.2, 1.35, 4.2],
+"eye_to": [-3.9, 1.35, 3.8],
+"look": "rider",
+"fov": 44
+},
+"line": "sq03_s02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d02"
+}, {
+"cam": {
+"eye": [-1.4, 1.55, -2.3],
+"look": "rider",
+"fov": 42
+},
+"line": "sq03_s03"
+}, {
+"cam": {
+"eye": [-4.3, 1.35, -0.6],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 48
+},
+"line": "sq03_d03"
+}, {
+"cam": {
+"eye": [-5.6, 1.6, 1.8],
+"look": "rider",
+"fov": 50
+},
+"rider": {
+"in": true
+},
+"wait": "rider",
+"min_s": 1.2,
+"max_s": 20.0
+}, {
+"cam": {
+"eye": [-5.6, 1.6, 1.8],
+"look": [0.0, 1.05, 0.4],
+"fov": 50
+},
+"min_s": 0.8,
+"fade_out": 0.5
+}],
+"shop": [{
+"cam": {
+"cockpit": true,
+"look": "role:ganesan",
+"fov": 58
+},
+"act": {
+"ganesan": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq03_g01",
+"line_at": 0.3,
+"min_s": 1.6
+}, {
+"cam": {
+"cockpit": true,
+"look": "role:ganesan",
+"fov": 62
+},
+"act": {
+"ganesan": {
+"to": [-1.9, 0, -0.9],
+"gait": "walk",
+"then": "idle",
+"face": "rider"
+}
+},
+"wait": "ganesan",
+"min_s": 1.2,
+"max_s": 8.0
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"eye_to": [2.1, 1.28, 0.2],
+"look": "rider",
+"fov": 42
+},
+"line": "sq03_s09"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 4.0],
+"look": "role:ganesan",
+"fov": 42
+},
+"act": {
+"ganesan": {
+"anim": "talk",
+"face": "rider"
+}
+},
+"line": "sq03_g02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d04"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 4.0],
+"look": "role:ganesan",
+"fov": 40
+},
+"act": {
+"ganesan": {
+"anim": "talk",
+"face": "auto"
+}
+},
+"line": "sq03_g03"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 4.0],
+"look": "role:ganesan",
+"fov": 38
+},
+"act": {
+"ganesan": {
+"anim": "talk",
+"face": "rider"
+}
+},
+"line": "sq03_g04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 48
+},
+"line": "sq03_d05"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 4.0],
+"look": "role:ganesan",
+"fov": 42
+},
+"act": {
+"ganesan": {
+"anim": "wave",
+"face": "auto"
+}
+},
+"line": "sq03_g05"
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"look": "rider",
+"fov": 44
+},
+"min_s": 1.0,
+"fade_out": 0.5
+}],
+"hall": [{
+"fade_in": 0.4,
+"cam": {
+"eye": {
+"from": "role:rasika_2",
+"dist": 6.0,
+"up": 1.8,
+"side": -2.5
+},
+"look": "role:rasika_2",
+"fov": 58
+},
+"act": {
+"volunteer": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq03_v01",
+"line_at": 0.5,
+"min_s": 2.0
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"eye_to": [2.1, 1.28, 0.2],
+"look": "rider",
+"fov": 42
+},
+"line": "sq03_s15"
+}, {
+"cam": {
+"eye": {
+"from": "role:volunteer",
+"dist": 3.4,
+"up": 1.55,
+"side": 1.2
+},
+"look": "role:volunteer",
+"fov": 42
+},
+"act": {
+"volunteer": {
+"anim": "talk",
+"face": "auto"
+}
+},
+"line": "sq03_v02"
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s16"
+}, {
+"cam": {
+"eye": {
+"from": "role:volunteer",
+"dist": 5.2,
+"up": 1.7,
+"side": -1.8
+},
+"look": "role:volunteer",
+"fov": 54
+},
+"act": {
+"volunteer": {
+"anim": "idle"
+}
+},
+"min_s": 0.6,
+"hold": true
+}],
+"front_line": [{
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d06"
+}, {
+"cam": {
+"eye": {
+"from": "role:volunteer",
+"dist": 3.4,
+"up": 1.55,
+"side": 1.2
+},
+"look": "role:volunteer",
+"fov": 40
+},
+"act": {
+"volunteer": {
+"anim": "talk",
+"face": "auto"
+}
+},
+"line": "sq03_v03"
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s17"
+}, {
+"cam": {
+"eye": {
+"from": "role:volunteer",
+"dist": 5.2,
+"up": 1.7,
+"side": -1.8
+},
+"look": "role:volunteer",
+"fov": 48
+},
+"act": {
+"volunteer": {
+"anim": "wave"
+}
+},
+"min_s": 1.0,
+"line": "sq03_d08",
+"fade_out": 0.4
+}],
+"rear_line": [{
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d07"
+}, {
+"cam": {
+"eye": [2.3, 1.3, 0.4],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s18"
+}, {
+"cam": {
+"eye": {
+"from": "role:volunteer",
+"dist": 3.4,
+"up": 1.55,
+"side": 1.2
+},
+"look": "role:volunteer",
+"fov": 44
+},
+"act": {
+"volunteer": {
+"anim": "wave",
+"face": "auto"
+}
+},
+"line": "sq03_v04",
+"fade_out": 0.4
+}],
+"backstage": [{
+"fade_in": 0.5,
+"rider": {
+"out": [-2.0, 0, 0.0],
+"face": "auto"
+},
+"act": {
+"lalitha": {
+"to": [-2.0, 0, 2.0],
+"gait": "walk",
+"then": "talk",
+"face": "auto"
+}
+},
+"cam": {
+"eye": [0.9, 1.55, 6.2],
+"eye_to": [0.7, 1.5, 5.8],
+"look": [-2.0, 1.3, 1.0],
+"fov": 52
+},
+"line": "sq03_l01",
+"line_at": 0.6
+}, {
+"cam": {
+"eye": [0.2, 1.5, 4.2],
+"look": "rider",
+"fov": 42
+},
+"wait": "rider",
+"max_s": 6.0,
+"line": "sq03_s19"
+}, {
+"cam": {
+"eye": [0.4, 1.5, 5.4],
+"look": "role:lalitha",
+"fov": 42
+},
+"act": {
+"lalitha": {
+"anim": "talk",
+"face": "rider"
+}
+},
+"wait": "lalitha",
+"max_s": 6.0,
+"line": "sq03_l02"
+}, {
+"cam": {
+"eye": [0.2, 1.5, 4.2],
+"look": "rider",
+"fov": 40
+},
+"rider": {
+"face": "role:lalitha"
+},
+"line": "sq03_s20"
+}, {
+"cam": {
+"eye": [0.4, 1.5, 5.4],
+"look": "role:lalitha",
+"fov": 42
+},
+"act": {
+"lalitha": {
+"anim": "talk",
+"face": "auto"
+}
+},
+"line": "sq03_l03"
+}, {
+"cam": {
+"eye": [0.2, 1.5, 4.2],
+"look": "rider",
+"fov": 40
+},
+"rider": {
+"face": "auto"
+},
+"line": "sq03_s21"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 6.2],
+"look": [-2.0, 1.3, 1.0],
+"fov": 52
+},
+"act": {
+"lalitha": {
+"anim": "idle",
+"face": "auto"
+}
+},
+"min_s": 0.6,
+"hold": true
+}],
+"thanks": [{
+"if_choice": ["payoff", "SQ03_TAKE_FARE"],
+"cam": {
+"eye": [0.2, 1.5, 4.2],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s22"
+}, {
+"if_choice": ["payoff", "SQ03_TAKE_FARE"],
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d09"
+}, {
+"if_choice": ["payoff", "SQ03_STAY"],
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq03_d10"
+}, {
+"if_choice": ["payoff", "SQ03_STAY"],
+"cam": {
+"eye": [0.4, 1.5, 5.4],
+"look": "role:lalitha",
+"fov": 42
+},
+"act": {
+"lalitha": {
+"anim": "talk",
+"face": "auto"
+}
+},
+"line": "sq03_l04"
+}, {
+"cam": {
+"eye": [0.2, 1.5, 4.2],
+"look": "rider",
+"fov": 40
+},
+"line": "sq03_s23"
+}, {
+"cam": {
+"eye": [0.9, 1.55, 6.2],
+"look": [-2.0, 1.3, 1.0],
+"fov": 54
+},
+"rider": {
+"walk": "place:to_back",
+"face": "auto"
+},
+"act": {
+"lalitha": {
+"to": "place:to_back",
+"gait": "walk"
+}
+},
+"min_s": 3.4,
+"fade_out": 0.6
+}, {
+"rider": {
+"show": false
+},
+"act": {
+"lalitha": {
+"show": false
+}
+},
+"min_s": 0.1
+}]
+}
+barks = {
+"ask_shop": {
+"enter": ["sq03_s05"],
+"idle": ["sq03_s06", "sq03_s07"],
+"idle_s": Vector2(26.0, 40.0),
+"impact": "sq03_s08"
+},
+"approach": {
+"enter": ["sq03_s10"],
+"idle": ["sq03_s11", "sq03_s12"],
+"idle_s": Vector2(24.0, 36.0),
+"impact": "sq03_s13",
+"jolt": "sq03_s14"
+},
+"to_back": {
+"impact": "sq03_s13",
+"jolt": "sq03_s14"
+}
+}

@@ -11,6 +11,12 @@ signal rewarded_earned(placement: String)
 signal rewarded_closed(placement: String)
 signal rewarded_failed(placement: String, reason: String)
 signal interstitial_closed(placement: String)
+## A banner appeared on screen or went away (screens move their bottom row clear of it).
+signal banner_visibility_changed(visible: bool)
+
+## Standard banner height (AdMob BANNER = 320 x 50 dp), anchored at the bottom centre.
+const BANNER_W_DP: float = 320.0
+const BANNER_H_DP: float = 50.0
 
 var config: AdConfig
 
@@ -35,8 +41,14 @@ func show_rewarded(_placement: String) -> bool:
 func show_interstitial(_placement: String) -> bool:
 	return false
 
+## Show (true) or hide (false) the bottom banner. Loads one first if needed; a banner that
+## fails to load simply never appears.
 func show_banner(_visible: bool) -> void:
 	pass
+
+## True only while a banner is actually on screen (loaded and shown).
+func is_banner_showing() -> bool:
+	return false
 
 func provider_name() -> String:
 	return "none"

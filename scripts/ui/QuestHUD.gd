@@ -18,6 +18,8 @@ const MAP_START_H: float = 50.0
 const STEER_GAP: float = 12.0
 ## The card's content margins + border (UIKit.card_box): the width its wrapped text gets.
 const CARD_INSET: float = 2.0 * (18.0 + 4.0)
+## How long the optional "2× reward" (rewarded ad) offer stays up after a side quest is completed.
+const DOUBLE_OFFER_S: float = 12.0
 const FAIL_TIPS: PackedStringArray = ["speed", "quality", "damage", "deadline", "diversion", "unreachable"]
 
 var _card: PanelContainer
@@ -55,6 +57,10 @@ var _damage_limit: float = 100.0
 var _reward: int = 0
 var _prompt: Dictionary = {}
 var _leave_armed_s: float = 0.0
+var _double: Button
+var _double_s: float = 0.0
+var _double_quest: String = ""
+var _double_inr: int = 0
 
 func _ready() -> void:
 	layer = 12
@@ -124,6 +130,22 @@ func _ready() -> void:
 	_map_start.size = Vector2(MAP_START_W, MAP_START_H)
 	_map_start.visible = false
 	add_child(_map_start)
+	# Opt-in rewarded ad after a completed side quest: get the quest's ₹ reward once more.
+	_double = UIKit.button("", UIKit.Tone.YELLOW, _on_double, 19, "coins")
+	_double.theme = UIKit.theme()
+	_double.name = "QuestDouble"
+	_double.size = Vector2(PANEL_W, 60)
+	_double.visible = false
+	add_child(_double)
+	SignalBus.reward_granted.connect(func(source: String, inr: int, _xp: int) -> void:
+		if source == "ad_quest_double":
+			_double_s = 0.0
+			_refresh()
+			if inr > 0:
+				SignalBus.hint_requested.emit(tr("QUEST_DOUBLE_DONE") % inr, 4.0))
+	SignalBus.rewarded_ad_failed.connect(func(placement: String, _why: String) -> void:
+		if placement == "ad_quest_double":
+			_double.disabled = false)
 	SignalBus.mission_stage_info.connect(_on_stage)
 	SignalBus.quest_cinematic_changed.connect(func(active: bool) -> void:
 		_cinematic = active
@@ -156,6 +178,10 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
+func _on_double() -> void:
+	_double.disabled = true
+	AdMonetizationManager.show_rewarded("ad_quest_double", {"quest_id": _double_quest, "inr": _double_inr})
+
 static func _wrapped(label: Label) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return label
@@ -184,6 +210,7 @@ func _layout() -> void:
 		button.custom_minimum_size.x = inner
 	_card.position = Vector2(PANEL_X, PANEL_TOP_BARE if showing_prompt or not _located else PANEL_TOP_ROUTE)
 	_fit_card()
+	_double.position = Vector2(PANEL_X, PANEL_TOP_BARE)
 	_map_start.position = Vector2((vp.x - MAP_START_W) * 0.5, vp.y - 22.0 - PassengerHUD.MINIMAP_SIZE * 1.17 - MAP_START_H - 6.0)
 
 ## Shrinks the card to its content. While driving (a quest running) it also stays above the steer
@@ -202,6 +229,10 @@ func card_rect() -> Rect2:
 	return Rect2(_card.position, _card.size) if _card.visible else Rect2()
 
 func _process(delta: float) -> void:
+	if _double_s > 0.0:
+		_double_s -= delta
+		if _double_s <= 0.0:
+			_refresh()
 	if _leave_armed_s > 0.0:
 		_leave_armed_s -= delta
 		if _leave_armed_s <= 0.0:
@@ -227,6 +258,7 @@ func _refresh() -> void:
 	var showing_prompt: bool = _quest_id == "" and not _prompt.is_empty()
 	_card.visible = (_quest_id != "" or showing_prompt) and not hidden
 	_map_start.visible = showing_prompt and not hidden
+	_double.visible = _double_s > 0.0 and not hidden and not _card.visible
 	if showing_prompt:
 		_show_prompt()
 	elif _quest_id != "":
@@ -352,5 +384,12 @@ func _on_finished(id: String, status: String, reason: String) -> void:
 		_refresh()
 		if status == "completed":
 			SignalBus.hint_requested.emit(tr("QUEST_COMPLETED") % UIKit.inr(_reward), 4.0)
+			if _reward > 0 and AdMonetizationManager.can_offer_rewarded("ad_quest_double"):
+				_double_quest = id
+				_double_inr = _reward
+				_double_s = DOUBLE_OFFER_S
+				_double.disabled = false
+				_double.text = "▶ " + (tr("QUEST_DOUBLE_BTN") % _double_inr)
+				_refresh()
 		elif reason == "wreck_timed":
 			SignalBus.hint_requested.emit(tr("QUEST_RESET_WRECK"), 5.0)

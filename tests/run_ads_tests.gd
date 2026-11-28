@@ -47,6 +47,14 @@ class FakeAdmob extends Node:
 				n += 1
 		return n
 
+## The same, plus the banner half of the plugin's API.
+class FakeBannerAdmob extends FakeAdmob:
+	signal banner_ad_loaded(ad_info: Object, response_info: Object)
+	signal banner_ad_failed_to_load(ad_info: Object, error_data: Object)
+	func load_banner_ad() -> void: calls.append("load_banner_ad")
+	func show_banner_ad() -> void: calls.append("show_banner_ad")
+	func hide_banner_ad() -> void: calls.append("hide_banner_ad")
+
 class FakeConsent extends RefCounted:
 	var status: int = 0
 
@@ -65,6 +73,13 @@ func _run() -> void:
 	await _test_flow_no_consent_needed()
 	await _test_flow_consent_form()
 	await _test_consent_timeout()
+	await _test_admob_banner()
+	_test_banner_policy()
+	await _test_banner_layout()
+	_test_rewarded_placements()
+	_test_test_drive()
+	_test_paint_trial()
+	_test_daily_and_quest_double()
 	print("\n=== %d passed, %d failed ===" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
 
@@ -88,10 +103,15 @@ func _test_config_agrees() -> void:
 	if not cfg.use_test_ads:
 		var real_ok: bool = cfg.admob_app_id.begins_with("ca-app-pub-") and cfg.admob_app_id.contains("~") \
 			and cfg.rewarded_unit_id.begins_with("ca-app-pub-") and cfg.interstitial_unit_id.begins_with("ca-app-pub-") \
+			and cfg.banner_unit_id.begins_with("ca-app-pub-") \
 			and str(exp.get_value("Release", "app_id", "")) == cfg.admob_app_id
 		_check("Real ads: every real id is filled in and the manifest gets the same app id", real_ok)
 	else:
 		_check("Real ids stay empty until AdMob approval (no half-real config)", cfg.admob_app_id == "" or cfg.admob_app_id.begins_with("ca-app-pub-"))
+	_check("Every ad unit id (rewarded, interstitial, banner) belongs to the same AdMob app",
+		cfg.admob_app_id == "" or (cfg.rewarded_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)
+		and cfg.interstitial_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)
+		and cfg.banner_unit_id.get_slice("/", 0) == cfg.admob_app_id.get_slice("~", 0)))
 	_check("Ad content ceiling is a valid rating", cfg.max_ad_content_rating in ["G", "PG", "T", "MA"])
 
 func _test_mock_off_device() -> void:
@@ -197,6 +217,171 @@ func _test_consent_timeout() -> void:
 	_check("No consent answer (offline): ads start anyway after %.0f s" % AdMobProvider.CONSENT_TIMEOUT_S, fake.count("initialize") == 1)
 	p.queue_free()
 	await get_tree().process_frame
+
+# --- Banners (Nov 27) ------------------------------------------------------------------------
+
+func _test_admob_banner() -> void:
+	var cfg: AdConfig = (load("res://data/monetization/ad_config.tres") as AdConfig).duplicate() as AdConfig
+	var n: Node = AdMobProvider._make_admob_node(cfg)
+	_check("Banner: standard 320 × 50, bottom centre, inside the safe area",
+		int(n.get("banner_position")) == 1 and int(n.get("banner_size")) == 0 and bool(n.get("banner_anchor_to_safe_area")))
+	n.free()
+	cfg.use_test_ads = false
+	cfg.banner_unit_id = ""
+	_check("Release build without a real banner unit id: banners stay off", not AdMobProvider.banner_enabled(cfg, false))
+	_check("…debug builds still get Google's demo banner", AdMobProvider.banner_enabled(cfg, true))
+	cfg.banner_unit_id = "ca-app-pub-1111111111111111/5555555555"
+	var r: Node = AdMobProvider._make_admob_node(cfg, false)
+	_check("Real mode: the node gets the real banner unit id", str(r.get("android_real_banner_id")) == cfg.banner_unit_id)
+	r.free()
+	var fake: FakeBannerAdmob = FakeBannerAdmob.new()
+	var p: AdMobProvider = _make(fake)
+	var shown: Array[bool] = []
+	p.banner_visibility_changed.connect(func(v: bool) -> void: shown.append(v))
+	p.show_banner(true)
+	_check("A banner asked for before the SDK starts waits (no request yet)", fake.count("load_banner_ad") == 0 and not p.is_banner_showing())
+	fake.consent_info_updated.emit()
+	fake.initialization_completed.emit(null)
+	_check("After start-up the banner is requested once", fake.count("load_banner_ad") == 1)
+	p.show_banner(true)
+	_check("No duplicate banner request while one loads", fake.count("load_banner_ad") == 1)
+	fake.banner_ad_loaded.emit(null, null)
+	_check("Loaded banner goes on screen and the screens are told", fake.count("show_banner_ad") == 1 and p.is_banner_showing() and shown == [true])
+	p.show_banner(false)
+	_check("Leaving the screen hides it (driving never has a banner)", fake.count("hide_banner_ad") == 1 and not p.is_banner_showing() and shown == [true, false])
+	p.show_banner(true)
+	_check("Coming back re-shows the same banner without a new request", fake.count("load_banner_ad") == 1 and fake.count("show_banner_ad") == 2)
+	p.show_banner(false)
+	fake.banner_ad_loaded.emit(null, null) # a refresh arriving while no screen wants it
+	_check("A banner that loads while hidden is hidden straight away", not p.is_banner_showing() and fake.count("hide_banner_ad") >= 2)
+	p.queue_free()
+	await get_tree().process_frame
+
+func _test_banner_policy() -> void:
+	var m: Node = AdMonetizationManager
+	var was_tutorial: bool = GameState.tutorial_active
+	GameState.tutorial_active = false
+	GameState.no_ads = false
+	for screen: String in ["garage", "pause", "full_map", "shift_summary"]:
+		_check("Banner allowed on the calm screen '%s'" % screen, bool(m.call("banner_allowed", screen)))
+	for screen: String in ["main_menu", "driving", "loading", "fine", ""]:
+		_check("No banner on '%s'" % screen, not bool(m.call("banner_allowed", screen)))
+	GameState.tutorial_active = true
+	_check("No banner during the tutorial", not bool(m.call("banner_allowed", "pause")))
+	GameState.tutorial_active = false
+	GameState.no_ads = true
+	_check("No banner for No Ads buyers", not bool(m.call("banner_allowed", "pause")))
+	GameState.no_ads = false
+	GameState.tutorial_active = was_tutorial
+	_check("Interstitials stay limited to their natural breaks (back to menu still unused)",
+		AdMonetizationManager.config.allowed_placements == PackedStringArray(["after_fare_summary", "shift_end", "back_to_menu"]))
+
+func _test_banner_layout() -> void:
+	GameState.tutorial_active = false
+	AdMonetizationManager.set_screen("pause")
+	await get_tree().process_frame
+	var r: Rect2 = AdMonetizationManager.banner_rect_px()
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var inset: float = AdMonetizationManager.banner_inset_px()
+	_check("Mock banner shows on the pause screen", AdMonetizationManager.provider.is_banner_showing())
+	_check("Banner rect: 320 × 50 dp shape at the bottom centre", r.size.x > 0.0 and is_equal_approx(r.size.x / r.size.y, 320.0 / 50.0)
+		and absf(r.get_center().x - vp.x * 0.5) < 1.0 and absf(r.end.y - vp.y) < 1.0, str(r))
+	_check("Screens keep the banner plus a %d px gap free" % int(AdMonetizationManager.BANNER_GAP_PX),
+		is_equal_approx(inset, vp.y - r.position.y + AdMonetizationManager.BANNER_GAP_PX), "%.1f" % inset)
+	var strip: ColorRect = AdMonetizationManager.get("_strip") as ColorRect
+	_check("A solid footer band sits behind the banner (no ad over game content, stray taps land on it)",
+		(AdMonetizationManager.get("_strip_layer") as CanvasLayer).visible and strip.mouse_filter == Control.MOUSE_FILTER_STOP
+		and strip.position.y <= r.position.y and is_equal_approx(strip.size.x, vp.x))
+	# The garage / pause card sits above the banner with the gap (no button next to the ad).
+	var ui: GarageUI = (load("res://scripts/ui/GarageUI.gd") as GDScript).new() as GarageUI
+	add_child(ui)
+	await get_tree().process_frame
+	_check("Entering the driving scene hides the banner", not AdMonetizationManager.provider.is_banner_showing())
+	ui.open_garage()
+	await get_tree().process_frame
+	var modal: Control = ui.get("_modal") as Control
+	_check("Garage card opens with a banner under it", AdMonetizationManager.provider.is_banner_showing() and AdMonetizationManager.screen == "garage")
+	_check("…and ends at least %d px above the banner" % int(AdMonetizationManager.BANNER_GAP_PX),
+		modal.position.y + modal.size.y <= AdMonetizationManager.banner_rect_px().position.y - AdMonetizationManager.BANNER_GAP_PX + 0.5,
+		"card bottom %.0f, banner top %.0f" % [modal.position.y + modal.size.y, AdMonetizationManager.banner_rect_px().position.y])
+	ui.close_modal()
+	_check("Back to driving: banner gone, room given back", not AdMonetizationManager.provider.is_banner_showing() and AdMonetizationManager.banner_inset_px() == 0.0)
+	ui.queue_free()
+	get_tree().paused = false
+	await get_tree().process_frame
+
+# --- Rewarded ads (Nov 27) --------------------------------------------------------------------
+
+func _test_rewarded_placements() -> void:
+	var cfg: AdConfig = AdMonetizationManager.config
+	for placement: String in ["ad_test_drive", "ad_paint_trial", "ad_daily_double", "ad_quest_double"]:
+		_check("Rewarded placement '%s' is enabled and capped per day" % placement,
+			cfg.rewarded_enabled_placements.has(placement) and RewardsEngine.DAILY_CAPS.has(placement) and RewardsEngine.AD_OFFERS.has(placement))
+	_check("Daily bonus can be doubled only once a day", int(RewardsEngine.DAILY_CAPS["ad_daily_double"]) == 1)
+
+func _test_test_drive() -> void:
+	GameState.reset_profile()
+	GameState.condition = 62.0
+	GameState.fuel_level = 3.0
+	SignalBus.rewarded_ad_completed.emit("ad_test_drive", {"vehicle": "namma_green_ev", "ad_id": "t1"})
+	_check("Test drive: the EV (locked at this level) is driven without buying it",
+		GameState.active_vehicle == "namma_green_ev" and not GameState.owned_vehicles.has("namma_green_ev") and GameState.on_test_drive())
+	_check("…with a full battery and no scratches", GameState.condition == 100.0 and is_equal_approx(GameState.fuel_level, GameState.base_stats("namma_green_ev").fuel_capacity))
+	_check("Upgrades can't be bought for a lent auto", not GameState.buy_upgrade("engine"))
+	var saved: Dictionary = GameState.to_dict()
+	GameState.from_dict(saved)
+	_check("An app restart in the same shift keeps the test drive", GameState.active_vehicle == "namma_green_ev" and GameState.on_test_drive())
+	var lapsed: Dictionary = saved.duplicate(true)
+	lapsed["day"] = int(lapsed["day"]) + 1
+	GameState.from_dict(lapsed)
+	_check("A save from a later day hands it back, with your own tank and condition",
+		GameState.active_vehicle == "singara_classic" and not GameState.on_test_drive() and is_equal_approx(GameState.condition, 62.0) and is_equal_approx(GameState.fuel_level, 3.0))
+	GameState.from_dict(saved)
+	GameState.end_shift()
+	_check("Shift end: back in your own auto as you parked it",
+		GameState.active_vehicle == "singara_classic" and is_equal_approx(GameState.condition, 62.0) and is_equal_approx(GameState.fuel_level, 3.0) and GameState.trial_vehicle == "")
+	GameState.start_next_day()
+	GameState.start_test_drive("madras_king_deluxe")
+	GameState.select_vehicle("singara_classic")
+	_check("Picking your own auto ends the test drive", GameState.active_vehicle == "singara_classic" and GameState.trial_vehicle == "")
+	GameState.start_test_drive("madras_king_deluxe")
+	GameState.progress.xp = 1000000
+	GameState.wallet_inr = 10000000
+	_check("Buying the auto on test drive keeps it", GameState.buy_vehicle("madras_king_deluxe") and GameState.active_vehicle == "madras_king_deluxe"
+		and GameState.owned_vehicles.has("madras_king_deluxe") and GameState.trial_vehicle == "")
+	_check("Can't test-drive an auto you own", not GameState.start_test_drive("madras_king_deluxe"))
+	GameState.reset_profile()
+
+func _test_paint_trial() -> void:
+	GameState.reset_profile()
+	var idx: int = GameState.PAINTS.size() - 1
+	SignalBus.rewarded_ad_completed.emit("ad_paint_trial", {"paint": idx, "ad_id": "p1"})
+	_check("Paint trial: an unowned paint goes on the auto", GameState.shown_paint() == idx and not GameState.paints_owned.has(idx)
+		and GameState.active_stats().body_colour == GameState.PAINTS[idx]["body"])
+	_check("…and its Meter Mela prestige counts", GameState.prestige() >= float(GameState.PAINTS[idx]["prestige"]) - 0.001)
+	GameState.from_dict(GameState.to_dict())
+	_check("It survives an app restart in the same shift", GameState.shown_paint() == idx)
+	GameState.end_shift()
+	_check("Shift end takes it off", GameState.shown_paint() == GameState.paint_equipped and GameState.trial_paint == -1)
+	_check("Can't trial a paint you own", not GameState.start_paint_trial(0))
+	GameState.start_next_day()
+	GameState.reset_profile()
+
+func _test_daily_and_quest_double() -> void:
+	GameState.reset_profile()
+	var claimed: Dictionary = GameState.claim_daily_reward()
+	var before: int = GameState.wallet_inr
+	SignalBus.rewarded_ad_completed.emit("ad_daily_double", {"inr": int(claimed["inr"]), "ad_id": "d1"})
+	_check("2× daily bonus pays today's bonus again", GameState.wallet_inr == before + int(claimed["inr"]), "%d -> %d" % [before, GameState.wallet_inr])
+	SignalBus.rewarded_ad_completed.emit("ad_daily_double", {"inr": int(claimed["inr"]), "ad_id": "d2"})
+	_check("…only once a day", GameState.wallet_inr == before + int(claimed["inr"]))
+	_check("…and the offer is gone for today", GameState.rewards.remaining_today("ad_daily_double", RewardsEngine.today_string()) == 0)
+	before = GameState.wallet_inr
+	SignalBus.rewarded_ad_completed.emit("ad_quest_double", {"quest_id": "sq_test", "inr": 300, "ad_id": "q1"})
+	_check("2× quest reward pays the quest's ₹ again", GameState.wallet_inr == before + 300)
+	SignalBus.rewarded_ad_completed.emit("ad_quest_double", {"quest_id": "sq_test", "inr": 300, "ad_id": "q2"})
+	_check("…once per quest", GameState.wallet_inr == before + 300)
+	GameState.reset_profile()
 
 func _check(label: String, ok: bool, detail: String = "") -> void:
 	if ok:

@@ -63,6 +63,9 @@ func _ready() -> void:
 	_build_wreck_card()
 	_build_modal()
 	get_viewport().size_changed.connect(_layout)
+	AdMonetizationManager.banner_inset_changed.connect(_on_banner_inset)
+	# Driving: no banner (it may still be up from the main menu or the loading screen).
+	AdMonetizationManager.set_screen("driving")
 	_layout()
 	SignalBus.shift_clock_updated.connect(func(d: int, _m: float) -> void: _clock.text = "%s %d · %s" % [tr("DAY"), d, GameState.clock_text()])
 	SignalBus.service_available.connect(_on_service_available)
@@ -84,7 +87,13 @@ func _ready() -> void:
 	SignalBus.vehicle_wrecked.connect(_on_wrecked)
 	SignalBus.rewarded_ad_failed.connect(func(placement: String, _why: String) -> void:
 		if (placement == "ad_wreck_repair" or placement == "ad_tow") and _wreck_shown:
-			_show_wreck(tr("AD_NOT_READY")))
+			_show_wreck(tr("AD_NOT_READY"))
+		if placement in ["ad_test_drive", "ad_paint_trial"] and _modal.visible and _modal_title.text == tr("GARAGE"):
+			_render_garage())
+	# A test drive / paint trial started or ended: the garage shows the new state at once.
+	SignalBus.vehicle_loadout_changed.connect(func(_s: VehicleStats) -> void:
+		if _modal.visible and _modal_title.text == tr("GARAGE"):
+			_render_garage.call_deferred())
 	if GameState.is_wrecked():
 		_on_wrecked.call_deferred(true)
 	SignalBus.back_requested.connect(func() -> void:
@@ -140,8 +149,11 @@ func _layout() -> void:
 	_wreck_card.custom_minimum_size = Vector2(ww, 0.0)
 	_wreck_card.size = Vector2(ww, 0.0)
 	_wreck_card.position = Vector2((vp.x - ww) * 0.5, 92.0)
-	_modal.custom_minimum_size = Vector2(minf(880.0, vp.x - 40.0), minf(600.0, vp.y - 40.0))
-	_modal.position = (vp - _modal.custom_minimum_size) * 0.5
+	# A banner (pause / garage / shift summary) sits under the card with a clear gap, never beside a button.
+	var free_h: float = vp.y - AdMonetizationManager.banner_inset_px()
+	_modal.custom_minimum_size = Vector2(minf(880.0, vp.x - 40.0), minf(600.0, free_h - 32.0))
+	_modal.size = _modal.custom_minimum_size
+	_modal.position = Vector2((vp.x - _modal.custom_minimum_size.x) * 0.5, maxf(16.0, (free_h - _modal.custom_minimum_size.y) * 0.5))
 	if _dim != null:
 		_dim.position = Vector2.ZERO
 		_dim.size = vp
@@ -373,7 +385,8 @@ func _build_modal() -> void:
 	_modal_body.add_theme_constant_override("separation", 10)
 	scroll.add_child(_modal_body)
 
-func _open_modal(title: String) -> void:
+## `ad_screen` names the screen for the banner policy (AdConfig.banner_screens).
+func _open_modal(title: String, ad_screen: String = "pause") -> void:
 	_modal_title.text = title
 	for c: Node in _modal_body.get_children():
 		_modal_body.remove_child(c) # detach now: a queued node keeps its name and its place
@@ -381,10 +394,10 @@ func _open_modal(title: String) -> void:
 	_modal.visible = true
 	_dim.visible = true
 	SignalBus.ui_modal_changed.emit(true)
+	AdMonetizationManager.set_screen(ad_screen)
 	_layout()
 	UIKit.pop_in(_modal, 0.0, 0.22)
 	get_tree().paused = true
-	AdMonetizationManager.set_screen("pause")
 
 func close_modal() -> void:
 	_modal.visible = false
@@ -420,7 +433,7 @@ func show_fine(info: Dictionary) -> void:
 	if _modal.visible:
 		_fine_queue.append(info)
 		return
-	_open_modal(tr("FINE_TITLE"))
+	_open_modal(tr("FINE_TITLE"), "fine")
 	_fine_row(tr("FINE_CHALLAN"), str(info.get("challan", "")))
 	_fine_row(tr("FINE_OFFENCE"), tr("FINE_REASON_" + str(info.get("reason", "")).to_upper()))
 	var place: String = str(info.get("place", ""))
@@ -464,7 +477,8 @@ func is_open() -> bool:
 
 ## One item tile (garage / pause / summary): text on the left, an arcade button on the right.
 ## Prices get a coin, locked items the padlock, paints a swatch of their colour.
-func _row(text: String, button_text: String, enabled: bool, on_press: Callable, colour: Color = Color(0.15, 0.45, 0.2)) -> void:
+## Returns the tile's row, so a caller can add a second button (the rewarded-ad "Test drive" / "Try").
+func _row(text: String, button_text: String, enabled: bool, on_press: Callable, colour: Color = Color(0.15, 0.45, 0.2)) -> HBoxContainer:
 	var tile: PanelContainer = PanelContainer.new()
 	tile.add_theme_stylebox_override("panel", UIKit.card_box(UIKit.SURFACE_HI, 16))
 	var row: HBoxContainer = HBoxContainer.new()
@@ -491,6 +505,18 @@ func _row(text: String, button_text: String, enabled: bool, on_press: Callable, 
 		b.disabled = not enabled
 		row.add_child(b)
 	_modal_body.add_child(tile)
+	return row
+
+## An opt-in rewarded-ad button: "▶" marks that it plays a video; shown only when an ad is ready
+## and today's cap isn't used up (AdMonetizationManager.can_offer_rewarded).
+func _ad_button(row: HBoxContainer, text: String, placement: String, context: Dictionary) -> void:
+	if not AdMonetizationManager.can_offer_rewarded(placement):
+		return
+	var b: Button = UIKit.button("▶ " + text, UIKit.Tone.GREEN, func() -> void:
+		AdMonetizationManager.show_rewarded(placement, context), 18)
+	b.name = "Ad_" + placement
+	b.custom_minimum_size = Vector2(170, 64)
+	row.add_child(b)
 
 func _choice_row(title: String, options: PackedStringArray, selected: int, on_pick: Callable) -> void:
 	_modal_body.add_child(UIKit.label(title, 22, UIKit.YELLOW, true))
@@ -623,7 +649,7 @@ func _refresh_texts() -> void:
 # --- Garage ----------------------------------------------------------------------------------
 
 func open_garage() -> void:
-	_open_modal(tr("GARAGE"))
+	_open_modal(tr("GARAGE"), "garage")
 	_render_garage()
 
 func _render_garage() -> void:
@@ -648,6 +674,9 @@ func _render_garage() -> void:
 					GameState.repair()
 					_render_garage())
 		"TAB_UPGRADES":
+			if GameState.on_test_drive():
+				_fine_note(tr("TEST_DRIVE_NO_UPGRADES"))
+				return
 			for kind: String in GameState.UPGRADES:
 				var k: String = kind
 				var u: Dictionary = GameState.UPGRADES[kind]
@@ -675,30 +704,47 @@ func _render_garage() -> void:
 				var idx: int = i
 				var p: Dictionary = GameState.PAINTS[i]
 				var owned: bool = GameState.paints_owned.has(i)
-				var label: String = tr("EQUIPPED") if GameState.paint_equipped == i else (tr("EQUIP") if owned else "%s ₹%d" % [tr("BUY"), int(p["cost"])])
+				var trying: bool = GameState.trial_paint == i
+				var worn: bool = GameState.paint_equipped == i and GameState.trial_paint < 0
+				var label: String = tr("EQUIPPED") if worn else (tr("EQUIP") if owned else "%s ₹%d" % [tr("BUY"), int(p["cost"])])
 				var unlocked: bool = owned or GameState.is_unlocked("paint:%d" % i)
 				if not unlocked:
 					label = _locked_label("paint:%d" % i)
-				_row("%s  (+%d%% Meter Mela odds)" % [p["name"], roundi(8.0 * float(p["prestige"]))], label,
-					unlocked and GameState.paint_equipped != i and (owned or GameState.wallet_inr >= int(p["cost"])), func() -> void:
+				var text: String = "%s  (+%d%% Meter Mela odds)" % [p["name"], roundi(8.0 * float(p["prestige"]))]
+				if trying:
+					text += "\n▶ " + tr("PAINT_TRYING")
+				var paint_row: HBoxContainer = _row(text, label,
+					unlocked and not worn and (owned or GameState.wallet_inr >= int(p["cost"])), func() -> void:
 						GameState.buy_paint(idx)
 						_render_garage(), p["body"] as Color)
+				# Rewarded: wear a paint you don't own (even a locked one) for the rest of the shift.
+				if not owned and not trying:
+					_ad_button(paint_row, tr("PAINT_TRY"), "ad_paint_trial", {"paint": i})
 		"TAB_AUTOS":
+			if GameState.owned_vehicles.size() < GameState.VEHICLE_ORDER.size() and AdMonetizationManager.can_offer_rewarded("ad_test_drive"):
+				_fine_note(tr("TEST_DRIVE_NOTE"))
 			for id: String in GameState.VEHICLE_ORDER:
 				var vid: String = id
 				var s: VehicleStats = GameState.base_stats(id)
 				var owned: bool = GameState.owned_vehicles.has(id)
-				var label: String = tr("DRIVING") if GameState.active_vehicle == id else (tr("DRIVE") if owned else "%s ₹%s" % [tr("BUY"), _inr(s.price_inr)])
+				var trial: bool = GameState.trial_vehicle == id
+				var label: String = tr("DRIVING") if GameState.active_vehicle == id and owned else (tr("DRIVE") if owned else "%s ₹%s" % [tr("BUY"), _inr(s.price_inr)])
 				var unlocked: bool = owned or GameState.is_unlocked("vehicle:" + id)
 				if not unlocked:
 					label = _locked_label("vehicle:" + id)
-				_row("%s — %d km/h\n%s" % [s.display_name, roundi(s.max_speed_kmh), s.blurb], label,
-					unlocked and GameState.active_vehicle != id and (owned or GameState.wallet_inr >= s.price_inr), func() -> void:
+				var text: String = "%s — %d km/h\n%s" % [s.display_name, roundi(s.max_speed_kmh), s.blurb]
+				if trial:
+					text += "\n▶ " + tr("TEST_DRIVE_ON")
+				var auto_row: HBoxContainer = _row(text, label,
+					unlocked and (not owned or GameState.active_vehicle != id) and (owned or GameState.wallet_inr >= s.price_inr), func() -> void:
 						if GameState.owned_vehicles.has(vid):
 							GameState.select_vehicle(vid)
 						else:
 							GameState.buy_vehicle(vid)
 						_render_garage())
+				# Rewarded: drive an auto you don't own (even a locked one) until the shift ends.
+				if not owned and not trial:
+					_ad_button(auto_row, tr("TEST_DRIVE_TRY"), "ad_test_drive", {"vehicle": id})
 
 func _locked_label(key: String) -> String:
 	return "%s %d" % [tr("UNLOCKS_AT_LV"), DriverProgress.required_level(key)]
@@ -715,7 +761,7 @@ func _inr(v: int) -> String:
 
 func _on_shift_ended(summary: Dictionary) -> void:
 	_shift_title = "%s %d — %s" % [tr("DAY"), int(summary["day"]), tr("SHIFT_OVER")]
-	_open_modal(_shift_title)
+	_open_modal(_shift_title, "shift_summary")
 	_row("%s:  ₹%d\n%s:  %d\n%s:  ₹%d\n%s:  ₹%d\n%s:  ₹%d    %s:  ★%.1f" % [
 		tr("EARNED"), int(summary["earned"]), tr("RIDES"), int(summary["rides"]), tr("FUEL_SPENT"), int(summary["fuel_spent"]),
 		tr("REPAIRS"), int(summary["repairs"]), tr("WALLET"), int(summary["wallet"]), tr("RATING"), float(summary["rating"])], "", false, Callable())
@@ -748,3 +794,8 @@ func _paint_pause_button() -> void:
 		_pause_btn.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_pause_btn.button_down.connect(func() -> void: _pause_btn.icon = icons[1])
 	_pause_btn.button_up.connect(func() -> void: _pause_btn.icon = icons[0])
+
+## The banner came or went: re-fit the bottom of the screen around it. (A method, not a lambda: the
+## autoload's signal drops it by itself when this scene is freed.)
+func _on_banner_inset(_inset: float) -> void:
+	_layout()

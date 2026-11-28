@@ -64,6 +64,8 @@ var _stats_card: PanelContainer
 var _ticker: Label
 var _tip_index: int = 0
 var _top_chips: HBoxContainer
+## Published from site/privacy by the "Website (privacy policy)" workflow (GitHub Pages).
+const PRIVACY_URL: String = "https://davidrajpaul.github.io/Auto-Simulator-Game-GoDot/privacy/"
 const TIP_KEYS: Array[String] = ["TIP_1", "TIP_2", "TIP_3", "MENU_HINT", "TIP_4", "TIP_5", "TIP_6"]
 
 func _ready() -> void:
@@ -78,9 +80,12 @@ func _ready() -> void:
 	SignalBus.back_requested.connect(_on_back)
 	SignalBus.settings_changed.connect(func(_s: Dictionary) -> void: _refresh_texts())
 	DailyReminder.changed.connect(_on_reminder_changed)
+	SignalBus.vehicle_loadout_changed.connect(_on_loadout_changed)
+	SignalBus.reward_granted.connect(_on_reward_granted)
 	get_viewport().size_changed.connect(_layout)
-	_layout()
+	AdMonetizationManager.banner_inset_changed.connect(_on_banner_inset)
 	AdMonetizationManager.set_screen("main_menu")
+	_layout()
 	# A claimable daily bonus greets the player once per day.
 	if bool(GameState.daily_reward_status()["available"]) and GameState.has_save():
 		open_daily.call_deferred()
@@ -135,12 +140,25 @@ func open_daily() -> void:
 	if available:
 		var claim: Button = UIKit.button("%s  ₹%d" % [tr("CLAIM"), int(st["inr"])], UIKit.Tone.GREEN, func() -> void:
 			GameState.claim_daily_reward()
-			close_panel()
-			DailyReminder.maybe_ask(), 26, "coin")
+			# The claim always pays first; then (if an ad is ready) the optional 2× offer stays up.
+			if AdMonetizationManager.can_offer_rewarded("ad_daily_double"):
+				open_daily()
+			else:
+				close_panel()
+				DailyReminder.maybe_ask(), 26, "coin")
 		claim.custom_minimum_size = Vector2(0, 68)
 		_panel_body.add_child(claim)
 	else:
 		_panel_text(tr("DAILY_COME_BACK") % GameState.rewards.streak)
+		# Rewarded, once a day: watch an ad to get today's bonus again.
+		var today_inr: int = RewardsEngine.DAILY_INR[posmod(today_idx, 7)]
+		if AdMonetizationManager.can_offer_rewarded("ad_daily_double") and GameState.rewards.streak > 0 \
+				and GameState.rewards.last_login_date == RewardsEngine.today_string():
+			var dbl: Button = UIKit.button(tr("DAILY_DOUBLE_BTN") % today_inr, UIKit.Tone.YELLOW, func() -> void:
+				AdMonetizationManager.show_rewarded("ad_daily_double", {"inr": today_inr}), 22, "coins")
+			dbl.custom_minimum_size = Vector2(0, 64)
+			_buttons["daily_double"] = dbl
+			_panel_body.add_child(dbl)
 
 ## Achievements: how far along you are, the closest goals, then every achievement by category.
 func open_achievements() -> void:
@@ -333,6 +351,9 @@ func open_settings() -> void:
 			GameState.set_setting("first_ride_step", 0)
 			GameState.set_setting("first_ride_done", false)
 			open_settings(), 22))
+	# Google Play requires the privacy policy to be reachable from inside the game too.
+	_panel_body.add_child(UIKit.button(tr("PRIVACY_POLICY"), UIKit.Tone.PURPLE, func() -> void:
+		OS.shell_open(PRIVACY_URL), 20))
 	# Wiping a career is rare and final, so it lives here rather than beside Continue.
 	if GameState.has_save():
 		_panel_body.add_child(UIKit.button(tr("NEW_GAME"), UIKit.Tone.RED, new_career, 22))
@@ -685,6 +706,18 @@ func _fill_vehicle_card() -> void:
 	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_buttons["vehicle_action"] = action
 	body.add_child(action)
+	# Rewarded: test-drive an auto you don't own (locked ones too) until today's shift ends.
+	_buttons.erase("test_drive")
+	if GameState.trial_vehicle == id:
+		var on: Label = UIKit.label("▶ " + tr("TEST_DRIVE_ON"), 16, UIKit.GREEN, true)
+		on.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(on)
+	elif not owned and AdMonetizationManager.can_offer_rewarded("ad_test_drive"):
+		var td: Button = UIKit.button("▶ " + tr("TEST_DRIVE_TRY"), UIKit.Tone.GREEN, func() -> void:
+			AdMonetizationManager.show_rewarded("ad_test_drive", {"vehicle": id}), 18)
+		td.custom_minimum_size = Vector2(0, 56)
+		_buttons["test_drive"] = td
+		col.add_child(td)
 
 ## Next / previous auto on the turntable, without changing what the player drives.
 func browse_vehicle(step: int) -> void:
@@ -721,8 +754,10 @@ func _layout() -> void:
 	_menu.size = Vector2(column_w, 0)
 	_top_chips.reset_size()
 	_top_chips.position = Vector2(vp.x - m - _top_chips.get_combined_minimum_size().x, 14.0)
+	# A banner ad (bottom centre) gets the bottom strip; the ticker and the auto card move up above it.
+	var inset: float = AdMonetizationManager.banner_inset_px()
 	var bar: Control = _root.get_node("Ticker") as Control
-	bar.position = Vector2(m, vp.y - TICKER_GAP)
+	bar.position = Vector2(m, vp.y - TICKER_GAP - inset)
 	bar.size = Vector2(vp.x - m * 2.0, TICKER_H)
 	# The stage is the space right of the column: the card sits at its foot, the auto above.
 	var stage_left: float = m + column_w + 16.0
@@ -731,9 +766,9 @@ func _layout() -> void:
 	var sc: Vector2 = _stats_card.get_combined_minimum_size()
 	sc.x = maxf(sc.x, CARD_W)
 	_stats_card.size = sc
-	_stats_card.position = Vector2(minf(stage_mid - sc.x * 0.5, vp.x - m - sc.x), vp.y - TICKER_GAP - 10.0 - sc.y)
+	_stats_card.position = Vector2(minf(stage_mid - sc.x * 0.5, vp.x - m - sc.x), vp.y - TICKER_GAP - inset - 10.0 - sc.y)
 	_aim_camera(vp, stage_mid, (TOP_BAND + _stats_card.position.y) * 0.5, _stats_card.position.y - TOP_BAND)
-	_panel.custom_minimum_size = Vector2(minf(1120.0, vp.x - 40.0), COMPACT_PANEL_H if _panel_compact else vp.y - TOP_BAND - TICKER_GAP - 10.0)
+	_panel.custom_minimum_size = Vector2(minf(1120.0, vp.x - 40.0), COMPACT_PANEL_H if _panel_compact else vp.y - TOP_BAND - TICKER_GAP - inset - 10.0)
 	_panel.size = _panel.custom_minimum_size
 	_panel.position = Vector2((vp.x - _panel.size.x) * 0.5, TOP_BAND)
 
@@ -787,3 +822,21 @@ func _choice(title: String, options: PackedStringArray, selected: int, on_pick: 
 		b.custom_minimum_size = Vector2(170, 60)
 		row.add_child(b)
 	_panel_body.add_child(row)
+
+## The banner came or went: re-fit the bottom of the screen around it. (A method, not a lambda: the
+## autoload's signal drops it by itself when this scene is freed.)
+func _on_banner_inset(_inset: float) -> void:
+	_layout()
+
+## A test drive began (rewarded ad): show the lent auto on the turntable.
+func _on_loadout_changed(_s: VehicleStats) -> void:
+	_shown_vehicle = GameState.active_vehicle
+	_show_auto()
+	_refresh_status()
+
+func _on_reward_granted(source: String, inr: int, _xp: int) -> void:
+	if source == "ad_daily_double" and inr > 0:
+		_refresh_status()
+		if _panel.visible and _panel_title.text == tr("DAILY_REWARD"):
+			open_daily()
+			_panel_text(tr("DAILY_DOUBLE_DONE") % inr)

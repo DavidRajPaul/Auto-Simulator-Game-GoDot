@@ -8,7 +8,8 @@ extends RefCounted
 ##   • Daily login calendar — 7-day streak (₹ grows, day 7 is a jackpot), resets after a missed
 ##     day, claimable once per calendar day (device date; Play Games cloud save mirrors it).
 ##   • Achievements — persistent, one-time, mapped to Google Play Games achievement ids.
-##   • Rewarded-ad payouts — 2× fare, LPG rescue, free tow, garage test drive — only after the ad
+##   • Rewarded-ad payouts — 2× fare, LPG rescue, free tow, garage test drive, paint trial, 2× daily
+##     bonus, 2× side-quest reward — only after the ad
 ##     provider confirms the user earned it (AdMonetizationManager → SignalBus.rewarded_ad_completed).
 ##
 ## Pure logic + data; GameState owns one instance and saves it. Unit-tested (phase 7 suite).
@@ -18,7 +19,8 @@ const LEDGER_MAX: int = 200
 const DAILY_INR: Array[int] = [50, 75, 100, 125, 150, 200, 500]
 const DAILY_XP: Array[int] = [10, 10, 15, 15, 20, 25, 60]
 ## Max grants per source per calendar day (anti-abuse; ads also have their own caps).
-const DAILY_CAPS: Dictionary = {"ad_double_fare": 12, "ad_fuel_rescue": 4, "ad_tow": 4, "ad_test_drive": 3, "ad_wreck_repair": 3, "daily_login": 1}
+const DAILY_CAPS: Dictionary = {"ad_double_fare": 12, "ad_fuel_rescue": 4, "ad_tow": 4, "ad_test_drive": 3, "ad_wreck_repair": 3, "daily_login": 1,
+	"ad_daily_double": 1, "ad_paint_trial": 3, "ad_quest_double": 5}
 ## Rewarded-ad offers: kind -> {text, fixed inr (0 = computed by caller)}.
 const AD_OFFERS: Dictionary = {
 	"ad_double_fare": {"label": "AD_DOUBLE_FARE"},
@@ -26,6 +28,9 @@ const AD_OFFERS: Dictionary = {
 	"ad_tow": {"label": "AD_FREE_TOW"},
 	"ad_test_drive": {"label": "AD_TEST_DRIVE"},
 	"ad_wreck_repair": {"label": "AD_WRECK_REPAIR"},
+	"ad_daily_double": {"label": "AD_DAILY_DOUBLE"},
+	"ad_paint_trial": {"label": "AD_PAINT_TRIAL"},
+	"ad_quest_double": {"label": "AD_QUEST_DOUBLE"},
 }
 
 ## Achievements: id -> {title, desc, cat, stat, target, inr, xp, unit?, gpgs (Play Games id placeholder)}.

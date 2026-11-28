@@ -91,6 +91,13 @@ var horns_owned: int = 0 # highest tier bought (all lower tiers usable)
 var horn_equipped: int = 0
 var paints_owned: PackedInt32Array = [0]
 var paint_equipped: int = 0
+## Rewarded-ad trials (AdConfig "ad_test_drive" / "ad_paint_trial"): an auto or a paint the player
+## doesn't own, lent until the end of today's shift. The auto goes back to `trial_return`.
+var trial_vehicle: String = ""
+var trial_return: String = ""
+var trial_day: int = 0
+var trial_paint: int = -1
+var trial_paint_day: int = 0
 var fuel_level: float = -1.0 # -1 = fill on first spawn
 var condition: float = 100.0
 ## Condition and fuel of the autos not being driven: id -> {condition, fuel}. Damage and the tank
@@ -352,6 +359,20 @@ func _on_rewarded_ad(placement: String, ctx: Dictionary) -> void:
 					SignalBus.wreck_tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
 				else:
 					SignalBus.tow_requested.emit(Vector3(ctx.get("from", Vector3.ZERO)))
+		"ad_test_drive":
+			var g4: Dictionary = grant_reward(placement, 0, 0, _ad_key(placement, ctx))
+			if str(g4["refused"]) == "" and start_test_drive(str(ctx.get("vehicle", ""))):
+				SignalBus.hint_requested.emit(tr("TEST_DRIVE_STARTED") % base_stats(active_vehicle).display_name, 5.0)
+		"ad_paint_trial":
+			var g5: Dictionary = grant_reward(placement, 0, 0, _ad_key(placement, ctx))
+			if str(g5["refused"]) == "" and start_paint_trial(int(ctx.get("paint", -1))):
+				SignalBus.hint_requested.emit(tr("PAINT_TRIAL_STARTED"), 4.0)
+		"ad_daily_double":
+			# Once per calendar day: the key is the date, not the ad view.
+			grant_reward(placement, int(ctx.get("inr", 0)), 0, "%s:%s" % [placement, RewardsEngine.today_string()])
+		"ad_quest_double":
+			# Once per side quest ever (a quest pays once, so does its doubling).
+			grant_reward(placement, int(ctx.get("inr", 0)), 0, "%s:%s" % [placement, str(ctx.get("quest_id", ""))])
 		_:
 			grant_reward(placement, int(ctx.get("inr", 0)), int(ctx.get("xp", 0)), "%s:%s" % [placement, str(ctx.get("id", Time.get_ticks_msec()))])
 
@@ -469,9 +490,10 @@ func effective_stats(vehicle_id: String) -> VehicleStats:
 	s.front_lateral_grip *= 1.0 + 0.06 * tyr
 	s.rear_lateral_grip *= 1.0 + 0.06 * tyr
 	s.horn_tier = maxi(s.horn_tier, horn_equipped)
-	if paint_equipped > 0:
-		s.body_colour = PAINTS[paint_equipped]["body"]
-		s.canopy_colour = PAINTS[paint_equipped]["canopy"]
+	var paint: int = shown_paint()
+	if paint > 0:
+		s.body_colour = PAINTS[paint]["body"]
+		s.canopy_colour = PAINTS[paint]["canopy"]
 	if condition < 40.0:
 		# Worn out: the engine coughs and the bodywork rattles.
 		s.max_speed_kmh *= 0.85
@@ -480,7 +502,7 @@ func effective_stats(vehicle_id: String) -> VehicleStats:
 
 ## Alangaram prestige 0–1: paint plus visible upgrades.
 func prestige() -> float:
-	var p: float = float(PAINTS[paint_equipped]["prestige"])
+	var p: float = float(PAINTS[shown_paint()]["prestige"])
 	for kind: String in UPGRADES:
 		p += 0.05 * upgrade_level(active_vehicle, kind)
 	p += 0.1 * horn_equipped
@@ -499,12 +521,16 @@ func buy_vehicle(vehicle_id: String) -> bool:
 	if not spend(base_stats(vehicle_id).price_inr):
 		return false
 	owned_vehicles.append(vehicle_id)
+	if trial_vehicle == vehicle_id:
+		trial_vehicle = "" # bought the one on test drive: it simply stays
 	select_vehicle(vehicle_id)
 	return true
 
 func select_vehicle(vehicle_id: String) -> bool:
 	if not owned_vehicles.has(vehicle_id):
 		return false
+	if trial_vehicle != "" and vehicle_id != trial_vehicle:
+		end_test_drive() # picking one of your own autos hands the test-drive auto back
 	if vehicle_id == active_vehicle:
 		return true
 	parked_autos[active_vehicle] = {"condition": condition, "fuel": fuel_level}
@@ -521,12 +547,89 @@ func select_vehicle(vehicle_id: String) -> bool:
 	SignalBus.refueled.emit(fuel_level)
 	return true
 
+# --- Rewarded trials ---------------------------------------------------------------------
+
+## Test drive (rewarded ad): drive an auto you don't own — even one still locked by level — for the
+## rest of today's shift, full tank and no scratches. Your own auto is parked as it was.
+func start_test_drive(vehicle_id: String) -> bool:
+	if owned_vehicles.has(vehicle_id) or not VEHICLES.has(vehicle_id):
+		return false
+	if trial_vehicle != "":
+		end_test_drive()
+	parked_autos[active_vehicle] = {"condition": condition, "fuel": fuel_level}
+	trial_return = active_vehicle
+	trial_vehicle = vehicle_id
+	trial_day = day
+	active_vehicle = vehicle_id
+	component_damage.erase(vehicle_id)
+	damage_marks.erase(vehicle_id)
+	condition = 100.0
+	fuel_level = base_stats(vehicle_id).fuel_capacity
+	_loadout_changed()
+	SignalBus.condition_changed.emit(condition)
+	SignalBus.damage_changed.emit()
+	SignalBus.refueled.emit(fuel_level)
+	return true
+
+## The test drive is over (shift end, another auto picked): back to your own auto as you parked it.
+## Dents on the lent auto go back with it.
+func end_test_drive() -> void:
+	if trial_vehicle == "":
+		return
+	var lent: String = trial_vehicle
+	trial_vehicle = ""
+	component_damage.erase(lent)
+	damage_marks.erase(lent)
+	parked_autos.erase(lent)
+	if active_vehicle != lent or owned_vehicles.has(lent):
+		return
+	active_vehicle = trial_return if owned_vehicles.has(trial_return) else "singara_classic"
+	SignalBus.hint_requested.emit(tr("TEST_DRIVE_ENDED") % base_stats(active_vehicle).display_name, 4.0)
+	var parked: Dictionary = parked_autos.get(active_vehicle, {})
+	condition = clampf(float(parked.get("condition", 100.0)), 0.0, 100.0)
+	fuel_level = float(parked.get("fuel", base_stats(active_vehicle).fuel_capacity))
+	if fuel_level < 0.0:
+		fuel_level = base_stats(active_vehicle).fuel_capacity
+	_loadout_changed()
+	SignalBus.condition_changed.emit(condition)
+	SignalBus.damage_changed.emit()
+	SignalBus.refueled.emit(fuel_level)
+
+func on_test_drive() -> bool:
+	return trial_vehicle != "" and active_vehicle == trial_vehicle
+
+## The paint on the auto right now: a trial paint (rewarded ad) wins over the equipped one.
+func shown_paint() -> int:
+	return trial_paint if trial_paint >= 0 and trial_paint < PAINTS.size() else paint_equipped
+
+## Paint trial (rewarded ad): wear a paint you don't own until the shift ends (its Meter Mela bonus too).
+func start_paint_trial(index: int) -> bool:
+	if index <= 0 or index >= PAINTS.size() or paints_owned.has(index):
+		return false
+	trial_paint = index
+	trial_paint_day = day
+	_loadout_changed()
+	return true
+
+func end_paint_trial() -> void:
+	if trial_paint < 0:
+		return
+	trial_paint = -1
+	_loadout_changed()
+
+## Both trials end with the shift.
+func end_trials() -> void:
+	end_test_drive()
+	end_paint_trial()
+
 func next_upgrade_cost(kind: String) -> int:
 	var lvl: int = upgrade_level(active_vehicle, kind)
 	var costs: Array = UPGRADES[kind]["costs"]
 	return -1 if lvl >= costs.size() else int(costs[lvl])
 
 func buy_upgrade(kind: String) -> bool:
+	if on_test_drive():
+		return false # upgrades are for autos you own
 	var cost: int = next_upgrade_cost(kind)
 	if cost < 0 or not spend(cost):
 		return false
@@ -554,6 +657,7 @@ func buy_paint(index: int) -> bool:
 			return false
 		paints_owned.append(index)
 	paint_equipped = index
+	trial_paint = -1 # choosing a paint of your own ends a paint trial
 	_loadout_changed()
 	return true
 
@@ -821,10 +925,12 @@ func end_shift() -> void:
 	summary["rating"] = star_rating
 	rewards.add_stat("shifts", 1)
 	_check_achievements()
+	end_trials() # test drive / paint trial last one shift
 	SignalBus.shift_ended.emit(summary)
 	save_game()
 
 func start_next_day() -> void:
+	end_trials()
 	day += 1
 	shift_minute = SHIFT_START_MIN
 	shift_running = true
@@ -906,6 +1012,7 @@ func to_dict() -> Dictionary:
 		"fines_issued": fines_issued, "warned_day": warned_day, "respect": stand_respect_xp, "rating": star_rating,
 		"rides": completed_savaris, "owned": Array(owned_vehicles), "active": active_vehicle, "upgrades": upgrades,
 		"horns_owned": horns_owned, "horn": horn_equipped, "paints": Array(paints_owned), "paint": paint_equipped,
+		"trial": {"vehicle": trial_vehicle, "return": trial_return, "day": trial_day, "paint": trial_paint, "paint_day": trial_paint_day},
 		"fuel": fuel_level, "condition": condition, "parked": parked_autos.duplicate(true), "damage": component_damage.duplicate(true), "marks": damage_marks.duplicate(true), "day": day, "minute": shift_minute, "day_stats": day_stats,
 		"settings": settings, "rain": [rain_window.x, rain_window.y], "progress": progress.to_dict(),
 		"rewards": rewards.to_dict(), "no_ads": no_ads,
@@ -930,13 +1037,26 @@ func from_dict(d: Dictionary) -> void:
 	completed_savaris = int(d.get("rides", completed_savaris))
 	owned_vehicles = PackedStringArray(d.get("owned", ["singara_classic"]))
 	active_vehicle = str(d.get("active", "singara_classic"))
-	if not owned_vehicles.has(active_vehicle):
-		active_vehicle = "singara_classic"
+	# A test drive survives an app restart within its shift day; anything else lent goes back.
+	var trial: Dictionary = d.get("trial", {}) if d.get("trial", {}) is Dictionary else {}
+	var saved_day: int = int(d.get("day", 1))
+	trial_vehicle = str(trial.get("vehicle", ""))
+	trial_return = str(trial.get("return", "singara_classic"))
+	trial_day = int(trial.get("day", 0))
+	if trial_vehicle == "" or trial_day != saved_day or not VEHICLES.has(trial_vehicle) or owned_vehicles.has(trial_vehicle) or active_vehicle != trial_vehicle:
+		trial_vehicle = ""
+	var trial_lapsed: bool = not owned_vehicles.has(active_vehicle) and active_vehicle != trial_vehicle
+	if trial_lapsed:
+		active_vehicle = trial_return if owned_vehicles.has(trial_return) else "singara_classic"
+	trial_paint = int(trial.get("paint", -1))
+	trial_paint_day = int(trial.get("paint_day", 0))
 	upgrades = d.get("upgrades", {})
 	horns_owned = int(d.get("horns_owned", 0))
 	horn_equipped = clampi(int(d.get("horn", 0)), 0, horns_owned)
 	paints_owned = PackedInt32Array(d.get("paints", [0]))
 	paint_equipped = int(d.get("paint", 0)) if paints_owned.has(int(d.get("paint", 0))) else 0
+	if trial_paint_day != saved_day or trial_paint <= 0 or trial_paint >= PAINTS.size() or paints_owned.has(trial_paint):
+		trial_paint = -1
 	fuel_level = float(d.get("fuel", -1.0))
 	condition = float(d.get("condition", 100.0))
 	parked_autos = {}
@@ -945,6 +1065,11 @@ func from_dict(d: Dictionary) -> void:
 		for vehicle: String in raw_parked:
 			if raw_parked[vehicle] is Dictionary:
 				parked_autos[vehicle] = (raw_parked[vehicle] as Dictionary).duplicate()
+	if trial_lapsed:
+		# The saved tank and condition were the lent auto's: take your own auto's as you parked it.
+		var own: Dictionary = parked_autos.get(active_vehicle, {})
+		condition = clampf(float(own.get("condition", 100.0)), 0.0, 100.0)
+		fuel_level = float(own.get("fuel", -1.0))
 	component_damage = (d.get("damage", {}) as Dictionary).duplicate(true)
 	for vehicle: String in component_damage:
 		component_damage[vehicle] = clean_damage(component_damage[vehicle] as Dictionary)
