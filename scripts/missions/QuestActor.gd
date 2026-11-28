@@ -87,6 +87,49 @@ func pace_of(gait: String) -> float:
 		native = float(info.get("walk_speed", 1.3)) * (2.3 if gait == "run" else 1.0)
 	return native * _scale
 
+## Fixes QuestWear items (tape, specs, towel, davara, …) to the rig, each where it sits in the idle
+## clip, so the same street model reads as this quest's own person. A few draw calls per person:
+## only for the handful of story people in a scene, never for street walkers.
+func wear(items: Variant) -> void:
+	if body == null or not (items is Array or items is PackedStringArray):
+		return
+	var found: Array[Node] = body.find_children("*", "Skeleton3D", true, false)
+	if found.is_empty():
+		return
+	var skel: Skeleton3D = found[0] as Skeleton3D
+	if _anim != null and _anim.has_animation("idle"):
+		_anim.play("idle", 0.0)
+		_anim.seek(0.4, true)
+	skel.force_update_all_bone_transforms()
+	# Skeleton space -> this person's space, walked up the node chain (works before entering the tree).
+	var to_me: Transform3D = Transform3D.IDENTITY
+	var n: Node = skel
+	while n != null and n != self:
+		if n is Node3D:
+			to_me = (n as Node3D).transform * to_me
+		n = n.get_parent()
+	for raw: Variant in items:
+		var item: String = str(raw)
+		var spec: Dictionary = QuestWear.spec(item)
+		if spec.is_empty():
+			continue
+		var bone: int = skel.find_bone(str(spec["bone"]))
+		if bone < 0:
+			continue
+		var bone_me: Transform3D = to_me * skel.get_bone_global_pose(bone)
+		var want: Transform3D = Transform3D(Basis.IDENTITY, bone_me.origin + (spec["at"] as Vector3))
+		var att: BoneAttachment3D = BoneAttachment3D.new()
+		att.name = "Wear_" + item
+		att.bone_name = str(spec["bone"])
+		skel.add_child(att)
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		mi.mesh = QuestWear.mesh(item)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		att.add_child(mi)
+		mi.transform = bone_me.affine_inverse() * want
+	if _clip != "":
+		play(_clip, 0.0)
+
 func place(at: Vector3) -> void:
 	_target = Vector3.INF
 	global_position = _grounded(at)

@@ -18,7 +18,9 @@ extends Node3D
 ##   "rider": {"out": mark, "walk": mark, "face": look, "now": bool, "in": true, "show": bool}
 ##     moves the quest's rider (QuestRider, MissionDef.rider_model): out of the auto to a mark,
 ##     on foot to a mark, or back in through the door; "wait": "rider" waits until she is there.
-## A mark is [r, u, f], "door" (the kerb-side door), "place:<stage>" (that stage's place_pos),
+## Cast entries may list "wear": QuestWear items (tape, specs, jasmine, towel, davara, glass, book).
+## A mark is [r, u, f], "door" (the kerb-side door), "beside:<role>" (by the driver's seat on that
+## person's side of the auto), "place:<stage>" (that stage's place_pos),
 ## "role:<name>", "rider" or a world Vector3. A look is a mark, "role:<name>", "prop:<id>",
 ## "rider" (her head, seated or standing) or "auto".
 
@@ -41,6 +43,9 @@ const LINGER_M: float = 70.0
 const STOPPED_KMH: float = 3.0
 const DOOR: Vector3 = Vector3(-1.1, 0.0, 0.35) # local to the auto: kerb (left) side, behind the middle
 const COCKPIT_EYE: Vector3 = CameraRig.COCKPIT_OFFSET
+## "beside:<role>": how far out from the auto's middle and how far ahead of it (the driver's seat).
+const BESIDE_SIDE_M: float = 1.55
+const BESIDE_FWD_M: float = 0.45
 
 @export var director_path: NodePath = NodePath("../MissionDirector")
 @export var auto_path: NodePath = NodePath("../AutoRickshaw")
@@ -400,6 +405,7 @@ func _spawn(role: String) -> QuestActor:
 	if actor == null:
 		return null
 	add_child(actor)
+	actor.wear(c.get("wear", []))
 	actors[role] = actor
 	return actor
 
@@ -838,6 +844,8 @@ func _mark(spec: Variant, ground: bool) -> Vector3:
 			p = st.place_pos if st != null else _frame.origin
 		elif s.begins_with("role:") and actors.has(s.substr(5)):
 			p = (actors[s.substr(5)] as QuestActor).global_position
+		elif s.begins_with("beside:") and actors.has(s.substr(7)):
+			p = beside_auto((actors[s.substr(7)] as QuestActor).global_position)
 		elif s == "rider":
 			p = _rider_point()
 	if ground:
@@ -878,8 +886,15 @@ func _in_view_of_auto(p: Vector3) -> Vector3:
 			return q
 	return p
 
+## The spot by the driver's seat on whichever side of the auto `who` stands, so a shopkeeper
+## walks up to the driver from their own side of the road wherever the player stopped.
+func beside_auto(who: Vector3) -> Vector3:
+	var local: Vector3 = _frame.affine_inverse() * who
+	var side: float = 1.0 if local.x >= 0.0 else -1.0
+	return _frame * Vector3(side * BESIDE_SIDE_M, 0.0, -BESIDE_FWD_M)
+
 ## A camera position: a mark, or {"from": "role:x" | "prop:x", "toward": "auto", "dist": m,
-## "up": m, "side": m} for a shot framed on a person or prop wherever they are.
+## "up": m, "side": m, "ahead": bool} for a shot framed on a person or prop wherever they are.
 func _eye(spec: Variant) -> Vector3:
 	if spec is Dictionary:
 		var d: Dictionary = spec as Dictionary
@@ -893,6 +908,9 @@ func _eye(spec: Variant) -> Vector3:
 		dir.y = 0.0
 		dir = dir.normalized() if dir.length_squared() > 0.01 else -_frame.basis.z
 		var side: Vector3 = dir.cross(Vector3.UP).normalized()
+		# "ahead": the sideways step goes towards the auto's nose, whichever side the person is on.
+		if bool(d.get("ahead", false)) and side.dot(-_frame.basis.z) < 0.0:
+			side = -side
 		var p: Vector3 = base + dir * float(d.get("dist", 5.0)) + side * float(d.get("side", 0.0))
 		var ground: float = SignalBus.surface_height(p.x, p.z, _frame.origin.y)
 		if str(d.get("from", "")).begins_with("prop:"):

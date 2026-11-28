@@ -74,9 +74,10 @@ def write_story(quest_id, voice_dir, speakers, cast, props, cutscenes, barks):
     out.write_text("\n".join(story) + "\n", encoding="utf-8")
 
 
-ORDER = ["id", "kind", "objective_key", "target", "radius_m", "arrival_speed_kmh", "duration_s", "deadline_s", "max_speed_kmh",
-         "choices", "next_by_choice", "quality_key", "quality_floor", "place_key", "place_pos", "cutscene_id", "spot_pos", "spot_range_m", "spot_max_kmh", "shrink_after_s",
-         "shrink_radius_m", "next_id"]
+ORDER = ["id", "kind", "objective_key", "target", "target_choice_stage", "target_options", "radius_m", "arrival_speed_kmh",
+         "duration_s", "deadline_s", "max_speed_kmh", "choices", "next_by_choice", "quality_key", "quality_floor", "quality_scale",
+         "place_key", "place_pos", "place_options", "place_pos_options", "cutscene_id", "spot_pos", "spot_range_m", "spot_max_kmh",
+         "shrink_after_s", "shrink_radius_m", "checkpoint", "next_id"]
 
 
 def write_mission(quest_id, stages, fields):

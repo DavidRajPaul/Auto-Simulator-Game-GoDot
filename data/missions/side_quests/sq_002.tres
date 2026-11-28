@@ -1,6 +1,17 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=14 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_002_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
+script = ExtResource("stage")
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ02_INTRO"
+target = Vector3(634.3, 0, 1487.9)
+duration_s = 60.0
+place_key = "SQ02_P_COFFEE"
+place_pos = Vector3(634.3, 0, 1482.2)
+cutscene_id = "intro"
 [sub_resource type="Resource" id="order"]
 script = ExtResource("stage")
 id = "order"
@@ -14,7 +25,10 @@ kind = "goto"
 objective_key = "SQ02_FIRST"
 target = Vector3(621.2, 0, 1592.8)
 target_choice_stage = "order"
-target_options = {"SQ02_LUZ_FIRST": Vector3(621.2, 0, 1592.8), "SQ02_GARDEN_FIRST": Vector3(742.3, 0, 1423.6)}
+target_options = {
+"SQ02_LUZ_FIRST": Vector3(621.2, 0, 1592.8),
+"SQ02_GARDEN_FIRST": Vector3(742.3, 0, 1423.6)
+}
 radius_m = 9.0
 deadline_s = 190.0
 quality_key = "coffee"
@@ -22,8 +36,21 @@ quality_floor = 20.0
 quality_scale = 1.0
 place_key = "SQ02_P_TAILOR"
 place_pos = Vector3(615.3, 0, 1593.3)
-place_options = {"SQ02_LUZ_FIRST": "SQ02_P_TAILOR", "SQ02_GARDEN_FIRST": "SQ02_P_BOOKS"}
-place_pos_options = {"SQ02_LUZ_FIRST": Vector3(615.3, 0, 1593.3), "SQ02_GARDEN_FIRST": Vector3(743.3, 0, 1419.1)}
+place_options = {
+"SQ02_LUZ_FIRST": "SQ02_P_TAILOR",
+"SQ02_GARDEN_FIRST": "SQ02_P_BOOKS"
+}
+place_pos_options = {
+"SQ02_LUZ_FIRST": Vector3(615.3, 0, 1593.3),
+"SQ02_GARDEN_FIRST": Vector3(743.3, 0, 1419.1)
+}
+[sub_resource type="Resource" id="first_drop"]
+script = ExtResource("stage")
+id = "first_drop"
+kind = "cutscene"
+objective_key = "SQ02_DROP"
+duration_s = 40.0
+cutscene_id = "first_drop"
 [sub_resource type="Resource" id="second"]
 script = ExtResource("stage")
 id = "second"
@@ -31,15 +58,31 @@ kind = "goto"
 objective_key = "SQ02_SECOND"
 target = Vector3(742.3, 0, 1423.6)
 target_choice_stage = "order"
-target_options = {"SQ02_LUZ_FIRST": Vector3(742.3, 0, 1423.6), "SQ02_GARDEN_FIRST": Vector3(621.2, 0, 1592.8)}
+target_options = {
+"SQ02_LUZ_FIRST": Vector3(742.3, 0, 1423.6),
+"SQ02_GARDEN_FIRST": Vector3(621.2, 0, 1592.8)
+}
 radius_m = 9.0
 deadline_s = 210.0
 quality_key = "coffee"
 quality_floor = 20.0
 place_key = "SQ02_P_BOOKS"
 place_pos = Vector3(743.3, 0, 1419.1)
-place_options = {"SQ02_LUZ_FIRST": "SQ02_P_BOOKS", "SQ02_GARDEN_FIRST": "SQ02_P_TAILOR"}
-place_pos_options = {"SQ02_LUZ_FIRST": Vector3(743.3, 0, 1419.1), "SQ02_GARDEN_FIRST": Vector3(615.3, 0, 1593.3)}
+place_options = {
+"SQ02_LUZ_FIRST": "SQ02_P_BOOKS",
+"SQ02_GARDEN_FIRST": "SQ02_P_TAILOR"
+}
+place_pos_options = {
+"SQ02_LUZ_FIRST": Vector3(743.3, 0, 1419.1),
+"SQ02_GARDEN_FIRST": Vector3(615.3, 0, 1593.3)
+}
+[sub_resource type="Resource" id="second_drop"]
+script = ExtResource("stage")
+id = "second_drop"
+kind = "cutscene"
+objective_key = "SQ02_DROP"
+duration_s = 40.0
+cutscene_id = "second_drop"
 [sub_resource type="Resource" id="third"]
 script = ExtResource("stage")
 id = "third"
@@ -52,17 +95,46 @@ quality_key = "coffee"
 quality_floor = 20.0
 place_key = "SQ02_P_TEA"
 place_pos = Vector3(725.7, 0, 1301.0)
+[sub_resource type="Resource" id="tea"]
+script = ExtResource("stage")
+id = "tea"
+kind = "cutscene"
+objective_key = "SQ02_TEA"
+duration_s = 36.0
+cutscene_id = "tea"
+[sub_resource type="Resource" id="secret"]
+script = ExtResource("stage")
+id = "secret"
+kind = "dialogue"
+objective_key = "SQ02_SECRET"
+choices = PackedStringArray("SQ02_KEEP", "SQ02_TEASE")
+[sub_resource type="Resource" id="thanks"]
+script = ExtResource("stage")
+id = "thanks"
+kind = "cutscene"
+objective_key = "SQ02_THANKS"
+duration_s = 24.0
+cutscene_id = "thanks"
 [resource]
 script = ExtResource("def")
 id = "sq_002"
-content_version = 2
+content_version = 3
 title_key = "SQ02_TITLE"
 description_key = "SQ02_DESC"
 job_key = "SQ02_JOB"
 discoverable = true
 start_anchor = Vector3(634.3, 0, 1487.9)
-estimated_minutes = 5
+estimated_minutes = 9
 category = "skill"
 reward_inr = 145
 reward_xp = 15
-stages = Array[ExtResource("stage")]([SubResource("order"), SubResource("first"), SubResource("second"), SubResource("third")])
+reward_choice_stage = "secret"
+reward_choice_inr = {
+"SQ02_KEEP": 145,
+"SQ02_TEASE": 165
+}
+reward_choice_xp = {
+"SQ02_KEEP": 30
+}
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("order"), SubResource("first"), SubResource("first_drop"), SubResource("second"), SubResource("second_drop"), SubResource("third"), SubResource("tea"), SubResource("secret"), SubResource("thanks")])

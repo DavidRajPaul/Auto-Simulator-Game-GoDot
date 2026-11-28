@@ -379,5 +379,66 @@
       "seed": 1048,
       "description": "{name} speaks in a {emotion} tone with a brisk, confident delivery and a warm mid-pitched voice, like a woman in her forties who runs a music hall. The recording is very clear audio, close up, with almost no background noise."
     }
+  },
+  "Kannan": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "theatrical",
+      "proud"
+    ],
+    "parler": {
+      "speaker": "Vikas",
+      "seed": 2018,
+      "description": "{name} speaks in a {emotion} tone with a theatrical, proud delivery and a deep, slightly gravelly voice, like a coffee-shop owner in his sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Selvam": {
+    "gender": "male",
+    "age": [
+      "young",
+      "middle_aged"
+    ],
+    "search": [
+      "frantic",
+      "fast"
+    ],
+    "parler": {
+      "speaker": "Tarun",
+      "seed": 2028,
+      "description": "{name} speaks in a {emotion} tone with a fast, breathless delivery and a bright voice, like a busy tailor in his thirties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Mohana": {
+    "gender": "female",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "strict",
+      "precise"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 2038,
+      "description": "{name} speaks in a {emotion} tone with a crisp, precise delivery and a clear voice, like a retired schoolteacher in her sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Murugan": {
+    "gender": "male",
+    "age": [
+      "middle_aged"
+    ],
+    "search": [
+      "loud",
+      "sheepish"
+    ],
+    "parler": {
+      "speaker": "Dinesh",
+      "seed": 2048,
+      "description": "{name} speaks in a {emotion} tone with an expressive delivery and a hearty mid-pitched voice, like a tea-stall owner in his forties. The recording is very clear audio, close up, with almost no background noise."
+    }
   }
 }

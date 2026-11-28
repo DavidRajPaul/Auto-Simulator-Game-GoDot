@@ -42,6 +42,9 @@ func _run() -> void:
 	if OS.get_environment("SHOT_QUEST") == "sq_003":
 		await _run_margazhi()
 		return
+	if OS.get_environment("SHOT_QUEST") == "sq_002":
+		await _run_coffee()
+		return
 	if OS.get_environment("SHOT_QUEST") == "sq_001":
 		await _run_wedding()
 		return
@@ -107,6 +110,32 @@ func _run_wedding() -> void:
 	_save("w04_choice_letterbox")
 	story._choose(int(OS.get_environment("SHOT_CHOICE")) if OS.has_environment("SHOT_CHOICE") else 0)
 	await _shots("w05_ending", [0.5, 3.0, 6.0, 9.5, 13.0, 17.0, 20.0], "")
+	print("done stage=", director.run.stage_id if director.run != null else "complete")
+	get_tree().quit()
+
+## SQ_QUEST=sq_002: "Filter Coffee, No Spill" (SHOT_CHOICE = first shop 0 tailor / 1 books,
+## SHOT_SECRET = 0 keep / 1 tease).
+func _run_coffee() -> void:
+	var def: MissionDef = director.registry.get_mission("sq_002")
+	await _go(def.start_anchor)
+	await _wait(1.0)
+	SignalBus.savari_busy_provider = Callable()
+	print("start ok=", director.start("sq_002"))
+	await _shots("c01_intro", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 17.0, 20.0, 24.0, 28.0, 32.0], "order")
+	await _wait(0.8)
+	_save("c02_order_letterbox")
+	story._choose(int(OS.get_environment("SHOT_CHOICE")) if OS.has_environment("SHOT_CHOICE") else 0)
+	await _wait(0.5)
+	await _go(director.current_stage().target)
+	await _shots("c03_first_drop", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "second")
+	await _go(director.current_stage().target)
+	await _shots("c04_second_drop", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "third")
+	await _go(director.current_stage().target)
+	await _shots("c05_tea", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0], "secret")
+	await _wait(0.8)
+	_save("c06_secret_letterbox")
+	story._choose(int(OS.get_environment("SHOT_SECRET")) if OS.has_environment("SHOT_SECRET") else 0)
+	await _shots("c07_thanks", [0.5, 3.0, 6.0, 9.0, 12.0], "")
 	print("done stage=", director.run.stage_id if director.run != null else "complete")
 	get_tree().quit()
 
