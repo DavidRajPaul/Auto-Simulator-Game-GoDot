@@ -55,6 +55,9 @@ var _first_sync: bool = true
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	process_priority = -100 # measure before the game's own _process work
+	if OS.is_debug_build() and ResourceLoader.exists("res://scripts/devtools/DevTools.gd"): # DEVTOOLS-HOOK (dev only, never on release/*)
+		var dev: Node = (load("res://scripts/devtools/DevTools.gd") as GDScript).new() as Node # DEVTOOLS-HOOK
+		add_child(dev) # DEVTOOLS-HOOK
 	frame_ring.resize(RING_SIZE)
 	var headless: bool = DisplayServer.get_name() == "headless"
 	measuring = not headless and GameState.persistence_enabled

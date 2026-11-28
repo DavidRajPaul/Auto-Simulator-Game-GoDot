@@ -7,10 +7,10 @@ name: Android Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     tags: ["v*"]
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
   workflow_dispatch:
     inputs:
       sentry_smoke_test:
@@ -83,6 +83,17 @@ jobs:
           pip install pillow
           python3 -m unittest discover -s tests -p 'test_plots.py' -v
 
+      - name: Dev tools guard (AGENTS.md Rule 7)
+        run: |
+          # release/* branches, release PRs and v* tags must contain NO dev tools; elsewhere they may
+          # exist, but only behind the FrameGuard hook.
+          REF="${{ github.base_ref || github.ref_name }}"
+          if [[ "$REF" == release/* || "${{ github.ref }}" == refs/tags/* ]]; then
+            python3 tools/release/check_no_devtools.py --strict
+          else
+            python3 tools/release/check_no_devtools.py
+          fi
+
       - name: Import project
         run: ${GODOT_BIN} --headless --path . --import
 
@@ -98,7 +109,9 @@ jobs:
         run: |
           # timeout: a script parse error leaves the runner idling instead of quitting.
           set -o pipefail
-          for suite in run_story_quest_tests run_savari_voice_tests run_quest_experience_tests run_six_quest_tests run_twelve_quest_tests run_twenty_four_quest_tests run_crash_reporter_tests run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests run_phase12_tests run_phase13_tests run_quest_discovery_tests run_reminder_tests run_store_config_tests run_golden_ripple_tests run_buildings_tests run_streets_tests run_street_life_tests run_smoothness_tests run_ads_tests; do
+          EXTRA=""
+          [ -d scripts/devtools ] && EXTRA="run_devtools_tests"
+          for suite in $EXTRA run_story_quest_tests run_savari_voice_tests run_quest_experience_tests run_six_quest_tests run_twelve_quest_tests run_twenty_four_quest_tests run_crash_reporter_tests run_phase1_tests run_phase2_tests run_phase3_tests run_phase4_tests run_phase5_tests run_phase6_tests run_phase7_tests run_phase8_tests run_phase9_tests run_phase10_tests run_phase11_tests run_phase12_tests run_phase13_tests run_quest_discovery_tests run_reminder_tests run_store_config_tests run_golden_ripple_tests run_buildings_tests run_streets_tests run_street_life_tests run_smoothness_tests run_ads_tests; do
             echo "::group::$suite"
             timeout 400 ${GODOT_BIN} --headless --path . --fixed-fps 60 res://tests/$suite.tscn 2>&1 | tee $suite.log
             echo "::endgroup::"
@@ -282,6 +295,12 @@ jobs:
           sys.exit(0 if all(checks.values()) else 1)
           PY
 
+      - name: Strip dev tools before release-grade exports
+        run: |
+          # The debug APK above keeps the dev panel (testing). The signed release APK and the AAB
+          # below are built WITHOUT it, from every branch. AGENTS.md Rule 7.
+          python3 tools/release/strip_devtools.py
+
       - name: Export signed release APK
         if: env.HAS_RELEASE_KEY == 'true'
         env:
@@ -315,6 +334,11 @@ jobs:
             ${GODOT_BIN} --headless --path . $TPL --export-debug "Android AAB" build/android/NammaAuto-debug.aab 2>&1 | tee aab.log
           fi
           ls -lh build/android/*.aab || { echo "::error::AAB was not produced"; tail -50 aab.log; exit 1; }
+
+      - name: Verify release packages contain no dev tools
+        run: |
+          FILES=$(ls build/android/*release*.apk build/android/*.aab 2>/dev/null || true)
+          [ -z "$FILES" ] || python3 tools/release/check_package_clean.py $FILES
 
       - name: Report APK size (budget < 85 MB)
         run: |

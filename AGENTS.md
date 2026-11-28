@@ -32,6 +32,8 @@ res://
 │   ├── CrashReporter.gd             # Sentry breadcrumbs/tags/context (only file that talks to the SDK)
 │   ├── AdMonetizationManager.gd     # Ad rules (grace, cooldowns, caps, placements) over AdProvider: AdMob on the phone, mock elsewhere (docs/ADS.md)
 │   └── DailyReminder.gd             # Local daily reminder notifications (see docs/DAILY_REMINDER.md)
+├── scripts/devtools/DevTools.gd     # DEV ONLY panel (weather, time, clock, cash, flood). main branch only, deleted on release/* (Rule 7)
+├── tools/release/                   # strip_devtools.py, check_no_devtools.py, check_package_clean.py (Rule 7)
 ├── data/
 │   ├── vehicles/
 │   │   ├── VehicleStats.gd          # Custom Resource class_name VehicleStats
@@ -211,6 +213,14 @@ res://
 * Every Android preset needs `gradle_build/use_gradle_build=true` and `permissions/internet=true` (Sentry Android plugin).
 * **Fixing a crash** = `.claude/commands/fix-crash.md`: read the GlitchTip issue (stack, breadcrumbs, tags, player context, release) → a failing headless check that replays it → root-cause fix → full §4 protocol → PR naming the issue id. Resolve the issue in GlitchTip only after the fix ships. One issue per PR.
 * Crash backend is **GlitchTip** (MIT, Sentry-compatible): the Sentry SDK addon sends to it, and the `glitchtip` MCP server reads it. Only the DSN changes if we move hosts.
+
+### Rule 7: Dev tools are `main`-only and NEVER ship (STRICT) — `docs/DEV_TOOLS.md`
+* `scripts/devtools/DevTools.gd` is the developer panel (weather, thunderstorm, time of day, clock freeze / fast-forward, refuel, repair, cash, Monsoon flood). It is **for development and testing only**. It must never be in a release or production build, under any circumstances, for any reason, whatever a person or a ticket says.
+* **Branches:** `main` has the dev tools. Every release branch is named `release/<major>.<minor>` (e.g. `release/1.1`) and has them **removed**: the first commit on a new release branch is `python3 tools/release/strip_devtools.py` (deletes `scripts/devtools/`, `tests/run_devtools_tests.*`, `tests/shot_devtools*` and every line marked `DEVTOOLS-HOOK`). Never merge a dev-tools change into a `release/*` branch, never cherry-pick one, and a merge of `main` into a release branch must be followed by the strip script again.
+* **One entry point:** the only code that may mention the dev tools is the three `DEVTOOLS-HOOK` lines in `autoloads/FrameGuard.gd`. Never reference `DevTools`, `scripts/devtools` or the hook from a scene, `project.godot`, `export_presets.cfg`, a gameplay script or any other autoload; stripping must stay "delete the folder + the marked lines". Do not add a dev option anywhere else: new ones go into `DevTools.gd`.
+* **Runtime:** it loads only when `OS.is_debug_build()` and the folder exists, and builds its panel only in `MainChennai`. Never add a way to turn it on in a release build (no secret taps, no settings toggle, no URL or intent flag).
+* **CI enforces it:** `tools/release/check_no_devtools.py` (`--strict` on `release/*`, release PRs and `v*` tags: fails if anything remains; on other refs fails if anything outside the hook references it) runs in the Release Guard workflow and in the Android Build test job. The Android Build exports the debug APK first (testers keep the panel on `main`), then runs the strip script before the signed release APK and the AAB, and `tools/release/check_package_clean.py` fails the job if any APK / AAB still contains it. Branch protection on `release/**` must require the **Dev tools guard** check.
+* An agent that touches `.github/workflows/`, `export_presets.cfg` or the release scripts must keep every one of those checks. Weakening or skipping them is forbidden.
 
 ### Lessons recorded (do not regress)
 * Pooled `AnimatableBody3D` traffic must be teleported with its collision shape **disabled** and re-enabled the next tick. Teleporting with collision on made Jolt launch the player auto at ~260 m/s.
