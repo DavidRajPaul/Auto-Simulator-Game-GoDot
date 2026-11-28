@@ -1,6 +1,15 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=13 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_017_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
+script = ExtResource("stage")
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ17_INTRO"
+target = Vector3(394.4, 0, -190.8)
+duration_s = 60.0
+cutscene_id = "intro"
 [sub_resource type="Resource" id="load"]
 script = ExtResource("stage")
 id = "load"
@@ -8,9 +17,9 @@ kind = "cargo"
 objective_key = "SQ17_LOAD"
 target = Vector3(394.4, 0, -190.8)
 radius_m = 9.0
-cargo_delta = 3
 place_key = "SQ17_P_STORE"
 place_pos = Vector3(399.3, 0, -197.0)
+cargo_delta = 3
 action_key = "QUEST_ACT_LOAD"
 [sub_resource type="Resource" id="warning"]
 script = ExtResource("stage")
@@ -22,6 +31,13 @@ radius_m = 9.0
 place_key = "SQ17_P_SIGN"
 place_pos = Vector3(364.5, 0, -145.7)
 action_key = "QUEST_ACT_READ"
+[sub_resource type="Resource" id="watch"]
+script = ExtResource("stage")
+id = "watch"
+kind = "cutscene"
+objective_key = "SQ17_WATCH"
+duration_s = 70.0
+cutscene_id = "watch"
 [sub_resource type="Resource" id="order"]
 script = ExtResource("stage")
 id = "order"
@@ -34,54 +50,93 @@ id = "first"
 kind = "cargo"
 objective_key = "SQ17_FIRST"
 target = Vector3(327.4, 0, -202.5)
-radius_m = 9.0
 target_choice_stage = "order"
-target_options = {"SQ17_SHELTER": Vector3(327.4, 0, -202.5), "SQ17_DESK": Vector3(476.1, 0, -209.0)}
-cargo_delta = -2
-cargo_delta_options = {"SQ17_SHELTER": -2, "SQ17_DESK": -1}
+target_options = {
+"SQ17_SHELTER": Vector3(327.4, 0, -202.5),
+"SQ17_DESK": Vector3(476.1, 0, -209.0)
+}
+radius_m = 9.0
 deadline_s = 250.0
-quality_floor = 15.0
-weather_loss_per_s = 0.25
 quality_key = "supplies"
-avoid_center = Vector3(412.8, 0, -253.6)
-avoid_radius_m = 8.0
+quality_floor = 15.0
 place_key = "SQ17_P_SHELTER"
 place_pos = Vector3(327.0, 0, -198.4)
-place_options = {"SQ17_SHELTER": "SQ17_P_SHELTER", "SQ17_DESK": "SQ17_P_DESK"}
-place_pos_options = {"SQ17_SHELTER": Vector3(327.0, 0, -198.4), "SQ17_DESK": Vector3(479.0, 0, -213.5)}
+place_options = {
+"SQ17_SHELTER": "SQ17_P_SHELTER",
+"SQ17_DESK": "SQ17_P_DESK"
+}
+place_pos_options = {
+"SQ17_SHELTER": Vector3(327.0, 0, -198.4),
+"SQ17_DESK": Vector3(479.0, 0, -213.5)
+}
+cargo_delta = -2
+cargo_delta_options = {
+"SQ17_SHELTER": -2,
+"SQ17_DESK": -1
+}
+weather_loss_per_s = 0.25
+avoid_center = Vector3(412.8, 0, -253.6)
+avoid_radius_m = 8.0
 action_key = "QUEST_ACT_GIVE"
+[sub_resource type="Resource" id="first_drop"]
+script = ExtResource("stage")
+id = "first_drop"
+kind = "cutscene"
+objective_key = "SQ17_HANDOVER"
+duration_s = 60.0
+cutscene_id = "first_drop"
 [sub_resource type="Resource" id="second"]
 script = ExtResource("stage")
 id = "second"
 kind = "cargo"
 objective_key = "SQ17_SECOND"
 target = Vector3(476.1, 0, -209.0)
-radius_m = 9.0
 target_choice_stage = "order"
-target_options = {"SQ17_SHELTER": Vector3(476.1, 0, -209.0), "SQ17_DESK": Vector3(327.4, 0, -202.5)}
-cargo_delta = -1
-cargo_delta_options = {"SQ17_SHELTER": -1, "SQ17_DESK": -2}
+target_options = {
+"SQ17_SHELTER": Vector3(476.1, 0, -209.0),
+"SQ17_DESK": Vector3(327.4, 0, -202.5)
+}
+radius_m = 9.0
 deadline_s = 250.0
-quality_floor = 15.0
-weather_loss_per_s = 0.25
 quality_key = "supplies"
+quality_floor = 15.0
 place_key = "SQ17_P_DESK"
 place_pos = Vector3(479.0, 0, -213.5)
-place_options = {"SQ17_SHELTER": "SQ17_P_DESK", "SQ17_DESK": "SQ17_P_SHELTER"}
-place_pos_options = {"SQ17_SHELTER": Vector3(479.0, 0, -213.5), "SQ17_DESK": Vector3(327.0, 0, -198.4)}
+place_options = {
+"SQ17_SHELTER": "SQ17_P_DESK",
+"SQ17_DESK": "SQ17_P_SHELTER"
+}
+place_pos_options = {
+"SQ17_SHELTER": Vector3(479.0, 0, -213.5),
+"SQ17_DESK": Vector3(327.0, 0, -198.4)
+}
+cargo_delta = -1
+cargo_delta_options = {
+"SQ17_SHELTER": -1,
+"SQ17_DESK": -2
+}
+weather_loss_per_s = 0.25
 action_key = "QUEST_ACT_GIVE"
+[sub_resource type="Resource" id="second_drop"]
+script = ExtResource("stage")
+id = "second_drop"
+kind = "cutscene"
+objective_key = "SQ17_HANDOVER"
+duration_s = 75.0
+cutscene_id = "second_drop"
 [resource]
 script = ExtResource("def")
 id = "sq_017"
-content_version = 2
+content_version = 3
 title_key = "SQ17_TITLE"
 description_key = "SQ17_DESC"
 job_key = "SQ17_JOB"
 discoverable = true
 start_anchor = Vector3(394.4, 0, -190.8)
-estimated_minutes = 7
+estimated_minutes = 8
 category = "community"
 reward_inr = 205
 reward_xp = 20
 scenario_weather = "rain"
-stages = Array[ExtResource("stage")]([SubResource("load"), SubResource("warning"), SubResource("order"), SubResource("first"), SubResource("second")])
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("load"), SubResource("warning"), SubResource("watch"), SubResource("order"), SubResource("first"), SubResource("first_drop"), SubResource("second"), SubResource("second_drop")])

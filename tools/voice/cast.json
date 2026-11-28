@@ -440,5 +440,143 @@
       "seed": 2048,
       "description": "{name} speaks in a {emotion} tone with an expressive delivery and a hearty mid-pitched voice, like a tea-stall owner in his forties. The recording is very clear audio, close up, with almost no background noise."
     }
+  },
+  "Pandian": {
+    "gender": "male",
+    "age": [
+      "middle_aged"
+    ],
+    "search": [
+      "tired",
+      "dry"
+    ],
+    "parler": {
+      "speaker": "Dinesh",
+      "seed": 3018,
+      "description": "{name} speaks in a {emotion} tone with a tired, dry, steady delivery and a firm mid-pitched voice, like a traffic constable in his forties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Kanagu": {
+    "gender": "female",
+    "age": [
+      "middle_aged",
+      "old"
+    ],
+    "search": [
+      "loud",
+      "dramatic"
+    ],
+    "parler": {
+      "speaker": "Jaya",
+      "seed": 3028,
+      "description": "{name} speaks in a {emotion} tone with a loud, dramatic, fast delivery and a strong voice, like a vegetable seller in her fifties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Sundar": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "calm",
+      "wise"
+    ],
+    "parler": {
+      "speaker": "Ravi",
+      "seed": 3038,
+      "description": "{name} speaks in a {emotion} tone with a calm, slow, wise delivery and a deep gentle voice, like a retired ambulance driver in his sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Kavitha": {
+    "gender": "female",
+    "age": [
+      "young",
+      "middle_aged"
+    ],
+    "search": [
+      "warm",
+      "breathless"
+    ],
+    "parler": {
+      "speaker": "Sneha",
+      "seed": 3048,
+      "description": "{name} speaks in a {emotion} tone with a breathless, warm, quick delivery and a clear voice, like a hospital nurse in her thirties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Vasanthi": {
+    "gender": "female",
+    "age": [
+      "middle_aged",
+      "old"
+    ],
+    "search": [
+      "brisk",
+      "dry"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 4018,
+      "description": "{name} speaks in a {emotion} tone with a brisk, businesslike, dry delivery and a clear voice, like a relief-store coordinator in her fifties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Rafiq": {
+    "gender": "male",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "cheerful",
+      "loud"
+    ],
+    "parler": {
+      "speaker": "Aakash",
+      "seed": 4028,
+      "description": "{name} speaks in a {emotion} tone with a cheerful, loud, friendly delivery and a bright voice, like a young volunteer in his twenties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Jeyaraj": {
+    "gender": "male",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "gravelly",
+      "solemn"
+    ],
+    "parler": {
+      "speaker": "Vikas",
+      "seed": 4038,
+      "description": "{name} speaks in a {emotion} tone with a slow, solemn, gravelly delivery and a deep rough voice, like a flood watchman in his sixties. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Maragatham": {
+    "gender": "female",
+    "age": [
+      "old"
+    ],
+    "search": [
+      "commanding",
+      "warm"
+    ],
+    "parler": {
+      "speaker": "Kavitha",
+      "seed": 4048,
+      "description": "{name} speaks in a {emotion} tone with a commanding, warm, unhurried delivery and a firm low voice, like a shelter elder in her seventies. The recording is very clear audio, close up, with almost no background noise."
+    }
+  },
+  "Pooja": {
+    "gender": "female",
+    "age": [
+      "young"
+    ],
+    "search": [
+      "flustered",
+      "fast"
+    ],
+    "parler": {
+      "speaker": "Riya",
+      "seed": 4058,
+      "description": "{name} speaks in a {emotion} tone with a fast, flustered, funny delivery and a bright young voice, like a relief-desk volunteer in her twenties. The recording is very clear audio, close up, with almost no background noise."
+    }
   }
 }

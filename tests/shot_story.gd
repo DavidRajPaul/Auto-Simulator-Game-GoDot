@@ -45,6 +45,12 @@ func _run() -> void:
 	if OS.get_environment("SHOT_QUEST") == "sq_002":
 		await _run_coffee()
 		return
+	if OS.get_environment("SHOT_QUEST") == "sq_016":
+		await _run_ambulance()
+		return
+	if OS.get_environment("SHOT_QUEST") == "sq_017":
+		await _run_monsoon()
+		return
 	if OS.get_environment("SHOT_QUEST") == "sq_001":
 		await _run_wedding()
 		return
@@ -136,6 +142,56 @@ func _run_coffee() -> void:
 	_save("c06_secret_letterbox")
 	story._choose(int(OS.get_environment("SHOT_SECRET")) if OS.has_environment("SHOT_SECRET") else 0)
 	await _shots("c07_thanks", [0.5, 3.0, 6.0, 9.0, 12.0], "")
+	print("done stage=", director.run.stage_id if director.run != null else "complete")
+	get_tree().quit()
+
+## SHOT_QUEST=sq_016: "Room for an Ambulance" (the constable, then the three pull-overs).
+func _run_ambulance() -> void:
+	var def: MissionDef = director.registry.get_mission("sq_016")
+	await _go(def.start_anchor)
+	await _wait(1.0)
+	SignalBus.savari_busy_provider = Callable()
+	print("start ok=", director.start("sq_016"))
+	await _shots("a01_intro", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 30.0], "brief")
+	await _wait(0.8)
+	_save("a02_brief_letterbox")
+	story._choose(0)
+	await _wait(0.5)
+	await _go(director.current_stage().target)
+	SignalBus.indicator_changed.emit(-1)
+	await _shots("a03_westcott", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0], "yield_2")
+	await _go(director.current_stage().target)
+	SignalBus.indicator_changed.emit(-1)
+	await _shots("a04_peters", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "yield_3")
+	await _go(director.current_stage().target)
+	SignalBus.indicator_changed.emit(-1)
+	await _shots("a05_gate", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 30.0, 34.0], "")
+	print("done stage=", director.run.stage_id if director.run != null else "complete")
+	get_tree().quit()
+
+## SHOT_QUEST=sq_017: "The Monsoon Supply Run" (SHOT_CHOICE = first delivery 0 shelter / 1 relief desk).
+func _run_monsoon() -> void:
+	var def: MissionDef = director.registry.get_mission("sq_017")
+	await _go(def.start_anchor)
+	await _wait(1.0)
+	SignalBus.savari_busy_provider = Callable()
+	print("start ok=", director.start("sq_017"))
+	await _shots("r01_intro", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "load")
+	await _go(director.current_stage().target)
+	print("load ok=", director.interact("sq_017", "load"))
+	await _go(director.current_stage().target)
+	print("sign ok=", director.interact("sq_017", "warning"))
+	await _shots("r02_watch", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 30.0], "order")
+	await _wait(0.8)
+	_save("r03_order_letterbox")
+	story._choose(int(OS.get_environment("SHOT_CHOICE")) if OS.has_environment("SHOT_CHOICE") else 0)
+	await _wait(0.5)
+	await _go(director.current_stage().target)
+	print("first ok=", director.interact("sq_017", "first"))
+	await _shots("r04_first_drop", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "second")
+	await _go(director.current_stage().target)
+	print("second ok=", director.interact("sq_017", "second"))
+	await _shots("r05_second_drop", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 30.0], "")
 	print("done stage=", director.run.stage_id if director.run != null else "complete")
 	get_tree().quit()
 

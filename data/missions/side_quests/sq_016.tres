@@ -1,6 +1,15 @@
-[gd_resource type="Resource" script_class="MissionDef" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="MissionDef" load_steps=12 format=3]
 [ext_resource type="Script" path="res://data/missions/MissionDef.gd" id="def"]
 [ext_resource type="Script" path="res://data/missions/MissionStage.gd" id="stage"]
+[ext_resource type="Resource" path="res://data/missions/stories/sq_016_story.tres" id="story"]
+[sub_resource type="Resource" id="intro"]
+script = ExtResource("stage")
+id = "intro"
+kind = "cutscene"
+objective_key = "SQ16_INTRO"
+target = Vector3(537.6, 0, -490.2)
+duration_s = 70.0
+cutscene_id = "intro"
 [sub_resource type="Resource" id="brief"]
 script = ExtResource("stage")
 id = "brief"
@@ -17,6 +26,13 @@ radius_m = 11.0
 deadline_s = 190.0
 place_key = "SQ16_P_A"
 place_pos = Vector3(608.7, 0, -769.0)
+[sub_resource type="Resource" id="scene_a"]
+script = ExtResource("stage")
+id = "scene_a"
+kind = "cutscene"
+objective_key = "SQ16_PASSED"
+duration_s = 50.0
+cutscene_id = "scene_a"
 [sub_resource type="Resource" id="yield_2"]
 script = ExtResource("stage")
 id = "yield_2"
@@ -27,6 +43,13 @@ radius_m = 11.0
 deadline_s = 190.0
 place_key = "SQ16_P_B"
 place_pos = Vector3(682.3, 0, -538.2)
+[sub_resource type="Resource" id="scene_b"]
+script = ExtResource("stage")
+id = "scene_b"
+kind = "cutscene"
+objective_key = "SQ16_PASSED"
+duration_s = 55.0
+cutscene_id = "scene_b"
 [sub_resource type="Resource" id="yield_3"]
 script = ExtResource("stage")
 id = "yield_3"
@@ -37,17 +60,25 @@ radius_m = 11.0
 deadline_s = 170.0
 place_key = "SQ16_P_C"
 place_pos = Vector3(647.6, 0, -352.9)
+[sub_resource type="Resource" id="scene_c"]
+script = ExtResource("stage")
+id = "scene_c"
+kind = "cutscene"
+objective_key = "SQ16_GATE"
+duration_s = 75.0
+cutscene_id = "scene_c"
 [resource]
 script = ExtResource("def")
 id = "sq_016"
-content_version = 2
+content_version = 3
 title_key = "SQ16_TITLE"
 description_key = "SQ16_DESC"
 job_key = "SQ16_JOB"
 discoverable = true
 start_anchor = Vector3(537.6, 0, -490.2)
-estimated_minutes = 5
+estimated_minutes = 7
 category = "community"
 reward_inr = 170
 reward_xp = 20
-stages = Array[ExtResource("stage")]([SubResource("brief"), SubResource("yield_1"), SubResource("yield_2"), SubResource("yield_3")])
+story = ExtResource("story")
+stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("brief"), SubResource("yield_1"), SubResource("scene_a"), SubResource("yield_2"), SubResource("scene_b"), SubResource("yield_3"), SubResource("scene_c")])

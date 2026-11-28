@@ -1,0 +1,1100 @@
+[gd_resource type="Resource" script_class="QuestStoryData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/missions/QuestStoryData.gd" id="story"]
+[resource]
+script = ExtResource("story")
+voice_dir = "res://assets/audio/voice/sq17"
+speakers = {
+"v": "VO_SPK_VASANTHI",
+"r": "VO_SPK_RAFIQ",
+"j": "VO_SPK_JEYARAJ",
+"m": "VO_SPK_MARAGATHAM",
+"p": "VO_SPK_POOJA",
+"d": "VO_SPK_DRIVER"
+}
+cast = {
+"vasanthi": {
+"model": "res://assets/models/people/woman_saree_kanchi.glb",
+"scale": 1.0,
+"world": Vector3(400.1, 0, -195.7),
+"face": Vector3(394.4, 0, -190.8),
+"anim": "idle",
+"wear": PackedStringArray("specs", "clipboard"),
+"stages": PackedStringArray("intro", "load"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"rafiq": {
+"model": "res://assets/models/people/young_man.glb",
+"scale": 1.0,
+"world": Vector3(395.2, 0, -194.9),
+"face": Vector3(394.4, 0, -190.8),
+"anim": "idle",
+"wear": PackedStringArray("glass"),
+"stages": PackedStringArray("intro", "load"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"jeyaraj": {
+"model": "res://assets/models/people/old_man_veshti.glb",
+"scale": 0.97,
+"world": Vector3(365.6, 0, -144.6),
+"face": Vector3(360.9, 0, -146.9),
+"anim": "idle",
+"wear": PackedStringArray("umbrella", "towel"),
+"stages": PackedStringArray("warning", "watch", "order"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"maragatham": {
+"model": "res://assets/models/people/woman_saree_green.glb",
+"scale": 0.96,
+"world": Vector3(328.5, 0, -198.4),
+"face": Vector3(327.4, 0, -202.5),
+"anim": "idle",
+"wear": PackedStringArray("glass", "jasmine"),
+"stages": PackedStringArray("first", "first_drop", "second", "second_drop"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+},
+"pooja": {
+"model": "res://assets/models/people/girl_churidar.glb",
+"scale": 1.0,
+"world": Vector3(480.5, 0, -213.5),
+"face": Vector3(476.1, 0, -209.0),
+"anim": "idle",
+"wear": PackedStringArray("pencil", "towel"),
+"stages": PackedStringArray("first", "first_drop", "second", "second_drop"),
+"paint": Color(0.0, 0.0, 0.0, 0.0)
+}
+}
+props = {}
+cutscenes = {
+"intro": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:vasanthi",
+"fov": 60
+},
+"act": {
+"vasanthi": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_v01",
+"line_at": 0.5,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:vasanthi",
+"fov": 56
+},
+"act": {
+"vasanthi": {
+"to": "beside:vasanthi",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "vasanthi",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d01"
+}, {
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:vasanthi",
+"fov": 38
+},
+"act": {
+"vasanthi": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_v02"
+}, {
+"cam": {
+"eye": {
+"from": "role:rafiq",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:rafiq",
+"fov": 54
+},
+"act": {
+"rafiq": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_r01"
+}, {
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:vasanthi",
+"fov": 36
+},
+"act": {
+"vasanthi": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_v03"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d02"
+}, {
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:vasanthi",
+"fov": 38
+},
+"act": {
+"vasanthi": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_v04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d03"
+}, {
+"cam": {
+"eye": {
+"from": "role:vasanthi",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:vasanthi",
+"fov": 46
+},
+"act": {
+"vasanthi": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_v05",
+"fade_out": 0.8
+}],
+"watch": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:jeyaraj",
+"fov": 60
+},
+"act": {
+"jeyaraj": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_j01",
+"line_at": 0.5,
+"min_s": 1.6
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 56
+},
+"act": {
+"jeyaraj": {
+"to": "beside:jeyaraj",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "jeyaraj",
+"min_s": 1.0,
+"max_s": 9.0
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d10"
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 38
+},
+"act": {
+"jeyaraj": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_j02"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d11"
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 36
+},
+"act": {
+"jeyaraj": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_j03"
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 36
+},
+"act": {
+"jeyaraj": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_j04"
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d12"
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 46
+},
+"act": {
+"jeyaraj": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_j05"
+}, {
+"cam": {
+"eye": {
+"from": "role:jeyaraj",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:jeyaraj",
+"fov": 46
+},
+"act": {
+"jeyaraj": {
+"anim": "idle",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"min_s": 0.6,
+"hold": true
+}],
+"first_drop": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:maragatham",
+"fov": 60
+},
+"act": {
+"maragatham": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_m01",
+"line_at": 0.5,
+"min_s": 1.6,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 56
+},
+"act": {
+"maragatham": {
+"to": "beside:maragatham",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "maragatham",
+"min_s": 1.0,
+"max_s": 9.0,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d13",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 36
+},
+"act": {
+"maragatham": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m02",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 38
+},
+"act": {
+"maragatham": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m03",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d14",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 36
+},
+"act": {
+"maragatham": {
+"anim": "drink",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m04",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d15",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 48
+},
+"act": {
+"maragatham": {
+"anim": "wave",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m05",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"maragatham": {
+"to": Vector3(328.5, 0, -198.4),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:pooja",
+"fov": 60
+},
+"act": {
+"pooja": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_p01",
+"line_at": 0.5,
+"min_s": 1.6,
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 56
+},
+"act": {
+"pooja": {
+"to": "beside:pooja",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "pooja",
+"min_s": 1.0,
+"max_s": 9.0,
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d16",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 36
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p02",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 38
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p03",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d17",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 36
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p04",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 48
+},
+"act": {
+"pooja": {
+"anim": "wave",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p05",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"pooja": {
+"to": Vector3(480.5, 0, -213.5),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5,
+"if_choice": ["order", "SQ17_DESK"]
+}],
+"second_drop": [{
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:pooja",
+"fov": 60
+},
+"act": {
+"pooja": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_p01",
+"line_at": 0.5,
+"min_s": 1.6,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 56
+},
+"act": {
+"pooja": {
+"to": "beside:pooja",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "pooja",
+"min_s": 1.0,
+"max_s": 9.0,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d16",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 36
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p02",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 38
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p03",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d17",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 36
+},
+"act": {
+"pooja": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p04",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": {
+"from": "role:pooja",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:pooja",
+"fov": 48
+},
+"act": {
+"pooja": {
+"anim": "wave",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_p05",
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"pooja": {
+"to": Vector3(480.5, 0, -213.5),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5,
+"if_choice": ["order", "SQ17_SHELTER"]
+}, {
+"fade_in": 0.5,
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 3.8,
+"side": 2.2,
+"up": 1.9
+},
+"look": "role:maragatham",
+"fov": 60
+},
+"act": {
+"maragatham": {
+"face": "auto",
+"anim": "wave"
+}
+},
+"line": "sq17_m01",
+"line_at": 0.5,
+"min_s": 1.6,
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 1.6,
+"side": 4.6,
+"up": 1.8,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 56
+},
+"act": {
+"maragatham": {
+"to": "beside:maragatham",
+"gait": "walk",
+"then": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"wait": "maragatham",
+"min_s": 1.0,
+"max_s": 9.0,
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d13",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 36
+},
+"act": {
+"maragatham": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m02",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 38
+},
+"act": {
+"maragatham": {
+"anim": "talk",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m03",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d14",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 0.6,
+"side": 2.6,
+"up": 1.55,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 36
+},
+"act": {
+"maragatham": {
+"anim": "drink",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m04",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 46
+},
+"line": "sq17_d15",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": {
+"from": "role:maragatham",
+"dist": 1.0,
+"side": 4.4,
+"up": 1.7,
+"ahead": true
+},
+"look": "role:maragatham",
+"fov": 48
+},
+"act": {
+"maragatham": {
+"anim": "wave",
+"face": [0.0, 0.0, 1.4]
+}
+},
+"line": "sq17_m05",
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [0.0, 2.4, 10.5],
+"look": [0.0, 1.2, 0.0],
+"fov": 54
+},
+"act": {
+"maragatham": {
+"to": Vector3(328.5, 0, -198.4),
+"gait": "walk",
+"then": "idle",
+"face": "auto"
+}
+},
+"min_s": 1.8,
+"fade_out": 0.5,
+"if_choice": ["order", "SQ17_DESK"]
+}, {
+"cam": {
+"eye": [2.1, 1.4, 7.2],
+"eye_to": [1.6, 1.35, 6.6],
+"look": [0.0, 1.05, 0.4],
+"fov": 48
+},
+"line": "sq17_d18",
+"fade_out": 0.8
+}]
+}
+barks = {
+"load": {
+"enter": ["sq17_d04"],
+"idle": ["sq17_d05", "sq17_d06"],
+"idle_s": Vector2(24.0, 38.0),
+"impact": "sq17_d08",
+"jolt": "sq17_d08"
+},
+"warning": {
+"enter": ["sq17_d09"],
+"idle": ["sq17_d06", "sq17_d05"],
+"idle_s": Vector2(24.0, 38.0),
+"impact": "sq17_d08",
+"jolt": "sq17_d08"
+},
+"first": {
+"enter": ["sq17_d05"],
+"idle": ["sq17_d06", "sq17_d07", "sq17_d04"],
+"idle_s": Vector2(22.0, 36.0),
+"impact": "sq17_d08",
+"jolt": "sq17_d08"
+},
+"second": {
+"enter": ["sq17_d07"],
+"idle": ["sq17_d06", "sq17_d05", "sq17_d04"],
+"idle_s": Vector2(24.0, 38.0),
+"impact": "sq17_d08",
+"jolt": "sq17_d08"
+}
+}

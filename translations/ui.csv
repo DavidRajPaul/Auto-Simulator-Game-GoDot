@@ -1256,3 +1256,101 @@ VO_SQ02_D15,Everyone listen! Murugan anna's tea is… the best tea in Mylapore!,
 VO_SQ02_R06,"Ayyo, you nearly killed me! Here, twenty rupees extra. Not for the coffee. For your acting.","அய்யோ, உயிரே போயிடுச்சு! இந்தா இருபது ரூபா எக்ஸ்ட்ரா. காபிக்கு இல்ல. உன் நடிப்புக்கு."
 VO_SQ02_R07,"Ahh. Don't tell Kannan I said this, but… the man is a genius.","ஆஹா. கண்ணன்கிட்ட நான் சொன்னேன்னு சொல்லாத, ஆனா… அந்த ஆள் ஒரு மேதை."
 VO_SQ02_D16,"Three coffees, three shops, one secret. Kannan anna might put my photo up beside his filter.","மூணு காபி, மூணு கடை, ஒரு ரகசியம். கண்ணன் அண்ணன் அவரு ஃபில்டர் பக்கத்துல என் போட்டோவை மாட்டினாலும் மாட்டுவாரு."
+SQ16_INTRO,Constable Pandian needs your help.,கான்ஸ்டபிள் பாண்டியனுக்கு உன் உதவி வேணும்.
+SQ16_PASSED,The ambulance is through.,ஆம்புலன்ஸ் கடந்துடுச்சு.
+SQ16_GATE,The hospital gate.,ஆஸ்பத்திரி கேட்.
+VO_SPK_PANDIAN,Constable Pandian,கான்ஸ்டபிள் பாண்டியன்
+VO_SPK_KANAGU,Kanagu akka,கனகு அக்கா
+VO_SPK_SUNDAR,Sundar (ex-ambulance),சுந்தர் (முன்னாள் ஆம்புலன்ஸ்)
+VO_SPK_KAVITHA_NURSE,Sister Kavitha,சிஸ்டர் கவிதா
+VO_SQ16_P01,"Stop, stop, thambi! Not for a challan. For a favour.","நில்லு நில்லு தம்பி! சலான் போடல, ஒரு உதவி வேணும்."
+VO_SQ16_D01,"Sir, a constable has never asked me for a favour before. Usually there is a number attached.","சார், ஒரு கான்ஸ்டபிள் எங்கிட்ட உதவி கேட்டதே இல்ல. வழக்கமா ஒரு நம்பர் இருக்கும்."
+VO_SQ16_P02,"An ambulance is rushing a mother to the hospital, and it has three bad roads to cross. I can't stand on all three. Today, you are my second constable.","ஒரு ஆம்புலன்ஸ் ஒரு அம்மாவை ஆஸ்பத்திரிக்குக் கொண்டு போகுது, வழியில மூணு மோசமான ரோடு. மூணு ரோட்டுலயும் என்னால நிக்க முடியாது. இன்னைக்கு நீதான் என்னோட செகண்ட் கான்ஸ்டபிள்."
+VO_SQ16_D02,"Second constable? Sir, does the post come with a salary?","செகண்ட் கான்ஸ்டபிளா? சார், அந்த வேலைக்குச் சம்பளம் உண்டா?"
+VO_SQ16_P03,"It comes with something better. Pride. Now listen: indicator on, pull to the kerb, stop on the marker, let the siren pass.","அதைவிட நல்லது கிடைக்கும். பெருமை. இப்போ கேளு: இண்டிகேட்டர் போடு, ஓரமா ஒதுங்கு, குறியில நில்லு, சைரன் போகட்டும்."
+VO_SQ16_D03,"Indicator, sir? In Chennai the indicator is a decoration, like the garland on a new auto.","இண்டிகேட்டரா சார்? சென்னையில இண்டிகேட்டர்னா அலங்காரம், புது ஆட்டோவுக்குப் போடற மாலை மாதிரி."
+VO_SQ16_P04,Today the decoration works. Show them what that little orange light is for.,இன்னைக்கு அலங்காரம் வேலை செய்யும். அந்தச் சின்ன ஆரஞ்சு லைட் எதுக்குன்னு எல்லாருக்கும் காட்டு.
+VO_SQ16_D04,"Sir, how long have you been blowing that whistle?","சார், எத்தனை வருஷமா அந்த விசிலை ஊதிட்டு இருக்கீங்க?"
+VO_SQ16_P05,"Twenty-two years. It has stopped nothing, thambi. Not one bus, not one lorry. Only me, when I run out of breath.","இருபத்தி ரெண்டு வருஷம். இது எதையும் நிறுத்தினதில்ல தம்பி. ஒரு பஸ்ஸும் இல்ல, ஒரு லாரியும் இல்ல. மூச்சு வாங்கும்போது என்னை மட்டும்தான்."
+VO_SQ16_P06,Westcott Road first. Go! Every second counts.,முதல்ல வெஸ்ட்காட் ரோடு. போ! ஒவ்வொரு நிமிஷமும் முக்கியம்.
+VO_SQ16_D05,"Indicator first, then kerb. Indicator first, then kerb.","முதல்ல இண்டிகேட்டர், அப்புறம் ஓரம். முதல்ல இண்டிகேட்டர், அப்புறம் ஓரம்."
+VO_SQ16_D06,Everyone is staring at me. For once I'm not the one blocking the road.,எல்லாரும் என்னையே பாக்கறாங்க. ஒரு தடவையாவது ரோட்டை அடைக்கிறது நான் இல்ல.
+VO_SQ16_D07,I can feel the siren all the way into my seat.,சைரன் சத்தம் சீட்டு வரைக்கும் கேக்குது.
+VO_SQ16_D08,"Easy now. Kerb on the left, marker ahead.","மெதுவா. இடது பக்கம் ஓரம், முன்னால குறி."
+VO_SQ16_D09,"Gently, auto. Today you are a gentleman.","மெதுவா, ஆட்டோ. இன்னைக்கு நீ ஜென்டில்மேன்."
+VO_SQ16_D10,"Ayyo, not now! Sorry, sorry!","அய்யோ, இப்போ வேணாம்! சாரி, சாரி!"
+VO_SQ16_K01,"Ayyo, my brinjals! That siren came and they rolled straight into the gutter. Look, they are swimming!","அய்யோ, என் கத்திரிக்காய்! சைரன் வந்தது, எல்லாம் சாக்கடையில உருண்டு போச்சு. பாரு, நீச்சல் அடிக்குது!"
+VO_SQ16_D11,"Akka, are you alright?","அக்கா, உங்களுக்கு ஒண்ணும் இல்லையே?"
+VO_SQ16_K02,"Me? Fine! But thambi, thirty vehicles on this road and only you used an indicator. I almost fainted.","நானா? நல்லாத்தான் இருக்கேன்! ஆனா தம்பி, இந்த ரோட்டுல முப்பது வண்டி, உன் ஒருத்தனுக்குத்தான் இண்டிகேட்டர் போட்டிருக்கு. எனக்கு மயக்கமே வந்துடுச்சு."
+VO_SQ16_D12,"Akka, there is a mother in labour inside that ambulance. Everyone had to make way.","அக்கா, அந்த ஆம்புலன்ஸ்ல ஒரு அம்மா பிரசவ வலியோட இருக்காங்க. எல்லாரும் வழி விடணும்ல."
+VO_SQ16_K03,"Ayyo, a baby on the way? Then go, go! And tell Sister Kavitha at the gate, Kanagu akka sends greens for the new mother.","அய்யோ, குழந்தை வரப்போகுதா? அப்போ போ, போ! கேட்ல இருக்கற சிஸ்டர் கவிதாகிட்ட சொல்லு, புது அம்மாவுக்குக் கனகு அக்கா கீரை அனுப்பினாங்கன்னு."
+VO_SQ16_D13,"Greens, akka? I am a driver, not a courier.","கீரையா அக்கா? நான் டிரைவர், கூரியர் இல்ல."
+VO_SQ16_K04,Today you are everything. Go!,இன்னைக்கு நீ எல்லாமே. போ!
+VO_SQ16_S01,"Shabash! Indicator, kerb, marker. Twenty years on an ambulance, I never saw it done so cleanly.","சபாஷ்! இண்டிகேட்டர், ஓரம், குறி. இருபது வருஷம் ஆம்புலன்ஸ் ஓட்டினேன், இவ்வளவு சுத்தமா யாரும் செஞ்சதில்ல."
+VO_SQ16_D14,"You drove an ambulance, sir?",நீங்க ஆம்புலன்ஸ் ஓட்டினீங்களா சார்?
+VO_SQ16_S02,"Twenty years, thambi. Now I drive an auto. Slower vehicle, same problem. Nobody listens.","இருபது வருஷம் தம்பி. இப்போ ஆட்டோ ஓட்டறேன். வண்டி மெதுவு, பிரச்சனை அதே. யாரும் கேக்கறதில்ல."
+VO_SQ16_D15,"Sir, how does an ambulance get through all this traffic?","சார், இவ்வளவு டிராஃபிக்ல ஆம்புலன்ஸுக்கு எப்படி வழி கிடைக்கும்?"
+VO_SQ16_S03,"We never cut through. You open the road, thambi. The siren only asks.",நாங்க வழி கிழிச்சுப் போறதில்ல. நீங்கதான் வழி திறக்கறீங்க தம்பி. சைரன் கேக்க மட்டும்தான் செய்யும்.
+VO_SQ16_S04,And never follow an ambulance close to jump the traffic. That is not helping. That is cheating.,ஆம்புலன்ஸ் பின்னாடியே போய் டிராஃபிக்கைத் தாண்டாத. அது உதவி இல்ல. ஏமாத்து.
+VO_SQ16_D16,"Sir, I would never. ... I did it once. In 2019.","சார், நான் அப்படிச் செய்யவே மாட்டேன். ... ஒரே ஒரு தடவை செஞ்சேன். 2019-ல."
+VO_SQ16_S05,"Hmm. Go. The last stop is the hospital gate. Gently, thambi, a mother is aboard.","ம்ம். போ. கடைசி இடம் ஆஸ்பத்திரி கேட். மெதுவாப் போ தம்பி, ஒரு அம்மா உள்ள இருக்காங்க."
+VO_SQ16_N01,"Thank you, thank you! The ambulance radioed ahead: a yellow auto with an indicator that works. We thought they were joking.","நன்றி, நன்றி! ஆம்புலன்ஸ் ரேடியோவுல சொன்னாங்க: வேலை செய்யற இண்டிகேட்டரோட ஒரு மஞ்சள் ஆட்டோவாம். நாங்க கிண்டல்னு நெனச்சோம்."
+VO_SQ16_D17,"Sister, is everything alright? The mother?","சிஸ்டர், எல்லாம் நல்லா இருக்கா? அந்த அம்மா?"
+VO_SQ16_N02,"Mother and baby are both fine. A healthy boy, born just inside the gate.","அம்மாவும் குழந்தையும் ரெண்டு பேரும் நல்லா இருக்காங்க. ஆரோக்கியமான ஆண் குழந்தை, கேட்டுக்குள்ள வந்ததும் பிறந்தான்."
+VO_SQ16_D18,A boy! That is wonderful!,ஆண் குழந்தையா! சூப்பர்!
+VO_SQ16_N03,"The family asked who made way for them on the road. I said, an auto driver. They want to name the baby after you.",ரோட்டுல வழி விட்டது யாருன்னு குடும்பம் கேட்டாங்க. ஆட்டோ டிரைவர்னு சொன்னேன். உங்க பேரையே குழந்தைக்கு வைக்கணும்னு சொல்றாங்க.
+VO_SQ16_D19,"Ayyo, no need, Sister. My name is nothing special.","அய்யோ, வேணாம் சிஸ்டர். என் பேர்ல ஒண்ணுமில்ல."
+VO_SQ16_N04,You never told us your name. So they chose the next best thing. They named him after what you did.,நீங்க பேரே சொல்லல. அதனால அடுத்த நல்ல விஷயத்தைத் தேர்ந்தெடுத்தாங்க. நீங்க செஞ்சதையே பேரா வெச்சிட்டாங்க.
+VO_SQ16_D20,What did I do?,நான் என்ன செஞ்சேன்?
+VO_SQ16_N05,Indicator. His name is Indicator Kumar.,இண்டிகேட்டர். அவன் பேரு இண்டிகேட்டர் குமார்.
+VO_SQ16_D21,"Sister, please tell me you are joking.","சிஸ்டர், தயவு செஞ்சு இது ஜோக்குன்னு சொல்லுங்க."
+VO_SQ16_N06,"The form is already filled, brother.",ஃபார்ம் ஏற்கனவே நிரப்பியாச்சு அண்ணா.
+VO_SQ16_D22,"Indicator Kumar. One day that boy will be a constable, and all of Chennai will have to listen to him.","இண்டிகேட்டர் குமார். ஒரு நாள் அந்தப் பையன் கான்ஸ்டபிள் ஆவான், சென்னையே அவன் பேச்சைக் கேக்கணும்."
+VO_SQ16_N07,"Go home, brother. Today Chennai gave way. Remember how it felt.",வீட்டுக்குப் போங்க அண்ணா. இன்னைக்குச் சென்னை வழி விட்டுச்சு. அந்த உணர்வை நினைவு வெச்சுக்கோங்க.
+SQ17_INTRO,Vasanthi Madam at the relief store needs an auto.,நிவாரணக் கிடங்கில் வசந்தி மேடத்துக்கு ஆட்டோ வேணும்.
+SQ17_WATCH,The flood watchman has a warning.,வெள்ள வாட்ச்மேன் ஒரு எச்சரிக்கை சொல்கிறார்.
+SQ17_HANDOVER,Supplies handed over.,பொருட்கள் சேர்ந்தன.
+VO_SPK_VASANTHI,Vasanthi Madam,வசந்தி மேடம்
+VO_SPK_RAFIQ,Rafiq (volunteer),ரஃபீக் (தன்னார்வலர்)
+VO_SPK_JEYARAJ,Jeyaraj (flood watchman),ஜெயராஜ் (வெள்ள வாட்ச்மேன்)
+VO_SPK_MARAGATHAM,Maragatham Paati,மரகதம் பாட்டி
+VO_SPK_POOJA,Pooja (relief desk),பூஜா (உதவி மேசை)
+VO_SQ17_V01,"An auto! Thank God. The lorry is stuck in water up to its axle, and the people cannot wait.","ஆட்டோ! கடவுளே. லாரி அச்சு வரைக்கும் தண்ணியில மாட்டிக்கிச்சு, மக்கள் காத்திருக்க முடியாது."
+VO_SQ17_D01,"Madam, what do you need me to carry?","மேடம், நான் என்ன எடுத்துட்டுப் போகணும்?"
+VO_SQ17_V02,"Three bundles of rice, water cans and biscuits. Two for the shelter, one for the relief desk. You decide which goes first.","அரிசி, தண்ணி கேன், பிஸ்கட்னு மூணு மூட்டை. ரெண்டு முகாமுக்கு, ஒண்ணு உதவி மேசைக்கு. எது முதல்லன்னு நீ முடிவு பண்ணு."
+VO_SQ17_R01,"Madam, who packed the biscuits in a rice sack? Now I don't know which sack is which!","மேடம், பிஸ்கட்டை அரிசிச் சாக்குல யார் அடைச்சது? இப்போ எந்தச் சாக்கு எதுன்னே தெரியல!"
+VO_SQ17_V03,"Rafiq, the one that rattles is the biscuits.","ரஃபீக், சத்தம் போடறது பிஸ்கட்."
+VO_SQ17_D02,"Madam, is the road flooded?","மேடம், ரோடு தண்ணியில மூழ்கியிருக்கா?"
+VO_SQ17_V04,"Near the junction, yes. The watchman will show you. Keep the bundles dry. Wet rice is not rice, it is porridge.","ஜங்ஷன் பக்கம் ஆமா. வாட்ச்மேன் காட்டுவாரு. மூட்டை நனையாம பாத்துக்கோ. நனைஞ்ச அரிசி அரிசி இல்ல, கஞ்சி."
+VO_SQ17_D03,And wet biscuits are not biscuits either.,நனைஞ்ச பிஸ்கட்டும் பிஸ்கட் இல்ல.
+VO_SQ17_V05,"Wet biscuits are a tragedy. Go carefully, thambi.",நனைஞ்ச பிஸ்கட் ஒரு சோகம். கவனமாப் போ தம்பி.
+VO_SQ17_D04,"Rice on the left, biscuits on the right. Nobody fight.","அரிசி இடது பக்கம், பிஸ்கட் வலது பக்கம். யாரும் சண்டை போடாதீங்க."
+VO_SQ17_D05,"Slow and steady. Wet road, dry biscuits.","மெதுவா நிதானமா. ஈர ரோடு, காய்ஞ்ச பிஸ்கட்."
+VO_SQ17_D06,Water everywhere. Chennai turns into a swimming pool by four o'clock.,எங்க பாத்தாலும் தண்ணி. சென்னை நாலு மணிக்குள்ள நீச்சல் குளமாயிடும்.
+VO_SQ17_D07,"Please don't rattle, biscuits. We are almost there.",பிஸ்கட்டுகளே சத்தம் போடாதீங்க. கிட்டத்தட்ட வந்துட்டோம்.
+VO_SQ17_D08,"Ayyo, the bundles! Sorry, sorry!","அய்யோ, மூட்டை! சாரி, சாரி!"
+VO_SQ17_D09,A flood sign ahead. Let me read it before the road reads me.,முன்னால வெள்ளப் பலகை. ரோடு என்னைப் படிக்கறதுக்கு முன்னாடி நான் அதைப் படிக்கறேன்.
+VO_SQ17_J01,"Stop, thambi, stop! Don't squint at the board, I will tell you. Water, knee deep. My knee, not yours. Mine is lower.","நில்லு தம்பி நில்லு! பலகையைப் பாத்து கண்ணைச் சுருக்காத, நான் சொல்றேன். தண்ணி, முழங்கால் அளவு. என் முழங்கால், உன்னது இல்ல. என்னோடது கொஞ்சம் குட்டை."
+VO_SQ17_D10,"Sir, is the road closed?","சார், ரோடு மூடியிருக்கா?"
+VO_SQ17_J02,"Closed for the lorry, open for the brave. But a bundle of rice drowns faster than a hero. Do not be brave today.","லாரிக்கு மூடியிருக்கு, தைரியசாலிக்குத் திறந்திருக்கு. ஆனா ஒரு அரிசி மூட்டை ஹீரோவை விட வேகமா மூழ்கும். இன்னைக்கு தைரியம் காட்டாத."
+VO_SQ17_D11,So which way do I go?,அப்போ எந்தப் பக்கம் போறது?
+VO_SQ17_J03,Follow the route on your map and keep far from the junction. Chest deep there. Don't trust the forwards; they say neck deep. Forwards always exaggerate.,"உன் மேப்புல இருக்கற வழியில போ, ஜங்ஷன்கிட்ட போகாத. அங்கே மார்பளவு தண்ணி. ஃபார்வர்டுகளை நம்பாத, அவங்க கழுத்தளவுன்னு சொல்லுவாங்க. ஃபார்வர்டு எப்பவுமே பெருசாத்தான் சொல்லும்."
+VO_SQ17_J04,"Thirty years I have watched this junction. When it rains four times, it floods three. The fourth time it floods out of habit.",முப்பது வருஷமா இந்த ஜங்ஷனைப் பாக்கறேன். நாலு தடவை மழை பெஞ்சா மூணு தடவை தண்ணி நிக்கும். நாலாவது தடவை பழக்கத்துக்காக நிக்கும்.
+VO_SQ17_D12,"Sir, you are very reassuring.","சார், நீங்க ரொம்ப ஆறுதலா பேசறீங்க."
+VO_SQ17_J05,"I am a watchman. My job is worrying. Go, and come back dry.","நான் வாட்ச்மேன். கவலைப்படறதுதான் என் வேலை. போ, காஞ்சு திரும்பி வா."
+VO_SQ17_M01,"The auto has come! Vasanthi rang to say supplies were on the way. I told her, I have forty people and one stove. Everything is on the way.","ஆட்டோ வந்துடுச்சு! சப்ளை வருதுன்னு வசந்தி போன் பண்ணா. நான் சொன்னேன், என்கிட்ட நாப்பது பேரு, ஒரு அடுப்பு. எல்லாமே வழியில தான் இருக்கு."
+VO_SQ17_D13,"Paati, here are the bundles. Rice, water and biscuits.","பாட்டி, இந்தாங்க மூட்டை. அரிசி, தண்ணி, பிஸ்கட்."
+VO_SQ17_M02,"Rice, finally! And biscuits. The children have been fighting since morning over which kind would come.","அரிசி, கடைசியா! பிஸ்கட்டும். எந்த வகை வரும்னு காலையில இருந்து புள்ளைங்க சண்டை போடுதுங்க."
+VO_SQ17_M03,"In this shelter I have one rule. Everyone gets a share, nobody gets two. Even the driver. Take a biscuit.","இந்த முகாமுல எனக்கு ஒரே விதி. எல்லாருக்கும் ஒரு பங்கு, யாருக்கும் ரெண்டு இல்ல. டிரைவருக்கும்தான். ஒரு பிஸ்கட் எடுத்துக்கோ."
+VO_SQ17_D14,"Paati, I am on duty. I cannot.","பாட்டி, நான் டியூட்டியில இருக்கேன். முடியாது."
+VO_SQ17_M04,Rules are rules. Eat.,விதின்னா விதிதான். சாப்பிடு.
+VO_SQ17_D15,"... Paati, this is very good.","... பாட்டி, இது ரொம்ப நல்லா இருக்கு."
+VO_SQ17_M05,"Go on, thambi. Other people are waiting for you. And thank you, truly.",போ தம்பி. மத்தவங்களும் உனக்காகக் காத்திருக்காங்க. உண்மையிலேயே நன்றி.
+VO_SQ17_P01,"Auto, auto! Supplies! One second, where is the form? It is under the biscuits. The biscuits are under the form.","ஆட்டோ, ஆட்டோ! சப்ளை! ஒரு நிமிஷம், ஃபார்ம் எங்கே? பிஸ்கட்டுக்குக் கீழ இருக்கு. பிஸ்கட் ஃபார்முக்குக் கீழ இருக்கு."
+VO_SQ17_D16,"Madam, one bundle, as promised.","மேடம், ஒரு மூட்டை, சொன்ன மாதிரி."
+VO_SQ17_P02,"Thank you, thank you! Do you know how many came for relief today? Three hundred. How many filled the form? Two. How many took biscuits? Three hundred.","நன்றி, நன்றி! இன்னைக்கு எத்தனை பேரு நிவாரணத்துக்கு வந்தாங்கன்னு தெரியுமா? முந்நூறு பேரு. எத்தனை பேரு ஃபார்ம் நிரப்பினாங்க? ரெண்டு பேரு. எத்தனை பேரு பிஸ்கட் எடுத்தாங்க? முந்நூறு பேரு."
+VO_SQ17_P03,"Sign here. Here. Not there, that is the volunteer sheet. Oh no. Now you are a volunteer.","இங்க கையெழுத்துப் போடுங்க. இங்க. அங்க இல்ல, அது வாலண்டியர் ஷீட். அய்யோ. இப்போ நீங்களும் வாலண்டியர்."
+VO_SQ17_D17,"Madam, I only signed for the rice.","மேடம், நான் அரிசிக்குத்தான் கையெழுத்துப் போட்டேன்."
+VO_SQ17_P04,"Volunteer. Congratulations. There is no pay, but there is tea.","வாலண்டியர். வாழ்த்துகள். சம்பளம் இல்ல, ஆனா டீ இருக்கு."
+VO_SQ17_P05,"Go, go. Tell Vasanthi madam we are fine. And thank you, really.","போங்க போங்க. வசந்தி மேடத்துக்குச் சொல்லுங்க, நாங்க நல்லா இருக்கோம்னு. உண்மையிலேயே நன்றி."
+VO_SQ17_D18,"Three bundles, forty people, one stove, one rule. Chennai does not need a lorry. It needs a stubborn auto. And the biscuits did not rattle once.","மூணு மூட்டை, நாப்பது பேரு, ஒரு அடுப்பு, ஒரு விதி. சென்னைக்கு லாரி வேணாம். பிடிவாதமான ஒரு ஆட்டோ போதும். பிஸ்கட் ஒரு தடவை கூட சத்தம் போடல."

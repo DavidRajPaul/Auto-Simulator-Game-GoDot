@@ -12,6 +12,8 @@ const PAATI: String = "sq_004"
 const WEDDING: String = "sq_001"
 const MARGAZHI: String = "sq_003"
 const COFFEE: String = "sq_002"
+const AMBULANCE: String = "sq_016"
+const MONSOON: String = "sq_017"
 const MAX_SCENE_S: float = 80.0
 
 var passed: int = 0
@@ -79,6 +81,8 @@ func _run() -> void:
 	_content_checks(WEDDING)
 	_content_checks(MARGAZHI)
 	_content_checks(COFFEE)
+	_content_checks(AMBULANCE)
+	_content_checks(MONSOON)
 	await _full_playthrough()
 	await _skip_and_home_branch()
 	await _abandon_mid_scene()
@@ -87,6 +91,9 @@ func _run() -> void:
 	await _margazhi_playthrough()
 	await _coffee_playthrough("SQ02_LUZ_FIRST", 0)
 	await _coffee_playthrough("SQ02_GARDEN_FIRST", 1)
+	await _ambulance_playthrough()
+	await _monsoon_playthrough("SQ17_SHELTER")
+	await _monsoon_playthrough("SQ17_DESK")
 	_language_check()
 	root.queue_free()
 	SignalBus.current_road_graph = null
@@ -686,6 +693,109 @@ func _coffee_playthrough(first: String, secret: int) -> void:
 	check("The ending follows the choice", director.run == null and GameState.mission_completed.has(COFFEE) and _said("sq02_r07") and _said("sq02_d16") and (_said("sq02_r05") if keep else _said("sq02_r06")) and not (_said("sq02_r06") if keep else _said("sq02_r05")))
 	check("Reward: keeping the secret earns respect, teasing earns ₹20 %s" % str(last_reward), last_reward == (Vector2i(145, 45) if keep else Vector2i(165, 15)))
 	check("No coffee shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
+	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
+	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
+
+## "Room for an Ambulance" (sq_016): the constable's scene, then three pull-overs. At each one the
+## indicator goes on, the auto stops on the marker and the person there plays their scene.
+func _ambulance_playthrough() -> void:
+	rider._clear()
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	line_times.clear()
+	hidden_shots.clear()
+	phone_frames.clear()
+	last_reward = Vector2i(-1, -1)
+	var def: MissionDef = director.registry.get_mission(AMBULANCE)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	check("Ambulance starts with the constable's scene, controls locked", director.start(AMBULANCE) and story.cinematic and stage() == "intro" and auto.freeze)
+	check("The constable wears his whistle", story.actors.has("pandian") and (story.actors["pandian"] as QuestActor).find_child("Wear_whistle", true, false) != null)
+	watch_cast = true
+	check("Pandian briefs you and holds on the choice", await run_until("brief", MAX_SCENE_S) and story.holding and _said("sq16_p06"))
+	check("Intro lines in order, never overlapping", _no_overlap(PackedStringArray(["sq16_p01", "sq16_d01", "sq16_p02", "sq16_d02", "sq16_p03", "sq16_d03", "sq16_p04", "sq16_d04", "sq16_p05", "sq16_p06"])))
+	check("The constable came to the driver's side", (story.actors["pandian"] as QuestActor).global_position.distance_to(auto.global_position) < 2.6)
+	story._choose(0)
+	check("The choice starts the first pull-over", await run_until("yield_1", 3.0) and director.current_stage().kind == "yield")
+	await get_tree().create_timer(0.2).timeout
+	check("The driver talks himself through it", _said("sq16_d05"))
+	var scenes: Array = [["yield_1", "scene_a", "kanagu", "Wear_basket", "sq16_k04"], ["yield_2", "scene_b", "sundar", "Wear_towel", "sq16_s05"], ["yield_3", "scene_c", "nurse", "Wear_stethoscope", "sq16_n07"]]
+	for i: int in scenes.size():
+		var entry: Array = scenes[i]
+		check("%s: %s is waiting and wears their own things" % [entry[0], entry[2]], stage() == entry[0] and story.actors.has(entry[2]) and (story.actors[entry[2]] as QuestActor).find_child(entry[3], true, false) != null)
+		place_auto(director._stage_target(director.current_stage()))
+		SignalBus.indicator_changed.emit(-1)
+		var next_stage: String = "yield_%d" % (i + 2) if i < 2 else ""
+		if i < 2:
+			check("%s: indicator then stop plays the scene" % entry[0], await run_until(next_stage, MAX_SCENE_S) and _said(entry[4]))
+		else:
+			var t0: float = clock
+			while clock - t0 < MAX_SCENE_S and director.run != null:
+				_note_lines()
+				await get_tree().process_frame
+	watch_cast = false
+	check("Kanagu lines in order", _no_overlap(PackedStringArray(["sq16_k01", "sq16_d11", "sq16_k02", "sq16_d12", "sq16_k03", "sq16_d13", "sq16_k04"])))
+	check("Sundar lines in order", _no_overlap(PackedStringArray(["sq16_s01", "sq16_d14", "sq16_s02", "sq16_d15", "sq16_s03", "sq16_s04", "sq16_d16", "sq16_s05"])))
+	check("The nurse's news and the baby's name", _said("sq16_n02") and _said("sq16_n05") and _said("sq16_d22"))
+	check("Nurse lines in order", _no_overlap(PackedStringArray(["sq16_n01", "sq16_d17", "sq16_n02", "sq16_d18", "sq16_n03", "sq16_d19", "sq16_n04", "sq16_d20", "sq16_n05", "sq16_d21", "sq16_n06", "sq16_d22", "sq16_n07"])))
+	check("The quest ends complete with its reward %s" % str(last_reward), director.run == null and GameState.mission_completed.has(AMBULANCE) and last_reward.x == 170)
+	check("No ambulance shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
+	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
+	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
+
+## "The Monsoon Supply Run" (sq_017): the order of the two deliveries follows the choice.
+func _monsoon_playthrough(first: String) -> void:
+	rider._clear()
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	line_times.clear()
+	hidden_shots.clear()
+	phone_frames.clear()
+	last_reward = Vector2i(-1, -1)
+	var def: MissionDef = director.registry.get_mission(MONSOON)
+	check("Monsoon is a rain quest with a story", def.scenario_weather == "rain" and def.story != null)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	check("Monsoon starts with Vasanthi's scene, controls locked", director.start(MONSOON) and story.cinematic and stage() == "intro" and auto.freeze)
+	check("Vasanthi has her clipboard and Rafiq his tea glass", story.actors.has("vasanthi") and (story.actors["vasanthi"] as QuestActor).find_child("Wear_clipboard", true, false) != null and story.actors.has("rafiq") and (story.actors["rafiq"] as QuestActor).find_child("Wear_glass", true, false) != null)
+	watch_cast = true
+	check("The intro ends and the load stop is next", await run_until("load", MAX_SCENE_S) and _said("sq17_v05"))
+	check("Intro lines in order, never overlapping", _no_overlap(PackedStringArray(["sq17_v01", "sq17_d01", "sq17_v02", "sq17_r01", "sq17_v03", "sq17_d02", "sq17_v04", "sq17_d03", "sq17_v05"])))
+	check("Loading is a stop-and-do stage, not a scene", director.current_stage().kind == "cargo" and director.current_stage().cargo_delta == 3)
+	place_auto(director._stage_target(director.current_stage()))
+	check("Loading the bundles moves on to the flood sign", director.interact(MONSOON, "load") and stage() == "warning")
+	var waited: float = 0.0
+	while not _said("sq17_d09") and waited < 15.0:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+	check("The driver reads the road", _said("sq17_d09"))
+	place_auto(director._stage_target(director.current_stage()))
+	check("Reading the sign starts the watchman's scene", director.interact(MONSOON, "warning") and stage() == "watch")
+	check("Jeyaraj holds an umbrella", story.actors.has("jeyaraj") and (story.actors["jeyaraj"] as QuestActor).find_child("Wear_umbrella", true, false) != null)
+	check("The watchman warns you and holds on the order choice", await run_until("order", MAX_SCENE_S) and story.holding and _said("sq17_j05"))
+	check("Watchman lines in order", _no_overlap(PackedStringArray(["sq17_j01", "sq17_d10", "sq17_j02", "sq17_d11", "sq17_j03", "sq17_j04", "sq17_d12", "sq17_j05"])))
+	check("Jeyaraj came to the driver's side", (story.actors["jeyaraj"] as QuestActor).global_position.distance_to(auto.global_position) < 2.6)
+	var shelter_first: bool = first == "SQ17_SHELTER"
+	story._choose(0 if shelter_first else 1)
+	check("The choice starts the timed first delivery", await run_until("first", 3.0) and director.current_stage().deadline_s > 0.0 and director.current_stage().quality_key == "supplies")
+	check("The two people at the drops have their own things", story.actors.has("maragatham") and (story.actors["maragatham"] as QuestActor).find_child("Wear_glass", true, false) != null and story.actors.has("pooja") and (story.actors["pooja"] as QuestActor).find_child("Wear_pencil", true, false) != null)
+	place_auto(director._stage_target(director.current_stage()))
+	check("First drop: interact hands over and plays the chosen scene", director.interact(MONSOON, "first") and stage() == "first_drop")
+	check("The first scene is the chosen one", await run_until("second", MAX_SCENE_S) and (_said("sq17_m05") if shelter_first else _said("sq17_p05")) and not (_said("sq17_p01") if shelter_first else _said("sq17_m01")))
+	place_auto(director._stage_target(director.current_stage()))
+	check("Second drop plays the other scene", director.interact(MONSOON, "second") and stage() == "second_drop")
+	var t0: float = clock
+	while clock - t0 < MAX_SCENE_S and director.run != null:
+		_note_lines()
+		await get_tree().process_frame
+	watch_cast = false
+	check("Both scenes played, then the ending line", _said("sq17_m05") and _said("sq17_p05") and _said("sq17_d18"))
+	check("Shelter lines in order", _no_overlap(PackedStringArray(["sq17_m01", "sq17_d13", "sq17_m02", "sq17_m03", "sq17_d14", "sq17_m04", "sq17_d15", "sq17_m05"])))
+	check("Desk lines in order", _no_overlap(PackedStringArray(["sq17_p01", "sq17_d16", "sq17_p02", "sq17_p03", "sq17_d17", "sq17_p04", "sq17_p05"])))
+	check("The quest ends complete with its reward %s" % str(last_reward), director.run == null and GameState.mission_completed.has(MONSOON) and last_reward.x >= 190)
+	check("No monsoon shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
 	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
 	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
 

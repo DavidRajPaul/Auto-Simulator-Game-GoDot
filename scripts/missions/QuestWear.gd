@@ -28,6 +28,16 @@ const ITEMS: Dictionary = {
 	"book": {"bone": "LeftHand", "at": Vector3(0.03, -0.1, 0.05)},
 	# A pencil tucked behind the right ear.
 	"pencil": {"bone": "Head", "at": Vector3(-0.075, 0.07, 0.0)},
+	# A traffic constable's whistle on a white cord.
+	"whistle": {"bone": "Neck", "at": Vector3(0.0, -0.02, 0.03)},
+	# A nurse's stethoscope round the neck, the chest piece on the front.
+	"stethoscope": {"bone": "Neck", "at": Vector3(0.0, -0.02, 0.03)},
+	# A wicker basket of greens, carried by the handle in the right hand.
+	"basket": {"bone": "RightHand", "at": Vector3(-0.01, -0.06, 0.05)},
+	# A black umbrella held up in the right hand.
+	"umbrella": {"bone": "RightHand", "at": Vector3(-0.01, -0.09, 0.05)},
+	# A clipboard with a sheet and a steel clip, in the left hand.
+	"clipboard": {"bone": "LeftHand", "at": Vector3(0.03, -0.1, 0.05)},
 }
 
 static var _cache: Dictionary = {}
@@ -54,6 +64,11 @@ static func _build(item: String) -> ArrayMesh:
 		"glass": _glass(st)
 		"book": _book(st)
 		"pencil": MeshKit.tube(st, Vector3(0, 0, 0.06), Vector3(0, -0.02, -0.07), 0.006, Color(0.95, 0.75, 0.15), 5)
+		"whistle": _whistle(st)
+		"stethoscope": _stethoscope(st)
+		"basket": _basket(st)
+		"umbrella": _umbrella(st)
+		"clipboard": _clipboard(st)
 	return MeshKit.finish(st, LandmarkKit.material())
 
 ## Over the back of the neck and down both sides of the chest, the ends a little apart.
@@ -120,6 +135,67 @@ static func _book(st: SurfaceTool) -> void:
 	MeshKit.box(st, Vector3.ZERO, Vector3(0.03, 0.17, 0.12), Color(0.55, 0.12, 0.1))
 	MeshKit.box(st, Vector3(0.0, 0.0, 0.004), Vector3(0.024, 0.16, 0.112), Color(0.95, 0.92, 0.82))
 	MeshKit.box(st, Vector3(0.0, 0.03, 0.061), Vector3(0.031, 0.024, 0.002), Color(0.86, 0.7, 0.25))
+
+## A white cord over the neck to the chest, a steel whistle at the end.
+static func _whistle(st: SurfaceTool) -> void:
+	var cord: Color = Color(0.96, 0.96, 0.94)
+	for side: float in [-1.0, 1.0]:
+		var top: Vector3 = Vector3(side * 0.07, 0.0, 0.0)
+		var bend: Vector3 = Vector3(side * 0.08, -0.07, 0.1)
+		var end: Vector3 = Vector3(side * 0.01, -0.2, 0.125)
+		MeshKit.tube(st, top, bend, 0.004, cord, 4)
+		MeshKit.tube(st, bend, end, 0.004, cord, 4)
+	MeshKit.tube(st, Vector3(-0.07, 0.0, 0.0), Vector3(0.0, 0.01, -0.07), 0.004, cord, 4)
+	MeshKit.tube(st, Vector3(0.0, 0.01, -0.07), Vector3(0.07, 0.0, 0.0), 0.004, cord, 4)
+	MeshKit.box(st, Vector3(0.0, -0.215, 0.13), Vector3(0.022, 0.022, 0.05), STEEL)
+	MeshKit.box(st, Vector3(0.0, -0.205, 0.13), Vector3(0.008, 0.01, 0.052), Color(0.1, 0.1, 0.1))
+
+## Thick dark tubing over the neck, two lines down the chest to a silver chest piece.
+static func _stethoscope(st: SurfaceTool) -> void:
+	var tube: Color = Color(0.13, 0.14, 0.16)
+	for side: float in [-1.0, 1.0]:
+		var top: Vector3 = Vector3(side * 0.08, 0.0, 0.0)
+		var bend: Vector3 = Vector3(side * 0.095, -0.08, 0.1)
+		var end: Vector3 = Vector3(side * 0.03, -0.25, 0.13)
+		MeshKit.tube(st, top, bend, 0.009, tube, 5)
+		MeshKit.tube(st, bend, end, 0.009, tube, 5)
+	MeshKit.tube(st, Vector3(-0.08, 0.0, 0.0), Vector3(0.0, 0.01, -0.075), 0.009, tube, 5)
+	MeshKit.tube(st, Vector3(0.0, 0.01, -0.075), Vector3(0.08, 0.0, 0.0), 0.009, tube, 5)
+	MeshKit.tube(st, Vector3(-0.03, -0.25, 0.13), Vector3(0.0, -0.285, 0.135), 0.009, tube, 5)
+	MeshKit.tube(st, Vector3(0.03, -0.25, 0.13), Vector3(0.0, -0.285, 0.135), 0.009, tube, 5)
+	MeshKit.disc(st, Vector3(0.0, -0.3, 0.138), Vector3.BACK, 0.028, STEEL, 12)
+
+## A round wicker basket hanging from its handle, heaped with leafy greens.
+static func _basket(st: SurfaceTool) -> void:
+	var wicker: Color = Color(0.72, 0.52, 0.28)
+	var bowl: PackedVector2Array = PackedVector2Array([Vector2(0.0, -0.17), Vector2(0.09, -0.17), Vector2(0.14, -0.1), Vector2(0.17, -0.03)])
+	_upright_lathe(st, Vector3.ZERO, bowl, wicker, 12)
+	for i: int in 9:
+		var a: float = TAU * float(i) / 9.0
+		var base: Vector3 = Vector3(cos(a) * 0.08, -0.03, sin(a) * 0.08)
+		MeshKit.tube(st, base, base + Vector3(cos(a) * 0.05, 0.09, sin(a) * 0.05), 0.02, Color(0.2, 0.55, 0.2), 5)
+	MeshKit.tube(st, Vector3(-0.14, -0.04, 0.0), Vector3(0.0, 0.1, 0.0), 0.007, wicker, 5)
+	MeshKit.tube(st, Vector3(0.0, 0.1, 0.0), Vector3(0.14, -0.04, 0.0), 0.007, wicker, 5)
+
+## A black umbrella: curved handle, steel shaft, ribbed canopy with a rim of spokes.
+static func _umbrella(st: SurfaceTool) -> void:
+	var black: Color = Color(0.08, 0.08, 0.1)
+	MeshKit.tube(st, Vector3(0.0, -0.04, 0.0), Vector3(0.0, 0.5, 0.0), 0.007, STEEL, 5)
+	MeshKit.tube(st, Vector3(0.0, -0.04, 0.0), Vector3(0.025, -0.075, 0.0), 0.009, black, 5)
+	MeshKit.tube(st, Vector3(0.025, -0.075, 0.0), Vector3(0.06, -0.06, 0.0), 0.009, black, 5)
+	var dome: PackedVector2Array = PackedVector2Array([Vector2(0.0, 0.62), Vector2(0.12, 0.6), Vector2(0.26, 0.55), Vector2(0.38, 0.47), Vector2(0.43, 0.42)])
+	_upright_lathe(st, Vector3.ZERO, dome, black, 10)
+	for i: int in 8:
+		var a: float = TAU * float(i) / 8.0
+		MeshKit.tube(st, Vector3(0.0, 0.6, 0.0), Vector3(cos(a) * 0.43, 0.42, sin(a) * 0.43), 0.004, STEEL, 4)
+
+## A hardboard clipboard with a sheet of paper and a steel clip at the top.
+static func _clipboard(st: SurfaceTool) -> void:
+	MeshKit.box(st, Vector3.ZERO, Vector3(0.012, 0.3, 0.22), Color(0.5, 0.33, 0.18))
+	MeshKit.box(st, Vector3(0.0, -0.01, 0.0), Vector3(0.014, 0.27, 0.195), Color(0.97, 0.96, 0.9))
+	MeshKit.box(st, Vector3(0.0, 0.14, 0.0), Vector3(0.02, 0.03, 0.06), STEEL)
+	for y: float in [0.07, 0.03, -0.01, -0.05]:
+		MeshKit.box(st, Vector3(0.0, y, 0.0), Vector3(0.016, 0.004, 0.15), Color(0.5, 0.55, 0.7))
 
 ## A round vessel standing on its base: profile points are (radius, height).
 static func _upright_lathe(st: SurfaceTool, at: Vector3, profile: PackedVector2Array, colour: Color, segments: int = 12) -> void:
