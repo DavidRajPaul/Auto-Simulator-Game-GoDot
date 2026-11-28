@@ -51,7 +51,7 @@ def main(argv: list[str]) -> int:
         rel = p.relative_to(ROOT).as_posix()
         if rel.startswith(DOC_ALLOW):
             continue
-        if rel.startswith("scripts/devtools/") or rel.startswith("tests/run_devtools_tests"):
+        if rel.startswith(("scripts/devtools/", "tests/run_devtools_tests", "tests/shot_devtools")):
             continue  # the dev files themselves (their existence is judged above)
         text = p.read_text(encoding="utf-8", errors="ignore")
         hits = [n for n in NEEDLES if n in text]
