@@ -226,13 +226,13 @@ QUEST_FAIL_QUALITY,too many bumps. Drive more gently.,அதிகக் கு�
 QUEST_FAIL_UNREACHABLE,no road goes there now.,அங்கே இப்போ சாலை இல்லை.
 QUEST_COMPLETED,Job done! You earned ₹%s.,வேலை முடிஞ்சிடுச்சு! ₹%s சம்பாதிச்சாச்சு.
 SQ02_TITLE,"Filter Coffee, No Spill",சிந்தாத ஃபில்டர் காபி
-SQ02_DESC,Deliver hot filter coffee to three shops without spilling it.,சூடான ஃபில்டர் காபி சிந்தாம மூணு கடைக்கும் டெலிவரி பண்ணணும்.
+SQ02_DESC,Kaapi Kannan needs three hot filter coffees delivered to three shops. Don't spill a drop.,காபி கண்ணனின் மூணு சூடான ஃபில்டர் காபியை மூணு கடைக்குக் கொண்டு சேர். ஒரு சொட்டு கூட சிந்தக்கூடாது.
 SQ02_ORDER,Which shop first?,முதலில் எந்தக் கடை?
-SQ02_LUZ_FIRST,Tailor shop,தையல் கடை
-SQ02_GARDEN_FIRST,Book shop,புத்தகக் கடை
+SQ02_LUZ_FIRST,Selvam Tailors,செல்வம் டெய்லர்ஸ்
+SQ02_GARDEN_FIRST,Mohana Book House,மோகனா புக் ஹவுஸ்
 SQ02_FIRST,Take coffee to the first shop. Drive smoothly!,முதல் கடைக்குக் காபி கொண்டு போ. மெதுவா ஓட்டு!
 SQ02_SECOND,Now the second shop. Don't spill!,இப்போ இரண்டாவது கடை. சிந்தாதே!
-SQ02_THIRD,Last one: take it to the tea shop.,கடைசி: டீக்கடைக்குக் கொண்டு போ.
+SQ02_THIRD,Last one: Murugan Tea Stall.,கடைசி: முருகன் டீ ஸ்டால்.
 SQ04_TITLE,Paati Knows the Way,பாட்டிக்கு வழி தெரியும்!
 SQ04_RIDER,Paati,பாட்டி
 RIDER_IN,%s is in the auto.,%s ஆட்டோவில் ஏறிவிட்டார்.
@@ -723,10 +723,10 @@ QUEST_QUALITY_MIRROR,Mirror safe: %d%%,கண்ணாடி பாதுகா�
 SQ01_JOB,1. Stop beside the organiser at the wedding hall.\n2. Hear both women.\n3. Ask the flower seller about the blue lotus pouch.\n4. Go back to the hall and give the gold to its owner.,1. கல்யாண மண்டபத்தில் ஏற்பாட்டாளர் அருகே நிறுத்து.\n2. இரண்டு பேரிடமும் கேள்.\n3. நீலத் தாமரைப் பையைப் பற்றி பூக்காரரிடம் கேள்.\n4. மண்டபத்துக்குத் திரும்பி நகையை உரியவரிடம் கொடு.
 SQ01_P_HALL,Wedding Hall,திருமண மண்டபம்
 SQ01_P_FLOWER,M.R. Flowers,எம்.ஆர். ஃப்ளவர்ஸ்
-SQ02_JOB,"1. Pick which shop gets coffee first.\n2. Deliver to all three shops.\n3. Bumps and hard braking spill the coffee, so drive smoothly.",1. முதலில் எந்தக் கடை என்று தேர்வு செய்.\n2. மூன்று கடைகளுக்கும் கொடு.\n3. குலுக்கலும் திடீர் பிரேக்கும் காபியைச் சிந்தும். மெதுவா ஓட்டு.
-SQ02_P_TAILOR,Tailor Shop,தையல் கடை
-SQ02_P_BOOKS,Book Shop,புத்தகக் கடை
-SQ02_P_TEA,Tea Shop,டீக்கடை
+SQ02_JOB,"1. Meet Kannan at his coffee bar.\n2. Pick which shop gets coffee first.\n3. Deliver to all three shops in time.\n4. Bumps and hard braking spill the coffee, so drive smoothly.",1. கண்ணனை அவர் காபிக் கடையில் சந்தி.\n2. முதலில் எந்தக் கடை என்று தேர்வு செய்.\n3. மூன்று கடைகளுக்கும் நேரத்துக்குள் கொடு.\n4. குலுக்கலும் திடீர் பிரேக்கும் காபியைச் சிந்தும். மெதுவா ஓட்டு.
+SQ02_P_TAILOR,Selvam Tailors,செல்வம் டெய்லர்ஸ்
+SQ02_P_BOOKS,Mohana Book House,மோகனா புக் ஹவுஸ்
+SQ02_P_TEA,Murugan Tea Stall,முருகன் டீ ஸ்டால்
 SQ03_JOB,1. Pick up Sankaran sir.\n2. Stop beside Ganesan at the music shop for the drum.\n3. Drive to the music hall under 32 km/h. Bumps and crashes hurt the drum.\n4. Take it in by the right gate.,1. சங்கரன் சாரை ஏற்றிக்கொள்.\n2. மிருதங்கத்துக்காக இசைக் கடையில் கணேசன் அருகே நிறுத்து.\n3. 32 கி.மீ/மணிக்குள் சபாவுக்கு ஓட்டு. குலுக்கலும் மோதலும் மிருதங்கத்தைச் சேதப்படுத்தும்.\n4. சரியான வாசல் வழியாகக் கொண்டு போ.
 SQ03_P_SHOP,Music Shop,இசைக் கடை
 SQ03_P_HALL,Music Hall,சபா மண்டபம்
@@ -1205,3 +1205,54 @@ VO_SQ03_D09,"Thank you, sir. Play well tonight!",நன்றி சார். �
 VO_SQ03_D10,"A real Margazhi concert, from inside the hall? I'll stay, sir!",கூடத்துக்குள்ள இருந்து நிஜ மார்கழி கச்சேரியா? நான் இருக்கேன் சார்!
 VO_SQ03_L04,"Come, I'll show you your seat. Sit quietly during the mridangam solo!","வா, உன் இடத்தைக் காட்டறேன். தனி ஆவர்த்தனம் நடக்கும்போது அமைதியா உக்காரு!"
 VO_SQ03_S23,"Wish me luck, thambi. Margazhi comes only once a year!",வாழ்த்து சொல்லு தம்பி. மார்கழி வருஷத்துக்கு ஒரு தடவைதான்!
+SQ02_INTRO,Kaapi Kannan has a job for you.,காபி கண்ணனிடம் உனக்கு ஒரு வேலை இருக்கிறது.
+SQ02_DROP,Coffee delivered.,காபி சேர்ந்தது.
+SQ02_TEA,A coffee for the tea man.,டீக்காரருக்கு ஒரு காபி.
+SQ02_SECRET,Murugan's secret is in your hands.,முருகனின் ரகசியம் உன் கையில்.
+SQ02_KEEP,Keep his secret,ரகசியத்தைக் காப்பாற்று
+SQ02_TEASE,Tease him a little,கொஞ்சம் கலாய்
+SQ02_THANKS,All three coffees delivered.,மூணு காபியும் சேர்ந்தது.
+SQ02_P_COFFEE,Kannan Degree Coffee,கண்ணன் டிகிரி காபி
+VO_SPK_KANNAN,Kaapi Kannan,காபி கண்ணன்
+VO_SPK_SELVAM,Selvam (tailor),செல்வம் (டெய்லர்)
+VO_SPK_MOHANA,Mohana Teacher,மோகனா டீச்சர்
+VO_SPK_MURUGAN,Murugan (tea stall),முருகன் (டீக்கடை)
+VO_SQ02_K01,"Stop, stop! Thambi, you have been chosen.","நில்லு நில்லு! தம்பி, உன்னைத் தேர்ந்தெடுத்தாச்சு."
+VO_SQ02_D01,"Chosen for what, anna? Last time someone said that, I paid for his petrol.",எதுக்கு அண்ணா? போன தடவை இப்படிச் சொன்னவருக்கு நான்தான் பெட்ரோல் போட்டேன்.
+VO_SQ02_K02,"Three filter coffees, three shops. Hot, with the foam on top, exactly as I made them.","மூணு ஃபில்டர் காபி, மூணு கடை. சூடா, மேல நுரையோட, நான் போட்ட மாதிரியே போய்ச் சேரணும்."
+VO_SQ02_K03,"Brake hard, the foam dies. Hit a pothole, the coffee dies. Spill it, and I die.","திடீர்னு பிரேக் போட்டா நுரை போயிடும். பள்ளத்துல விட்டா காபி போயிடும். சிந்தினா, நானே போயிடுவேன்."
+VO_SQ02_D02,"Anna, it's coffee. Not a kidney transplant.","அண்ணா, இது காபிதான். கிட்னி ஆபரேஷன் இல்ல."
+VO_SQ02_K04,"Forty years of decoction, thambi. To me, both are the same.","நாப்பது வருஷ டிகாக்ஷன், தம்பி. எனக்கு ரெண்டும் ஒண்ணுதான்."
+VO_SQ02_K05,"Selvam the tailor, Mohana Teacher at the book house, and Murugan at the tea stall.","டெய்லர் செல்வம், புக் ஹவுஸ் மோகனா டீச்சர், டீக்கடை முருகன்."
+VO_SQ02_D03,Wait. The tea stall orders coffee from you?,இருங்க. டீக்கடைக்காரர் உங்ககிட்ட காபி வாங்குறாரா?
+VO_SQ02_K06,"Every single day. Ask no questions. Him last, always. Now, who gets theirs first?","தினமும். கேள்வி கேக்காத. அவருக்கு எப்பவுமே கடைசி. சரி, முதல்ல யாருக்கு?"
+VO_SQ02_D04,"Okay coffee, no drama. Sit tight.","சரி காபி, டிராமா வேண்டாம். அமைதியா இரு."
+VO_SQ02_D05,"Smooth, smooth. I'm driving like there's an egg under the pedal.","மெதுவா, மெதுவா. ஆக்ஸிலேட்டர் கீழ முட்டை வெச்ச மாதிரி ஓட்டுறேன்."
+VO_SQ02_D06,Whoever invented speed breakers never carried filter coffee.,ஸ்பீட் பிரேக்கர் கண்டுபிடிச்சவன் ஒருநாளும் ஃபில்டர் காபி தூக்கிட்டுப் போனதில்ல.
+VO_SQ02_D07,"Ayyo, the foam! Kannan anna felt that, I'm sure.","அய்யோ, நுரை! கண்ணன் அண்ணனுக்கு இது தெரிஞ்சிருக்கும்."
+VO_SQ02_D08,"Sorry coffee, sorry coffee!","சாரி காபி, சாரி காபி!"
+VO_SQ02_D17,"One down, two to go. Stay strong, coffee.","ஒண்ணு முடிஞ்சுது, இன்னும் ரெண்டு. தைரியமா இரு, காபி."
+VO_SQ02_D18,Coffee to a tea stall. Like taking a cricket bat to a football match.,டீக்கடைக்கு காபி. ஃபுட்பால் மேட்சுக்கு கிரிக்கெட் பேட் எடுத்துட்டுப் போற மாதிரி.
+VO_SQ02_S01,"Coffee! Finally! The wedding is tomorrow, the groom's shirt is today, and the groom just put on five kilos.","காபி! கடைசியா! கல்யாணம் நாளைக்கு, மாப்பிள்ளை சட்டை இன்னைக்கு, மாப்பிள்ளை இப்போ அஞ்சு கிலோ ஏறிட்டாரு."
+VO_SQ02_D09,Five kilos in one week?,ஒரே வாரத்துல அஞ்சு கிலோவா?
+VO_SQ02_S02,"Engagement sweets. Every relative brought a box, and he finished every box.",நிச்சயதார்த்த ஸ்வீட். ஒவ்வொரு சொந்தக்காரரும் ஒரு பெட்டி கொண்டு வந்தாங்க. அவர் எல்லாப் பெட்டியையும் முடிச்சிட்டாரு.
+VO_SQ02_S03,"Ahh, Kannan's coffee. My hands are steady again. Let him grow, I'll let out the seams.","ஆஹா, கண்ணன் காபி. கை நடுக்கம் நின்னுடுச்சு. அவர் எவ்வளவு வேணா ஏறட்டும், நான் தையலை விட்டுக் கொடுக்கறேன்."
+VO_SQ02_S04,"Go, go! And if you see a round groom on the road, drive the other way.","போ போ! வழியில உருண்டையா ஒரு மாப்பிள்ளையைப் பார்த்தா, வேற பக்கம் ஓட்டு."
+VO_SQ02_M01,"You are four minutes late. In my class, that meant standing outside.",நாலு நிமிஷம் லேட். என் கிளாஸ்ல இருந்தா வெளியே நிக்க வேண்டியதுதான்.
+VO_SQ02_D10,Sorry teacher. Traffic was very heavy-ah.,சாரி டீச்சர். டிராஃபிக் ரொம்ப ஹெவியா இருந்துச்சு.
+VO_SQ02_M02,Heavy-ah? Say it properly. The traffic was heavy. Now give me my coffee.,"ஹெவியா? ஒழுங்கா சொல்லு. போக்குவரத்து நெரிசலா இருந்தது. சரி, என் காபியைக் கொடு."
+VO_SQ02_D11,"Teacher, how much for that book on the table?","டீச்சர், டேபிள் மேல இருக்கிற அந்தப் புத்தகம் என்ன விலை?"
+VO_SQ02_M03,That one? Not for sale. Nothing here is for sale. They are my books.,அதுவா? விற்பனைக்கு இல்ல. இங்க எதுவுமே விற்பனைக்கு இல்ல. எல்லாம் என் புத்தகம்.
+VO_SQ02_D12,Then why is it a book shop?,அப்புறம் இது ஏன் புத்தகக் கடை?
+VO_SQ02_M04,"So people come and talk to me. Like you. Now go. Drive properly, and speak properly.","ஆளுங்க வந்து என்கிட்ட பேசுவாங்கல்ல. உன்னை மாதிரி. சரி கிளம்பு. ஒழுங்கா ஓட்டு, ஒழுங்கா பேசு."
+VO_SQ02_R01,Coffee? Here? Who ordered coffee at MY tea stall?,காபியா? இங்கேயா? என் டீக்கடைக்கு யார் காபி ஆர்டர் பண்ணது?
+VO_SQ02_D13,Kannan anna said… you did. Every day.,கண்ணன் அண்ணன் சொன்னாரு… நீங்கதான்னு. தினமும்.
+VO_SQ02_R02,Shh! Lower your voice! For thirty years I've told this street tea is the only drink.,ஷ்ஷ்! மெதுவா பேசு! முப்பது வருஷமா இந்தத் தெருவுக்கே டீதான் ஒரே பானம்னு சொல்லிட்டு இருக்கேன்.
+VO_SQ02_R03,"Tea is my job. Coffee is my weakness. One tumbler a day, behind the boiler.","டீ என் தொழில். காபி என் பலவீனம். ஒரு நாளைக்கு ஒரு டம்ளர், பாய்லருக்குப் பின்னாடி."
+VO_SQ02_R04,"If this gets out, my customers will riot. You'll keep quiet, no?","இது வெளியே தெரிஞ்சா என் கஸ்டமர்ஸ் கலவரம் பண்ணுவாங்க. நீ வாயை மூடிக்குவ, இல்ல?"
+VO_SQ02_D14,What coffee? I only saw a tea stall.,என்ன காபி? நான் ஒரு டீக்கடையைத்தான் பார்த்தேன்.
+VO_SQ02_R05,"Thambi, you are a gentleman. Free tea for you, any day, for life.","தம்பி, நீ ஒரு ஜென்டில்மேன். உனக்கு வாழ்நாள் முழுக்க டீ ஃப்ரீ."
+VO_SQ02_D15,Everyone listen! Murugan anna's tea is… the best tea in Mylapore!,எல்லாரும் கேளுங்க! முருகன் அண்ணனோட டீதான்… மயிலாப்பூரிலேயே பெஸ்ட் டீ!
+VO_SQ02_R06,"Ayyo, you nearly killed me! Here, twenty rupees extra. Not for the coffee. For your acting.","அய்யோ, உயிரே போயிடுச்சு! இந்தா இருபது ரூபா எக்ஸ்ட்ரா. காபிக்கு இல்ல. உன் நடிப்புக்கு."
+VO_SQ02_R07,"Ahh. Don't tell Kannan I said this, but… the man is a genius.","ஆஹா. கண்ணன்கிட்ட நான் சொன்னேன்னு சொல்லாத, ஆனா… அந்த ஆள் ஒரு மேதை."
+VO_SQ02_D16,"Three coffees, three shops, one secret. Kannan anna might put my photo up beside his filter.","மூணு காபி, மூணு கடை, ஒரு ரகசியம். கண்ணன் அண்ணன் அவரு ஃபில்டர் பக்கத்துல என் போட்டோவை மாட்டினாலும் மாட்டுவாரு."

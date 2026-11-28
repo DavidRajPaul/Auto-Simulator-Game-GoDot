@@ -103,6 +103,8 @@ func quality_and_parking() -> void:
 	GameState.reset_profile()
 	pose(director.registry.get_mission("sq_002").start_anchor)
 	check("coffee starts", director.start("sq_002"))
+	check("coffee opens on Kannan's intro", director.current_stage().id == "intro")
+	director.tick(director.current_stage().duration_s + 0.1)
 	director.choose("sq_002", "order", "SQ02_LUZ_FIRST")
 	SignalBus.vehicle_dynamics.emit(2.0, 2.0, 0.0)
 	SignalBus.player_impact.emit({"severity": 1.0})

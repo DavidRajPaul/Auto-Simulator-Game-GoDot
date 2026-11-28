@@ -11,6 +11,7 @@ const QUEST: String = "sq_007"
 const PAATI: String = "sq_004"
 const WEDDING: String = "sq_001"
 const MARGAZHI: String = "sq_003"
+const COFFEE: String = "sq_002"
 const MAX_SCENE_S: float = 80.0
 
 var passed: int = 0
@@ -77,12 +78,15 @@ func _run() -> void:
 	_content_checks(PAATI)
 	_content_checks(WEDDING)
 	_content_checks(MARGAZHI)
+	_content_checks(COFFEE)
 	await _full_playthrough()
 	await _skip_and_home_branch()
 	await _abandon_mid_scene()
 	await _paati_playthrough()
 	await _paati_skips()
 	await _margazhi_playthrough()
+	await _coffee_playthrough("SQ02_LUZ_FIRST", 0)
+	await _coffee_playthrough("SQ02_GARDEN_FIRST", 1)
 	_language_check()
 	root.queue_free()
 	SignalBus.current_road_graph = null
@@ -634,6 +638,56 @@ func _margazhi_playthrough() -> void:
 	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
 	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
 	rider._clear()
+
+## "Filter Coffee, No Spill": no rider; three shopkeepers walk up to the driver, the first-shop
+## choice decides which scene plays at which stop, and the tea man's secret sets the reward.
+func _coffee_playthrough(first: String, secret: int) -> void:
+	rider._clear()
+	GameState.reset_profile()
+	GameState.tutorial_active = false
+	story.lines_said.clear()
+	line_times.clear()
+	hidden_shots.clear()
+	phone_frames.clear()
+	last_reward = Vector2i(-1, -1)
+	var def: MissionDef = director.registry.get_mission(COFFEE)
+	place_auto(def.start_anchor)
+	await get_tree().physics_frame
+	check("Coffee starts with Kannan's scene, controls locked", director.start(COFFEE) and story.cinematic and stage() == "intro" and auto.freeze)
+	check("Kannan wears his davara and the tea man has a customer", story.actors.has("kannan") and (story.actors["kannan"] as QuestActor).find_child("Wear_davara", true, false) != null)
+	watch_cast = true
+	check("Kannan briefs you and holds on the first-shop choice", await run_until("order", MAX_SCENE_S) and story.holding and _said("sq02_k06"))
+	check("Intro lines in order, never overlapping", _no_overlap(PackedStringArray(["sq02_k01", "sq02_d01", "sq02_k02", "sq02_k03", "sq02_d02", "sq02_k04", "sq02_k05", "sq02_d03", "sq02_k06"])))
+	check("Kannan came to the driver's side", (story.actors["kannan"] as QuestActor).global_position.distance_to(auto.global_position) < 2.6)
+	story._choose(0 if first == "SQ02_LUZ_FIRST" else 1)
+	check("The choice starts the timed coffee run", await run_until("first", 3.0) and director.current_stage().deadline_s > 0.0 and director.current_stage().quality_key == "coffee")
+	await get_tree().create_timer(0.2).timeout
+	check("The driver talks to the coffee", _said("sq02_d04"))
+	check("The shopkeepers wear their own things", story.actors.has("selvam") and (story.actors["selvam"] as QuestActor).find_child("Wear_tape", true, false) != null and story.actors.has("mohana") and (story.actors["mohana"] as QuestActor).find_child("Wear_specs", true, false) != null)
+	SignalBus.player_impact.emit({"severity": 0.4})
+	await get_tree().create_timer(0.3).timeout
+	check("A knock: the driver fears for the foam", _said("sq02_d07"))
+	place_auto(director._stage_target(director.current_stage()))
+	var tailor_first: bool = first == "SQ02_LUZ_FIRST"
+	check("First stop plays the chosen shop's scene", await run_until("second", MAX_SCENE_S) and (_said("sq02_s04") if tailor_first else _said("sq02_m04")) and not (_said("sq02_m01") if tailor_first else _said("sq02_s01")))
+	place_auto(director._stage_target(director.current_stage()))
+	check("Second stop plays the other shop", await run_until("third", MAX_SCENE_S) and _said("sq02_s04") and _said("sq02_m04"))
+	check("Book house lines in order", _no_overlap(PackedStringArray(["sq02_m01", "sq02_d10", "sq02_m02", "sq02_d11", "sq02_m03", "sq02_d12", "sq02_m04"])))
+	check("Murugan waits at the tea stall", story.actors.has("murugan") and story.actors.has("tea_customer"))
+	place_auto(director.current_stage().target)
+	check("The tea man's secret holds on the choice", await run_until("secret", MAX_SCENE_S) and story.holding and _said("sq02_r04"))
+	story._choose(secret)
+	var t0: float = clock
+	while clock - t0 < MAX_SCENE_S and director.run != null:
+		_note_lines()
+		await get_tree().process_frame
+	watch_cast = false
+	var keep: bool = secret == 0
+	check("The ending follows the choice", director.run == null and GameState.mission_completed.has(COFFEE) and _said("sq02_r07") and _said("sq02_d16") and (_said("sq02_r05") if keep else _said("sq02_r06")) and not (_said("sq02_r06") if keep else _said("sq02_r05")))
+	check("Reward: keeping the secret earns respect, teasing earns ₹20 %s" % str(last_reward), last_reward == (Vector2i(145, 45) if keep else Vector2i(165, 15)))
+	check("No coffee shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
+	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
+	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
 
 func _language_check() -> void:
 	GameState.settings["language"] = "ta"

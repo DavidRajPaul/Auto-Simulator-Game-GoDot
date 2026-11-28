@@ -9,7 +9,8 @@ things to find, and voiced dialogue that stays in sync with the scenes.
 "Paati Knows the Way" (`sq_004`, content version 3) is the second, and the first with a rider.
 "The Wedding Gold" (`sq_001`, content version 4) is the third (Nov 27 owner report: "zero dialogues, the
 cut scenes are very fast, no NPCs talking"). "Margazhi Missing Beat" (`sq_003`, content version 3) is the
-fourth, the second with a rider.
+fourth, the second with a rider. "Filter Coffee, No Spill" (`sq_002`, content version 3) is the fifth, with no
+rider: the shopkeepers walk up to the driver's window.
 
 ## How a story quest is built
 
@@ -165,3 +166,45 @@ The musician's rig is bound in a T-pose (the other riders' bind poses hang the a
 rider whose hands sit level with the shoulders gets the upper arms turned down (`QuestRider._lower_t_pose_arms`).
 Tests: `run_story_quest_tests` plays it (wrong gate, back gate, staying); `SHOT_QUEST=sq_003` in
 `tests/shot_story.tscn` renders it.
+
+## Filter Coffee, No Spill
+
+Owner request (Nov 28): "the script must be interesting and funny and witty … finalise the NPC characters,
+unique only for this quest … the shops must be easily identifiable with the name board and look realistic".
+`tools/quests/build_sq02_story.py` holds every line once (40 lines) and writes the mission, the story, the
+voice script `docs/voice/SQ02_Filter_Coffee_Voice_Script.md` and the subtitles. No rider: the coffee rides in
+the auto and the driver talks to it.
+
+The cast (new voices in `tools/voice/cast.json`):
+
+| Who | Model | Wears (QuestWear) | Shop (QuestPlaceKit kind) |
+|---|---|---|---|
+| Kaapi Kannan, coffee master, theatrical | `old_man_veshti` | brass davara-tumbler | Kannan Degree Coffee (`coffee_bar`) at the Luz junction |
+| Selvam, tailor in wedding season | `young_man` | measuring tape, pencil behind the ear | Selvam Tailors (`tailors`) |
+| Mohana Teacher, retired Tamil teacher who sells no books | `woman_saree_violet` | spectacles, jasmine, a book | Mohana Book House (`bookhouse`) |
+| Murugan, tea master with a secret | `man_casual` | towel on the shoulder, steel glass | Murugan Tea Stall (`tea_kadai`, board says NO COFFEE) |
+
+1. **Intro** (cutscene): Kannan waves the auto over at his coffee bar, walks to the driver's window and
+   briefs: three coffees, "brake hard, the foam dies … spill it, and I die". The tea stall orders coffee?
+   "Ask no questions. Him last, always." Holds on the choice: Selvam Tailors or Mohana Book House first.
+2. **Three timed drives** (190 / 210 / 210 s, quality "coffee", below 20 fails; the old skill rules). The
+   driver talks to the coffee and yelps at bumps and hard braking.
+3. **The tailor**: the wedding is tomorrow and the groom put on five kilos of engagement sweets.
+   **The book house**: Mohana corrects "heavy-ah", and none of her books are for sale ("so people come and
+   talk to me"). The first-shop choice decides which scene plays at which stop (`if_choice` on "order").
+4. **The tea stall**: "Who ordered coffee at MY tea stall?", then a whisper: tea is his job, coffee his
+   weakness, one tumbler a day behind the boiler. Choice: keep his secret (+30 XP, free tea for life) or
+   tease him in front of the street (+Rs 20, "not for the coffee, for your acting").
+
+Engine pieces added for it: cast entries take `"wear"` (QuestWear items fixed to the rig with a
+BoneAttachment3D each, placed where they sit in the idle clip; a few draw calls, only for story people);
+the mark `"beside:<role>"` is the driver's window on that person's side of the auto, so a shopkeeper walks
+up from their own side wherever the player stopped; a `{"from": "role:x", …}` eye takes `"ahead": true` to
+put its sideways step towards the auto's nose on either side. Shots of someone at the window frame from
+ahead on THEIR side (`close`, `two_shot`, `walking` in the builder): a fixed front-right camera hid
+them behind the auto whenever they came from the left. The four shops are lit, furnished QuestPlaceKit
+fronts with painted bilingual boards from one atlas (`tools/art/make_quest_signs.py` →
+`assets/textures/quest_signs.png`, `QuestPlaces.SIGN_ROWS`; those places take no Label3D name slot).
+Tests: `run_story_quest_tests` plays it both ways round and both endings; `run_twelve_quest_tests` keeps
+the spill / resume / retry rules; `SHOT_QUEST=sq_002` (SHOT_CHOICE, SHOT_SECRET) in `tests/shot_story.tscn`
+renders it, and `PLACE_KEY=SQ02_P_COFFEE` (…_TAILOR, _BOOKS, _TEA) in `tests/shot_places.tscn` renders a shop.

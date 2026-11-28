@@ -12,7 +12,7 @@ const BOARD_Z_BY_KIND: Dictionary = {"hall": 0.07, "school": -0.43}
 ## Which model stands for each named place.
 const KINDS: Dictionary = {
 	"SQ01_P_DESK": "tent", "SQ01_P_FLOWER": "stall", "SQ01_P_HALL": "hall",
-	"SQ02_P_BOOKS": "books", "SQ02_P_TAILOR": "tailor", "SQ02_P_TEA": "tea",
+	"SQ02_P_BOOKS": "bookhouse", "SQ02_P_COFFEE": "coffee_bar", "SQ02_P_TAILOR": "tailors", "SQ02_P_TEA": "tea_kadai",
 	"SQ03_P_BACK": "gate", "SQ03_P_HALL": "hall", "SQ03_P_NOTICE": "notice", "SQ03_P_SHOP": "music",
 	"SQ04_P_HOME": "house", "SQ04_P_STALL": "flowers", "SQ04_P_TANK": "stall", "SQ04_P_TEMPLE": "none",
 	"SQ05_P_OUTER": "notice", "SQ05_P_SHOP": "lamps", "SQ05_P_SIGN": "closed", "SQ05_P_STORE": "store",
@@ -38,11 +38,22 @@ const KINDS: Dictionary = {
 	"SQ26_P_HALL": "hall", "SQ26_P_JASMINE": "flowers", "SQ26_P_ROSE": "flowers",
 	"SQ27_P_HOUSE": "house", "SQ27_P_LANE": "notice", "SQ27_P_ROAD": "notice",
 }
+## Places with their own painted name board (tools/art/make_quest_signs.py): row in the atlas.
+## These boards are always painted, so they take no Label3D name slot.
+const SIGN_ATLAS: String = "res://assets/textures/quest_signs.png"
+const SIGN_ROWS: Dictionary = {"SQ02_P_COFFEE": 0, "SQ02_P_TAILOR": 1, "SQ02_P_BOOKS": 2, "SQ02_P_TEA": 3}
+const SIGN_ROW_COUNT: int = 4
+## Each row is 1920 x 256 px of the 2048 x 1024 atlas.
+const SIGN_U: float = 1920.0 / 2048.0
+const SIGN_W: float = 6.9
+const SIGN_H: float = 0.92
 @export var pack: MissionPack = preload("res://data/missions/career_quests.tres")
 var places: Array[Dictionary] = [] # {key, kind, node}
 var _names: Array[Label3D] = []
 var _player: Vector3 = Vector3.ZERO
 var _elapsed: float = 0.0
+var _sign_material: StandardMaterial3D
+var _sign_meshes: Dictionary = {} # row -> QuadMesh-like ArrayMesh
 
 func _ready() -> void:
 	var seen: Dictionary = {}
@@ -80,8 +91,42 @@ func _add(seen: Dictionary, key: String, at: Vector3, road: Vector3) -> void:
 	var yaw: float = atan2(road.x - at.x, road.z - at.z)
 	add_child(node)
 	node.global_transform = Transform3D(Basis(Vector3.UP, yaw), Vector3(at.x, 0.0, at.z))
+	if SIGN_ROWS.has(key):
+		var board: MeshInstance3D = MeshInstance3D.new()
+		board.name = "Board"
+		board.mesh = _sign_mesh(int(SIGN_ROWS[key]))
+		board.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		board.visibility_range_end = VISIBLE_M
+		node.add_child(board)
+		board.position = Vector3(0.0, QuestPlaceKit.SIGN_Y, float(BOARD_Z_BY_KIND.get(kind, BOARD_Z)) - 0.025)
 	SignalBus.ground_snap_requested.emit(node)
 	places.append({"key": key, "kind": kind, "node": node})
+
+## One quad per painted board, its UVs on that board's row of the shared atlas (one material).
+func _sign_mesh(row: int) -> ArrayMesh:
+	if _sign_meshes.has(row):
+		return _sign_meshes[row]
+	if _sign_material == null:
+		_sign_material = StandardMaterial3D.new()
+		_sign_material.albedo_texture = load(SIGN_ATLAS) as Texture2D
+		_sign_material.roughness = 0.8
+		_sign_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	var v0: float = float(row) / SIGN_ROW_COUNT
+	var v1: float = float(row + 1) / SIGN_ROW_COUNT
+	var hw: float = SIGN_W * 0.5
+	var hh: float = SIGN_H * 0.5
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3.BACK)
+	var corners: Array[Vector3] = [Vector3(-hw, -hh, 0), Vector3(hw, -hh, 0), Vector3(hw, hh, 0), Vector3(-hw, hh, 0)]
+	var uvs: Array[Vector2] = [Vector2(0.0, v1), Vector2(SIGN_U, v1), Vector2(SIGN_U, v0), Vector2(0.0, v0)]
+	for i: int in [0, 2, 1, 0, 3, 2]:
+		st.set_uv(uvs[i])
+		st.add_vertex(corners[i])
+	var mesh: ArrayMesh = st.commit()
+	mesh.surface_set_material(0, _sign_material)
+	_sign_meshes[row] = mesh
+	return mesh
 
 func _process(delta: float) -> void:
 	_elapsed += delta
@@ -90,7 +135,7 @@ func _process(delta: float) -> void:
 	_elapsed = 0.0
 	var near: Array[Dictionary] = []
 	for place: Dictionary in places:
-		if QuestPlaceKit.has_board(str(place["kind"])):
+		if QuestPlaceKit.has_board(str(place["kind"])) and not SIGN_ROWS.has(str(place["key"])):
 			var d: float = (place["node"] as Node3D).global_position.distance_to(_player)
 			if d <= NAME_M:
 				near.append({"d": d, "place": place})
