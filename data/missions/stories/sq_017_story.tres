@@ -35,7 +35,7 @@ cast = {
 "jeyaraj": {
 "model": "res://assets/models/people/old_man_veshti.glb",
 "scale": 0.97,
-"world": Vector3(365.6, 0, -144.6),
+"world": Vector3(365.5, 0, -147.4),
 "face": Vector3(360.9, 0, -146.9),
 "anim": "idle",
 "wear": PackedStringArray("umbrella", "towel"),
@@ -58,7 +58,7 @@ cast = {
 "world": Vector3(480.5, 0, -213.5),
 "face": Vector3(476.1, 0, -209.0),
 "anim": "idle",
-"wear": PackedStringArray("pencil", "towel"),
+"wear": PackedStringArray("pencil", "clipboard"),
 "stages": PackedStringArray("first", "first_drop", "second", "second_drop"),
 "paint": Color(0.0, 0.0, 0.0, 0.0)
 }

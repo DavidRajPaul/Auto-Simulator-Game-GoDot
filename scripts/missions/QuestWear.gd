@@ -8,6 +8,11 @@ extends RefCounted
 ##
 ## Placement is in the person's own space at idle: +Z is the front, -X the right hand, metres.
 ## "bone" is the rig bone it follows; "at" is the offset from that bone in the person's space.
+## "follow" (optional): the bone it moves with, when that differs from where it is placed. The
+## towel is placed on the shoulder but follows the chest: the shoulder bone swings in the talk
+## clips and turned the towel out into the air (Nov 28 owner report, "white projections").
+## "hold": "overhead" (the umbrella): not on a bone at all. QuestActor stands it upright over the
+## head at a grip in front of the right shoulder and poses the right arm to hold it (HoldPose).
 
 const BRASS: Color = Color(0.78, 0.6, 0.24)
 const STEEL: Color = Color(0.74, 0.76, 0.78)
@@ -19,7 +24,7 @@ const ITEMS: Dictionary = {
 	# A string of jasmine pinned at the back of the head.
 	"jasmine": {"bone": "Head", "at": Vector3(0.0, 0.1, -0.085)},
 	# A checked towel (thundu) over the right shoulder.
-	"towel": {"bone": "RightShoulder", "at": Vector3(-0.035, 0.06, 0.0)},
+	"towel": {"bone": "RightArm", "follow": "Spine1", "at": Vector3(0.05, -0.03, 0.01)},
 	# Brass davara and tumbler, held in the right hand.
 	"davara": {"bone": "RightHand", "at": Vector3(-0.02, -0.08, 0.05)},
 	# A steel tea glass in the right hand.
@@ -34,8 +39,8 @@ const ITEMS: Dictionary = {
 	"stethoscope": {"bone": "Neck", "at": Vector3(0.0, -0.02, 0.03)},
 	# A wicker basket of greens, carried by the handle in the right hand.
 	"basket": {"bone": "RightHand", "at": Vector3(-0.01, -0.06, 0.05)},
-	# A black umbrella held up in the right hand.
-	"umbrella": {"bone": "RightHand", "at": Vector3(-0.01, -0.09, 0.05)},
+	# A black umbrella held open over the head, the right hand on the shaft.
+	"umbrella": {"bone": "RightHand", "hold": "overhead", "at": Vector3.ZERO},
 	# A clipboard with a sheet and a steel clip, in the left hand.
 	"clipboard": {"bone": "LeftHand", "at": Vector3(0.03, -0.1, 0.05)},
 }
@@ -63,7 +68,7 @@ static func _build(item: String) -> ArrayMesh:
 		"davara": _davara(st)
 		"glass": _glass(st)
 		"book": _book(st)
-		"pencil": MeshKit.tube(st, Vector3(0, 0, 0.06), Vector3(0, -0.02, -0.07), 0.006, Color(0.95, 0.75, 0.15), 5)
+		"pencil": MeshKit.tube(st, Vector3(-0.012, 0.004, 0.025), Vector3(-0.004, -0.012, -0.05), 0.005, Color(0.95, 0.75, 0.15), 5)
 		"whistle": _whistle(st)
 		"stethoscope": _stethoscope(st)
 		"basket": _basket(st)
@@ -107,16 +112,38 @@ static func _jasmine(st: SurfaceTool) -> void:
 		MeshKit.box(st, Vector3(0.0, -0.035 - i * 0.03, -0.012), Vector3(0.02, 0.022, 0.02), white)
 	MeshKit.box(st, Vector3(0.0, -0.21, -0.012), Vector3(0.016, 0.016, 0.016), Color(0.3, 0.6, 0.25))
 
-## Folded over the shoulder: a strip on top, a longer flap down the front, a shorter one behind.
+## Draped over the shoulder like a real thundu: a soft cloth band that wraps the top of the
+## shoulder (an arc round its centre) and hangs as a long flap down the chest and a shorter one
+## down the back, a red check border near each end. Origin = the middle of the shoulder top.
+## It hugs the shoulder (no stiff box standing off it: Nov 28 owner report, "white projections").
 static func _towel(st: SurfaceTool) -> void:
-	var cloth: Color = Color(0.93, 0.92, 0.86)
-	var check: Color = Color(0.72, 0.18, 0.16)
-	MeshKit.box(st, Vector3(0, 0.0, 0.0), Vector3(0.1, 0.018, 0.22), cloth)
-	MeshKit.box(st, Vector3(0, -0.15, 0.11), Vector3(0.1, 0.3, 0.016), cloth, Basis(Vector3.RIGHT, deg_to_rad(-8.0)))
-	MeshKit.box(st, Vector3(0, -0.1, -0.11), Vector3(0.1, 0.2, 0.016), cloth)
-	for y: float in [-0.06, -0.17, -0.27]:
-		MeshKit.box(st, Vector3(0, y, 0.122), Vector3(0.102, 0.014, 0.012), check)
-	MeshKit.box(st, Vector3(0.025, -0.15, 0.122), Vector3(0.012, 0.3, 0.012), check)
+	var cloth: Color = Color(0.9, 0.88, 0.8)
+	var check: Color = Color(0.7, 0.17, 0.15)
+	var half_w: float = 0.055
+	# Centre line, front hem → over the shoulder → back hem, in the person's YZ plane.
+	var line: PackedVector3Array = PackedVector3Array()
+	var front: float = 0.135
+	var back: float = 0.12
+	var top: float = 0.07
+	for i: int in 6:
+		line.append(Vector3(0.004 * i, -0.34 + 0.068 * i, front + 0.008 - 0.0016 * i))
+	for i: int in range(1, 10):
+		var a: float = PI * float(i) / 10.0
+		line.append(Vector3(0.02, sin(a) * top, lerpf(front, -back, (1.0 - cos(a)) * 0.5)))
+	for i: int in 5:
+		line.append(Vector3(0.016 - 0.003 * i, -0.055 * i, -back - 0.004 * i))
+	for i: int in line.size() - 1:
+		var a: Vector3 = line[i]
+		var b: Vector3 = line[i + 1]
+		var colour: Color = check if (i == 1 or i == line.size() - 3) else cloth
+		var wa: Vector3 = Vector3(half_w, 0, 0)
+		# Outer face and inner face (the cloth is seen from every side).
+		MeshKit.quad(st, a - wa, a + wa, b + wa, b - wa, colour, true)
+		MeshKit.quad(st, a + wa, a - wa, b - wa, b + wa, colour.darkened(0.12), true)
+	# A few loose threads of fringe at the front hem.
+	for k: int in 5:
+		var x: float = -half_w + 0.012 + k * 0.022
+		MeshKit.tube(st, line[0] + Vector3(x, 0, 0), line[0] + Vector3(x, -0.03, 0.002), 0.003, cloth, 3)
 
 ## The south Indian filter-coffee set: a wide brass bowl and the tall tumbler standing in it.
 static func _davara(st: SurfaceTool) -> void:
@@ -177,17 +204,60 @@ static func _basket(st: SurfaceTool) -> void:
 	MeshKit.tube(st, Vector3(-0.14, -0.04, 0.0), Vector3(0.0, 0.1, 0.0), 0.007, wicker, 5)
 	MeshKit.tube(st, Vector3(0.0, 0.1, 0.0), Vector3(0.14, -0.04, 0.0), 0.007, wicker, 5)
 
-## A black umbrella: curved handle, steel shaft, ribbed canopy with a rim of spokes.
+## A black cloth umbrella, open. The origin is the grip (where the hand closes on the shaft); +Y up
+## the shaft. A wooden crook handle below the hand, a steel shaft, eight ribs and a scalloped black
+## canopy whose panels sag between the ribs, drawn on both sides (it is seen from below in the
+## cutscenes), and a short steel tip on top. Ribs are dark under the canopy, not bright steel.
+const UMBRELLA_R: float = 0.52
 static func _umbrella(st: SurfaceTool) -> void:
-	var black: Color = Color(0.08, 0.08, 0.1)
-	MeshKit.tube(st, Vector3(0.0, -0.04, 0.0), Vector3(0.0, 0.5, 0.0), 0.007, STEEL, 5)
-	MeshKit.tube(st, Vector3(0.0, -0.04, 0.0), Vector3(0.025, -0.075, 0.0), 0.009, black, 5)
-	MeshKit.tube(st, Vector3(0.025, -0.075, 0.0), Vector3(0.06, -0.06, 0.0), 0.009, black, 5)
-	var dome: PackedVector2Array = PackedVector2Array([Vector2(0.0, 0.62), Vector2(0.12, 0.6), Vector2(0.26, 0.55), Vector2(0.38, 0.47), Vector2(0.43, 0.42)])
-	_upright_lathe(st, Vector3.ZERO, dome, black, 10)
-	for i: int in 8:
-		var a: float = TAU * float(i) / 8.0
-		MeshKit.tube(st, Vector3(0.0, 0.6, 0.0), Vector3(cos(a) * 0.43, 0.42, sin(a) * 0.43), 0.004, STEEL, 4)
+	var cloth: Color = Color(0.06, 0.06, 0.075)
+	var inner: Color = Color(0.11, 0.11, 0.13)
+	var wood: Color = Color(0.32, 0.19, 0.1)
+	var rib: Color = Color(0.2, 0.2, 0.22)
+	var apex: Vector3 = Vector3(0.0, 0.86, 0.0)
+	# Shaft from just below the hand to the apex, and the crook handle hooking forward under the hand.
+	MeshKit.tube(st, Vector3(0.0, -0.06, 0.0), apex, 0.0075, Color(0.45, 0.46, 0.48), 6)
+	MeshKit.tube(st, Vector3(0.0, -0.02, 0.0), Vector3(0.0, -0.13, 0.0), 0.014, wood, 6)
+	MeshKit.tube(st, Vector3(0.0, -0.13, 0.0), Vector3(0.0, -0.17, 0.035), 0.014, wood, 6)
+	MeshKit.tube(st, Vector3(0.0, -0.17, 0.035), Vector3(0.0, -0.15, 0.07), 0.014, wood, 6)
+	MeshKit.tube(st, Vector3(0.0, -0.15, 0.07), Vector3(0.0, -0.12, 0.075), 0.013, wood, 6)
+	MeshKit.tube(st, apex, apex + Vector3(0.0, 0.07, 0.0), 0.006, Color(0.45, 0.46, 0.48), 5)
+	# The runner (the sliding collar the stretchers meet) and eight stretchers up to the ribs.
+	MeshKit.tube(st, Vector3(0.0, 0.5, 0.0), Vector3(0.0, 0.55, 0.0), 0.014, rib, 6)
+	var n: int = 8
+	for i: int in n:
+		var a0: float = TAU * float(i) / n
+		var a1: float = TAU * float(i + 1) / n
+		var am: float = (a0 + a1) * 0.5
+		var tip0: Vector3 = Vector3(cos(a0) * UMBRELLA_R, 0.62, sin(a0) * UMBRELLA_R)
+		var tip1: Vector3 = Vector3(cos(a1) * UMBRELLA_R, 0.62, sin(a1) * UMBRELLA_R)
+		var mid_r: float = UMBRELLA_R * 0.93
+		var mid: Vector3 = Vector3(cos(am) * mid_r, 0.655, sin(am) * mid_r)
+		var ring0: Vector3 = Vector3(cos(a0) * 0.29, 0.79, sin(a0) * 0.29)
+		var ring1: Vector3 = Vector3(cos(a1) * 0.29, 0.79, sin(a1) * 0.29)
+		var ringm: Vector3 = Vector3(cos(am) * 0.275, 0.8, sin(am) * 0.275)
+		# Outer cloth (up and out), with the inner face under it.
+		_cloth_tri(st, apex, ring1, ringm, cloth, inner)
+		_cloth_tri(st, apex, ringm, ring0, cloth, inner)
+		_cloth_tri(st, ring0, ringm, mid, cloth, inner)
+		_cloth_tri(st, ring0, mid, tip0, cloth, inner)
+		_cloth_tri(st, ringm, ring1, tip1, cloth, inner)
+		_cloth_tri(st, ringm, tip1, mid, cloth, inner)
+		# The rib under the cloth, and its stretcher from the runner.
+		var rib_in: Vector3 = tip0 * Vector3(0.96, 1.0, 0.96) + Vector3(0.0, -0.012, 0.0)
+		MeshKit.tube(st, apex + Vector3(0.0, -0.02, 0.0), ring0 + Vector3(0.0, -0.012, 0.0), 0.004, rib, 4)
+		MeshKit.tube(st, ring0 + Vector3(0.0, -0.012, 0.0), rib_in, 0.004, rib, 4)
+		MeshKit.tube(st, Vector3(0.0, 0.54, 0.0), ring0 * Vector3(1.25, 1.0, 1.25) + Vector3(0.0, -0.03, 0.0), 0.003, rib, 4)
+		MeshKit.box(st, tip0 + Vector3(0.0, -0.008, 0.0), Vector3(0.014, 0.018, 0.014), rib)
+
+## One canopy triangle, outer face (a, b, c in this winding) and the inner face just under it.
+static func _cloth_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, outer: Color, inner: Color) -> void:
+	st.set_smooth_group(-1)
+	st.set_color(outer)
+	MeshKit._tri(st, a, c, b)
+	var dn: Vector3 = Vector3(0.0, -0.004, 0.0)
+	st.set_color(inner)
+	MeshKit._tri(st, a + dn, b + dn, c + dn)
 
 ## A hardboard clipboard with a sheet of paper and a steel clip at the top.
 static func _clipboard(st: SurfaceTool) -> void:

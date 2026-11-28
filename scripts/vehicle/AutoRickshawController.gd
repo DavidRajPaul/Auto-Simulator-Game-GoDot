@@ -89,7 +89,7 @@ var _limp_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _telemetry_timer: float = 0.0
 var _prev_velocity: Vector3 = Vector3.ZERO
 var _wheel_visuals: Dictionary = {}
-var _wheel_splashes: Array[GPUParticles3D] = []
+var _wheel_splashes: Array[CPUParticles3D] = []
 ## --- Collisions (modelled on BUSSID / Car Parking Multiplayer / Truckers of Europe feel) ---
 ## Low body friction so a glancing hit SLIDES along the wall instead of gluing the auto to it,
 ## a little restitution for a believable bump-back, chamfered hull corners so building corners
@@ -195,49 +195,90 @@ func _recolour() -> void:
 		if w != null:
 			w.visible = procedural_wheels
 
-## Three tiny GPU emitters, each reusing one shared material and quad mesh.
-## Emission is off when dry, slow, airborne, or the flood has drained.
+## Water spray (Nov 28 owner question: "how will the splashes be, will they be realistic?"):
+## spray up and back off the tyres and, in deeper water, a bow wave thrown out round the front
+## wheel: three emitters, three draw calls only while in water. Soft lumpy droplets (shaders/water_spray.gdshader)
+## sharing one material; how hard the water flies depends on depth and speed (emitter velocity,
+## never a new material or a changed amount). Off when dry, slow, airborne, or the water drained.
+const BOW_MIN_DEPTH_M: float = 0.08
+var _bow_waves: Array[CPUParticles3D] = []
+
+## CPU emitters (like RainSplashes' tyre spray): GPU particles did not draw on GL Compatibility
+## in the Nov 28 renders, so the old wheel spray had probably never shown.
+func _spray_emitter(node_name: String, mesh: Mesh, amount_n: int, life_s: float, dir: Vector3, spread_deg: float, box: Vector3) -> CPUParticles3D:
+	var p: CPUParticles3D = CPUParticles3D.new()
+	p.name = node_name
+	p.mesh = mesh
+	p.amount = amount_n
+	p.lifetime = life_s
+	p.randomness = 0.4
+	p.local_coords = false
+	p.emitting = false
+	p.direction = dir
+	p.spread = spread_deg
+	p.initial_velocity_min = 1.1
+	p.initial_velocity_max = 2.7
+	p.gravity = Vector3(0.0, -9.0, 0.0)
+	p.scale_amount_min = 0.8
+	p.scale_amount_max = 1.6
+	var grow: Curve = Curve.new()
+	grow.add_point(Vector2(0.0, 0.5))
+	grow.add_point(Vector2(1.0, 1.4))
+	p.scale_amount_curve = grow
+	var fade: Gradient = Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 1))
+	fade.set_color(1, Color(1, 1, 1, 0))
+	p.color_ramp = fade
+	# A random colour per drop: the spray shader reads COLOR.r / .g only as a seed for its lumpy edge.
+	var seeds: Gradient = Gradient.new()
+	seeds.set_color(0, Color(0.0, 0.7, 0.0, 1.0))
+	seeds.set_color(1, Color(1.0, 0.1, 0.0, 1.0))
+	p.color_initial_ramp = seeds
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.emission_box_extents = box
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(p)
+	return p
+
 func _setup_wheel_splashes() -> void:
+	var surface: ShaderMaterial = ShaderMaterial.new()
+	surface.shader = load("res://shaders/water_spray.gdshader") as Shader
 	var quad: QuadMesh = QuadMesh.new()
-	quad.size = Vector2(0.11, 0.20)
-	var surface: StandardMaterial3D = StandardMaterial3D.new()
-	surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	surface.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	surface.albedo_color = Color(0.67, 0.70, 0.68, 0.55)
-	surface.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	surface.vertex_color_use_as_albedo = true
-	surface.cull_mode = BaseMaterial3D.CULL_DISABLED
+	quad.size = Vector2(0.26, 0.26)
 	quad.material = surface
-	var motion: ParticleProcessMaterial = ParticleProcessMaterial.new()
-	motion.direction = Vector3(0.0, 1.0, 0.0)
-	motion.spread = 55.0
-	motion.initial_velocity_min = 1.1
-	motion.initial_velocity_max = 2.7
-	motion.gravity = Vector3(0.0, -7.0, 0.0)
-	motion.scale_min = 0.5
-	motion.scale_max = 1.2
-	for origin: Vector3 in [FRONT_WHEEL_POS, REAR_LEFT_WHEEL_POS, REAR_RIGHT_WHEEL_POS]:
-		var spray: GPUParticles3D = GPUParticles3D.new()
-		spray.name = "WheelSplash%d" % _wheel_splashes.size()
-		spray.position = origin + Vector3(0.0, -stats.wheel_radius_m * 0.45, 0.0)
-		spray.amount = 10
-		spray.lifetime = 0.42
-		spray.explosiveness = 0.0
-		spray.process_material = motion
-		spray.draw_pass_1 = quad
-		spray.emitting = false
-		spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(spray)
-		_wheel_splashes.append(spray)
+	# Three draw calls in water, as before: the front tyre, both rear tyres as one wide emitter
+	# (the body hides the gap between them), and the bow wave as a crown round the front wheel.
+	var front: CPUParticles3D = _spray_emitter("WheelSplash0", quad, 60, 0.45, Vector3(0.0, 1.0, 0.9), 28.0, Vector3(0.06, 0.02, 0.1))
+	front.position = FRONT_WHEEL_POS + Vector3(0.0, -stats.wheel_radius_m * 0.45, 0.0)
+	_wheel_splashes.append(front)
+	var rear: CPUParticles3D = _spray_emitter("WheelSplash1", quad, 130, 0.45, Vector3(0.0, 1.0, 0.9), 28.0, Vector3(absf(REAR_LEFT_WHEEL_POS.x) + 0.06, 0.02, 0.1))
+	rear.position = Vector3(0.0, REAR_LEFT_WHEEL_POS.y - stats.wheel_radius_m * 0.45, REAR_LEFT_WHEEL_POS.z)
+	_wheel_splashes.append(rear)
+	var bow_quad: QuadMesh = QuadMesh.new()
+	bow_quad.size = Vector2(0.34, 0.34)
+	bow_quad.material = surface
+	var bow: CPUParticles3D = _spray_emitter("WheelSplash2", bow_quad, 110, 0.55, Vector3(0.0, 0.55, 0.2), 80.0, Vector3(0.12, 0.02, 0.2))
+	bow.position = FRONT_WHEEL_POS + Vector3(0.0, -stats.wheel_radius_m * 0.6, -0.1)
+	_bow_waves.append(bow)
 
 func _update_wheel_splashes() -> void:
 	var active: bool = current_water_depth_m > 0.06 and current_speed_kmh > SPLASH_MIN_SPEED_KMH and wheels_grounded > 0
+	var pace: float = clampf((current_speed_kmh - SPLASH_MIN_SPEED_KMH) / (SPLASH_MAX_SPEED_KMH - SPLASH_MIN_SPEED_KMH), 0.0, 1.0)
+	var deep: float = clampf(current_water_depth_m / maxf(stats.water_stall_depth_m, 0.1), 0.0, 1.5)
 	for i: int in _wheel_splashes.size():
-		var spray: GPUParticles3D = _wheel_splashes[i]
-		var ray: RayCast3D = front_wheel_ray if i == 0 else (rear_left_wheel_ray if i == 1 else rear_right_wheel_ray)
-		spray.emitting = active and ray.is_colliding()
+		var spray: CPUParticles3D = _wheel_splashes[i]
+		var on_ground: bool = front_wheel_ray.is_colliding() if i == 0 else (rear_left_wheel_ray.is_colliding() or rear_right_wheel_ray.is_colliding())
+		spray.emitting = active and on_ground
 		if spray.emitting:
-			spray.amount_ratio = clampf((current_speed_kmh - SPLASH_MIN_SPEED_KMH) / (SPLASH_MAX_SPEED_KMH - SPLASH_MIN_SPEED_KMH), 0.15, 1.0)
+			# Faster and deeper = the water flies higher and further.
+			spray.initial_velocity_min = 0.6 + 1.2 * pace + 0.8 * deep
+			spray.initial_velocity_max = 1.6 + 2.4 * pace + 1.4 * deep
+	var bow_on: bool = active and current_water_depth_m >= BOW_MIN_DEPTH_M and front_wheel_ray.is_colliding()
+	for bow: CPUParticles3D in _bow_waves:
+		bow.emitting = bow_on
+		if bow_on:
+			bow.initial_velocity_min = 1.0 + 1.8 * pace + 1.0 * deep
+			bow.initial_velocity_max = 2.0 + 3.0 * pace + 1.6 * deep
 
 func _setup_collision() -> void:
 	var pm: PhysicsMaterial = PhysicsMaterial.new()
@@ -418,6 +459,8 @@ func _physics_process(delta: float) -> void:
 	_apply_stabilizer()
 	_apply_aero_drag()
 	_apply_water_drag()
+	# Never called before Nov 28: the wheel spray had never switched on in water.
+	_update_wheel_splashes()
 	_update_fuel_and_odometer(delta)
 	_check_water_stall()
 	_update_lamps(brake_in, delta)

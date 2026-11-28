@@ -114,14 +114,20 @@ func wear(items: Variant) -> void:
 		var spec: Dictionary = QuestWear.spec(item)
 		if spec.is_empty():
 			continue
-		var bone: int = skel.find_bone(str(spec["bone"]))
-		if bone < 0:
+		if str(spec.get("hold", "")) == "overhead":
+			_hold_overhead(item, skel, to_me)
 			continue
-		var bone_me: Transform3D = to_me * skel.get_bone_global_pose(bone)
-		var want: Transform3D = Transform3D(Basis.IDENTITY, bone_me.origin + (spec["at"] as Vector3))
+		var bone: int = skel.find_bone(str(spec["bone"]))
+		var follow_name: String = str(spec.get("follow", spec["bone"]))
+		var follow: int = skel.find_bone(follow_name)
+		if bone < 0 or follow < 0:
+			continue
+		var place_at: Vector3 = (to_me * skel.get_bone_global_pose(bone)).origin + (spec["at"] as Vector3)
+		var bone_me: Transform3D = to_me * skel.get_bone_global_pose(follow)
+		var want: Transform3D = Transform3D(Basis.IDENTITY, place_at)
 		var att: BoneAttachment3D = BoneAttachment3D.new()
 		att.name = "Wear_" + item
-		att.bone_name = str(spec["bone"])
+		att.bone_name = follow_name
 		skel.add_child(att)
 		var mi: MeshInstance3D = MeshInstance3D.new()
 		mi.mesh = QuestWear.mesh(item)
@@ -130,6 +136,41 @@ func wear(items: Variant) -> void:
 		mi.transform = bone_me.affine_inverse() * want
 	if _clip != "":
 		play(_clip, 0.0)
+
+## Where the hand closes on an overhead umbrella, from the right shoulder in the person's space
+## (+Z front, -X right): a little in, well in front, a hand's length below the shoulder, so the
+## elbow is bent and the shaft stands clear of the face.
+const OVERHEAD_GRIP: Vector3 = Vector3(0.09, -0.2, 0.3)
+## The canopy's centre sits this far above the top of the head, the shaft leaning to it.
+const OVERHEAD_CLEAR_M: float = 0.42
+
+## An open umbrella held over the head: the umbrella stands in the person's space (upright, leaning
+## from the grip towards the head, so it shelters the head and moves with the person), and a
+## HoldPose on the skeleton bends the right arm so the hand is on the shaft in every clip.
+func _hold_overhead(item: String, skel: Skeleton3D, to_me: Transform3D) -> void:
+	var b_arm: int = skel.find_bone("RightArm")
+	var b_head: int = skel.find_bone("Head")
+	if b_arm < 0 or b_head < 0:
+		return
+	var shoulder: Vector3 = (to_me * skel.get_bone_global_pose(b_arm)).origin
+	var head: Vector3 = (to_me * skel.get_bone_global_pose(b_head)).origin
+	var grip: Vector3 = shoulder + OVERHEAD_GRIP * _scale
+	var crown: Vector3 = Vector3(head.x, head.y + 0.2 * _scale + OVERHEAD_CLEAR_M, head.z)
+	var axis: Vector3 = (crown - grip).normalized()
+	var side: Vector3 = Vector3.FORWARD.cross(axis).normalized() if absf(axis.z) < 0.99 else Vector3.RIGHT
+	var basis_up: Basis = Basis(side, axis, side.cross(axis).normalized())
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.name = "Wear_" + item
+	mi.mesh = QuestWear.mesh(item)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	mi.transform = Transform3D(basis_up, grip)
+	var to_skel: Transform3D = to_me.affine_inverse()
+	var pose: HoldPose = HoldPose.new()
+	pose.name = "HoldPose_" + item
+	pose.grip = to_skel * grip
+	pose.pole = to_skel * (shoulder + Vector3(-0.35, -0.35, -0.1) * _scale)
+	skel.add_child(pose)
 
 ## Unrigged models (the constable) have no bones: neck and head items hang from the body root at a fixed height.
 const UNRIGGED_ANCHORS: Dictionary = {"Neck": Vector3(0.0, 1.42, 0.0), "Head": Vector3(0.0, 1.6, 0.0)}

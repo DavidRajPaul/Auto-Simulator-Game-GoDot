@@ -140,6 +140,7 @@ func _claim() -> void:
 		GameState.is_raining = definition.scenario_weather == "rain"
 		SignalBus.weather_changed.emit(GameState.is_raining)
 	SignalBus.shift_clock_updated.emit(GameState.day, GameState.shift_minute)
+	SignalBus.quest_flood_requested.emit(definition.scenario_flood)
 	SignalBus.mission_ownership_changed.emit(true)
 
 func current_stage() -> MissionStage:
@@ -552,6 +553,7 @@ func _finish(status: String, reason: String) -> void:
 	var id: String = run.quest_id
 	SignalBus.quest_search_area_changed.emit(Vector3.ZERO, 0.0)
 	_restore_scenario()
+	SignalBus.quest_flood_requested.emit("")
 	run = null
 	GameState.mission_run = {}
 	GameState.mission_active = false

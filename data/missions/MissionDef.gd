@@ -31,6 +31,9 @@ extends Resource
 @export var story: QuestStoryData
 @export var scenario_minute: float = -1.0
 @export_enum("unchanged", "dry", "rain") var scenario_weather: String = "unchanged"
+## Optional flood standing on the roads while the quest runs (tools/quests/build_flood.py output,
+## drawn and felt by scripts/world/QuestFlood.gd). Empty = no flood.
+@export_file("*.json") var scenario_flood: String = ""
 
 func stage_index(stage_id: String) -> int:
 	for i: int in stages.size():
