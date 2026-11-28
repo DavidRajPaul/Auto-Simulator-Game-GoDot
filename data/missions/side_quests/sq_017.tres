@@ -138,5 +138,6 @@ category = "community"
 reward_inr = 205
 reward_xp = 20
 scenario_weather = "rain"
+scenario_flood = "res://data/missions/floods/sq_017.json"
 story = ExtResource("story")
 stages = Array[ExtResource("stage")]([SubResource("intro"), SubResource("load"), SubResource("warning"), SubResource("watch"), SubResource("order"), SubResource("first"), SubResource("first_drop"), SubResource("second"), SubResource("second_drop")])

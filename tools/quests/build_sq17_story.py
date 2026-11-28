@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from story_common import (back_to, check_lines, driver, hold_on, street, talk, two, update_ui_csv,  # noqa: E402
                           voice_script, walk_up)
+import build_flood  # noqa: E402
 from story_tres import NONE, PEOPLE, PSA, V2, V3, write_mission, write_story  # noqa: E402
 
 START = V3((394.4, 0, -190.8))   # the relief store, Goudia Mutt Road
@@ -43,6 +44,12 @@ RAFIQ = V3((395.2, 0, -194.9))
 JEYARAJ = V3((365.6, 0, -144.6))
 MARAGATHAM = V3((328.5, 0, -198.4))
 POOJA = V3((480.5, 0, -213.5))
+# The flood (build_flood.py): circles (x, z, radius) round every place and the streets between
+# them, and the deep water at the junction the quest tells you to avoid (x, z, radius, depth).
+FLOOD_AREAS = [(394.4, -190.8, 70.0), (360.9, -146.9, 50.0), (327.4, -202.5, 60.0), (476.1, -209.0, 65.0),
+               (412.8, -253.6, 45.0), (360.0, -196.0, 50.0), (435.0, -200.0, 55.0), (403.0, -222.0, 45.0)]
+FLOOD_BASINS = [(412.8, -253.6, 13.0, 0.42)]
+FLOOD_FILE = "res://data/missions/floods/sq_017.json"
 
 SHELTER_C, DESK_C = "SQ17_SHELTER", "SQ17_DESK"
 
@@ -258,7 +265,7 @@ cast = {
     "maragatham": {"model": PEOPLE + "woman_saree_green.glb", "scale": 0.96, "world": MARAGATHAM, "face": SHELTER, "anim": "idle",
                    "wear": PSA(["glass", "jasmine"]), "stages": PSA(AT_DROPS)},
     "pooja": {"model": PEOPLE + "girl_churidar.glb", "scale": 1.0, "world": POOJA, "face": DESK, "anim": "idle",
-              "wear": PSA(["pencil", "towel"]), "stages": PSA(AT_DROPS)},
+              "wear": PSA(["pencil", "clipboard"]), "stages": PSA(AT_DROPS)},
 }
 for c in cast.values():
     c["paint"] = NONE
@@ -290,7 +297,8 @@ if __name__ == "__main__":
     write_mission("sq_017", stages, [
         ("content_version", 3), ("title_key", "SQ17_TITLE"), ("description_key", "SQ17_DESC"), ("job_key", "SQ17_JOB"),
         ("discoverable", True), ("start_anchor", START), ("estimated_minutes", 8), ("category", "community"),
-        ("reward_inr", 205), ("reward_xp", 20), ("scenario_weather", "rain")])
+        ("reward_inr", 205), ("reward_xp", 20), ("scenario_weather", "rain"), ("scenario_flood", FLOOD_FILE)])
+    build_flood.build("sq_017", FLOOD_AREAS, FLOOD_BASINS)
     voice_script("SQ17_Monsoon_Voice_Script.md", "The Monsoon Supply Run", "17", "build_sq17_story.py", CAST_NOTES, LINES)
     update_ui_csv(STRINGS, SPEAKER_NAMES, LINES, RETIRED)
     print("wrote sq_017.tres, sq_017_story.tres, the SQ17 voice script and ui.csv rows")

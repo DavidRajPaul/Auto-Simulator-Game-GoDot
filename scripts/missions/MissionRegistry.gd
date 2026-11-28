@@ -20,6 +20,8 @@ func load_pack(pack: MissionPack) -> bool:
 			errors.append("Invalid mission metadata: " + mission.id)
 		if mission.reward_inr < 0 or mission.reward_xp < 0 or not is_finite(mission.scenario_minute) or mission.scenario_minute < -1.0 or mission.scenario_minute >= 1440.0 or mission.scenario_weather not in ["unchanged", "dry", "rain"]:
 			errors.append("Invalid reward/scenario: " + mission.id)
+		if mission.scenario_flood != "" and not FileAccess.file_exists(mission.scenario_flood):
+			errors.append("Missing flood file: " + mission.id)
 		if mission.discoverable and (not mission.start_anchor.is_finite() or mission.start_anchor == Vector3.ZERO or mission.description_key.is_empty() or mission.job_key.is_empty() or mission.estimated_minutes < 1):
 			errors.append("Invalid discovery anchor/metadata: " + mission.id)
 		if mission.reward_choice_stage != "":

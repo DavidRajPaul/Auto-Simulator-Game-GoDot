@@ -22,6 +22,7 @@ var root: Node3D
 var auto: AutoRickshawController
 var rig: CameraRig
 var director: MissionDirector
+var flood: QuestFlood
 var story: QuestStory
 var rider: QuestRider
 var test_cam: Camera3D
@@ -211,6 +212,9 @@ func _build_scene() -> void:
 	story = QuestStory.new()
 	story.name = "QuestStory"
 	root.add_child(story)
+	flood = QuestFlood.new()
+	flood.name = "QuestFlood"
+	root.add_child(flood)
 	test_cam = Camera3D.new()
 	test_cam.far = 400.0
 	# Projected the same frame it moves: no interpolation lag.
@@ -759,6 +763,15 @@ func _monsoon_playthrough(first: String) -> void:
 	place_auto(def.start_anchor)
 	await get_tree().physics_frame
 	check("Monsoon starts with Vasanthi's scene, controls locked", director.start(MONSOON) and story.cinematic and stage() == "intro" and auto.freeze)
+	check("The streets flood for the quest: shallow at the store, too deep to drive at the junction to avoid", flood.active and flood.depth_at(def.start_anchor.x, def.start_anchor.z) > 0.06 and flood.depth_at(def.start_anchor.x, def.start_anchor.z) < 0.25 and flood.depth_at(412.8, -253.6) > auto.stats.water_stall_depth_m)
+	var water_felt: Array[float] = []
+	var felt: Callable = func(d: float) -> void: water_felt.append(d)
+	SignalBus.water_depth_changed.connect(felt)
+	SignalBus.player_pose_updated.emit(def.start_anchor, Vector3.FORWARD)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check("The auto feels the water it stands in %s" % str(water_felt), not water_felt.is_empty() and water_felt.back() > 0.06)
+	SignalBus.water_depth_changed.disconnect(felt)
 	check("Vasanthi has her clipboard and Rafiq his tea glass", story.actors.has("vasanthi") and (story.actors["vasanthi"] as QuestActor).find_child("Wear_clipboard", true, false) != null and story.actors.has("rafiq") and (story.actors["rafiq"] as QuestActor).find_child("Wear_glass", true, false) != null)
 	watch_cast = true
 	check("The intro ends and the load stop is next", await run_until("load", MAX_SCENE_S) and _said("sq17_v05"))
@@ -798,6 +811,7 @@ func _monsoon_playthrough(first: String) -> void:
 	check("No monsoon shot has the auto in front of the speaker %s" % str(hidden_shots), hidden_shots.is_empty())
 	check("Nobody plays the phone-call clip %s" % str(phone_frames), phone_frames.is_empty())
 	check("Everything is put back", not story.cinematic and not auto.freeze and story.actors.is_empty() and not modal_open)
+	check("The flood drains when the quest ends", not flood.active and flood.depth_at(412.8, -253.6) == 0.0)
 
 func _language_check() -> void:
 	GameState.settings["language"] = "ta"

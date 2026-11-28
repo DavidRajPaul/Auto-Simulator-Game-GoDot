@@ -250,9 +250,9 @@ stages keep every old field (`story_tres.ORDER` now also writes `cargo_delta`, `
 |---|---|---|---|
 | Vasanthi Madam, relief store coordinator | `woman_saree_kanchi` | spectacles, clipboard | the relief store |
 | Rafiq, volunteer who shouts from inside | `young_man` | steel glass | the relief store |
-| Jeyaraj, flood watchman (measures in his own knees) | `old_man_veshti` | umbrella, towel | the flood sign |
+| Jeyaraj, flood watchman (measures in his own knees) | `old_man_veshti` | umbrella held open over his head, towel | the flood sign |
 | Maragatham Paati, runs the shelter (one rule: a share each, nobody gets two) | `woman_saree_green` | steel glass, jasmine | the shelter |
-| Pooja, relief desk ("signing makes you a volunteer") | `girl_churidar` | pencil, towel | the relief desk |
+| Pooja, relief desk ("signing makes you a volunteer") | `girl_churidar` | pencil behind the ear, clipboard | the relief desk |
 
 Flow: intro scene, **load** (stop-and-do, not a scene), **read the sign** (stop-and-do) → the watchman's scene,
 held on the order choice, two timed deliveries each followed by the matching scene (`first_drop` /
@@ -260,3 +260,26 @@ held on the order choice, two timed deliveries each followed by the matching sce
 Tests: `run_story_quest_tests` `_monsoon_playthrough` (both orders); `run_twenty_four_quest_tests` keeps the
 cargo rules; `SHOT_QUEST=sq_017` (SHOT_CHOICE) in `tests/shot_story.tscn`.
 New QuestWear items: `whistle`, `stethoscope`, `basket`, `umbrella`, `clipboard`.
+
+**Flood (Nov 28, owner: "it is raining but it does not look like a serious situation").** The quest
+floods the streets round its places while it runs: `MissionDef.scenario_flood` names a grid written by
+`tools/quests/build_flood.py` (called from the SQ17 builder: `FLOOD_AREAS` circles, `FLOOD_BASINS`) into
+`data/missions/floods/sq_017.json` (exported: `include_filter` has `data/missions/floods/*`). Water stands
+only on the real drawn roads, junctions and footpaths (chunk `surf` triangles rasterised at 0.5 m), fades
+out at the kerbs and at the ragged outer edge, ~0.07-0.15 m deep, and 0.42 m+ in the junction the quest
+says to avoid (past the auto's 0.28 m stall depth). `scripts/world/QuestFlood.gd` (in `main_chennai.tscn`)
+draws it as ONE mesh (`shaders/flood_water.gdshader`: muddy, rain rings, silver sky sheen at grazing
+angles, foam at the edges; one cell lookup per ring layer for budget phones) and sends the depth under
+the auto on `SignalBus.water_depth_changed`, so the auto's water drag (still ~30 km/h in 0.12 m), stall
+rules and spray apply. `MissionDirector` asks for it in `_claim` and clears it in `_finish`
+(`SignalBus.quest_flood_requested`). Spray: three wheel emitters and a two-sided bow wave from the front
+wheel in water ≥ 0.08 m (CPU particles, `shaders/water_spray.gdshader`), harder with depth and speed.
+`SHOT_QUEST=sq_017 SHOT_ONLY=r06_flood` drives through it and films the chase view, the kerb, the junction.
+
+People (same day, owner: "the umbrella is in the wrong position … white projections on the shoulder"):
+the umbrella is `"hold": "overhead"`: QuestActor stands it over the head at a grip in front of the right
+shoulder and `HoldPose` (SkeletonModifier3D, two-bone reach) keeps the hand on the shaft in every clip.
+The towel is a soft drape over the shoulder that follows `Spine1` (the shoulder bone swings 50-60° in the
+talk clips; every chest bone rolls 20-40°, so nothing may stand off the body). Pooja's towel became a
+clipboard. `tests/shot_wear.tscn` (`SHOT_WEAR="model:item,item;…"`, `SHOT_SPAN`, `SHOT_AIM_Y`) renders a
+person with their items in idle and talk from four sides.

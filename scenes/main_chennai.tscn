@@ -40,6 +40,7 @@
 [ext_resource type="Script" path="res://scripts/ui/QuestHUD.gd" id="quest_hud"]
 [ext_resource type="Script" path="res://scripts/world/RoadWorks.gd" id="road_works"]
 [ext_resource type="Script" path="res://scripts/world/CartSigns.gd" id="cart_signs"]
+[ext_resource type="Script" path="res://scripts/world/QuestFlood.gd" id="quest_flood"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -113,6 +114,9 @@ script = ExtResource("11")
 
 [node name="MonsoonFX" type="Node3D" parent="."]
 script = ExtResource("15")
+
+[node name="QuestFlood" type="Node3D" parent="."]
+script = ExtResource("quest_flood")
 
 [node name="AmbienceAudio" type="Node" parent="."]
 script = ExtResource("16")

@@ -58,7 +58,7 @@ cast = {
 "world": Vector3(480.5, 0, -213.5),
 "face": Vector3(476.1, 0, -209.0),
 "anim": "idle",
-"wear": PackedStringArray("pencil", "towel"),
+"wear": PackedStringArray("pencil", "clipboard"),
 "stages": PackedStringArray("first", "first_drop", "second", "second_drop"),
 "paint": Color(0.0, 0.0, 0.0, 0.0)
 }

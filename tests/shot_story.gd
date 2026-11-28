@@ -177,6 +177,11 @@ func _run_monsoon() -> void:
 	SignalBus.savari_busy_provider = Callable()
 	print("start ok=", director.start("sq_017"))
 	await _shots("r01_intro", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0], "load")
+	if _wanted("r06_flood"):
+		await _flood_drive()
+		if only.size() == 1:
+			get_tree().quit()
+			return
 	await _go(director.current_stage().target)
 	print("load ok=", director.interact("sq_017", "load"))
 	await _go(director.current_stage().target)
@@ -194,6 +199,48 @@ func _run_monsoon() -> void:
 	await _shots("r05_second_drop", [0.6, 2.5, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 30.0], "")
 	print("done stage=", director.run.stage_id if director.run != null else "complete")
 	get_tree().quit()
+
+## The flood (QuestFlood) and the auto's spray: drive through the water on the street west of the
+## relief store, filmed from the chase camera and from the kerb, then the flooded junction from above.
+func _flood_drive() -> void:
+	await _go(Vector3(372.0, 0.0, -194.0), Vector3(330.0, 0.0, -200.0))
+	auto.linear_velocity = -auto.global_transform.basis.z * 7.0
+	Input.action_press("accelerate")
+	var t: float = 0.0
+	var k: int = 0
+	for at: float in [1.0, 1.6, 2.2, 2.8]:
+		while t < at:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+		print("flood depth=", auto.current_water_depth_m, " kmh=", auto.current_speed_kmh)
+		_save("r06_flood_chase_%02d" % k)
+		k += 1
+	var side: Vector3 = auto.global_transform.basis.x
+	var ahead: Vector3 = -auto.global_transform.basis.z
+	var cam: Camera3D = Camera3D.new()
+	cam.fov = 50.0
+	city.add_child(cam)
+	cam.make_current()
+	for i: int in 3:
+		var p: Vector3 = auto.global_position
+		cam.global_position = p + side * 4.5 + ahead * 3.0 + Vector3(0, 0.9, 0)
+		cam.look_at(p + Vector3(0, 0.5, 0), Vector3.UP)
+		for f: int in 18:
+			await get_tree().physics_frame
+		_save("r06_flood_kerb_%02d" % i)
+	Input.action_release("accelerate")
+	cam.queue_free()
+	for view: Array in [[Vector3(392.0, 16.0, -232.0), Vector3(412.8, 0.0, -253.6), "r06_flood_junction"], [Vector3(384.0, 3.0, -188.0), Vector3(345.0, 0.0, -199.0), "r06_flood_street"]]:
+		var still: Camera3D = Camera3D.new()
+		still.fov = 55.0
+		city.add_child(still)
+		still.global_position = view[0]
+		still.look_at(view[1], Vector3.UP)
+		still.make_current()
+		for f: int in 6:
+			await get_tree().process_frame
+		_save(view[2])
+		still.queue_free()
 
 func _run_margazhi() -> void:
 	var rider: QuestRider = city.get_node("QuestRider") as QuestRider

@@ -21,6 +21,8 @@ signal fuel_low(level: float, capacity: float)
 # --- World ---------------------------------------------------------------
 ## Emitted by waterlogging zones when the player auto enters/leaves (depth 0 = dry).
 signal water_depth_changed(depth_m: float)
+## A quest's flood water (QuestFlood): a build_flood.py file to show, or "" to clear it.
+signal quest_flood_requested(path: String)
 
 # --- Horn / traffic ------------------------------------------------------
 signal horn_blasted(origin: Vector3, forward_dir: Vector3, radius_m: float, horn_tier: int)
