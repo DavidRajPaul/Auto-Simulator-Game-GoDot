@@ -1,0 +1,28 @@
+name: Release Guard
+
+# Fast, Godot-free check. Every release/<major>.<minor> branch (e.g. release/1.1), every PR into one,
+# and every v* tag must contain NO developer tools (scripts/devtools). AGENTS.md "Rule 7".
+# On main and feature branches the tools may exist, but only behind the FrameGuard hook.
+# Make the "Dev tools guard" job a REQUIRED status check on release/** in the branch protection rules.
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  devtools_guard:
+    name: Dev tools guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check
+        run: |
+          REF="${{ github.base_ref || github.ref_name }}"
+          if [[ "$REF" == release/* || "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "Release ref: dev tools must be absent."
+            python3 tools/release/check_no_devtools.py --strict
+          else
+            python3 tools/release/check_no_devtools.py
+          fi
